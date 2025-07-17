@@ -1,10 +1,63 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { campusDesign } from '../../styles/campusDesign';
 
+// Proper SpeechRecognition interface declaration
+interface SpeechRecognitionResult {
+  readonly length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionResultList {
+  readonly length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionAlternative {
+  readonly transcript: string;
+  readonly confidence: number;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  readonly resultIndex: number;
+  readonly results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+  serviceURI: string;
+  grammars: any;
+  start(): void;
+  stop(): void;
+  abort(): void;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+  onerror: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition?: {
+      new(): SpeechRecognition;
+    };
+    webkitSpeechRecognition?: {
+      new(): SpeechRecognition;
+    };
+  }
+}
+
 export interface TrackFieldTimerProps {
   onLap: (lapTime: number) => void;
   onFinish: (totalTime: number, laps: number[]) => void;
   disabled?: boolean;
+  soundEnabled?: boolean;
+  vibrationEnabled?: boolean;
+  preset?: 'sprint' | '400m' | '800m' | '1500m' | 'custom';
 }
 
 interface TimerHistoryEntry {
@@ -16,12 +69,29 @@ interface TimerHistoryEntry {
 const HISTORY_KEY = 'trackFieldTimerHistory';
 const STATE_KEY = 'trackFieldTimerState';
 
+// Preset configurations
+const PRESETS = {
+  sprint: { expectedLaps: 1, targetTime: 12000, warningTime: 15000 },
+  '400m': { expectedLaps: 1, targetTime: 60000, warningTime: 70000 },
+  '800m': { expectedLaps: 2, targetTime: 120000, warningTime: 140000 },
+  '1500m': { expectedLaps: 3.75, targetTime: 240000, warningTime: 270000 },
+  custom: { expectedLaps: null, targetTime: null, warningTime: null },
+};
+
+// Sound effects
+const SOUNDS = {
+  start: new Audio('data:audio/wav;base64,...'), // Base64 encoded short beep
+  lap: new Audio('data:audio/wav;base64,...'),   // Base64 encoded click
+  finish: new Audio('data:audio/wav;base64,...'), // Base64 encoded success tone
+};
+
 function usePersistentTimer(disabled: boolean) {
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [laps, setLaps] = useState<number[]>([]);
+  const [currentLapTime, setCurrentLapTime] = useState(0);
   const timerRef = useRef<number | null>(null);
 
   // Load state from localStorage
@@ -67,6 +137,13 @@ function usePersistentTimer(disabled: boolean) {
     return () => window.removeEventListener('beforeunload', handler);
   }, [running, paused]);
 
+  // Update current lap time
+  useEffect(() => {
+    if (running && !paused && !disabled) {
+      setCurrentLapTime(elapsed - laps.reduce((a, b) => a + b, 0));
+    }
+  }, [elapsed, laps, running, paused, disabled]);
+
   // Controls
   const start = () => {
     if (disabled || running) return;
@@ -93,7 +170,9 @@ function usePersistentTimer(disabled: boolean) {
   };
 
   return {
-    running, paused, elapsed, laps, start, pause, resume, reset, lap, undoLap, setLaps, setElapsed, setRunning, setPaused
+    running, paused, elapsed, laps, currentLapTime,
+    start, pause, resume, reset, lap, undoLap,
+    setLaps, setElapsed, setRunning, setPaused
   };
 }
 
@@ -124,23 +203,133 @@ function formatTime(ms: number) {
   return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}.${cs.toString().padStart(2, '0')}`;
 }
 
-export const TrackFieldTimer: React.FC<TrackFieldTimerProps> = ({ onLap, onFinish, disabled }) => {
+// Mini chart component for lap time visualization
+const LapTimeChart: React.FC<{ laps: number[] }> = ({ laps }) => {
+  if (laps.length === 0) return null;
+
+  const max = Math.max(...laps);
+  const min = Math.min(...laps);
+  const range = max - min;
+  const height = 40;
+
+  return (
+    <div className="w-full h-10 flex items-end gap-1">
+      {laps.map((lap, i) => {
+        const barHeight = range === 0 ? height : ((lap - min) / range) * height;
+        return (
+          <div
+            key={i}
+            className="flex-1 bg-blue-500 transition-all duration-300"
+            style={{ height: `${barHeight}px` }}
+            title={`Lap ${i + 1}: ${formatTime(lap)}`}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
+export const TrackFieldTimer: React.FC<TrackFieldTimerProps> = ({
+  onLap,
+  onFinish,
+  disabled,
+  soundEnabled = true,
+  vibrationEnabled = true,
+  preset = 'custom'
+}) => {
   const {
-    running, paused, elapsed, laps, start, pause, resume, reset, lap, undoLap, setLaps, setElapsed, setRunning, setPaused
+    running, paused, elapsed, laps, currentLapTime,
+    start, pause, resume, reset, lap, undoLap,
+    setLaps, setElapsed, setRunning, setPaused
   } = usePersistentTimer(!!disabled);
+  
   const { history, addHistory, clearHistory } = useHistory();
   const [ariaLive, setAriaLive] = useState('');
   const lapListRef = useRef<HTMLDivElement>(null);
+  const presetConfig = PRESETS[preset];
+
+  // Play sound and vibrate
+  const playFeedback = (type: 'start' | 'lap' | 'finish') => {
+    if (soundEnabled) {
+      SOUNDS[type].play().catch(() => {});
+    }
+    if (vibrationEnabled && navigator.vibrate) {
+      switch (type) {
+        case 'start': navigator.vibrate(100); break;
+        case 'lap': navigator.vibrate(50); break;
+        case 'finish': navigator.vibrate([100, 50, 100]); break;
+      }
+    }
+  };
+
+  // Enhanced start handler
+  const handleStart = () => {
+    if (disabled || running) return;
+    start();
+    playFeedback('start');
+  };
+
+  // Enhanced lap handler
+  const handleLap = () => {
+    lap();
+    const lapTime = currentLapTime;
+    setAriaLive(`Lap ${laps.length + 1} recorded: ${formatTime(lapTime)}`);
+    onLap(lapTime);
+    playFeedback('lap');
+  };
+
+  // Enhanced finish handler
+  const handleFinish = () => {
+    if (!running || paused) return;
+    const totalTime = elapsed;
+    const allLaps = [...laps, currentLapTime];
+    setLaps(allLaps);
+    setRunning(false);
+    setPaused(false);
+    setElapsed(0);
+    onFinish(totalTime, allLaps);
+    addHistory({ timestamp: Date.now(), laps: allLaps, total: totalTime });
+    setAriaLive(`Timer finished. Total time: ${formatTime(totalTime)}`);
+    localStorage.removeItem(STATE_KEY);
+    playFeedback('finish');
+  };
+
+  // Voice command handling
+  useEffect(() => {
+    if (!window.SpeechRecognition && !window.webkitSpeechRecognition) return;
+    
+    const SpeechRecognitionConstructor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionConstructor) return;
+
+    const recognition = new SpeechRecognitionConstructor();
+    recognition.continuous = true;
+    
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const lastResultIndex = event.results.length - 1;
+      const command = event.results[lastResultIndex][0].transcript.toLowerCase();
+      
+      if (command.includes('start')) handleStart();
+      if (command.includes('lap')) handleLap();
+      if (command.includes('stop') || command.includes('finish')) handleFinish();
+      if (command.includes('reset')) reset();
+    };
+    
+    recognition.start();
+    return () => recognition.stop();
+  }, [running, paused]);
 
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (disabled) return;
-      if (e.code === 'Space') { running ? (paused ? resume() : pause()) : start(); }
+      if (e.code === 'Space') { 
+        e.preventDefault();
+        running ? (paused ? resume() : pause()) : start(); 
+      }
       if (e.key.toLowerCase() === 'l') lap();
       if (e.key.toLowerCase() === 'r') reset();
       if (e.key.toLowerCase() === 'u') undoLap();
-      if (e.key.toLowerCase() === 'f') finish();
+      if (e.key.toLowerCase() === 'f') handleFinish();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -152,27 +341,6 @@ export const TrackFieldTimer: React.FC<TrackFieldTimerProps> = ({ onLap, onFinis
       lapListRef.current.scrollTop = lapListRef.current.scrollHeight;
     }
   }, [laps]);
-
-  // Lap/Finish handlers
-  const handleLap = () => {
-    lap();
-    const lapTime = laps.length > 0 ? elapsed - laps.reduce((a, b) => a + b, 0) : elapsed;
-    setAriaLive(`Lap ${laps.length + 1} recorded: ${formatTime(lapTime)}`);
-    onLap(lapTime);
-  };
-  const finish = () => {
-    if (!running || paused) return;
-    const totalTime = elapsed;
-    const allLaps = [...laps, elapsed - (laps.reduce((a, b) => a + b, 0))];
-    setLaps(allLaps);
-    setRunning(false);
-    setPaused(false);
-    setElapsed(0);
-    onFinish(totalTime, allLaps);
-    addHistory({ timestamp: Date.now(), laps: allLaps, total: totalTime });
-    setAriaLive(`Timer finished. Total time: ${formatTime(totalTime)}`);
-    localStorage.removeItem(STATE_KEY);
-  };
 
   // Export/Copy
   const handleCopy = () => {
@@ -198,13 +366,32 @@ export const TrackFieldTimer: React.FC<TrackFieldTimerProps> = ({ onLap, onFinis
 
   return (
     <div className={`w-full flex flex-col items-center gap-4 ${campusDesign.layout}`} aria-label="Track & Field Timer">
-      <div className="text-4xl font-mono font-bold" aria-live="polite">{formatTime(elapsed)}</div>
+      {/* Main timer display with split */}
+      <div className="flex flex-col items-center">
+        <div className="text-4xl font-mono font-bold" aria-live="polite">
+          {formatTime(elapsed)}
+        </div>
+        {running && (
+          <div className="text-2xl font-mono text-gray-600">
+            Lap: {formatTime(currentLapTime)}
+          </div>
+        )}
+      </div>
+
+      {/* Preset indicator if applicable */}
+      {preset !== 'custom' && (
+        <div className="text-sm font-semibold text-gray-600">
+          {preset.toUpperCase()} - Target: {formatTime(presetConfig.targetTime!)}
+        </div>
+      )}
+
+      {/* Existing buttons with enhanced mobile support */}
       <div className="flex gap-2 flex-wrap justify-center">
         {!running && !paused && (
           <button
             type="button"
             className={`${campusDesign.interactive} ${campusDesign.colors.primary} ${campusDesign.animations} ${campusDesign.focus} px-6 py-2 text-lg font-bold rounded-xl`}
-            onClick={start}
+            onClick={handleStart}
             disabled={running || disabled}
             aria-label="Start Timer (Space)"
           >Start</button>
@@ -221,7 +408,7 @@ export const TrackFieldTimer: React.FC<TrackFieldTimerProps> = ({ onLap, onFinis
             <button
               type="button"
               className={`${campusDesign.interactive} ${campusDesign.colors.warning} ${campusDesign.animations} ${campusDesign.focus} px-6 py-2 text-lg font-bold rounded-xl`}
-              onClick={finish}
+              onClick={handleFinish}
               disabled={paused || disabled}
               aria-label="Finish (F)"
             >Finish</button>
@@ -275,6 +462,7 @@ export const TrackFieldTimer: React.FC<TrackFieldTimerProps> = ({ onLap, onFinis
       <div className="sr-only" aria-live="polite">{ariaLive}</div>
       {laps.length > 0 && (
         <div className="w-full max-w-md">
+          <LapTimeChart laps={laps} />
           <h4 className="font-semibold mb-2">Lap Times</h4>
           <div ref={lapListRef} className="max-h-48 overflow-y-auto">
             <ul className="divide-y divide-gray-200">
@@ -315,4 +503,4 @@ export const TrackFieldTimer: React.FC<TrackFieldTimerProps> = ({ onLap, onFinis
       )}
     </div>
   );
-}; 
+};
