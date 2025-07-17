@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
+    "@types/react": "^19.1.8",
+    "react": "^19.1.0",
+    "react-window": "^1.8.11"
+  }
+}
