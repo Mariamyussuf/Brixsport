@@ -47,10 +47,8 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
     playerId: '',
     eventScope: '',
   });
-  // Add state for enhanced inline edit
-  const [inlineEditFields, setInlineEditFields] = useState({ eventType: '', value: '', playerId: '', eventScope: '' });
+  const [inlineEditFields, setInlineEditFields] = useState({ eventType: '', value: '', playerId: '', eventScope: '' })
 
-  // Add ARIA live feedback state
   const [liveMessage, setLiveMessage] = useState('');
   const eventRefs = React.useRef<(HTMLLIElement | null)[]>([]);
 
@@ -87,8 +85,6 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
 
   // Get selected player object
   const selectedPlayer = selectedTeam?.players.find((p) => p.id === selectedPlayerId) || null;
-
-  // Smart validation
   function validateEvent({ eventType, selectedTeam, selectedPlayerId, eventValue }: {
     eventType: CampusEventType | null,
     selectedTeam: Team | null,
@@ -154,7 +150,6 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
     setEventValue('');
   };
 
-  // Undo last event
   const handleUndo = () => {
     setShowUndoConfirm(false);
     setEventQueue((q) => q.slice(1));
