@@ -9,6 +9,9 @@ export interface EventTypeButtonsProps {
   disabled?: boolean;
   sportType: SportType;
   eventScope?: EventScope; // 'internal' | 'external'
+  isLoading?: boolean;
+  searchEnabled?: boolean;
+  categorized?: boolean;
 }
 
 // Emoji/icon map for MVP (can be replaced with SVGs later)
@@ -73,7 +76,52 @@ export const EventTypeButtons: React.FC<EventTypeButtonsProps> = ({
   disabled,
   sportType,
   eventScope = 'internal',
+  isLoading = false,
+  searchEnabled = false,
+  categorized = false,
 }) => {
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [currentFocus, setCurrentFocus] = React.useState<number>(-1);
+
+  // Filter event types based on search query
+  const filteredEventTypes = React.useMemo(() => {
+    if (!searchQuery) return eventTypes;
+    return eventTypes.filter(type => 
+      formatLabel(type).toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [eventTypes, searchQuery]);
+
+  // Handle keyboard navigation
+  const handleKeyNavigation = (e: React.KeyboardEvent) => {
+    if (disabled) return;
+    
+    switch (e.key) {
+      case 'ArrowRight':
+        setCurrentFocus(prev => Math.min(prev + 1, filteredEventTypes.length - 1));
+        e.preventDefault();
+        break;
+      case 'ArrowLeft':
+        setCurrentFocus(prev => Math.max(prev - 1, 0));
+        e.preventDefault();
+        break;
+      case 'ArrowUp':
+        setCurrentFocus(prev => Math.max(prev - 2, 0));
+        e.preventDefault();
+        break;
+      case 'ArrowDown':
+        setCurrentFocus(prev => Math.min(prev + 2, filteredEventTypes.length - 1));
+        e.preventDefault();
+        break;
+      case 'Enter':
+      case ' ':
+        if (currentFocus >= 0) {
+          onSelect(filteredEventTypes[currentFocus]);
+          e.preventDefault();
+        }
+        break;
+    }
+  };
+
   // Use warning color for external events
   const getButtonStyle = (type: CampusEventType) => {
     if (eventScope === 'external') {
@@ -87,43 +135,74 @@ export const EventTypeButtons: React.FC<EventTypeButtonsProps> = ({
   };
 
   return (
-    <div
-      className="w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"
-      role="radiogroup"
-      aria-label={eventScope === 'external' ? 'Select external event type' : 'Select event type'}
-    >
-      {eventTypes.map((type) => (
-        <button
-          key={type}
-          type="button"
-          className={`flex flex-col items-center justify-center px-2 py-3 rounded-xl font-semibold border-2 text-base md:text-lg ${campusDesign.animations} ${campusDesign.focus} ${getButtonStyle(type)}
-            ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-          `}
-          aria-checked={selectedEventType === type}
-          aria-label={
-            eventScope === 'external'
-              ? `${formatLabel(type)} (External Event)`
-              : formatLabel(type)
-          }
-          role="radio"
-          tabIndex={disabled ? -1 : 0}
-          onClick={() => !disabled && onSelect(type)}
-          onKeyDown={(e) => {
-            if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
-              onSelect(type);
-            }
-          }}
-          disabled={disabled}
+    <div className="space-y-4">
+      {searchEnabled && (
+        <div className="relative">
+          <input
+            type="text"
+            className="w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+            placeholder="Search event types..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <span className="absolute right-3 top-2.5 text-gray-400">🔍</span>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="animate-pulse h-24 bg-gray-200 rounded-xl"
+              aria-hidden="true"
+            />
+          ))}
+        </div>
+      ) : (
+        <div
+          className="w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"
+          role="radiogroup"
+          aria-label={eventScope === 'external' ? 'Select external event type' : 'Select event type'}
+          onKeyDown={handleKeyNavigation}
         >
-          <span className="text-2xl md:text-3xl mb-1" aria-hidden>{getEventIcon(type)}</span>
-          <span className="flex items-center gap-1">
-            {formatLabel(type)}
-            {eventScope === 'external' && (
-              <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-yellow-200 text-yellow-900 font-bold">EXT</span>
-            )}
-          </span>
-        </button>
-      ))}
+          {filteredEventTypes.map((type, index) => (
+            <button
+              key={type}
+              type="button"
+              className={`flex flex-col items-center justify-center px-2 py-3 rounded-xl font-semibold border-2 text-base md:text-lg ${campusDesign.animations} ${campusDesign.focus} ${getButtonStyle(type)}
+                ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                ${currentFocus === index ? 'ring-2 ring-blue-500' : ''}
+                transition-all duration-200 transform hover:scale-105
+              `}
+              aria-checked={selectedEventType === type}
+              aria-label={
+                eventScope === 'external'
+                  ? `${formatLabel(type)} (External Event)`
+                  : formatLabel(type)
+              }
+              role="radio"
+              tabIndex={disabled ? -1 : currentFocus === index ? 0 : -1}
+              onClick={() => !disabled && onSelect(type)}
+              onKeyDown={(e) => {
+                if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
+                  onSelect(type);
+                }
+              }}
+              disabled={disabled}
+              title={`${formatLabel(type)} - Press Enter to select`}
+            >
+              <span className="text-2xl md:text-3xl mb-1" aria-hidden>{getEventIcon(type)}</span>
+              <span className="flex items-center gap-1">
+                {formatLabel(type)}
+                {eventScope === 'external' && (
+                  <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-yellow-200 text-yellow-900 font-bold">EXT</span>
+                )}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
-}; 
+};
