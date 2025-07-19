@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const steps = [
   {
     headline: 'Stay in the Game – Always!',
-    subtitle: 'Never miss a match or goal again. Your one-stop hub for all Brix city sports – from live scores to team updates and competition info',
+    subtitle: 'Never miss a match or goal again. Your one-stop hub for all Brixcity sports – from live scores to team updates and competition info',
     bg: '/onboarding-bg-1.jpg',
   },
   {
