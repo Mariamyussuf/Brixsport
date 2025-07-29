@@ -2,50 +2,162 @@
 
 import React, { useState } from 'react';
 import { Search, Bell, Clock, Star, Calendar, Trophy } from 'lucide-react';
+import { 
+  Match, 
+  Team, 
+  Player, 
+  Tournament, 
+  SportType, 
+  TabType, 
+  UI_TeamLogoProps, 
+  UI_MatchCardProps, 
+  UI_TrackEventCardProps,
+  UI_Match,
+  UI_TrackEvent,
+  UI_TrackResult
+} from '../../types/campus';
 
-// Type definitions
-interface Match {
-  status: 'Live' | 'Upcoming';
-  time: string;
-  team1: string;
-  team2: string;
-  score1?: number;
-  score2?: number;
-  team1Color: string;
-  team2Color: string;
-}
+// Import the Favouritesscreen component
+const Favouritesscreen: React.FC<{ activeSport: SportType | 'all' }> = ({ activeSport }) => {
+  // Sample user's favourite teams
+  const favouriteTeams = [
+    { id: 'team-1', name: 'Los Blancos', color: '#1e3a8a' },
+    { id: 'team-2', name: 'Pirates FC', color: '#dc2626' },
+    { id: 'team-3', name: 'City Boys FC', color: '#f59e0b' },
+    { id: 'team-4', name: 'JOG', color: '#2563eb' }
+  ];
 
-interface TrackResult {
-  position: string;
-  team: string;
-}
+  const favouritePlayers = [
+    { id: 'player-1', name: 'Yanko', number: '10', team: 'Los Blancos', teamColor: '#1e3a8a' },
+    { id: 'player-2', name: 'McKintory', number: '7', team: 'Pirates FC', teamColor: '#dc2626' },
+    { id: 'player-3', name: 'Animalshun', number: '9', team: 'City Boys FC', teamColor: '#f59e0b' }
+  ];
 
-interface TrackEvent {
-  status: 'Ended' | 'Live' | 'Upcoming';
-  event: string;
-  results: TrackResult[];
-}
+  const favouriteCompetitions = [
+    { id: 'comp-1', name: 'BUSA League', color: '#1e3a8a', sportType: 'football' as SportType },
+    { id: 'comp-2', name: 'Inter-College Cup', color: '#dc2626', sportType: 'football' as SportType },
+    { id: 'comp-3', name: 'Beta Friendlies', color: '#2563eb', sportType: 'football' as SportType },
+    { id: 'comp-4', name: 'Play Hard Africa', color: '#f59e0b', sportType: 'basketball' as SportType }
+  ];
 
-type TabType = 'Fixtures' | 'Live' | 'Favourites' | 'Competition';
-type SportType = 'All' | 'Football' | 'Basketball' | 'Track events';
+  const getColorClass = (color: string): string => {
+    const colorMap: { [key: string]: string } = {
+      '#1e3a8a': 'bg-blue-800', '#dc2626': 'bg-red-600', 
+      '#2563eb': 'bg-blue-600', '#f59e0b': 'bg-amber-500'
+    };
+    return colorMap[color] || 'bg-gray-600';
+  };
 
-// Component props interfaces
-interface TeamLogoProps {
-  color: string;
-}
+  const filteredCompetitions = activeSport === 'all' 
+    ? favouriteCompetitions 
+    : favouriteCompetitions.filter(comp => comp.sportType === activeSport);
 
-interface MatchCardProps {
-  match: Match;
-  isBasketball?: boolean;
-}
+  return (
+    <div className="space-y-6">
+      {/* Your Teams Section */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800">YOUR TEAMS</h2>
+            <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
+              {favouriteTeams.length}
+            </span>
+          </div>
+          <button className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors">
+            <span className="text-lg">+</span>
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3">
+          {favouriteTeams.map((team) => (
+            <button
+              key={team.id}
+              className={`${getColorClass(team.color)} text-white p-4 rounded-lg shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95`}
+            >
+              <div className="flex flex-col items-center space-y-2">
+                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-sm flex items-center justify-center">
+                  <div className="w-6 h-6 bg-white rounded-sm opacity-80"></div>
+                </div>
+                <span className="font-medium text-sm text-center">{team.name}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
 
-interface TrackEventCardProps {
-  event: TrackEvent;
-}
+      {/* Your Players Section */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800">YOUR PLAYERS</h2>
+            <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
+              {favouritePlayers.length}
+            </span>
+          </div>
+          <button className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors">
+            <span className="text-lg">+</span>
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-3">
+          {favouritePlayers.map((player) => (
+            <button
+              key={player.id}
+              className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all touch-manipulation active:scale-95"
+            >
+              <div className="flex flex-col items-center space-y-2">
+                <div className={`w-10 h-10 ${getColorClass(player.teamColor)} rounded-full flex items-center justify-center`}>
+                  <span className="text-white font-bold text-sm">{player.number}</span>
+                </div>
+                <div className="text-center">
+                  <p className="font-medium text-gray-800 text-sm">{player.name}</p>
+                  <p className="text-xs text-gray-500">{player.team}</p>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
 
-const BrixSports: React.FC = () => {
+      {/* Your Competitions Section */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800">YOUR COMPETITIONS</h2>
+            <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
+              {filteredCompetitions.length}
+            </span>
+          </div>
+          <button className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors">
+            <span className="text-lg">+</span>
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3">
+          {filteredCompetitions.map((competition) => (
+            <button
+              key={competition.id}
+              className={`${getColorClass(competition.color)} text-white p-4 rounded-lg shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95`}
+            >
+              <div className="flex flex-col items-center space-y-2">
+                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-sm flex items-center justify-center">
+                  <div className="w-6 h-6 bg-white rounded-sm opacity-80"></div>
+                </div>
+                <div className="text-center">
+                  <p className="font-medium text-sm">{competition.name}</p>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+};
+
+const Homescreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('Fixtures');
-  const [activeSport, setActiveSport] = useState<SportType>('All');
+  const [activeSport, setActiveSport] = useState<SportType | 'all'>('all');
 
   const tabs: { name: TabType; icon: React.ReactNode }[] = [
     { name: 'Fixtures', icon: <Calendar className="w-5 h-5" /> },
@@ -54,67 +166,158 @@ const BrixSports: React.FC = () => {
     { name: 'Competition', icon: <Trophy className="w-5 h-5" /> }
   ];
 
-  const sportTabs: SportType[] = ['All', 'Football', 'Basketball', 'Track events'];
+  const sportTabs: (SportType | 'all')[] = ['all', 'football', 'basketball', 'track_events'];
 
-  const footballMatches: Match[] = [
+  // Sample teams data
+  const teams: Team[] = [
     {
-      status: 'Live',
-      time: "71'",
-      team1: 'Pirates FC',
-      team2: 'Joga FC',
-      score1: 0,
-      score2: 1,
-      team1Color: 'bg-blue-600',
-      team2Color: 'bg-red-600'
+      id: 'team-1',
+      name: 'Pirates FC',
+      color: '#2563eb', // blue-600
+      players: []
     },
     {
-      status: 'Upcoming',
-      time: '2:30',
-      team1: 'Los Blancos',
-      team2: 'La Masia',
-      team1Color: 'bg-blue-600',
-      team2Color: 'bg-red-600'
+      id: 'team-2',
+      name: 'Joga FC',
+      color: '#dc2626', // red-600
+      players: []
     },
     {
-      status: 'Upcoming',
-      time: '4:00',
-      team1: 'Spartans',
-      team2: 'Kings FC',
-      team1Color: 'bg-red-600',
-      team2Color: 'bg-blue-600'
+      id: 'team-3',
+      name: 'Los Blancos',
+      color: '#2563eb',
+      players: []
+    },
+    {
+      id: 'team-4',
+      name: 'La Masia',
+      color: '#dc2626',
+      players: []
+    },
+    {
+      id: 'team-5',
+      name: 'Spartans',
+      color: '#dc2626',
+      players: []
+    },
+    {
+      id: 'team-6',
+      name: 'Kings FC',
+      color: '#2563eb',
+      players: []
+    },
+    {
+      id: 'team-7',
+      name: 'Phoenix',
+      color: '#2563eb',
+      players: []
+    },
+    {
+      id: 'team-8',
+      name: 'Blazers',
+      color: '#dc2626',
+      players: []
     }
   ];
 
-  const basketballMatches: Match[] = [
+  // Sample matches data using the Match interface
+  const matches: Match[] = [
     {
-      status: 'Live',
-      time: '2nd Quarter',
-      team1: 'Pheonix',
-      team2: 'Blazers',
-      score1: 18,
-      score2: 38,
-      team1Color: 'bg-blue-600',
-      team2Color: 'bg-red-600'
+      id: 'match-1',
+      sportType: 'football',
+      teams: [
+        teams.find(t => t.id === 'team-1')!,
+        teams.find(t => t.id === 'team-2')!
+      ],
+      startTime: Date.now() - 4260000, // Started 71 minutes ago
+      status: 'live',
+      events: [
+        {
+          id: 'event-1',
+          matchId: 'match-1',
+          teamId: 'team-2',
+          eventType: 'goal',
+          timestamp: Date.now() - 1800000, // 30 minutes ago
+          value: 1
+        }
+      ]
     },
     {
-      status: 'Upcoming',
-      time: '1:30',
-      team1: 'Pheonix',
-      team2: 'Blazers',
-      team1Color: 'bg-blue-600',
-      team2Color: 'bg-red-600'
+      id: 'match-2',
+      sportType: 'football',
+      teams: [
+        teams.find(t => t.id === 'team-3')!,
+        teams.find(t => t.id === 'team-4')!
+      ],
+      startTime: Date.now() + 9000000, // Starts in 2.5 hours
+      status: 'upcoming',
+      events: []
     },
     {
-      status: 'Upcoming',
-      time: '2:30',
-      team1: 'Pheonix',
-      team2: 'Blazers',
-      team1Color: 'bg-blue-600',
-      team2Color: 'bg-red-600'
+      id: 'match-3',
+      sportType: 'football',
+      teams: [
+        teams.find(t => t.id === 'team-5')!,
+        teams.find(t => t.id === 'team-6')!
+      ],
+      startTime: Date.now() + 14400000, // Starts in 4 hours
+      status: 'upcoming',
+      events: []
+    },
+    {
+      id: 'match-4',
+      sportType: 'basketball',
+      teams: [
+        teams.find(t => t.id === 'team-7')!,
+        teams.find(t => t.id === 'team-8')!
+      ],
+      startTime: Date.now() - 1800000, // Started 30 minutes ago
+      status: 'live',
+      events: [
+        {
+          id: 'event-2',
+          matchId: 'match-4',
+          teamId: 'team-7',
+          eventType: 'field_goal',
+          timestamp: Date.now() - 900000,
+          value: 18
+        },
+        {
+          id: 'event-3',
+          matchId: 'match-4',
+          teamId: 'team-8',
+          eventType: 'field_goal',
+          timestamp: Date.now() - 600000,
+          value: 38
+        }
+      ]
+    },
+    {
+      id: 'match-5',
+      sportType: 'basketball',
+      teams: [
+        teams.find(t => t.id === 'team-7')!,
+        teams.find(t => t.id === 'team-8')!
+      ],
+      startTime: Date.now() + 5400000, // Starts in 1.5 hours
+      status: 'upcoming',
+      events: []
+    },
+    {
+      id: 'match-6',
+      sportType: 'basketball',
+      teams: [
+        teams.find(t => t.id === 'team-7')!,
+        teams.find(t => t.id === 'team-8')!
+      ],
+      startTime: Date.now() + 9000000, // Starts in 2.5 hours
+      status: 'upcoming',
+      events: []
     }
   ];
 
-  const trackEvents: TrackEvent[] = [
+  // Sample track events data
+  const trackEvents: UI_TrackEvent[] = [
     {
       status: 'Ended',
       event: 'Sprint Relay - Male',
@@ -126,13 +329,68 @@ const BrixSports: React.FC = () => {
     }
   ];
 
-  const TeamLogo: React.FC<TeamLogoProps> = ({ color }) => (
+  // Helper functions to convert Match data to UI format
+  const convertMatchToUI = (match: Match): UI_Match => {
+    const team1 = match.teams[0];
+    const team2 = match.teams[1];
+    
+    // Calculate scores from events
+    const team1Score = match.events
+      .filter(e => e.teamId === team1.id && ['goal', 'field_goal', 'three_pointer'].includes(e.eventType))
+      .reduce((sum, e) => sum + (typeof e.value === 'number' ? e.value : 1), 0);
+    
+    const team2Score = match.events
+      .filter(e => e.teamId === team2.id && ['goal', 'field_goal', 'three_pointer'].includes(e.eventType))
+      .reduce((sum, e) => sum + (typeof e.value === 'number' ? e.value : 1), 0);
+
+    // Calculate time display
+    let timeDisplay = '';
+    if (match.status === 'live') {
+      const elapsedMinutes = Math.floor((Date.now() - match.startTime) / 60000);
+      if (match.sportType === 'football') {
+        timeDisplay = `${elapsedMinutes}'`;
+      } else if (match.sportType === 'basketball') {
+        const quarter = Math.floor(elapsedMinutes / 12) + 1;
+        timeDisplay = `${quarter}${quarter === 1 ? 'st' : quarter === 2 ? 'nd' : quarter === 3 ? 'rd' : 'th'} Quarter`;
+      }
+    } else {
+      const startTime = new Date(match.startTime);
+      timeDisplay = startTime.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: false 
+      });
+    }
+
+    return {
+      status: match.status === 'live' ? 'Live' : 'Upcoming',
+      time: timeDisplay,
+      team1: team1.name,
+      team2: team2.name,
+      score1: match.status === 'live' ? team1Score : undefined,
+      score2: match.status === 'live' ? team2Score : undefined,
+      team1Color: `bg-blue-600`, // Convert hex to Tailwind class
+      team2Color: `bg-red-600`   // Convert hex to Tailwind class
+    };
+  };
+
+  // Filter matches by sport
+  const getFilteredMatches = (sportType: SportType): UI_Match[] => {
+    return matches
+      .filter(match => match.sportType === sportType)
+      .map(convertMatchToUI);
+  };
+
+  const footballMatches = getFilteredMatches('football');
+  const basketballMatches = getFilteredMatches('basketball');
+
+  const TeamLogo: React.FC<UI_TeamLogoProps> = ({ color }) => (
     <div className={`w-8 h-8 ${color} rounded-sm flex items-center justify-center`}>
       <div className="w-6 h-6 bg-white rounded-sm opacity-80"></div>
     </div>
   );
 
-  const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) => (
+  const MatchCard: React.FC<UI_MatchCardProps> = ({ match, isBasketball = false }) => (
     <div className="bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-100 touch-manipulation">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2 sm:space-x-3">
@@ -169,7 +427,7 @@ const BrixSports: React.FC = () => {
     </div>
   );
 
-  const TrackEventCard: React.FC<TrackEventCardProps> = ({ event }) => (
+  const TrackEventCard: React.FC<UI_TrackEventCardProps> = ({ event }) => (
     <div className="bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-100 touch-manipulation">
       <div className="flex items-center space-x-2 sm:space-x-3 mb-3">
         <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${
@@ -196,7 +454,7 @@ const BrixSports: React.FC = () => {
     setActiveTab(tab);
   };
 
-  const handleSportClick = (sport: SportType): void => {
+  const handleSportClick = (sport: SportType | 'all'): void => {
     setActiveSport(sport);
   };
 
@@ -206,6 +464,20 @@ const BrixSports: React.FC = () => {
 
   const handleNotificationClick = (): void => {
     alert('No new notifications');
+  };
+
+  // Helper function to get display name for sports
+  const getSportDisplayName = (sport: SportType | 'all'): string => {
+    const displayNames = {
+      'all': 'All',
+      'football': 'Football',
+      'basketball': 'Basketball',
+      'track_events': 'Track events',
+      'volleyball': 'Volleyball',
+      'table_tennis': 'Table Tennis',
+      'badminton': 'Badminton'
+    };
+    return displayNames[sport];
   };
 
   return (
@@ -258,7 +530,7 @@ const BrixSports: React.FC = () => {
               role="tab"
               aria-selected={activeSport === sport}
             >
-              {sport}
+              {getSportDisplayName(sport)}
             </button>
           ))}
         </div>
@@ -267,7 +539,7 @@ const BrixSports: React.FC = () => {
         {activeTab === 'Fixtures' && (
           <>
             {/* Football Section */}
-            {(activeSport === 'All' || activeSport === 'Football') && (
+            {(activeSport === 'all' || activeSport === 'football') && footballMatches.length > 0 && (
               <section className="mb-8">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">BUSA league - Football</h2>
                 <div className="space-y-3">
@@ -279,7 +551,7 @@ const BrixSports: React.FC = () => {
             )}
 
             {/* Basketball Section */}
-            {(activeSport === 'All' || activeSport === 'Basketball') && (
+            {(activeSport === 'all' || activeSport === 'basketball') && basketballMatches.length > 0 && (
               <section className="mb-8">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">BUSA league - Basketball</h2>
                 <div className="space-y-3">
@@ -291,7 +563,7 @@ const BrixSports: React.FC = () => {
             )}
 
             {/* Track Events Section */}
-            {(activeSport === 'All' || activeSport === 'Track events') && (
+            {(activeSport === 'all' || activeSport === 'track_events') && (
               <section className="mb-8">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">Track events</h2>
                 <div className="space-y-3">
@@ -313,7 +585,7 @@ const BrixSports: React.FC = () => {
              trackEvents.some(event => event.status === 'Live') ? (
               <>
                 {/* Football Section */}
-                {(activeSport === 'All' || activeSport === 'Football') && 
+                {(activeSport === 'all' || activeSport === 'football') && 
                  footballMatches.some(match => match.status === 'Live') && (
                   <section className="mb-8">
                     <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">BUSA league - Football</h2>
@@ -326,7 +598,7 @@ const BrixSports: React.FC = () => {
                 )}
 
                 {/* Basketball Section */}
-                {(activeSport === 'All' || activeSport === 'Basketball') && 
+                {(activeSport === 'all' || activeSport === 'basketball') && 
                  basketballMatches.some(match => match.status === 'Live') && (
                   <section className="mb-8">
                     <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">BUSA league - Basketball</h2>
@@ -339,7 +611,7 @@ const BrixSports: React.FC = () => {
                 )}
 
                 {/* Track Events Section */}
-                {(activeSport === 'All' || activeSport === 'Track events') && 
+                {(activeSport === 'all' || activeSport === 'track_events') && 
                  trackEvents.some(event => event.status === 'Live') && (
                   <section className="mb-8">
                     <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">Track events</h2>
@@ -364,15 +636,9 @@ const BrixSports: React.FC = () => {
           </>
         )}
 
-        {/* Favourites Content - Placeholder */}
+        {/* Favourites Content */}
         {activeTab === 'Favourites' && (
-          <section className="mb-8">
-            <div className="bg-white rounded-lg p-6 sm:p-8 text-center">
-              <Star className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 text-sm sm:text-base">No favourite matches yet</p>
-              <p className="text-xs sm:text-sm text-gray-400 mt-2">Star matches to add them to your favourites</p>
-            </div>
-          </section>
+          <Favouritesscreen activeSport={activeSport} />
         )}
 
         {/* Competition Content */}
@@ -391,6 +657,14 @@ const BrixSports: React.FC = () => {
               <button className="w-full bg-white rounded-lg p-4 shadow-sm border border-gray-100 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation">
                 <h3 className="font-bold text-gray-800 mb-2 text-sm sm:text-base">Track & Field Events</h3>
                 <p className="text-gray-600 text-xs sm:text-sm">Athletic competitions and relay events</p>
+              </button>
+              <button className="w-full bg-white rounded-lg p-4 shadow-sm border border-gray-100 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation">
+                <h3 className="font-bold text-gray-800 mb-2 text-sm sm:text-base">Volleyball Championship</h3>
+                <p className="text-gray-600 text-xs sm:text-sm">Inter-campus volleyball tournament</p>
+              </button>
+              <button className="w-full bg-white rounded-lg p-4 shadow-sm border border-gray-100 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation">
+                <h3 className="font-bold text-gray-800 mb-2 text-sm sm:text-base">Table Tennis League</h3>
+                <p className="text-gray-600 text-xs sm:text-sm">Singles and doubles competitions</p>
               </button>
             </div>
           </section>
@@ -414,9 +688,9 @@ const BrixSports: React.FC = () => {
               aria-controls={`${tab.name.toLowerCase()}-panel`}
             >
               <div className="mb-1 relative">
-                {React.cloneElement(tab.icon as React.ReactElement, {
-                  className: "w-5 h-5 sm:w-6 sm:h-6"
-                })}
+                <div className="w-5 h-5 sm:w-6 sm:h-6">
+                  {tab.icon}
+                </div>
                 {activeTab === tab.name && (
                   <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blue-600 rounded-full"></div>
                 )}
@@ -430,4 +704,4 @@ const BrixSports: React.FC = () => {
   );
 };
 
-export default BrixSports;
+export default Homescreen;

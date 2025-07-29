@@ -3,9 +3,10 @@ export type SportType =
   | 'football'
   | 'basketball'
   | 'volleyball'
-  | 'track_field'
+  | 'track_events'
   | 'table_tennis'
   | 'badminton';
+  'all';
 
 // Event types per sport
 export type FootballEvent =
@@ -104,4 +105,41 @@ export interface User {
   id: string;
   name: string;
   role: UserRole;
-} 
+}
+export interface UI_Match {
+  status: 'Live' | 'Upcoming';
+  time: string;
+  team1: string;
+  team2: string;
+  score1?: number;
+  score2?: number;
+  team1Color: string;
+  team2Color: string;
+}
+
+export interface UI_TrackResult {
+  position: string;
+  team: string;
+}
+
+export interface UI_TrackEvent {
+  status: 'Ended' | 'Live' | 'Upcoming';
+  event: string;
+  results: UI_TrackResult[];
+}
+
+export type TabType = 'Fixtures' | 'Live' | 'Favourites' | 'Competition';
+
+
+export interface UI_TeamLogoProps {
+  color: string;
+}
+
+export interface UI_MatchCardProps {
+  match: UI_Match;
+  isBasketball?: boolean;
+}
+
+export interface UI_TrackEventCardProps {
+  event: UI_TrackEvent;
+}
