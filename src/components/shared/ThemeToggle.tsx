@@ -1,36 +1,43 @@
-import React, { useEffect, useState } from 'react';
+"use client";
+import React from 'react';
+import { useTheme } from '@/components/shared/ThemeProvider';
 
-const THEMES = [
+const OPTIONS: Array<{ key: 'light' | 'dark' | 'system'; label: string; icon: string }> = [
   { key: 'light', label: 'Light', icon: '🌞' },
   { key: 'dark', label: 'Dark', icon: '🌚' },
-  { key: 'high-contrast', label: 'High Contrast', icon: '🔳' },
+  { key: 'system', label: 'System', icon: '🖥️' },
 ];
 
-const THEME_KEY = 'brixsport_theme';
-
 export const ThemeToggle: React.FC = () => {
-  const [theme, setTheme] = useState<string>(() => localStorage.getItem(THEME_KEY) || 'light');
-
-  useEffect(() => {
-    document.documentElement.classList.remove('light', 'dark', 'high-contrast');
-    document.documentElement.classList.add(theme);
-    localStorage.setItem(THEME_KEY, theme);
-  }, [theme]);
+  const { theme, resolvedTheme, setTheme, toggle } = useTheme();
 
   return (
-    <div className="flex gap-2 items-center">
-      {THEMES.map((t) => (
-        <button
-          key={t.key}
-          type="button"
-          className={`px-2 py-1 rounded-lg font-bold text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${theme === t.key ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}
-          aria-pressed={theme === t.key}
-          aria-label={`Switch to ${t.label} mode`}
-          onClick={() => setTheme(t.key)}
-        >
-          <span aria-hidden>{t.icon}</span>
-        </button>
-      ))}
+    <div className="inline-flex items-center gap-1 bg-white/5 dark:bg-white/10 border border-black/10 dark:border-white/10 rounded-xl p-1">
+      {OPTIONS.map((opt) => {
+        const selected = theme === opt.key || (opt.key !== 'system' && theme === 'system' && resolvedTheme === opt.key);
+        return (
+          <button
+            key={opt.key}
+            type="button"
+            className={`px-3 py-1 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${selected ? 'bg-blue-600 text-white' : 'text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10'}`}
+            aria-pressed={selected}
+            aria-label={`Switch to ${opt.label} theme`}
+            onClick={() => setTheme(opt.key)}
+          >
+            <span aria-hidden>{opt.icon}</span>
+          </button>
+        );
+      })}
+      <div className="mx-1 w-px h-5 bg-black/10 dark:bg-white/10" aria-hidden />
+      <button
+        type="button"
+        className="px-3 py-1 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10"
+        onClick={toggle}
+        aria-label="Toggle light/dark"
+        title="Toggle light/dark"
+      >
+        ⇄
+      </button>
     </div>
   );
-}; 
+};

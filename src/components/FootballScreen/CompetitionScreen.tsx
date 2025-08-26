@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+"use client";
+import React, { useEffect, useState } from 'react';
 import { Search, Bell, Star } from 'lucide-react';
 import BracketView from './BracketView';
+import GroupStageTable, { GroupData } from './GroupStageTable';
 
 interface Competition {
   id: string;
@@ -91,6 +93,50 @@ const CompetitionsScreen: React.FC = () => {
   const activeCompetitions = competitions.filter(comp => comp.isActive);
   const allCompetitions = competitions.filter(comp => !comp.isActive);
 
+  // Standings tabs: group/knockout (persist to localStorage)
+  const [standingsTab, setStandingsTab] = useState<'group' | 'knockout'>('group');
+
+  // Load persisted tab on mount
+  useEffect(() => {
+    try {
+      const saved = typeof window !== 'undefined' ? window.localStorage.getItem('standingsTab') : null;
+      if (saved === 'group' || saved === 'knockout') {
+        setStandingsTab(saved);
+      }
+    } catch {}
+  }, []);
+
+  // Persist on change
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('standingsTab', standingsTab);
+      }
+    } catch {}
+  }, [standingsTab]);
+
+  // Mock group data for Group stage table (replace with real data later)
+  const groupData: GroupData[] = [
+    {
+      name: 'GROUP 1',
+      teams: [
+        { pos: 1, club: 'Allianz', played: 10, win: 4, draw: 0, loss: 0, gd: 16, pts: 12 },
+        { pos: 2, club: 'Kings', played: 10, win: 2, draw: 2, loss: 0, gd: 10, pts: 10 },
+        { pos: 3, club: 'Pirates', played: 10, win: 2, draw: 1, loss: 2, gd: 4, pts: 7 },
+        { pos: 4, club: 'Spartans', played: 10, win: 1, draw: 2, loss: 3, gd: -2, pts: 4 },
+      ],
+    },
+    {
+      name: 'GROUP 2',
+      teams: [
+        { pos: 1, club: 'Allianz', played: 10, win: 4, draw: 0, loss: 0, gd: 16, pts: 12 },
+        { pos: 2, club: 'Kings', played: 10, win: 2, draw: 2, loss: 0, gd: 10, pts: 10 },
+        { pos: 3, club: 'Pirates', played: 10, win: 2, draw: 1, loss: 2, gd: 4, pts: 7 },
+        { pos: 4, club: 'Spartans', played: 10, win: 1, draw: 2, loss: 3, gd: -2, pts: 4 },
+      ],
+    },
+  ];
+
   const CompetitionItem: React.FC<{ competition: Competition; showBorder?: boolean }> = ({ 
     competition, 
     showBorder = true 
@@ -158,12 +204,41 @@ const CompetitionsScreen: React.FC = () => {
             </div>
           </section>
 
-          {/* Standings (Knockout Bracket) */}
+          {/* Standings */}
           <section className="py-6">
             <h2 className="text-xl font-medium mb-4 text-gray-900">Standings</h2>
-            <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40">
-              <BracketView />
+            {/* Tabs */}
+            <div className="inline-flex rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 mb-4">
+              <button
+                className={`px-4 py-2 text-sm font-medium ${
+                  standingsTab === 'group'
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
+                    : 'bg-gray-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300'
+                }`}
+                onClick={() => setStandingsTab('group')}
+              >
+                Group stage
+              </button>
+              <button
+                className={`px-4 py-2 text-sm font-medium border-l border-gray-200 dark:border-white/10 ${
+                  standingsTab === 'knockout'
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
+                    : 'bg-gray-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300'
+                }`}
+                onClick={() => setStandingsTab('knockout')}
+              >
+                Knockout stage
+              </button>
             </div>
+
+            {/* Content */}
+            {standingsTab === 'group' ? (
+              <GroupStageTable groups={groupData} />
+            ) : (
+              <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40">
+                <BracketView />
+              </div>
+            )}
           </section>
 
           {/* Separator */}
