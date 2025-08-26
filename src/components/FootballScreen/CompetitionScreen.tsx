@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Bell, Star } from 'lucide-react';
+import BracketView from './BracketView';
 
 interface Competition {
   id: string;
@@ -154,6 +155,14 @@ const CompetitionsScreen: React.FC = () => {
               {activeCompetitions.map((competition) => (
                 <CompetitionItem key={competition.id} competition={competition} showBorder={false} />
               ))}
+            </div>
+          </section>
+
+          {/* Standings (Knockout Bracket) */}
+          <section className="py-6">
+            <h2 className="text-xl font-medium mb-4 text-gray-900">Standings</h2>
+            <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40">
+              <BracketView />
             </div>
           </section>
 
