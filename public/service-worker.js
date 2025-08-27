@@ -11,9 +11,15 @@ self.addEventListener('install', (event) => {
     const cache = await caches.open(STATIC_CACHE);
     await cache.addAll([
       '/',
+      '/onboarding',
+      '/auth',
       OFFLINE_URL,
       '/onboarding-bg-1.jpg',
       '/manifest.json',
+      '/icon-192x192.png',
+      '/icon-256x256.png',
+      '/icon-384x384.png',
+      '/icon-512x512.png'
     ]);
     self.skipWaiting();
   })());
@@ -43,6 +49,13 @@ async function trimCache(cacheName, maxEntries) {
     await Promise.all(toDelete.map((req) => cache.delete(req)));
   }
 }
+
+// ----- Message handling for updates -----
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 // ----- Fetch strategies -----
 self.addEventListener('fetch', (event) => {
