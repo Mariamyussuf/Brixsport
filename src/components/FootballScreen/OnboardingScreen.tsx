@@ -69,7 +69,7 @@ export const OnboardingScreen: React.FC<{ onFinish?: () => void; userName?: stri
   const [btnPressed, setBtnPressed] = useState(false);
 
   return (
-    <div className="relative min-h-screen flex flex-col justify-end items-center text-white bg-black" style={{ background: `url(${current.bg}), #111`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+    <div className="relative min-h-screen flex flex-col justify-end items-center text-white bg-black" style={{ backgroundImage: `url(${current.bg}), linear-gradient(to bottom, #111, #111)`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
       {/* SVG Logo */}
       <div className="absolute top-10 left-0 right-0 flex justify-center">
         <svg width="180" height="48" viewBox="0 0 180 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="BrixSports logo">
