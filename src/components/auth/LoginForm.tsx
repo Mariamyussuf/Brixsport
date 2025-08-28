@@ -224,15 +224,15 @@ const LoginForm: React.FC = () => {
       const response = await mockLogin(form);
       
       if (response.success) {
-        // Success! In a real app, you'd:
-        // 1. Store the token securely (httpOnly cookie or secure storage)
-        // 2. Redirect to dashboard or intended page
-        // 3. Update global auth state
-        console.log('Login successful:', response);
-        setSubmitError(''); // Clear any previous errors
+        // Store the token securely
+        localStorage.setItem('token', response.token || '');
+        localStorage.setItem('user', JSON.stringify(response.user));
         
-        // Mock redirect
-        alert(`Welcome back, ${response.user?.name || 'User'}! Login successful.`);
+        // Clear any previous errors
+        setSubmitError('');
+        
+        // Redirect to homepage
+        window.location.href = '/';
       } else {
         rateLimiter.recordAttempt();
         setSubmitError(response.message || 'Login failed. Please try again.');
