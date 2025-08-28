@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, Bell, Star } from 'lucide-react';
 import BracketView from './BracketView';
 import GroupStageTable, { GroupData } from './GroupStageTable';
+import { useRouter } from 'next/navigation';
 
 interface Competition {
   id: string;
@@ -14,6 +15,8 @@ interface Competition {
 }
 
 const CompetitionsScreen: React.FC = () => {
+  const router = useRouter();
+  const isAuthed = typeof window !== 'undefined' && !!localStorage.getItem('token');
   const [competitions, setCompetitions] = useState<Competition[]>([
     {
       id: '1',
@@ -74,7 +77,16 @@ const CompetitionsScreen: React.FC = () => {
     }
   ]);
 
+  const requireAuth = (next: string = '/?tab=Competition'): boolean => {
+    if (!isAuthed) {
+      router.push(`/auth/login?next=${encodeURIComponent(next)}`);
+      return true;
+    }
+    return false;
+  };
+
   const toggleFavorite = (id: string): void => {
+    if (requireAuth()) return;
     setCompetitions(prev =>
       prev.map(comp =>
         comp.id === id ? { ...comp, isFavorited: !comp.isFavorited } : comp
@@ -176,7 +188,7 @@ const CompetitionsScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-slate-900 text-white">
       {/* Header */}
       <header className="bg-slate-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
@@ -192,7 +204,7 @@ const CompetitionsScreen: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <div className="bg-white min-h-screen">
+      <div className="bg-white dark:bg-slate-900/40 min-h-screen text-slate-900 dark:text-slate-100">
         <div className="px-6">
           {/* Active Competition Section */}
           <section className="py-6">

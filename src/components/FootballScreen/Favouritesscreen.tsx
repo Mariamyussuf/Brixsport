@@ -3,12 +3,24 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
 import { Team, Player, Tournament, SportType } from '../../types/campus';
+import { useRouter } from 'next/navigation';
 
 interface FavouritesscreenProps {
   activeSport: SportType | 'all';
 }
 
 const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
+  const router = useRouter();
+  const isAuthed = typeof window !== 'undefined' && !!localStorage.getItem('token');
+
+  const requireAuth = (next: string = '/?tab=Favourites'): boolean => {
+    if (!isAuthed) {
+      router.push(`/auth/login?next=${encodeURIComponent(next)}`);
+      return true;
+    }
+    return false;
+  };
+
   // Sample user's favourite teams
   const favouriteTeams: Team[] = [
     {
@@ -101,14 +113,17 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
   ];
 
   const handleAddTeam = (): void => {
+    if (requireAuth()) return;
     alert('Add favourite team functionality coming soon!');
   };
 
   const handleAddPlayer = (): void => {
+    if (requireAuth()) return;
     alert('Add favourite player functionality coming soon!');
   };
 
   const handleAddCompetition = (): void => {
+    if (requireAuth()) return;
     alert('Add favourite competition functionality coming soon!');
   };
 
@@ -138,12 +153,12 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
     : favouriteCompetitions.filter(comp => comp.sportType === activeSport);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-neutral-900 dark:text-neutral-100">
       {/* Your Teams Section */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800">YOUR TEAMS</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-neutral-100">YOUR TEAMS</h2>
             <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
               {favouriteTeams.length}
             </span>
@@ -178,7 +193,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
       <section>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800">YOUR PLAYERS</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-neutral-100">YOUR PLAYERS</h2>
             <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
               {favouritePlayers.length}
             </span>
@@ -216,7 +231,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
       <section>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800">YOUR COMPETITIONS</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-neutral-100">YOUR COMPETITIONS</h2>
             <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
               {filteredCompetitions.length}
             </span>
