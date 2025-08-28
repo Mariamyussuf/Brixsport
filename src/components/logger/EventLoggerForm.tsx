@@ -65,7 +65,7 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
           'field_goal', 'three_pointer', 'free_throw', 'rebound', 'assist',
           'steal', 'block', 'turnover', 'foul', 'timeout',
         ];
-      case 'track_field':
+      case 'track_events':
         return [
           'race_start', 'lap_time', 'race_finish', 'false_start', 'disqualification',
           'record_attempt', 'jump_attempt', 'throw_attempt', 'measurement',
@@ -95,7 +95,7 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
     if ([
       'football', 'basketball', 'volleyball', 'table_tennis', 'badminton',
     ].includes(sportType) && !selectedPlayerId) return 'Please select a player.';
-    if (sportType === 'track_field' && !eventValue) return 'Please enter a value (e.g., time, measurement).';
+    if (sportType === 'track_events' && !eventValue) return 'Please enter a value (e.g., time, measurement).';
     // Prevent duplicate event in the same second
     const nowSec = Math.floor(Date.now() / 1000);
     if (eventQueue.some(ev => ev.eventType === eventType && Math.floor(ev.timestamp / 1000) === nowSec)) {
@@ -426,7 +426,7 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
       />
 
       {/* Value input for track/field or other events */}
-      {sportType === 'track_field' && eventType && (
+      {sportType === 'track_events' && eventType && (
         <div>
           <label className="block mb-1 font-semibold">Value (Time, Measurement, etc.)</label>
           <input
