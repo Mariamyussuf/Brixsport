@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Bell, Clock, Star, Calendar, Trophy } from 'lucide-react';
+import { Search, Bell, Clock, Star, Calendar, Trophy, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Favouritesscreen from './Favouritesscreen';
 
@@ -332,7 +332,7 @@ const Homescreen: React.FC = () => {
   };
 
   const handleSearchClick = (): void => {
-    alert('Search functionality coming soon!');
+    router.push('/search');
   };
 
   const handleNotificationClick = (): void => {
@@ -358,10 +358,20 @@ const Homescreen: React.FC = () => {
       {/* Header */}
       <div className="bg-slate-800 text-white p-4 sticky top-0 z-10">
         <div className="flex items-center justify-between w-full">
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl sm:text-2xl font-bold">BrixSports®</h1>
-            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
-              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-white rounded-full"></div>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => router.back()}
+              aria-label="Back"
+              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              type="button"
+            >
+              <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+            <div className="flex items-center space-x-2">
+              <h1 className="text-xl sm:text-2xl font-bold">BrixSports</h1>
+              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-white rounded-full"></div>
+              </div>
             </div>
           </div>
           <div className="flex items-center space-x-3 sm:space-x-4">

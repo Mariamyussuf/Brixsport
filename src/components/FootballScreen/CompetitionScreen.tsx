@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { Search, Bell, Star } from 'lucide-react';
+import { Bell, Star, ArrowLeft } from 'lucide-react';
 import BracketView from './BracketView';
 import GroupStageTable, { GroupData } from './GroupStageTable';
 import { useRouter } from 'next/navigation';
@@ -17,6 +17,7 @@ interface Competition {
 const CompetitionsScreen: React.FC = () => {
   const router = useRouter();
   const isAuthed = typeof window !== 'undefined' && !!localStorage.getItem('token');
+  const [matchTab, setMatchTab] = useState<'fixtures' | 'results' | 'stats' | 'standings'>('fixtures');
   const [competitions, setCompetitions] = useState<Competition[]>([
     {
       id: '1',
@@ -191,14 +192,23 @@ const CompetitionsScreen: React.FC = () => {
     <div className="min-h-screen bg-slate-900 text-white">
       {/* Header */}
       <header className="bg-slate-800 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-            <div className="w-4 h-4 border-2 border-white rounded-full"></div>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => router.back()}
+            aria-label="Back"
+            className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+            type="button"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+              <div className="w-4 h-4 border-2 border-white rounded-full"></div>
+            </div>
+            <h1 className="text-xl font-normal text-white">BrixSports</h1>
           </div>
-          <h1 className="text-xl font-normal text-white">BrixSports</h1>
         </div>
-        <div className="flex items-center space-x-4">
-          <Search className="w-6 h-6 text-white" />
+        <div className="flex items-center">
           <Bell className="w-6 h-6 text-white" />
         </div>
       </header>
@@ -216,42 +226,86 @@ const CompetitionsScreen: React.FC = () => {
             </div>
           </section>
 
-          {/* Standings */}
-          <section className="py-6">
-            <h2 className="text-xl font-medium mb-4 text-gray-900">Standings</h2>
-            {/* Tabs */}
+          {/* Match/Competition tabs moved to body */}
+          <section className="pt-2">
             <div className="inline-flex rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 mb-4">
-              <button
-                className={`px-4 py-2 text-sm font-medium ${
-                  standingsTab === 'group'
-                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
-                    : 'bg-gray-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300'
-                }`}
-                onClick={() => setStandingsTab('group')}
-              >
-                Group stage
-              </button>
-              <button
-                className={`px-4 py-2 text-sm font-medium border-l border-gray-200 dark:border-white/10 ${
-                  standingsTab === 'knockout'
-                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
-                    : 'bg-gray-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300'
-                }`}
-                onClick={() => setStandingsTab('knockout')}
-              >
-                Knockout stage
-              </button>
+              {([
+                { key: 'fixtures', label: 'Fixtures' },
+                { key: 'results', label: 'Results' },
+                { key: 'stats', label: 'Stats' },
+                { key: 'standings', label: 'Standings' }
+              ] as const).map(({ key, label }) => (
+                <button
+                  key={key}
+                  className={`px-4 py-2 text-sm font-medium ${
+                    matchTab === key
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
+                      : 'bg-gray-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300'
+                  } ${key !== 'fixtures' ? 'border-l border-gray-200 dark:border-white/10' : ''}`}
+                  onClick={() => setMatchTab(key)}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
-
-            {/* Content */}
-            {standingsTab === 'group' ? (
-              <GroupStageTable groups={groupData} />
-            ) : (
-              <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40">
-                <BracketView />
-              </div>
-            )}
           </section>
+
+          {/* Content under tabs */}
+          {matchTab === 'standings' ? (
+            <section className="py-6">
+              <h2 className="text-xl font-medium mb-4 text-gray-900">Standings</h2>
+              {/* Standings sub-tabs */}
+              <div className="inline-flex rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 mb-4">
+                <button
+                  className={`px-4 py-2 text-sm font-medium ${
+                    standingsTab === 'group'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
+                      : 'bg-gray-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300'
+                  }`}
+                  onClick={() => setStandingsTab('group')}
+                >
+                  Group stage
+                </button>
+                <button
+                  className={`px-4 py-2 text-sm font-medium border-l border-gray-200 dark:border-white/10 ${
+                    standingsTab === 'knockout'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
+                      : 'bg-gray-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300'
+                  }`}
+                  onClick={() => setStandingsTab('knockout')}
+                >
+                  Knockout stage
+                </button>
+              </div>
+
+              {/* Standings content */}
+              {standingsTab === 'group' ? (
+                <GroupStageTable groups={groupData} />
+              ) : (
+                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40">
+                  <BracketView />
+                </div>
+              )}
+            </section>
+          ) : (
+            <section className="py-6">
+              {matchTab === 'fixtures' && (
+                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40 p-6 text-slate-700 dark:text-slate-300">
+                  <p>Fixtures content coming soon.</p>
+                </div>
+              )}
+              {matchTab === 'results' && (
+                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40 p-6 text-slate-700 dark:text-slate-300">
+                  <p>Results content coming soon.</p>
+                </div>
+              )}
+              {matchTab === 'stats' && (
+                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40 p-6 text-slate-700 dark:text-slate-300">
+                  <p>Stats content coming soon.</p>
+                </div>
+              )}
+            </section>
+          )}
 
           {/* Separator */}
           <div className="border-t border-gray-200"></div>

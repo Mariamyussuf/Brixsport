@@ -1,5 +1,7 @@
+"use client";
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, ArrowLeft, Bell, Search } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface FilterOption {
   id: string;
@@ -32,7 +34,7 @@ interface SportsFilterInterfaceProps {
   onFilterChange?: (activeFilter: string) => void;
 }
 
-const SportsFilterInterface: React.FC<SportsFilterInterfaceProps> = ({
+const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
   items = [
     {
       id: '1',
@@ -90,8 +92,10 @@ const SportsFilterInterface: React.FC<SportsFilterInterfaceProps> = ({
   onItemRemove,
   onFilterChange
 }) => {
+  const router = useRouter();
   const [activeFilter, setActiveFilter] = useState('All');
   const [selectedItems, setSelectedItems] = useState<FilterableItem[]>(items);
+  const [query, setQuery] = useState('');
 
   const filterOptions: FilterOption[] = [
     { id: 'all', label: 'All', active: activeFilter === 'All' },
@@ -112,41 +116,106 @@ const SportsFilterInterface: React.FC<SportsFilterInterfaceProps> = ({
   };
 
   const getFilteredItems = () => {
-    if (activeFilter === 'All') return selectedItems;
-    if (activeFilter === 'Player') return selectedItems.filter(item => item.type === 'player');
-    if (activeFilter === 'Competition') return selectedItems.filter(item => item.type === 'competition');
-    // Add more filter logic as needed
-    return selectedItems;
+    const byType = (() => {
+      if (activeFilter === 'All') return selectedItems;
+      if (activeFilter === 'Player') return selectedItems.filter(item => item.type === 'player');
+      if (activeFilter === 'Competition') return selectedItems.filter(item => item.type === 'competition');
+      return selectedItems;
+    })();
+
+    if (!query.trim()) return byType;
+    const q = query.toLowerCase();
+    return byType.filter(item => {
+      if ('team' in item) {
+        const p = item as Player;
+        return (
+          p.name.toLowerCase().includes(q) ||
+          p.team.toLowerCase().includes(q) ||
+          p.sport.toLowerCase().includes(q)
+        );
+      }
+      const c = item as Competition;
+      return (
+        c.name.toLowerCase().includes(q) ||
+        c.league.toLowerCase().includes(q)
+      );
+    });
   };
 
   const filteredItems = getFilteredItems();
 
   return (
-    <div className="min-h-screen bg-gray-50 max-w-sm mx-auto sm:max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl">
-      {/* Filter Tabs */}
-      <div className="bg-white px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8 shadow-sm">
-        <div className="flex space-x-2 sm:space-x-3 lg:space-x-4 overflow-x-auto scrollbar-hide lg:justify-center">
-          {filterOptions.map((option) => (
+    <div className="min-h-screen bg-gray-50 dark:bg-black dark:text-neutral-100">
+      {/* Header */}
+      <header className="bg-slate-800 text-white px-4 sm:px-6 py-4 sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
             <button
-              key={option.id}
-              onClick={() => handleFilterClick(option.label)}
-              className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full text-xs sm:text-sm lg:text-base xl:text-lg font-medium whitespace-nowrap transition-all duration-200 ${
-                option.active
-                  ? 'bg-blue-900 text-white shadow-md hover:bg-blue-800'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 active:scale-95'
-              }`}
+              onClick={() => router.back()}
+              aria-label="Back"
+              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              type="button"
             >
-              {option.label}
+              <ArrowLeft className="w-5 h-5" />
             </button>
-          ))}
+            <div className="flex items-center space-x-2">
+              <h1 className="text-xl font-semibold">BrixSports</h1>
+              <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
+                <div className="w-3 h-3 bg-white rounded-full"></div>
+              </div>
+            </div>
+          </div>
+          <button 
+            className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+            aria-label="Notifications"
+            type="button"
+          >
+            <Bell className="w-5 h-5" />
+          </button>
+        </div>
+      </header>
+
+      {/* Search Bar */}
+      <div className="bg-white dark:bg-slate-900/40 border-b border-gray-200 dark:border-white/10">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+          <div className="flex items-center bg-gray-100 dark:bg-slate-800 rounded-xl px-3 py-2">
+            <Search className="w-5 h-5 text-gray-500" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search players, teams, competitions..."
+              className="ml-2 bg-transparent outline-none w-full text-sm sm:text-base placeholder:text-gray-500"
+            />
+          </div>
         </div>
       </div>
 
+      {/* Filter Tabs */}
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-white px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8 shadow-sm">
+          <div className="flex space-x-2 sm:space-x-3 lg:space-x-4 overflow-x-auto scrollbar-hide lg:justify-center">
+            {filterOptions.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => handleFilterClick(option.label)}
+                className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full text-xs sm:text-sm lg:text-base xl:text-lg font-medium whitespace-nowrap transition-all duration-200 ${
+                  option.active
+                    ? 'bg-blue-900 text-white shadow-md hover:bg-blue-800'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 active:scale-95'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
       {/* Divider */}
       <div className="h-px bg-gray-200"></div>
 
       {/* Items List */}
-      <div className="px-3 sm:px-4 lg:px-6 xl:px-8 py-3 sm:py-4 lg:py-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-3 sm:py-4 lg:py-6">
         {filteredItems.length === 0 ? (
           <div className="text-center py-8 sm:py-12 lg:py-16">
             <p className="text-gray-500 text-base sm:text-lg lg:text-xl">No items found</p>
@@ -238,4 +307,4 @@ const SportsFilterInterface: React.FC<SportsFilterInterfaceProps> = ({
   );
 };
 
-export default SportsFilterInterface;
+export default SearchScreen;
