@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import Homescreen from '@/components/FootballScreen/Homescreen';
 
 export default function Home() {
-  redirect('/onboarding');
+  return <Homescreen />;
 }
