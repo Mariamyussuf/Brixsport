@@ -1,7 +1,25 @@
-import React from 'react';
-import { AuthScreen } from '@/screens/AuthScreen';
+'use client';
 
-export default function AuthPage({ searchParams }: { searchParams: { tab?: 'login' | 'signup' } }) {
-  const tab = searchParams?.tab === 'login' ? 'login' : 'signup';
-  return <AuthScreen initialTab={tab} />;
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, Suspense } from 'react';
+
+function AuthRedirect() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const tab = searchParams?.get('tab');
+    const validTab = tab === 'login' || tab === 'signup' ? tab : 'signup';
+    router.replace(`/auth/${validTab}`);
+  }, [searchParams, router]);
+
+  return null;
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={null}>
+      <AuthRedirect />
+    </Suspense>
+  );
 }

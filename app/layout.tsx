@@ -4,13 +4,14 @@ import PWARegister from "@/components/shared/PWARegister";
 import NoFlashThemeScript from "@/components/shared/NoFlashThemeScript";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
-import dynamic from 'next/dynamic';
+import OfflineWrapper from "@/components/shared/OfflineWrapper";
 
-// Import the offline status indicator with client-side only rendering
-const OfflineStatusIndicator = dynamic(
-  () => import('@/components/shared/OfflineStatusIndicator'),
-  { ssr: false }
-);
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 
 export const metadata = {
   title: 'BrixSports',
@@ -20,13 +21,7 @@ export const metadata = {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'BrixSports',
-  },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
+  }
 };
 
 export default function RootLayout({
@@ -49,7 +44,7 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <PWARegister />
-          <OfflineStatusIndicator />
+          <OfflineWrapper />
           {/* Floating theme toggle */}
           <div style={{ position: 'fixed', right: 16, bottom: 16, zIndex: 1000 }}>
             <ThemeToggle />
