@@ -4,6 +4,7 @@ import { Bell, Star, ArrowLeft } from 'lucide-react';
 import BracketView from './BracketView';
 import GroupStageTable, { GroupData } from './GroupStageTable';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/components/shared/I18nProvider';
 
 interface Competition {
   id: string;
@@ -16,6 +17,7 @@ interface Competition {
 
 const CompetitionsScreen: React.FC = () => {
   const router = useRouter();
+  const { t } = useI18n();
   const isAuthed = typeof window !== 'undefined' && !!localStorage.getItem('token');
   const [matchTab, setMatchTab] = useState<'fixtures' | 'results' | 'stats' | 'standings'>('fixtures');
   const [competitions, setCompetitions] = useState<Competition[]>([
@@ -205,7 +207,7 @@ const CompetitionsScreen: React.FC = () => {
             <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
               <div className="w-4 h-4 border-2 border-white rounded-full"></div>
             </div>
-            <h1 className="text-xl font-normal text-slate-900 dark:text-white">BrixSports</h1>
+            <h1 className="text-xl font-normal text-slate-900 dark:text-white">{t('app_title')}</h1>
           </div>
         </div>
         <div className="flex items-center">
@@ -218,7 +220,7 @@ const CompetitionsScreen: React.FC = () => {
         <div className="px-6">
           {/* Active Competition Section */}
           <section className="py-6">
-            <h2 className="text-xl font-medium mb-6 text-gray-900 dark:text-white">Active competition</h2>
+            <h2 className="text-xl font-medium mb-6 text-gray-900 dark:text-white">{t('active_competition')}</h2>
             <div>
               {activeCompetitions.map((competition) => (
                 <CompetitionItem key={competition.id} competition={competition} showBorder={false} />
@@ -230,11 +232,11 @@ const CompetitionsScreen: React.FC = () => {
           <section className="pt-2">
             <div className="inline-flex rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 mb-4">
               {([
-                { key: 'fixtures', label: 'Fixtures' },
-                { key: 'results', label: 'Results' },
-                { key: 'stats', label: 'Stats' },
-                { key: 'standings', label: 'Standings' }
-              ] as const).map(({ key, label }) => (
+                { key: 'fixtures' as const },
+                { key: 'results' as const },
+                { key: 'stats' as const },
+                { key: 'standings' as const }
+              ]).map(({ key }) => (
                 <button
                   key={key}
                   className={`px-4 py-2 text-sm font-medium ${
@@ -244,7 +246,7 @@ const CompetitionsScreen: React.FC = () => {
                   } ${key !== 'fixtures' ? 'border-l border-gray-200 dark:border-white/10' : ''}`}
                   onClick={() => setMatchTab(key)}
                 >
-                  {label}
+                  {t(key)}
                 </button>
               ))}
             </div>
@@ -253,7 +255,7 @@ const CompetitionsScreen: React.FC = () => {
           {/* Content under tabs */}
           {matchTab === 'standings' ? (
             <section className="py-6">
-              <h2 className="text-xl font-medium mb-4 text-gray-900">Standings</h2>
+              <h2 className="text-xl font-medium mb-4 text-gray-900">{t('standings')}</h2>
               {/* Standings sub-tabs */}
               <div className="inline-flex rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 mb-4">
                 <button
@@ -264,7 +266,7 @@ const CompetitionsScreen: React.FC = () => {
                   }`}
                   onClick={() => setStandingsTab('group')}
                 >
-                  Group stage
+                  {t('group_stage')}
                 </button>
                 <button
                   className={`px-4 py-2 text-sm font-medium border-l border-gray-200 dark:border-white/10 ${
@@ -274,7 +276,7 @@ const CompetitionsScreen: React.FC = () => {
                   }`}
                   onClick={() => setStandingsTab('knockout')}
                 >
-                  Knockout stage
+                  {t('knockout_stage')}
                 </button>
               </div>
 
@@ -291,17 +293,17 @@ const CompetitionsScreen: React.FC = () => {
             <section className="py-6">
               {matchTab === 'fixtures' && (
                 <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40 p-6 text-slate-700 dark:text-slate-300">
-                  <p>Fixtures content coming soon.</p>
+                  <p>{t('coming_soon')}</p>
                 </div>
               )}
               {matchTab === 'results' && (
                 <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40 p-6 text-slate-700 dark:text-slate-300">
-                  <p>Results content coming soon.</p>
+                  <p>{t('coming_soon')}</p>
                 </div>
               )}
               {matchTab === 'stats' && (
                 <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40 p-6 text-slate-700 dark:text-slate-300">
-                  <p>Stats content coming soon.</p>
+                  <p>{t('coming_soon')}</p>
                 </div>
               )}
             </section>
@@ -313,7 +315,7 @@ const CompetitionsScreen: React.FC = () => {
           {/* All Competitions Section */}
           <section className="py-6">
             <h2 className="text-xl font-medium mb-6 text-gray-900 dark:text-white flex items-center space-x-2">
-              <span>All competitions</span>
+              <span>{t('all_competitions')}</span>
               <span className="text-gray-500 dark:text-slate-400">• {allCompetitions.length}</span>
             </h2>
             <div>

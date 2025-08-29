@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowLeft, Star, User } from 'lucide-react';
+import SmartImage from '../shared/SmartImage';
 
 interface PlayerStats {
   gamesPlayed: number;
@@ -83,7 +84,7 @@ const PlayerProfile: React.FC<PlayerProfileProps> = ({
         {/* Player Image */}
         <div className="px-3 sm:px-4 lg:px-0 py-4 sm:py-6">
           <div className="relative rounded-xl sm:rounded-2xl overflow-hidden">
-            <img 
+            <SmartImage 
               src={playerImage} 
               alt={`${playerName} playing football`}
               className="w-full h-64 sm:h-80 md:h-96 lg:h-[500px] xl:h-[600px] object-cover"

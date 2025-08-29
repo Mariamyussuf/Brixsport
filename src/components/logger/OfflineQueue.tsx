@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { EventLog, Team, Player } from '../../types/campus';
 import { campusDesign } from '../../styles/campusDesign';
+import { useSettings } from '../shared/SettingsContext';
 
 export interface OfflineQueueProps {
   queue: EventLog[];
@@ -14,7 +15,7 @@ export interface OfflineQueueProps {
 }
 
 const QUEUE_KEY = 'offlineEventQueue';
-const AUTO_RETRY_INTERVAL = 10000; // 10s
+const AUTO_RETRY_INTERVAL = 10000; // 10s (normal)
 
 const EVENT_ICONS: Partial<Record<string, string>> = {
   goal: '⚽', assist: '🅰️', save: '🧤', yellow_card: '🟨', red_card: '🟥', foul: '🚫', substitution: '🔄', corner: '🚩', free_kick: '🎯', penalty: '🎯',
@@ -37,6 +38,7 @@ export const OfflineQueue: React.FC<OfflineQueueProps> = ({
   teamsMap = {},
   playersMap = {},
 }) => {
+  const { dataSaver } = useSettings();
   // Persist queue in localStorage
   const [queue, setQueue] = useState<EventLog[]>(propQueue);
   const [expanded, setExpanded] = useState(true);
@@ -56,10 +58,11 @@ export const OfflineQueue: React.FC<OfflineQueueProps> = ({
     if (saved) setQueue(JSON.parse(saved));
   }, []);
 
-  // Auto-retry failed events
+  // Auto-retry failed events (throttle when data saver enabled)
   useEffect(() => {
     if (queue.length === 0) return;
     if (autoRetryRef.current) clearInterval(autoRetryRef.current);
+    const interval = dataSaver ? AUTO_RETRY_INTERVAL * 3 : AUTO_RETRY_INTERVAL;
     autoRetryRef.current = window.setInterval(() => {
       queue.forEach((event) => {
         if (failedIds.includes(event.id)) {
@@ -67,9 +70,9 @@ export const OfflineQueue: React.FC<OfflineQueueProps> = ({
           setAriaLive(`Auto-retrying event ${event.id}`);
         }
       });
-    }, AUTO_RETRY_INTERVAL);
+    }, interval);
     return () => { if (autoRetryRef.current) clearInterval(autoRetryRef.current); };
-  }, [queue, failedIds, onRetry]);
+  }, [queue, failedIds, onRetry, dataSaver]);
 
   const listRef = useRef<HTMLUListElement>(null);
   useEffect(() => {

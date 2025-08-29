@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Search, Bell, Clock, Star, Calendar, Trophy, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Favouritesscreen from './Favouritesscreen';
+import { useI18n } from '../shared/I18nProvider';
 
 import { 
   Match, 
@@ -23,6 +24,7 @@ import {
 // (Using external Favouritesscreen component)
 
 const Homescreen: React.FC = () => {
+  const { t } = useI18n();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('Fixtures');
   const [activeSport, setActiveSport] = useState<SportType | 'all'>('all');
@@ -265,7 +267,7 @@ const Homescreen: React.FC = () => {
         <div className="flex items-center space-x-2 sm:space-x-3">
           {match.status === 'Live' && (
             <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-              Live
+              {t('live')}
             </span>
           )}
           <span className="text-gray-600 font-medium text-sm sm:text-base">{match.time}</span>
@@ -284,7 +286,7 @@ const Homescreen: React.FC = () => {
               {match.score1} - {match.score2}
             </span>
           ) : (
-            <span className="text-gray-400 text-sm sm:text-base">vs</span>
+            <span className="text-gray-400 text-sm sm:text-base">{t('vs')}</span>
           )}
         </div>
         
@@ -342,33 +344,33 @@ const Homescreen: React.FC = () => {
   // Helper function to get display name for sports
   const getSportDisplayName = (sport: SportType | 'all'): string => {
     const displayNames = {
-      'all': 'All',
-      'football': 'Football',
-      'basketball': 'Basketball',
-      'track_events': 'Track events',
+      'all': t('all'),
+      'football': t('football'),
+      'basketball': t('basketball'),
+      'track_events': t('track_events'),
       'volleyball': 'Volleyball',
       'table_tennis': 'Table Tennis',
       'badminton': 'Badminton'
-    };
+    } as const;
     return displayNames[sport];
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-black dark:text-neutral-100 pb-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-black text-neutral-900 dark:text-neutral-100 pb-20">
       {/* Header */}
-      <div className="bg-slate-800 text-white p-4 sticky top-0 z-10">
+      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-white/10 text-slate-900 dark:text-white p-4 sticky top-0 z-10">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center space-x-3">
             <button
               onClick={() => router.back()}
               aria-label="Back"
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
               type="button"
             >
-              <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+              <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-slate-900 dark:text-white" />
             </button>
             <div className="flex items-center space-x-2">
-              <h1 className="text-xl sm:text-2xl font-bold">BrixSports</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{t('app_title')}</h1>
               <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center">
                 <div className="w-3 h-3 sm:w-4 sm:h-4 bg-white rounded-full"></div>
               </div>
@@ -376,20 +378,20 @@ const Homescreen: React.FC = () => {
           </div>
           <div className="flex items-center space-x-3 sm:space-x-4">
             <button 
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
               aria-label="Search"
               onClick={handleSearchClick}
               type="button"
             >
-              <Search className="w-5 h-5 sm:w-6 sm:h-6" />
+              <Search className="w-5 h-5 sm:w-6 sm:h-6 text-slate-900 dark:text-white" />
             </button>
             <button 
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors relative"
+              className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors relative"
               aria-label="Notifications"
               onClick={handleNotificationClick}
               type="button"
             >
-              <Bell className="w-5 h-5 sm:w-6 sm:h-6" />
+              <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-slate-900 dark:text-white" />
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-xs font-bold">3</span>
               </div>
@@ -408,7 +410,7 @@ const Homescreen: React.FC = () => {
               className={`px-4 py-2.5 rounded-full font-medium transition-all text-sm whitespace-nowrap min-w-0 flex-shrink-0 touch-manipulation ${
                 activeSport === sport
                   ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 active:bg-gray-200 border border-gray-200'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 active:bg-gray-200 border border-gray-200 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:bg-white/10 dark:active:bg-white/15 dark:border-white/10'
               }`}
               role="tab"
               aria-selected={activeSport === sport}
@@ -424,7 +426,7 @@ const Homescreen: React.FC = () => {
             {/* Football Section */}
             {(activeSport === 'all' || activeSport === 'football') && footballMatches.length > 0 && (
               <section className="mb-8">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">BUSA league - Football</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">{t('football_section')}</h2>
                 <div className="space-y-3">
                   {footballMatches.map((match, index) => (
                     <MatchCard key={`football-fixture-${index}`} match={match} />
@@ -436,7 +438,7 @@ const Homescreen: React.FC = () => {
             {/* Basketball Section */}
             {(activeSport === 'all' || activeSport === 'basketball') && basketballMatches.length > 0 && (
               <section className="mb-8">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">BUSA league - Basketball</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">{t('basketball_section')}</h2>
                 <div className="space-y-3">
                   {basketballMatches.map((match, index) => (
                     <MatchCard key={`basketball-fixture-${index}`} match={match} isBasketball={true} />
@@ -448,7 +450,7 @@ const Homescreen: React.FC = () => {
             {/* Track Events Section */}
             {(activeSport === 'all' || activeSport === 'track_events') && (
               <section className="mb-8">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">Track events</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">{t('track_events')}</h2>
                 <div className="space-y-3">
                   {trackEvents.map((event, index) => (
                     <TrackEventCard key={`track-fixture-${index}`} event={event} />
@@ -471,7 +473,7 @@ const Homescreen: React.FC = () => {
                 {(activeSport === 'all' || activeSport === 'football') && 
                  footballMatches.some(match => match.status === 'Live') && (
                   <section className="mb-8">
-                    <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">BUSA league - Football</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">BUSA league - Football</h2>
                     <div className="space-y-3">
                       {footballMatches.filter(match => match.status === 'Live').map((match, index) => (
                         <MatchCard key={`football-live-${index}`} match={match} />
@@ -484,7 +486,7 @@ const Homescreen: React.FC = () => {
                 {(activeSport === 'all' || activeSport === 'basketball') && 
                  basketballMatches.some(match => match.status === 'Live') && (
                   <section className="mb-8">
-                    <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">BUSA league - Basketball</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">BUSA league - Basketball</h2>
                     <div className="space-y-3">
                       {basketballMatches.filter(match => match.status === 'Live').map((match, index) => (
                         <MatchCard key={`basketball-live-${index}`} match={match} isBasketball={true} />
@@ -497,7 +499,7 @@ const Homescreen: React.FC = () => {
                 {(activeSport === 'all' || activeSport === 'track_events') && 
                  trackEvents.some(event => event.status === 'Live') && (
                   <section className="mb-8">
-                    <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">Track events</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Track events</h2>
                     <div className="space-y-3">
                       {trackEvents.filter(event => event.status === 'Live').map((event, index) => (
                         <TrackEventCard key={`track-live-${index}`} event={event} />
@@ -509,10 +511,10 @@ const Homescreen: React.FC = () => {
             ) : (
               /* No live matches message */
               <section className="mb-8">
-                <div className="bg-white rounded-lg p-6 sm:p-8 text-center">
-                  <Clock className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 text-sm sm:text-base">No live matches at the moment</p>
-                  <p className="text-xs sm:text-sm text-gray-400 mt-2">Check back later or view fixtures for upcoming matches</p>
+                <div className="bg-white dark:bg-slate-900/40 rounded-lg p-6 sm:p-8 text-center border border-gray-100 dark:border-white/10">
+                  <Clock className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 dark:text-slate-500 mx-auto mb-4" />
+                  <p className="text-gray-500 dark:text-gray-300 text-sm sm:text-base">{t('no_live_matches')}</p>
+                  <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-400 mt-2">{t('check_back_later')}</p>
                 </div>
               </section>
             )}
@@ -527,27 +529,27 @@ const Homescreen: React.FC = () => {
         {/* Competition Content */}
         {activeTab === 'Competition' && (
           <section className="mb-8">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">Competitions</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">{t('competitions')}</h2>
             <div className="space-y-3">
-              <button className="w-full bg-white rounded-lg p-4 shadow-sm border border-gray-100 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation">
-                <h3 className="font-bold text-gray-800 mb-2 text-sm sm:text-base">BUSA League - Football</h3>
-                <p className="text-gray-600 text-xs sm:text-sm">University football championship</p>
+              <button className="w-full bg-white dark:bg-slate-900/40 rounded-lg p-4 shadow-sm border border-gray-100 dark:border-white/10 text-left hover:bg-gray-50 dark:hover:bg-white/10 active:bg-gray-100 transition-colors touch-manipulation">
+                <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-2 text-sm sm:text-base">{t('football_section')}</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">University football championship</p>
               </button>
-              <button className="w-full bg-white rounded-lg p-4 shadow-sm border border-gray-100 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation">
-                <h3 className="font-bold text-gray-800 mb-2 text-sm sm:text-base">BUSA League - Basketball</h3>
-                <p className="text-gray-600 text-xs sm:text-sm">University basketball championship</p>
+              <button className="w-full bg-white dark:bg-slate-900/40 rounded-lg p-4 shadow-sm border border-gray-100 dark:border-white/10 text-left hover:bg-gray-50 dark:hover:bg-white/10 active:bg-gray-100 transition-colors touch-manipulation">
+                <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-2 text-sm sm:text-base">{t('basketball_section')}</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">University basketball championship</p>
               </button>
-              <button className="w-full bg-white rounded-lg p-4 shadow-sm border border-gray-100 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation">
-                <h3 className="font-bold text-gray-800 mb-2 text-sm sm:text-base">Track & Field Events</h3>
-                <p className="text-gray-600 text-xs sm:text-sm">Athletic competitions and relay events</p>
+              <button className="w-full bg-white dark:bg-slate-900/40 rounded-lg p-4 shadow-sm border border-gray-100 dark:border-white/10 text-left hover:bg-gray-50 dark:hover:bg-white/10 active:bg-gray-100 transition-colors touch-manipulation">
+                <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-2 text-sm sm:text-base">{t('track_events')}</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">Athletic competitions and relay events</p>
               </button>
-              <button className="w-full bg-white rounded-lg p-4 shadow-sm border border-gray-100 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation">
-                <h3 className="font-bold text-gray-800 mb-2 text-sm sm:text-base">Volleyball Championship</h3>
-                <p className="text-gray-600 text-xs sm:text-sm">Inter-campus volleyball tournament</p>
+              <button className="w-full bg-white dark:bg-slate-900/40 rounded-lg p-4 shadow-sm border border-gray-100 dark:border-white/10 text-left hover:bg-gray-50 dark:hover:bg-white/10 active:bg-gray-100 transition-colors touch-manipulation">
+                <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-2 text-sm sm:text-base">Volleyball Championship</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">Inter-campus volleyball tournament</p>
               </button>
-              <button className="w-full bg-white rounded-lg p-4 shadow-sm border border-gray-100 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation">
-                <h3 className="font-bold text-gray-800 mb-2 text-sm sm:text-base">Table Tennis League</h3>
-                <p className="text-gray-600 text-xs sm:text-sm">Singles and doubles competitions</p>
+              <button className="w-full bg-white dark:bg-slate-900/40 rounded-lg p-4 shadow-sm border border-gray-100 dark:border-white/10 text-left hover:bg-gray-50 dark:hover:bg-white/10 active:bg-gray-100 transition-colors touch-manipulation">
+                <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-2 text-sm sm:text-base">Table Tennis League</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">Singles and doubles competitions</p>
               </button>
             </div>
           </section>
@@ -555,7 +557,7 @@ const Homescreen: React.FC = () => {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 sm:px-4 py-2 z-20">
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900/60 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-slate-900/60 border-t border-gray-200 dark:border-white/10 px-2 sm:px-4 py-2 z-20">
         <div className="flex justify-around items-center w-full max-w-6xl mx-auto">
           {tabs.map((tab) => (
             <button
@@ -564,7 +566,7 @@ const Homescreen: React.FC = () => {
               className={`flex flex-col items-center py-2 px-2 sm:px-3 rounded-lg transition-all min-w-0 flex-1 max-w-20 sm:max-w-24 touch-manipulation active:scale-95 ${
                 activeTab === tab.name
                   ? 'text-blue-600'
-                  : 'text-gray-500 hover:text-gray-700 active:text-blue-500'
+                  : 'text-gray-600 dark:text-slate-300 hover:text-gray-800 dark:hover:text-white active:text-blue-500'
               }`}
               role="tab"
               aria-selected={activeTab === tab.name}

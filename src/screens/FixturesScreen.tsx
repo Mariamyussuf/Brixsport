@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Bell, Clock, Play } from 'lucide-react';
+import { useI18n } from '@/components/shared/I18nProvider';
 
 interface Match {
   id: string;
@@ -21,6 +22,7 @@ interface TrackEvent {
 }
 
 const FixturesScreen = () => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'all' | 'football' | 'basketball' | 'track'>('all');
   const [currentView, setCurrentView] = useState<'dashboard' | 'track'>('dashboard');
 
@@ -157,7 +159,7 @@ const FixturesScreen = () => {
       <div className="flex items-center space-x-3">
         {match.status === 'live' && (
           <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-            Live
+            {t('live')}
           </div>
         )}
         {match.quarter && (
@@ -184,7 +186,7 @@ const FixturesScreen = () => {
               {match.homeScore} - {match.awayScore}
             </span>
           ) : (
-            <span className="text-gray-500">vs</span>
+            <span className="text-gray-500">{t('vs')}</span>
           )}
         </div>
         
@@ -202,12 +204,12 @@ const FixturesScreen = () => {
         <div className="flex items-center space-x-3">
           {event.status === 'live' && (
             <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-              Live
+              {t('live')}
             </div>
           )}
           {event.status === 'ended' && (
             <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-              Ended
+              {t('ended')}
             </div>
           )}
           <span className="text-gray-800 font-medium">{event.name}</span>
@@ -237,7 +239,7 @@ const FixturesScreen = () => {
         <div className="bg-slate-800 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <h1 className="text-white text-2xl font-bold">BrixSports</h1>
+              <h1 className="text-white text-2xl font-bold">{t('app_title')}</h1>
               <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
                 <div className="w-3 h-3 bg-white rounded-full"></div>
               </div>
@@ -252,15 +254,15 @@ const FixturesScreen = () => {
         {/* Navigation */}
         <div className="bg-white px-6 py-4 border-b border-gray-200">
           <div className="flex space-x-4">
-            {['Track events', 'Basketball', 'Football'].map((tab) => (
+            {[t('track_events'), t('basketball'), t('football')].map((tab) => (
               <button
                 key={tab}
                 onClick={() => {
-                  if (tab === 'Track events') setCurrentView('track');
+                  if (tab === t('track_events')) setCurrentView('track');
                   else setCurrentView('dashboard');
                 }}
                 className={`px-6 py-2 rounded-full font-medium transition-colors ${
-                  tab === 'Track events'
+                  tab === t('track_events')
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
@@ -273,7 +275,7 @@ const FixturesScreen = () => {
 
         {/* Track Events Content */}
         <div className="px-6 py-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-6">Current competition fixtures</h2>
+          <h2 className="text-xl font-bold text-gray-800 mb-6">{t('current_competition_fixtures')}</h2>
           
           <div className="text-center text-gray-600 font-medium mb-6">
             18th OCT
@@ -296,7 +298,7 @@ const FixturesScreen = () => {
       <div className="bg-slate-800 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <h1 className="text-white text-2xl font-bold">BrixSports</h1>
+            <h1 className="text-white text-2xl font-bold">{t('app_title')}</h1>
             <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
               <div className="w-3 h-3 bg-white rounded-full"></div>
             </div>
@@ -311,29 +313,24 @@ const FixturesScreen = () => {
       {/* Navigation Tabs */}
       <div className="bg-white px-6 py-4 border-b border-gray-200">
         <div className="flex space-x-4">
-          {[
-            { key: 'all', label: 'All' },
-            { key: 'football', label: 'Football' },
-            { key: 'basketball', label: 'Basketball' },
-            { key: 'track', label: 'Track events' }
-          ].map((tab) => (
+          {[t('all'), t('football'), t('basketball'), t('track_events')].map((tab) => (
             <button
-              key={tab.key}
+              key={tab}
               onClick={() => {
-                if (tab.key === 'track') {
+                if (tab === t('track_events')) {
                   setCurrentView('track');
                 } else {
-                  setActiveTab(tab.key as any);
+                  setActiveTab((tab === t('all') ? 'all' : tab === t('football') ? 'football' : tab === t('basketball') ? 'basketball' : 'track') as any);
                   setCurrentView('dashboard');
                 }
               }}
               className={`px-6 py-2 rounded-full font-medium transition-colors ${
-                activeTab === tab.key && currentView === 'dashboard'
+                ((activeTab === 'all' && tab === t('all')) || (activeTab === 'football' && tab === t('football')) || (activeTab === 'basketball' && tab === t('basketball'))) && currentView === 'dashboard'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              {tab.label}
+              {tab}
             </button>
           ))}
         </div>
@@ -344,7 +341,7 @@ const FixturesScreen = () => {
         {/* Football Section */}
         {(activeTab === 'all' || activeTab === 'football') && (
           <div>
-            <h2 className="text-xl font-bold text-gray-800 mb-6">BUSA league - Football</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-6">{t('football_section')}</h2>
             <div className="space-y-4">
               {footballMatches.map((match) => (
                 <MatchCard key={match.id} match={match} />
@@ -356,7 +353,7 @@ const FixturesScreen = () => {
         {/* Basketball Section */}
         {(activeTab === 'all' || activeTab === 'basketball') && (
           <div>
-            <h2 className="text-xl font-bold text-gray-800 mb-6">BUSA league - Basketball</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-6">{t('basketball_section')}</h2>
             <div className="space-y-4">
               {basketballMatches.map((match) => (
                 <MatchCard key={match.id} match={match} />
@@ -368,13 +365,13 @@ const FixturesScreen = () => {
         {/* Track Events Preview */}
         {activeTab === 'all' && (
           <div>
-            <h2 className="text-xl font-bold text-gray-800 mb-6">Track events</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-6">{t('track_events')}</h2>
             <TrackEventCard event={endedTrackEvent} />
             <button
               onClick={() => setCurrentView('track')}
               className="mt-4 text-blue-600 hover:text-blue-800 font-medium"
             >
-              View all track events →
+              {t('view_all_track_events')}
             </button>
           </div>
         )}

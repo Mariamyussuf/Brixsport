@@ -4,6 +4,7 @@ import React from 'react';
 import { Plus } from 'lucide-react';
 import { Team, Player, Tournament, SportType } from '../../types/campus';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/components/shared/I18nProvider';
 
 interface FavouritesscreenProps {
   activeSport: SportType | 'all';
@@ -11,6 +12,7 @@ interface FavouritesscreenProps {
 
 const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
   const router = useRouter();
+  const { t } = useI18n();
   const isAuthed = typeof window !== 'undefined' && !!localStorage.getItem('token');
 
   const requireAuth = (next: string = '/?tab=Favourites'): boolean => {
@@ -114,17 +116,17 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
 
   const handleAddTeam = (): void => {
     if (requireAuth()) return;
-    alert('Add favourite team functionality coming soon!');
+    alert(t('coming_soon'));
   };
 
   const handleAddPlayer = (): void => {
     if (requireAuth()) return;
-    alert('Add favourite player functionality coming soon!');
+    alert(t('coming_soon'));
   };
 
   const handleAddCompetition = (): void => {
     if (requireAuth()) return;
-    alert('Add favourite competition functionality coming soon!');
+    alert(t('coming_soon'));
   };
 
   const getColorClass = (color: string): string => {
@@ -158,7 +160,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
       <section>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-neutral-100">YOUR TEAMS</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-neutral-100">{t('your_teams')}</h2>
             <span className="bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300 px-2 py-1 rounded-full text-xs font-medium">
               {favouriteTeams.length}
             </span>
@@ -166,7 +168,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
           <button
             onClick={handleAddTeam}
             className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors touch-manipulation"
-            aria-label="Add favourite team"
+            aria-label={t('add_favourite_team')}
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -193,7 +195,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
       <section>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-neutral-100">YOUR PLAYERS</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-neutral-100">{t('your_players')}</h2>
             <span className="bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300 px-2 py-1 rounded-full text-xs font-medium">
               {favouritePlayers.length}
             </span>
@@ -201,7 +203,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
           <button
             onClick={handleAddPlayer}
             className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors touch-manipulation"
-            aria-label="Add favourite player"
+            aria-label={t('add_favourite_player')}
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -231,7 +233,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
       <section>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-neutral-100">YOUR COMPETITIONS</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-neutral-100">{t('your_competitions')}</h2>
             <span className="bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300 px-2 py-1 rounded-full text-xs font-medium">
               {filteredCompetitions.length}
             </span>
@@ -239,7 +241,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
           <button
             onClick={handleAddCompetition}
             className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors touch-manipulation"
-            aria-label="Add favourite competition"
+            aria-label={t('add_favourite_competition')}
           >
             <Plus className="w-4 h-4" />
           </button>

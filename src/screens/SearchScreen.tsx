@@ -145,32 +145,32 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
   const filteredItems = getFilteredItems();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-black dark:text-neutral-100">
+    <div className="min-h-screen bg-gray-50 dark:bg-black text-neutral-900 dark:text-neutral-100">
       {/* Header */}
-      <header className="bg-slate-800 text-white px-4 sm:px-6 py-4 sticky top-0 z-10">
+      <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-white/10 text-slate-900 dark:text-white px-4 sm:px-6 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <button
               onClick={() => router.back()}
               aria-label="Back"
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
               type="button"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-5 h-5 text-slate-900 dark:text-white" />
             </button>
             <div className="flex items-center space-x-2">
-              <h1 className="text-xl font-semibold">BrixSports</h1>
+              <h1 className="text-xl font-semibold text-slate-900 dark:text-white">BrixSports</h1>
               <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
                 <div className="w-3 h-3 bg-white rounded-full"></div>
               </div>
             </div>
           </div>
           <button 
-            className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
             aria-label="Notifications"
             type="button"
           >
-            <Bell className="w-5 h-5" />
+            <Bell className="w-5 h-5 text-slate-900 dark:text-white" />
           </button>
         </div>
       </header>
@@ -193,7 +193,7 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
 
       {/* Filter Tabs */}
       <div className="max-w-6xl mx-auto">
-        <div className="bg-white px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8 shadow-sm">
+        <div className="bg-white dark:bg-slate-900/40 border-y border-gray-200 dark:border-white/10 px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8 shadow-sm">
           <div className="flex space-x-2 sm:space-x-3 lg:space-x-4 overflow-x-auto scrollbar-hide lg:justify-center">
             {filterOptions.map((option) => (
               <button
@@ -202,7 +202,7 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
                 className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full text-xs sm:text-sm lg:text-base xl:text-lg font-medium whitespace-nowrap transition-all duration-200 ${
                   option.active
                     ? 'bg-blue-900 text-white shadow-md hover:bg-blue-800'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 active:scale-95'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 active:scale-95 dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/15 dark:active:bg-white/20'
                 }`}
               >
                 {option.label}
@@ -212,21 +212,21 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
         </div>
       </div>
       {/* Divider */}
-      <div className="h-px bg-gray-200"></div>
+      <div className="h-px bg-gray-200 dark:bg-white/10"></div>
 
       {/* Items List */}
       <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-3 sm:py-4 lg:py-6">
         {filteredItems.length === 0 ? (
           <div className="text-center py-8 sm:py-12 lg:py-16">
-            <p className="text-gray-500 text-base sm:text-lg lg:text-xl">No items found</p>
-            <p className="text-gray-400 text-sm sm:text-base lg:text-lg mt-2">Try adjusting your filter</p>
+            <p className="text-gray-500 dark:text-gray-300 text-base sm:text-lg lg:text-xl">No items found</p>
+            <p className="text-gray-400 dark:text-gray-400 text-sm sm:text-base lg:text-lg mt-2">Try adjusting your filter</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
             {filteredItems.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between p-3 sm:p-4 lg:p-6 bg-white rounded-lg sm:rounded-xl lg:rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200 group"
+                className="flex items-center justify-between p-3 sm:p-4 lg:p-6 bg-white dark:bg-slate-900/40 rounded-lg sm:rounded-xl lg:rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200 group border border-gray-100 dark:border-white/10"
               >
                 <div className="flex items-center space-x-3 sm:space-x-4 lg:space-x-5 min-w-0 flex-1">
                   {/* Avatar/Logo */}
@@ -238,7 +238,7 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                      <div className="w-full h-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
                         <div className="w-6 h-4 sm:w-8 sm:h-6 lg:w-10 lg:h-7 xl:w-12 xl:h-8 bg-blue-600 rounded-sm"></div>
                       </div>
                     )}
@@ -246,11 +246,11 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
 
                   {/* Content */}
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-gray-900 text-sm sm:text-base lg:text-lg xl:text-xl truncate">
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base lg:text-lg xl:text-xl truncate">
                       {item.name}
                     </h3>
                     <div className="flex items-center space-x-2 mt-1 lg:mt-2">
-                      <p className="text-gray-500 text-xs sm:text-sm lg:text-base xl:text-lg truncate">
+                      <p className="text-gray-500 dark:text-gray-300 text-xs sm:text-sm lg:text-base xl:text-lg truncate">
                         {item.type === 'player' 
                           ? (item as Player).team 
                           : (item as Competition).league
@@ -258,8 +258,8 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
                       </p>
                       {item.type === 'player' && (
                         <>
-                          <div className="w-1 h-1 bg-gray-400 rounded-full hidden sm:block"></div>
-                          <span className="text-gray-400 text-xs sm:text-sm lg:text-base xl:text-lg hidden sm:inline">
+                          <div className="w-1 h-1 bg-gray-400 dark:bg-gray-500 rounded-full hidden sm:block"></div>
+                          <span className="text-gray-400 dark:text-gray-400 text-xs sm:text-sm lg:text-base xl:text-lg hidden sm:inline">
                             ⚽ {(item as Player).sport}
                           </span>
                         </>
@@ -267,7 +267,7 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
                     </div>
                     {/* Mobile: Show sport on separate line for players */}
                     {item.type === 'player' && (
-                      <p className="text-gray-400 text-xs mt-1 sm:hidden">
+                      <p className="text-gray-400 dark:text-gray-400 text-xs mt-1 sm:hidden">
                         ⚽ {(item as Player).sport}
                       </p>
                     )}
@@ -277,7 +277,7 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
                 {/* Remove Button */}
                 <button
                   onClick={() => handleRemoveItem(item.id)}
-                  className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 xl:w-12 xl:h-12 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all duration-200 active:scale-95 flex-shrink-0 ml-2 sm:ml-3 lg:ml-4 group-hover:bg-gray-50"
+                  className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 xl:w-12 xl:h-12 flex items-center justify-center text-gray-400 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full transition-all duration-200 active:scale-95 flex-shrink-0 ml-2 sm:ml-3 lg:ml-4 group-hover:bg-gray-50 dark:group-hover:bg-white/10"
                   aria-label="Remove item"
                 >
                   <X className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />

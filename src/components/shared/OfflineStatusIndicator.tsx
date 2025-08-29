@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { flushNow } from '@/lib/offlineQueue';
+import { useSettings } from './SettingsContext';
 
 export default function OfflineStatusIndicator() {
+  const { dataSaver } = useSettings();
   const [isOnline, setIsOnline] = useState(true);
   const [pendingEvents, setPendingEvents] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -41,10 +43,11 @@ export default function OfflineStatusIndicator() {
     // Check on mount
     checkPendingEvents();
 
-    // Set up interval to check every 10 seconds
-    const interval = setInterval(checkPendingEvents, 10000);
+    // Set up interval (throttled in data saver mode)
+    const intervalMs = dataSaver ? 30000 : 10000;
+    const interval = setInterval(checkPendingEvents, intervalMs);
     return () => clearInterval(interval);
-  }, []);
+  }, [dataSaver]);
 
   // Auto-sync when coming back online
   useEffect(() => {
