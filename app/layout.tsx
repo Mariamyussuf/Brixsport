@@ -4,7 +4,6 @@ import PWARegister from "@/components/shared/PWARegister";
 import NoFlashThemeScript from "@/components/shared/NoFlashThemeScript";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import OfflineWrapper from "@/components/shared/OfflineWrapper";
-import SettingsLauncher from "@/components/shared/SettingsLauncher";
 import { SettingsProvider } from "@/components/shared/SettingsContext";
 import { I18nProvider } from "@/components/shared/I18nProvider";
 import NotificationsGate from "@/components/shared/NotificationsGate";
@@ -66,8 +65,6 @@ export default function RootLayout({
               <OfflineWrapper />
               <NotificationsGate />
               <DataSaverGate />
-              {/* Global settings launcher (gear) */}
-              <SettingsLauncher />
               {children}
             </I18nProvider>
           </SettingsProvider>
