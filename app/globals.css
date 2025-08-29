@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Define a custom variant for dark mode */
+@custom-variant dark (&:is(.dark *));
+
 /* Base tweaks */
 @layer base {
   :root { 
@@ -7,11 +10,11 @@
   }
   
   html, body { 
-    height: 100%; 
+    height: 100%;
   }
-  
-  body { 
-    @apply bg-white text-neutral-900 dark:bg-black dark:text-neutral-100 antialiased; 
+
+  body {
+    @apply bg-white text-neutral-900 dark:bg-black dark:text-neutral-100 antialiased;
   }
 }
 
@@ -21,16 +24,22 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  
+
   .gradient-fade-left {
     background: linear-gradient(to right, currentColor, transparent);
   }
-  
+
   .gradient-fade-right {
     background: linear-gradient(to left, currentColor, transparent);
   }
+}
+
+@media (prefers-color-scheme: dark) { 
+  .test-dark { 
+    background-color: red; 
+  } 
 }

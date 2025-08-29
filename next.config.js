@@ -4,8 +4,8 @@ const nextConfig = {
   compiler: {
     styledComponents: true,
   },
-  // Enable static export for better offline capabilities
-  output: 'export',
+  // Static export might cause PWA installation issues, consider removing for production
+  // output: 'export',
   // Set the root directory for file tracing to resolve multiple lockfile warning
   outputFileTracingRoot: __dirname,
   // Don't include the SW in the build - we have our own in /public
