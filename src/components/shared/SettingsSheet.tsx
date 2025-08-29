@@ -10,7 +10,7 @@ interface SettingsSheetProps {
 }
 
 export default function SettingsSheet({ open, onClose }: SettingsSheetProps) {
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const { notifications, dataSaver, language, setNotifications, setDataSaver, setLanguage } = useSettings();
 
   if (!open) return null;
@@ -41,13 +41,18 @@ export default function SettingsSheet({ open, onClose }: SettingsSheetProps) {
         </div>
 
         <div className="px-5 pb-6">
-          <div className="mb-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Appearance</div>
+          <div className="mb-1 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Appearance</div>
+          {/* Debug line to verify state updates in production */}
+          <div className="mb-2 text-[11px] text-gray-500 dark:text-gray-400">Theme: <strong>{theme}</strong> • Resolved: <strong>{resolvedTheme}</strong></div>
           <div className="grid grid-cols-3 gap-2">
             <button
               onClick={() => setTheme("light")}
               className={`flex flex-col items-center gap-2 rounded-xl border p-3 transition-colors hover:bg-gray-50 dark:hover:bg-white/10 ${
                 theme === "light" ? "border-blue-500" : "border-gray-200 dark:border-white/10"
               }`}
+              data-theme="light"
+              role="radio"
+              aria-checked={theme === "light"}
             >
               <Sun className="w-5 h-5" />
               <span className="text-xs">Light</span>
@@ -57,6 +62,9 @@ export default function SettingsSheet({ open, onClose }: SettingsSheetProps) {
               className={`flex flex-col items-center gap-2 rounded-xl border p-3 transition-colors hover:bg-gray-50 dark:hover:bg-white/10 ${
                 theme === "dark" ? "border-blue-500" : "border-gray-200 dark:border-white/10"
               }`}
+              data-theme="dark"
+              role="radio"
+              aria-checked={theme === "dark"}
             >
               <Moon className="w-5 h-5" />
               <span className="text-xs">Dark</span>
@@ -66,6 +74,9 @@ export default function SettingsSheet({ open, onClose }: SettingsSheetProps) {
               className={`flex flex-col items-center gap-2 rounded-xl border p-3 transition-colors hover:bg-gray-50 dark:hover:bg-white/10 ${
                 theme === "system" ? "border-blue-500" : "border-gray-200 dark:border-white/10"
               }`}
+              data-theme="system"
+              role="radio"
+              aria-checked={theme === "system"}
             >
               <Monitor className="w-5 h-5" />
               <span className="text-xs">System</span>
