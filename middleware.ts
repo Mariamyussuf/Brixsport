@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // Get pathname
   const pathname = request.nextUrl.pathname;
+  console.log(`[Middleware] Running for path: ${pathname}`);
 
   // Handle /auth route
   if (pathname === '/auth') {

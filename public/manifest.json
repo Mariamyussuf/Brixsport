@@ -51,7 +51,7 @@
       "src": "/apple-touch-icon.png",
       "sizes": "180x180",
       "type": "image/png",
-      "purpose": "any apple"
+      "purpose": "any"
     }
   ],
   "screenshots": [
@@ -61,6 +61,13 @@
       "type": "image/jpeg",
       "form_factor": "narrow",
       "label": "BrixSports Home Screen"
+    },
+    {
+      "src": "/screenshot1.jpg",
+      "sizes": "1920x1080",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "BrixSports Home Screen on Desktop"
     }
   ]
 }

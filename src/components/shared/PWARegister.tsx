@@ -32,6 +32,7 @@ export default function PWARegister() {
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         setInstallPrompt(e);
+        console.log('[PWA] beforeinstallprompt captured');
         
         // Show install tip after 5 seconds of app usage
         // but only if not already installed and not dismissed before
@@ -51,21 +52,9 @@ export default function PWARegister() {
       });
     }
 
-    // Only register service worker if available
+    // Register service worker if available
     if (navigator.serviceWorker) {
-      // Clear service worker cache to ensure fresh registration
-      // This helps with reinstall issues on Android
-      navigator.serviceWorker.getRegistrations().then(registrations => {
-        for(let registration of registrations) {
-          registration.unregister();
-        }
-        // After unregistering, register again
-        registerServiceWorker();
-      }).catch(error => {
-        console.error("Service Worker unregistration failed:", error);
-        // Still try to register even if unregister fails
-        registerServiceWorker();
-      });
+      registerServiceWorker();
     }
   }, []);
 

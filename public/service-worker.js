@@ -114,19 +114,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Images: cache-first with basic expiration
+  // Images: network-first, falling back to cache
   if (request.destination === 'image') {
     event.respondWith((async () => {
       const cache = await caches.open(IMAGE_CACHE);
-      const cached = await cache.match(request);
-      if (cached) return cached;
       try {
-        const resp = await fetch(request);
-        cache.put(request, resp.clone());
-        trimCache(IMAGE_CACHE, MAX_IMAGE_ENTRIES);
-        return resp;
-      } catch (_) {
-        return new Response(null, { status: 504 });
+        // Try network first
+        const networkResponse = await fetch(request);
+        // If successful, cache it and return it
+        cache.put(request, networkResponse.clone());
+        await trimCache(IMAGE_CACHE, MAX_IMAGE_ENTRIES);
+        return networkResponse;
+      } catch (error) {
+        // If network fails, try to serve from cache
+        const cachedResponse = await cache.match(request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        // If not in cache either, the request will fail, which is the expected browser behavior.
+        // The original code returned a 504, which was less helpful.
+        return new Response(null, { status: 404, statusText: 'Not Found' });
       }
     })());
     return;
