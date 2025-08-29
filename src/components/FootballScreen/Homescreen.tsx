@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Search, Bell, Clock, Star, Calendar, Trophy, ArrowLeft, Menu, X } from 'lucide-react';
+import SettingsLauncher from '../shared/SettingsLauncher';
 import { useRouter } from 'next/navigation';
 import Favouritesscreen from './Favouritesscreen';
 import { useI18n } from '../shared/I18nProvider';
@@ -272,15 +273,15 @@ const Homescreen: React.FC = () => {
       </div>
       
       {/* Mobile-optimized match layout */}
-      <div className="space-y-2 sm:space-y-0 sm:flex sm:items-center sm:justify-between">
+      <div className="flex items-center justify-between">
         {/* Team 1 */}
-        <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+        <div className="flex items-center space-x-2 sm:space-x-3">
           <TeamLogo color={match.team1Color} />
           <span className="font-medium text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate">{match.team1}</span>
         </div>
         
         {/* Score/VS - centered on mobile, inline on desktop */}
-        <div className="flex justify-center sm:px-3 sm:px-4 flex-shrink-0">
+        <div className="flex-1 text-center sm:text-right">
           {match.status === 'Live' && match.score1 !== undefined && match.score2 !== undefined ? (
             <span className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
               {match.score1} - {match.score2}
@@ -291,7 +292,7 @@ const Homescreen: React.FC = () => {
         </div>
         
         {/* Team 2 */}
-        <div className="flex items-center space-x-2 sm:space-x-3 flex-1 justify-end min-w-0">
+        <div className="flex items-center space-x-2 sm:space-x-3 justify-end">
           <span className="font-medium text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate">{match.team2}</span>
           <TeamLogo color={match.team2Color} />
         </div>
@@ -402,6 +403,7 @@ const Homescreen: React.FC = () => {
                   <span className="text-white text-xs font-bold">3</span>
                 </div>
               </button>
+              <SettingsLauncher />
             </div>
           </div>
         </div>

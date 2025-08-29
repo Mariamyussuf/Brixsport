@@ -8,27 +8,25 @@ export default function SettingsLauncher() {
   const [open, setOpen] = React.useState(false);
   const pathname = usePathname();
 
-  // Hide the launcher on auth routes
-  if (pathname?.startsWith("/auth")) return null;
-  
-  // Determine if we're on a page with its own header controls like notifications
-  const hasPageHeaderControls = [
-    "/search"
-    // Add other paths that have header controls here
-  ].some(path => pathname?.startsWith(path));
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setOpen(true);
+    }
+  };
 
   return (
     <>
-      {/* Fixed launcher button - positioned between search and notifications */}
-      <div className={`fixed ${hasPageHeaderControls ? 'top-14 sm:top-16' : 'top-3 sm:top-4'} right-4 sm:right-6 md:right-24 lg:right-32 z-40 pointer-events-none`}>
-        <button
-          aria-label="Open settings"
-          onClick={() => setOpen(true)}
-          className="pointer-events-auto w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-gray-700 hover:bg-black/5 dark:text-white dark:hover:bg-white/10 transition-colors border border-black/10 dark:border-white/10"
-        >
-          <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
-        </button>
-      </div>
+      <button 
+        className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors relative"
+        aria-label="Settings"
+        onClick={() => setOpen(true)}
+        onKeyDown={handleKeyDown}
+        type="button"
+      >
+        <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 dark:text-white" />
+      </button>
 
       <SettingsSheet open={open} onClose={() => setOpen(false)} />
     </>
