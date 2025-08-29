@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { X, ArrowLeft, Bell, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import SmartImage from '@/components/shared/SmartImage';
+import { useI18n } from '@/components/shared/I18nProvider';
 
 interface FilterOption {
-  id: string;
-  label: string;
+  id: 'all' | 'team' | 'player' | 'match' | 'competition';
   active: boolean;
 }
 
@@ -93,21 +94,21 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
   onFilterChange
 }) => {
   const router = useRouter();
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [activeFilter, setActiveFilter] = useState<FilterOption['id']>('all');
   const [selectedItems, setSelectedItems] = useState<FilterableItem[]>(items);
   const [query, setQuery] = useState('');
 
   const filterOptions: FilterOption[] = [
-    { id: 'all', label: 'All', active: activeFilter === 'All' },
-    { id: 'team', label: 'Team', active: activeFilter === 'Team' },
-    { id: 'player', label: 'Player', active: activeFilter === 'Player' },
-    { id: 'match', label: 'Match', active: activeFilter === 'Match' },
-    { id: 'competition', label: 'Competition', active: activeFilter === 'Competition' }
+    { id: 'all', active: activeFilter === 'all' },
+    { id: 'team', active: activeFilter === 'team' },
+    { id: 'player', active: activeFilter === 'player' },
+    { id: 'match', active: activeFilter === 'match' },
+    { id: 'competition', active: activeFilter === 'competition' }
   ];
 
-  const handleFilterClick = (filterLabel: string) => {
-    setActiveFilter(filterLabel);
-    onFilterChange?.(filterLabel);
+  const handleFilterClick = (filterId: FilterOption['id']) => {
+    setActiveFilter(filterId);
+    onFilterChange?.(filterId);
   };
 
   const handleRemoveItem = (id: string) => {
@@ -117,9 +118,9 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
 
   const getFilteredItems = () => {
     const byType = (() => {
-      if (activeFilter === 'All') return selectedItems;
-      if (activeFilter === 'Player') return selectedItems.filter(item => item.type === 'player');
-      if (activeFilter === 'Competition') return selectedItems.filter(item => item.type === 'competition');
+      if (activeFilter === 'all') return selectedItems;
+      if (activeFilter === 'player') return selectedItems.filter(item => item.type === 'player');
+      if (activeFilter === 'competition') return selectedItems.filter(item => item.type === 'competition');
       return selectedItems;
     })();
 
@@ -143,6 +144,7 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
   };
 
   const filteredItems = getFilteredItems();
+  const { t } = useI18n();
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black text-neutral-900 dark:text-neutral-100">
@@ -159,7 +161,7 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
               <ArrowLeft className="w-5 h-5 text-slate-900 dark:text-white" />
             </button>
             <div className="flex items-center space-x-2">
-              <h1 className="text-xl font-semibold text-slate-900 dark:text-white">BrixSports</h1>
+              <h1 className="text-xl font-semibold text-slate-900 dark:text-white">{t('app_title')}</h1>
               <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
                 <div className="w-3 h-3 bg-white rounded-full"></div>
               </div>
@@ -184,7 +186,7 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search players, teams, competitions..."
+              placeholder={t('search_placeholder')}
               className="ml-2 bg-transparent outline-none w-full text-sm sm:text-base placeholder:text-gray-500"
             />
           </div>
@@ -198,14 +200,14 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
             {filterOptions.map((option) => (
               <button
                 key={option.id}
-                onClick={() => handleFilterClick(option.label)}
+                onClick={() => handleFilterClick(option.id)}
                 className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full text-xs sm:text-sm lg:text-base xl:text-lg font-medium whitespace-nowrap transition-all duration-200 ${
                   option.active
                     ? 'bg-blue-900 text-white shadow-md hover:bg-blue-800'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300 active:scale-95 dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/15 dark:active:bg-white/20'
                 }`}
               >
-                {option.label}
+                {t(option.id)}
               </button>
             ))}
           </div>
@@ -218,8 +220,8 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
       <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-3 sm:py-4 lg:py-6">
         {filteredItems.length === 0 ? (
           <div className="text-center py-8 sm:py-12 lg:py-16">
-            <p className="text-gray-500 dark:text-gray-300 text-base sm:text-lg lg:text-xl">No items found</p>
-            <p className="text-gray-400 dark:text-gray-400 text-sm sm:text-base lg:text-lg mt-2">Try adjusting your filter</p>
+            <p className="text-gray-500 dark:text-gray-300 text-base sm:text-lg lg:text-xl">{t('no_items_found')}</p>
+            <p className="text-gray-400 dark:text-gray-400 text-sm sm:text-base lg:text-lg mt-2">{t('try_adjust_filter')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
@@ -232,7 +234,7 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
                   {/* Avatar/Logo */}
                   <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 xl:w-16 xl:h-16 rounded-full overflow-hidden flex-shrink-0">
                     {item.type === 'player' ? (
-                      <img
+                      <SmartImage
                         src={(item as Player).avatar}
                         alt={item.name}
                         className="w-full h-full object-cover"
@@ -293,10 +295,10 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
         <div className="fixed bottom-3 sm:bottom-4 lg:bottom-6 left-1/2 transform -translate-x-1/2 z-10">
           <div className="bg-blue-900 text-white px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-200">
             <span className="text-xs sm:text-sm lg:text-base xl:text-lg font-medium">
-              {filteredItems.length} of {selectedItems.length} items
-              {activeFilter !== 'All' && (
+              {filteredItems.length}/{selectedItems.length} {t('items')}
+              {activeFilter !== 'all' && (
                 <span className="hidden sm:inline">
-                  {` (filtered by ${activeFilter})`}
+                  {` (${t('filtered_by')} ${t(activeFilter)})`}
                 </span>
               )}
             </span>
