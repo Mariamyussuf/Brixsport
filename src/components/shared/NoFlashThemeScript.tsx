@@ -4,11 +4,16 @@ import React from "react";
 export default function NoFlashThemeScript() {
   const code = `(() => {
     try {
-      const saved = localStorage.getItem('theme');
+      let saved = localStorage.getItem('theme');
+      if (!saved) {
+        // Explicitly default to system
+        saved = 'system';
+        localStorage.setItem('theme', 'system');
+      }
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const resolved = saved === 'dark' || (!saved || saved === 'system') && prefersDark ? 'dark' : 'light';
+      const resolved = saved === 'dark' ? 'dark' : saved === 'light' ? 'light' : (prefersDark ? 'dark' : 'light');
       const root = document.documentElement;
-      if (resolved === 'dark') root.classList.add('dark'); else root.classList.remove('dark');
+      root.classList.toggle('dark', resolved === 'dark');
       var m = document.querySelector('meta[name="theme-color"]');
       if (m) m.setAttribute('content', resolved === 'dark' ? '#000000' : '#ffffff');
     } catch {}

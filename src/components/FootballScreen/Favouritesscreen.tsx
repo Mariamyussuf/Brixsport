@@ -159,7 +159,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-neutral-100">YOUR TEAMS</h2>
-            <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
+            <span className="bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300 px-2 py-1 rounded-full text-xs font-medium">
               {favouriteTeams.length}
             </span>
           </div>
@@ -194,7 +194,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-neutral-100">YOUR PLAYERS</h2>
-            <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
+            <span className="bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300 px-2 py-1 rounded-full text-xs font-medium">
               {favouritePlayers.length}
             </span>
           </div>
@@ -211,15 +211,15 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
           {favouritePlayers.map((player) => (
             <button
               key={player.id}
-              className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all touch-manipulation active:scale-95"
+              className="bg-white dark:bg-slate-900/40 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-white/10 hover:shadow-md transition-all touch-manipulation active:scale-95"
             >
               <div className="flex flex-col items-center space-y-2">
                 <div className={`w-10 h-10 ${getColorClass(player.teamColor || '#6b7280')} rounded-full flex items-center justify-center`}>
                   <span className="text-white font-bold text-sm">{player.number}</span>
                 </div>
                 <div className="text-center">
-                  <p className="font-medium text-gray-800 text-sm">{player.name}</p>
-                  <p className="text-xs text-gray-500">{player.team}</p>
+                  <p className="font-medium text-gray-800 dark:text-gray-100 text-sm">{player.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-300">{player.team}</p>
                 </div>
               </div>
             </button>
@@ -232,7 +232,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-neutral-100">YOUR COMPETITIONS</h2>
-            <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
+            <span className="bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300 px-2 py-1 rounded-full text-xs font-medium">
               {filteredCompetitions.length}
             </span>
           </div>

@@ -157,17 +157,17 @@ const CompetitionsScreen: React.FC = () => {
     const flagColors = getFlagColors(competition.type);
     
     return (
-      <div className={`flex items-center justify-between py-4 ${showBorder ? 'border-b border-gray-200' : ''}`}>
+      <div className={`flex items-center justify-between py-4 ${showBorder ? 'border-b border-gray-200 dark:border-white/10' : ''}`}>
         <div className="flex items-center space-x-4">
           <div className="w-10 h-10 rounded-full overflow-hidden flex flex-col">
             <div className={`${flagColors.top} h-1/2 w-full`}></div>
             <div className={`${flagColors.bottom} h-1/2 w-full`}></div>
           </div>
           <div>
-            <p className="text-sm text-gray-500 uppercase tracking-wide font-medium">
+            <p className="text-sm text-gray-500 dark:text-gray-300 uppercase tracking-wide font-medium">
               {competition.category}
             </p>
-            <h3 className="text-gray-900 text-lg font-medium">
+            <h3 className="text-gray-900 dark:text-white text-lg font-medium">
               {competition.name}
             </h3>
           </div>
@@ -189,27 +189,27 @@ const CompetitionsScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
+    <div className="min-h-screen bg-white dark:bg-black text-neutral-900 dark:text-neutral-100">
       {/* Header */}
-      <header className="bg-slate-800 px-6 py-4 flex items-center justify-between">
+      <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-white/10 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <button
             onClick={() => router.back()}
             aria-label="Back"
-            className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
             type="button"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 text-slate-900 dark:text-white" />
           </button>
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
               <div className="w-4 h-4 border-2 border-white rounded-full"></div>
             </div>
-            <h1 className="text-xl font-normal text-white">BrixSports</h1>
+            <h1 className="text-xl font-normal text-slate-900 dark:text-white">BrixSports</h1>
           </div>
         </div>
         <div className="flex items-center">
-          <Bell className="w-6 h-6 text-white" />
+          <Bell className="w-6 h-6 text-slate-900 dark:text-white" />
         </div>
       </header>
 
@@ -218,7 +218,7 @@ const CompetitionsScreen: React.FC = () => {
         <div className="px-6">
           {/* Active Competition Section */}
           <section className="py-6">
-            <h2 className="text-xl font-medium mb-6 text-gray-900">Active competition</h2>
+            <h2 className="text-xl font-medium mb-6 text-gray-900 dark:text-white">Active competition</h2>
             <div>
               {activeCompetitions.map((competition) => (
                 <CompetitionItem key={competition.id} competition={competition} showBorder={false} />
@@ -308,13 +308,13 @@ const CompetitionsScreen: React.FC = () => {
           )}
 
           {/* Separator */}
-          <div className="border-t border-gray-200"></div>
+          <div className="border-t border-gray-200 dark:border-white/10"></div>
 
           {/* All Competitions Section */}
           <section className="py-6">
-            <h2 className="text-xl font-medium mb-6 text-gray-900 flex items-center space-x-2">
+            <h2 className="text-xl font-medium mb-6 text-gray-900 dark:text-white flex items-center space-x-2">
               <span>All competitions</span>
-              <span className="text-gray-500">• {allCompetitions.length}</span>
+              <span className="text-gray-500 dark:text-slate-400">• {allCompetitions.length}</span>
             </h2>
             <div>
               {allCompetitions.map((competition, index) => (
