@@ -53,6 +53,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => mql.removeEventListener("change", handler);
   }, [theme]);
 
+  // Defensive sync: ensure the document class always matches resolved theme
+  useEffect(() => {
+    applyThemeToDocument(resolved);
+  }, [resolved]);
+
   const setTheme = (t: Theme) => {
     setThemeState(t);
     localStorage.setItem("theme", t);
