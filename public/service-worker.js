@@ -1,5 +1,6 @@
 // ----- Cache versions -----
-const STATIC_CACHE = 'brixsports-static-v2';
+// Bump this to invalidate old app shell and CSS/JS when deploying changes
+const STATIC_CACHE = 'brixsports-static-v3';
 const API_CACHE = 'brixsports-api-v1';
 const IMAGE_CACHE = 'brixsports-img-v1';
 const OFFLINE_URL = '/offline.html';
