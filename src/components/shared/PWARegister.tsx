@@ -1,14 +1,72 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<{ outcome: 'accepted' | 'dismissed' }>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+declare global {
+  interface WindowEventMap {
+    beforeinstallprompt: BeforeInstallPromptEvent;
+  }
+}
 
 export default function PWARegister() {
-  const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallTip, setShowInstallTip] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSInstallTip, setShowIOSInstallTip] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
 
+  // Register service worker
+  const registerServiceWorker = useCallback(async () => {
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.register('/service-worker.js', {
+          updateViaCache: 'none',
+          scope: '/'
+        });
+        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        
+        // Check for updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                setUpdateAvailable(true);
+                console.log('New content is available; please refresh.');
+              }
+            });
+          }
+        });
+
+        // Check for updates on page load
+        if (registration.waiting && navigator.serviceWorker.controller) {
+          setUpdateAvailable(true);
+        }
+      } catch (error) {
+        console.error('ServiceWorker registration failed: ', error);
+      }
+    }
+  }, []);
+
+  // Check if running as PWA
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || 
+                               (window.navigator as any).standalone === true;
+      setIsStandalone(isInStandaloneMode);
+      
+      // Register service worker
+      registerServiceWorker();
+    }
+  }, [registerServiceWorker]);
+
+  // Handle PWA installation prompt
   useEffect(() => {
     if (typeof window === "undefined") return;
     
@@ -17,80 +75,86 @@ export default function PWARegister() {
     setIsIOS(iOS);
     
     // Show iOS install tip if not already shown or dismissed
-    if (iOS) {
+    if (iOS && !isStandalone) {
       const hasShownIOSTip = localStorage.getItem('pwa-ios-install-tip-shown');
       if (!hasShownIOSTip) {
         setTimeout(() => {
           setShowIOSInstallTip(true);
         }, 5000);
       }
+      return;
     }
     
-    // For non-iOS devices, use the standard install prompt
-    if (!iOS && navigator.serviceWorker) {
-      // Store the install prompt for later use
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        setInstallPrompt(e);
-        console.log('[PWA] beforeinstallprompt captured');
-        
-        // Show install tip after 5 seconds of app usage
-        // but only if not already installed and not dismissed before
-        const hasShownTip = localStorage.getItem('pwa-install-tip-shown');
-        if (!hasShownTip) {
-          setTimeout(() => {
-            setShowInstallTip(true);
-          }, 5000);
-        }
-      });
-
-      // Hide install tip if app is installed
-      window.addEventListener('appinstalled', () => {
-        setShowInstallTip(false);
-        localStorage.setItem('pwa-install-tip-shown', 'true');
-        console.log('PWA was installed');
-      });
-    }
-
-    // Register service worker if available
-    if (navigator.serviceWorker) {
-      registerServiceWorker();
-    }
-  }, []);
-
-  const registerServiceWorker = async () => {
-    try {
-      // Register the custom service worker placed in public/
-      const swUrl = "/service-worker.js";
-      const reg = await navigator.serviceWorker.register(swUrl, {
-        updateViaCache: 'none',  // Don't use cached service worker
-        scope: '/'
-      });
-
-      // Listen for updates and prompt reload
-      reg.addEventListener("updatefound", () => {
-        const newWorker = reg.installing;
-        if (!newWorker) return;
-        
-        newWorker.addEventListener("statechange", () => {
-          if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-            // New content is available, show update notification
-            setUpdateAvailable(true);
-            console.log("New content is available; please refresh.");
-          }
-        });
-      });
-
-      // Check for updates on page load
-      if (reg.waiting && navigator.serviceWorker.controller) {
-        setUpdateAvailable(true);
+    // For Android/other devices
+    const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
+      // Prevent the default install prompt
+      e.preventDefault();
+      console.log('[PWA] beforeinstallprompt event fired');
+      
+      // Store the event for later use
+      setInstallPrompt(e);
+      
+      // Show install tip if not already installed and not dismissed before
+      const hasShownTip = localStorage.getItem('pwa-install-tip-shown');
+      if (!hasShownTip) {
+        setTimeout(() => {
+          setShowInstallTip(true);
+        }, 3000);
       }
-    } catch (err) {
-      console.error("[PWA] SW registration failed:", err);
-    }
-  };
+    };
 
-  const handleUpdate = () => {
+    // Listen for beforeinstallprompt event
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Handle successful installation
+    const handleAppInstalled = () => {
+      console.log('[PWA] App installed');
+      setShowInstallTip(false);
+      setInstallPrompt(null);
+      localStorage.setItem('pwa-install-tip-shown', 'true');
+    };
+    
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as any);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, [isStandalone]);
+
+  // Handle install button click
+  const handleInstallClick = useCallback(async () => {
+    if (!installPrompt) return;
+    
+    try {
+      console.log('[PWA] Triggering install prompt');
+      // Show the install prompt
+      const result = await installPrompt.prompt();
+      console.log('[PWA] Install prompt result:', result);
+      
+      // Wait for the user to respond to the prompt
+      const { outcome } = await installPrompt.userChoice;
+      console.log('[PWA] User response to install prompt:', outcome);
+      
+      if (outcome === 'accepted') {
+        console.log('[PWA] User accepted the install prompt');
+      } else {
+        console.log('[PWA] User dismissed the install prompt');
+      }
+      
+      // Clear the saved prompt since it can't be used again
+      setInstallPrompt(null);
+      setShowInstallTip(false);
+      localStorage.setItem('pwa-install-tip-shown', 'true');
+      
+    } catch (error) {
+      console.error('[PWA] Error showing install prompt:', error);
+    }
+  }, [installPrompt]);
+
+  // Handle update button click
+  const handleUpdate = useCallback(() => {
     if (!navigator.serviceWorker) return;
     
     navigator.serviceWorker.getRegistrations().then((regs) => {
@@ -103,81 +167,95 @@ export default function PWARegister() {
       // Reload the page to load the new version
       window.location.reload();
     });
-  };
+  }, []);
 
-  const handleInstall = () => {
-    if (!installPrompt) return;
-    
-    // Show the install prompt
-    installPrompt.prompt();
-    
-    // Wait for the user to respond to the prompt
-    installPrompt.userChoice.then((choiceResult: {outcome: string}) => {
-      if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-      } else {
-        console.log('User dismissed the install prompt');
-      }
-      setInstallPrompt(null);
-      setShowInstallTip(false);
-      localStorage.setItem('pwa-install-tip-shown', 'true');
-    });
-  };
-
-  const dismissInstallTip = () => {
+  // Dismiss install tip
+  const dismissInstallTip = useCallback(() => {
     setShowInstallTip(false);
     localStorage.setItem('pwa-install-tip-shown', 'true');
-  };
+  }, []);
   
-  const dismissIOSInstallTip = () => {
+  // Dismiss iOS install tip
+  const dismissIOSInstallTip = useCallback(() => {
     setShowIOSInstallTip(false);
     localStorage.setItem('pwa-ios-install-tip-shown', 'true');
-  };
+  }, []);
 
   return (
     <>
+      {/* Update notification */}
       {updateAvailable && (
-        <div className="fixed bottom-20 right-4 z-50 bg-blue-600 text-white rounded-lg shadow-lg p-4 flex flex-col items-start">
-          <p className="mb-2">A new version is available!</p>
-          <button 
-            onClick={handleUpdate}
-            className="bg-white text-blue-600 px-3 py-1 rounded-md font-medium"
-          >
-            Update now
-          </button>
-        </div>
-      )}
-      
-      {showInstallTip && installPrompt && (
-        <div className="fixed bottom-20 left-4 z-50 bg-blue-600 text-white rounded-lg shadow-lg p-4 flex flex-col items-start max-w-xs">
-          <p className="mb-2">Install BrixSports for a better experience!</p>
-          <div className="flex space-x-2">
+        <div className="fixed bottom-4 right-4 bg-blue-600 text-white rounded-lg shadow-lg p-4 z-50 max-w-xs">
+          <div className="flex flex-col space-y-2">
+            <p className="text-sm font-medium">A new version is available!</p>
             <button 
-              onClick={handleInstall}
-              className="bg-white text-blue-600 px-3 py-1 rounded-md font-medium"
+              onClick={handleUpdate}
+              className="bg-white text-blue-600 px-3 py-1 rounded-md font-medium text-sm hover:bg-gray-100 transition-colors"
             >
-              Install
-            </button>
-            <button 
-              onClick={dismissInstallTip}
-              className="bg-blue-500 text-white px-3 py-1 rounded-md font-medium"
-            >
-              Later
+              Update now
             </button>
           </div>
         </div>
       )}
-      
-      {showIOSInstallTip && isIOS && (
-        <div className="fixed bottom-20 left-4 z-50 bg-blue-600 text-white rounded-lg shadow-lg p-4 flex flex-col items-start max-w-xs">
-          <p className="mb-2">To install on iOS: tap the share icon and select "Add to Home Screen"</p>
-          <div className="flex">
-            <button 
-              onClick={dismissIOSInstallTip}
-              className="bg-white text-blue-600 px-3 py-1 rounded-md font-medium"
-            >
-              Got it
-            </button>
+
+      {/* Install prompt for Android/other devices */}
+      {showInstallTip && installPrompt && !updateAvailable && (
+        <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg z-50 max-w-xs">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0">
+              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                <span className="text-sm">+</span>
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                Install BrixSports
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-300 mb-3">
+                Add to your home screen for quick access
+              </p>
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleInstallClick}
+                  className="px-3 py-1 bg-blue-500 text-white text-xs font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                >
+                  Install
+                </button>
+                <button
+                  onClick={dismissInstallTip}
+                  className="px-3 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-medium rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+                >
+                  Later
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* iOS install instructions */}
+      {showIOSInstallTip && isIOS && !updateAvailable && (
+        <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg z-50 max-w-xs">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0">
+              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                <span className="text-sm">i</span>
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                Install BrixSports
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-300 mb-3">
+                Tap the Share button and select "Add to Home Screen"
+              </p>
+              <button
+                onClick={dismissIOSInstallTip}
+                className="px-3 py-1 bg-blue-500 text-white text-xs font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+              >
+                Got it
+              </button>
+            </div>
           </div>
         </div>
       )}
