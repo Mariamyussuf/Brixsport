@@ -2,10 +2,11 @@
   "name": "BrixSports",
   "short_name": "BrixSports",
   "description": "Sports analytics and tracking application for football events",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "id": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#ffffff",
   "theme_color": "#000000",
   "lang": "en",
@@ -50,7 +51,7 @@
       "src": "/apple-touch-icon.png",
       "sizes": "180x180",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any apple"
     }
   ],
   "screenshots": [

@@ -6,64 +6,100 @@ export default function PWARegister() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showInstallTip, setShowInstallTip] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showIOSInstallTip, setShowIOSInstallTip] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!navigator.serviceWorker) return;
-
-    // Store the install prompt for later use
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      setInstallPrompt(e);
-      
-      // Show install tip after 10 seconds of app usage
-      // but only if not already installed and not dismissed before
-      const hasShownTip = localStorage.getItem('pwa-install-tip-shown');
-      if (!hasShownTip) {
+    
+    // Check if this is iOS device
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(iOS);
+    
+    // Show iOS install tip if not already shown or dismissed
+    if (iOS) {
+      const hasShownIOSTip = localStorage.getItem('pwa-ios-install-tip-shown');
+      if (!hasShownIOSTip) {
         setTimeout(() => {
-          setShowInstallTip(true);
-        }, 10000);
+          setShowIOSInstallTip(true);
+        }, 5000);
       }
-    });
-
-    // Hide install tip if app is installed
-    window.addEventListener('appinstalled', () => {
-      setShowInstallTip(false);
-      localStorage.setItem('pwa-install-tip-shown', 'true');
-      console.log('PWA was installed');
-    });
-
-    const register = async () => {
-      try {
-        // Register the custom service worker placed in public/
-        const swUrl = "/service-worker.js";
-        const reg = await navigator.serviceWorker.register(swUrl);
-
-        // Listen for updates and prompt reload
-        reg.addEventListener("updatefound", () => {
-          const newWorker = reg.installing;
-          if (!newWorker) return;
-          
-          newWorker.addEventListener("statechange", () => {
-            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-              // New content is available, show update notification
-              setUpdateAvailable(true);
-              console.log("New content is available; please refresh.");
-            }
-          });
-        });
-
-        // Check for updates on page load
-        if (reg.waiting && navigator.serviceWorker.controller) {
-          setUpdateAvailable(true);
+    }
+    
+    // For non-iOS devices, use the standard install prompt
+    if (!iOS && navigator.serviceWorker) {
+      // Store the install prompt for later use
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        setInstallPrompt(e);
+        
+        // Show install tip after 5 seconds of app usage
+        // but only if not already installed and not dismissed before
+        const hasShownTip = localStorage.getItem('pwa-install-tip-shown');
+        if (!hasShownTip) {
+          setTimeout(() => {
+            setShowInstallTip(true);
+          }, 5000);
         }
-      } catch (err) {
-        console.error("[PWA] SW registration failed:", err);
-      }
-    };
+      });
 
-    register();
+      // Hide install tip if app is installed
+      window.addEventListener('appinstalled', () => {
+        setShowInstallTip(false);
+        localStorage.setItem('pwa-install-tip-shown', 'true');
+        console.log('PWA was installed');
+      });
+    }
+
+    // Only register service worker if available
+    if (navigator.serviceWorker) {
+      // Clear service worker cache to ensure fresh registration
+      // This helps with reinstall issues on Android
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for(let registration of registrations) {
+          registration.unregister();
+        }
+        // After unregistering, register again
+        registerServiceWorker();
+      }).catch(error => {
+        console.error("Service Worker unregistration failed:", error);
+        // Still try to register even if unregister fails
+        registerServiceWorker();
+      });
+    }
   }, []);
+
+  const registerServiceWorker = async () => {
+    try {
+      // Register the custom service worker placed in public/
+      const swUrl = "/service-worker.js";
+      const reg = await navigator.serviceWorker.register(swUrl, {
+        updateViaCache: 'none',  // Don't use cached service worker
+        scope: '/'
+      });
+
+      // Listen for updates and prompt reload
+      reg.addEventListener("updatefound", () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        
+        newWorker.addEventListener("statechange", () => {
+          if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+            // New content is available, show update notification
+            setUpdateAvailable(true);
+            console.log("New content is available; please refresh.");
+          }
+        });
+      });
+
+      // Check for updates on page load
+      if (reg.waiting && navigator.serviceWorker.controller) {
+        setUpdateAvailable(true);
+      }
+    } catch (err) {
+      console.error("[PWA] SW registration failed:", err);
+    }
+  };
 
   const handleUpdate = () => {
     if (!navigator.serviceWorker) return;
@@ -103,6 +139,11 @@ export default function PWARegister() {
     setShowInstallTip(false);
     localStorage.setItem('pwa-install-tip-shown', 'true');
   };
+  
+  const dismissIOSInstallTip = () => {
+    setShowIOSInstallTip(false);
+    localStorage.setItem('pwa-ios-install-tip-shown', 'true');
+  };
 
   return (
     <>
@@ -133,6 +174,20 @@ export default function PWARegister() {
               className="bg-blue-500 text-white px-3 py-1 rounded-md font-medium"
             >
               Later
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {showIOSInstallTip && isIOS && (
+        <div className="fixed bottom-20 left-4 z-50 bg-blue-600 text-white rounded-lg shadow-lg p-4 flex flex-col items-start max-w-xs">
+          <p className="mb-2">To install on iOS: tap the share icon and select "Add to Home Screen"</p>
+          <div className="flex">
+            <button 
+              onClick={dismissIOSInstallTip}
+              className="bg-white text-blue-600 px-3 py-1 rounded-md font-medium"
+            >
+              Got it
             </button>
           </div>
         </div>

@@ -19,7 +19,8 @@ function getSystemTheme(): "light" | "dark" {
 
 function applyThemeToDocument(resolved: "light" | "dark") {
   const root = document.documentElement;
-  root.classList.toggle("dark", resolved === "dark");
+  root.classList.remove("light", "dark");
+  root.classList.add(resolved);
   // Update theme-color meta for better PWA address bar color
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", resolved === "dark" ? "#000000" : "#ffffff");

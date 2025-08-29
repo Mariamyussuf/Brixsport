@@ -10,5 +10,5 @@ module.exports = {
     extend: {},
   },
   plugins: [],
-  darkMode: 'class', // Enable dark mode support
+  darkMode: 'class', // Enable dark mode support with class strategy
 }

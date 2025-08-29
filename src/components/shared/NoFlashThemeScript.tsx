@@ -13,7 +13,8 @@ export default function NoFlashThemeScript() {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       const resolved = saved === 'dark' ? 'dark' : saved === 'light' ? 'light' : (prefersDark ? 'dark' : 'light');
       const root = document.documentElement;
-      root.classList.toggle('dark', resolved === 'dark');
+      root.classList.remove('light', 'dark');
+      root.classList.add(resolved);
       var m = document.querySelector('meta[name="theme-color"]');
       if (m) m.setAttribute('content', resolved === 'dark' ? '#000000' : '#ffffff');
     } catch {}
