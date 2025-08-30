@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import OfflineWrapper from "@/components/shared/OfflineWrapper";
 import { SettingsProvider } from "@/components/shared/SettingsContext";
 import { I18nProvider } from "@/components/shared/I18nProvider";
+import { AuthProvider } from "@/hooks/useAuth";
 import NotificationsGate from "@/components/shared/NotificationsGate";
 import DataSaverGate from "@/components/shared/DataSaverGate";
 
@@ -61,11 +62,13 @@ export default function RootLayout({
         <ThemeProvider>
           <SettingsProvider>
             <I18nProvider>
-              <PWARegister />
-              <OfflineWrapper />
-              <NotificationsGate />
-              <DataSaverGate />
-              {children}
+              <AuthProvider>
+                <PWARegister />
+                <OfflineWrapper />
+                <NotificationsGate />
+                <DataSaverGate />
+                {children}
+              </AuthProvider>
             </I18nProvider>
           </SettingsProvider>
         </ThemeProvider>
