@@ -29,40 +29,6 @@ function validateEmail(email: string): boolean {
   return emailRegex.test(email) && email.length <= 254;
 }
 
-// Password strength validation
-function validatePassword(password: string): { isValid: boolean; strength: 'weak' | 'fair' | 'good' | 'strong'; errors: string[] } {
-  const errors: string[] = [];
-  let strength: 'weak' | 'fair' | 'good' | 'strong' = 'weak';
-  
-  if (password.length < 8) {
-    errors.push('At least 8 characters');
-  }
-  if (!/[a-z]/.test(password)) {
-    errors.push('One lowercase letter');
-  }
-  if (!/[A-Z]/.test(password)) {
-    errors.push('One uppercase letter');
-  }
-  if (!/\d/.test(password)) {
-    errors.push('One number');
-  }
-  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    errors.push('One special character');
-  }
-
-  // Determine strength
-  const criteriasMet = 5 - errors.length;
-  if (criteriasMet >= 4) strength = 'strong';
-  else if (criteriasMet >= 3) strength = 'good';
-  else if (criteriasMet >= 2) strength = 'fair';
-  
-  return {
-    isValid: errors.length === 0,
-    strength,
-    errors
-  };
-}
-
 // Rate limiting helper
 class RateLimiter {
   private attempts: number = 0;
@@ -155,9 +121,6 @@ const LoginForm: React.FC = () => {
   const [forgotSuccess, setForgotSuccess] = useState(false);
   const [isForgotLoading, setIsForgotLoading] = useState(false);
 
-  // Password strength state
-  const [showPasswordStrength, setShowPasswordStrength] = useState(false);
-
   // Handle input changes with debounced validation
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -171,11 +134,6 @@ const LoginForm: React.FC = () => {
     // Clear submit error
     if (submitError) {
       setSubmitError('');
-    }
-
-    // Show password strength indicator when user starts typing password
-    if (name === 'password') {
-      setShowPasswordStrength(value.length > 0);
     }
   }, [errors, submitError]);
 
@@ -193,8 +151,6 @@ const LoginForm: React.FC = () => {
     // Password validation
     if (!form.password) {
       errs.password = 'Password is required';
-    } else if (form.password.length < 6) {
-      errs.password = 'Password must be at least 6 characters long';
     }
     
     return errs;
@@ -275,19 +231,6 @@ const LoginForm: React.FC = () => {
       setForgotError('Network error. Please try again.');
     } finally {
       setIsForgotLoading(false);
-    }
-  };
-
-  // Get password strength info
-  const passwordStrength = form.password ? validatePassword(form.password) : null;
-
-  // Password strength color classes
-  const getStrengthColor = (strength: string) => {
-    switch (strength) {
-      case 'strong': return 'bg-green-500';
-      case 'good': return 'bg-yellow-500';
-      case 'fair': return 'bg-orange-500';
-      default: return 'bg-red-500';
     }
   };
 
@@ -403,35 +346,6 @@ const LoginForm: React.FC = () => {
                 </button>
               </div>
               
-              {/* Password Strength Indicator */}
-              {showPasswordStrength && passwordStrength && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-white/70">Password strength:</span>
-                    <span className={`text-xs font-medium capitalize ${
-                      passwordStrength.strength === 'strong' ? 'text-green-400' :
-                      passwordStrength.strength === 'good' ? 'text-yellow-400' :
-                      passwordStrength.strength === 'fair' ? 'text-orange-400' :
-                      'text-red-400'
-                    }`}>
-                      {passwordStrength.strength}
-                    </span>
-                  </div>
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4].map((level) => (
-                      <div
-                        key={level}
-                        className={`h-1 flex-1 rounded ${
-                          level <= (['weak', 'fair', 'good', 'strong'].indexOf(passwordStrength.strength) + 1)
-                            ? getStrengthColor(passwordStrength.strength)
-                            : 'bg-white/20'
-                        } transition-colors duration-200`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {errors.password && (
                 <p id="password-error" className="text-red-400 text-sm flex items-center gap-1">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -547,7 +461,7 @@ const LoginForm: React.FC = () => {
             {forgotError && (
               <p id="forgotEmail-error" className="text-red-400 text-sm flex items-center gap-1">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
                 {forgotError}
               </p>
