@@ -34,10 +34,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const value = { user, login, logout };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  // Using React.createElement to avoid potential JSX parsing issues
+  return React.createElement(
+    AuthContext.Provider,
+    { value: value },
+    children
   );
 };
 
