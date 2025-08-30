@@ -82,15 +82,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // HTML navigations: network-first with offline fallback
+  // HTML navigations: network-first with offline fallback (with iOS fix)
   if (request.mode === 'navigate') {
     event.respondWith((async () => {
       try {
         const networkResp = await fetch(request);
-        const cache = await caches.open(STATIC_CACHE);
-        cache.put(request, networkResp.clone());
+        // Only cache successful responses
+        if (networkResp && networkResp.status === 200) {
+          const cache = await caches.open(STATIC_CACHE);
+          cache.put(request, networkResp.clone());
+        }
         return networkResp;
       } catch (_) {
+        // For iOS PWA, try cache first, then offline page
         const cacheMatch = await caches.match(request);
         return cacheMatch || caches.match(OFFLINE_URL);
       }
@@ -105,7 +109,10 @@ self.addEventListener('fetch', (event) => {
       const cached = await cache.match(request);
       const networkPromise = fetch(request)
         .then((resp) => {
-          cache.put(request, resp.clone());
+          // Only cache successful API responses
+          if (resp && resp.status === 200) {
+            cache.put(request, resp.clone());
+          }
           return resp;
         })
         .catch(() => undefined);
@@ -122,8 +129,10 @@ self.addEventListener('fetch', (event) => {
         // Try network first
         const networkResponse = await fetch(request);
         // If successful, cache it and return it
-        cache.put(request, networkResponse.clone());
-        await trimCache(IMAGE_CACHE, MAX_IMAGE_ENTRIES);
+        if (networkResponse && networkResponse.status === 200) {
+          cache.put(request, networkResponse.clone());
+          await trimCache(IMAGE_CACHE, MAX_IMAGE_ENTRIES);
+        }
         return networkResponse;
       } catch (error) {
         // If network fails, try to serve from cache
@@ -132,7 +141,6 @@ self.addEventListener('fetch', (event) => {
           return cachedResponse;
         }
         // If not in cache either, the request will fail, which is the expected browser behavior.
-        // The original code returned a 504, which was less helpful.
         return new Response(null, { status: 404, statusText: 'Not Found' });
       }
     })());

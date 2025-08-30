@@ -63,10 +63,10 @@ export default function PWARegister() {
         setUpdateAvailable(true);
       }
 
-      // Periodic update checks (every 60 minutes)
+      // Periodic update checks (every 30 minutes for better iOS compatibility)
       setInterval(() => {
         registration.update();
-      }, 60 * 60 * 1000);
+      }, 30 * 60 * 1000);
 
     } catch (error) {
       console.error('[PWA] ServiceWorker registration failed:', error);
@@ -194,7 +194,7 @@ export default function PWARegister() {
     }
   }, [installPrompt]);
 
-  // Handle app updates
+  // Handle app updates with iOS fix
   const handleUpdate = useCallback(() => {
     if (!navigator.serviceWorker) return;
     
@@ -207,12 +207,26 @@ export default function PWARegister() {
         }
       }
       
-      // Reload after a short delay to ensure SW activation
-      setTimeout(() => {
+      // For iOS PWA, force a more thorough refresh
+      if (isIOS && isStandalone) {
+        // Clear all caches first
+        if ('caches' in window) {
+          caches.keys().then((names) => {
+            names.forEach((name) => {
+              caches.delete(name);
+            });
+          });
+        }
+        // Then reload
         window.location.reload();
-      }, 100);
+      } else {
+        // Standard reload for other platforms
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
+      }
     });
-  }, []);
+  }, [isIOS, isStandalone]);
 
   // Handle push notification permission
   const handleEnablePushNotifications = useCallback(async () => {
