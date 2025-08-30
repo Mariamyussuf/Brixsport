@@ -15,6 +15,7 @@ const icons = [
   { name: 'icon-384x384.png', size: 384 },
   { name: 'icon-512x512.png', size: 512 },
   { name: 'apple-touch-icon.png', size: 180 },
+  { name: 'icon-96x96.png', size: 96 },
   { name: 'apple-touch-icon-152x152.png', size: 152 },
   { name: 'apple-touch-icon-167x167.png', size: 167 },
   { name: 'apple-touch-icon-180x180.png', size: 180 }
