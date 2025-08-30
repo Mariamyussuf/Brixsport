@@ -136,11 +136,18 @@ export default function PWARegister() {
 
       const hasShownTip = localStorage.getItem('pwa-install-tip-shown');
       const installDismissedAt = localStorage.getItem('pwa-install-dismissed-at');
+      const lastPromptShownAt = localStorage.getItem('pwa-last-prompt-shown-at');
       
-      // Show prompt if not shown before, or if dismissed more than 7 days ago
-      if (!hasShownTip || (installDismissedAt && Date.now() - parseInt(installDismissedAt) > 7 * 24 * 60 * 60 * 1000)) {
+    
+      const now = Date.now();
+      const shownRecently = lastPromptShownAt && (now - parseInt(lastPromptShownAt) < 24 * 60 * 60 * 1000);
+      const dismissedRecently = installDismissedAt && (now - parseInt(installDismissedAt) < 7 * 24 * 60 * 60 * 1000);
+      
+      if (!hasShownTip && !dismissedRecently && !shownRecently) {
         setTimeout(() => {
           setShowInstallTip(true);
+          // Record when we show the prompt
+          localStorage.setItem('pwa-last-prompt-shown-at', now.toString());
         }, 2000);
       }
     };
@@ -183,16 +190,29 @@ export default function PWARegister() {
       setInstallPrompt(null);
       setShowInstallTip(false);
       
+      // Mark as shown regardless of outcome to prevent repeated prompts
+      localStorage.setItem('pwa-install-tip-shown', 'true');
+      
       if (outcome === 'accepted') {
-        localStorage.setItem('pwa-install-tip-shown', 'true');
+        localStorage.setItem('pwa-installed', 'true');
+        // Show push notification prompt after installation
+        if (pushNotificationSupported && !isIOS) {
+          setTimeout(() => {
+            setShowPushPrompt(true);
+          }, 2000);
+        }
       } else {
+        // User dismissed the prompt
         localStorage.setItem('pwa-install-dismissed-at', Date.now().toString());
       }
       
     } catch (error) {
       console.error('[PWA] Install prompt error:', error);
+      // Even on error, mark as shown to prevent repeated prompts
+      localStorage.setItem('pwa-install-tip-shown', 'true');
+      setShowInstallTip(false);
     }
-  }, [installPrompt]);
+  }, [installPrompt, pushNotificationSupported, isIOS]);
 
   // Handle app updates with iOS fix
   const handleUpdate = useCallback(() => {
@@ -253,12 +273,19 @@ export default function PWARegister() {
   // Dismiss functions
   const dismissInstallTip = useCallback(() => {
     setShowInstallTip(false);
+    setInstallPrompt(null); // Clear the prompt reference
     localStorage.setItem('pwa-install-dismissed-at', Date.now().toString());
+    // Also mark as shown so it doesn't reappear immediately
+    localStorage.setItem('pwa-install-tip-shown', 'true');
+    // Record when it was dismissed
+    localStorage.setItem('pwa-last-prompt-shown-at', Date.now().toString());
   }, []);
   
   const dismissIOSInstallTip = useCallback(() => {
     setShowIOSInstallTip(false);
     localStorage.setItem('pwa-ios-install-tip-shown', 'true');
+    // Record when it was dismissed
+    localStorage.setItem('pwa-last-prompt-shown-at', Date.now().toString());
   }, []);
 
   const dismissPushPrompt = useCallback(() => {
