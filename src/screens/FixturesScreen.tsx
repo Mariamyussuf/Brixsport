@@ -180,7 +180,7 @@ const FixturesScreen = () => {
           {getTeamIcon(match.homeTeam, true)}
         </div>
         
-        <div className="text-center min-w-[60px]">
+        <div className="text-center min-w-[60px] px-2 sm:px-4">
           {match.homeScore !== undefined && match.awayScore !== undefined ? (
             <span className="text-lg font-bold text-gray-800">
               {match.homeScore} - {match.awayScore}

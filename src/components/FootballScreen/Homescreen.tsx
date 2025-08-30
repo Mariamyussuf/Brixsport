@@ -275,13 +275,13 @@ const Homescreen: React.FC = () => {
       {/* Mobile-optimized match layout */}
       <div className="flex items-center justify-between">
         {/* Team 1 */}
-        <div className="flex items-center space-x-2 sm:space-x-3">
+        <div className="flex items-center space-x-2 sm:space-x-3 flex-1">
           <TeamLogo color={match.team1Color} />
           <span className="font-medium text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate">{match.team1}</span>
         </div>
         
-        {/* Score/VS - centered on mobile, inline on desktop */}
-        <div className="flex-1 text-center sm:text-right">
+        {/* Score/VS - centered on both mobile and desktop for consistency */}
+        <div className="px-2 sm:px-4 min-w-[80px] sm:min-w-[100px] flex justify-center">
           {match.status === 'Live' && match.score1 !== undefined && match.score2 !== undefined ? (
             <span className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
               {match.score1} - {match.score2}
@@ -292,7 +292,7 @@ const Homescreen: React.FC = () => {
         </div>
         
         {/* Team 2 */}
-        <div className="flex items-center space-x-2 sm:space-x-3 justify-end">
+        <div className="flex items-center space-x-2 sm:space-x-3 justify-end flex-1">
           <span className="font-medium text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate">{match.team2}</span>
           <TeamLogo color={match.team2Color} />
         </div>
@@ -366,14 +366,16 @@ const Homescreen: React.FC = () => {
           <div className="flex items-center justify-between w-full">
             {/* Left side - Back button and Title */}
             <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-              <button
-                onClick={() => router.back()}
-                aria-label="Back"
-                className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
-                type="button"
-              >
-                <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 dark:text-white" />
-              </button>
+              {activeTab !== 'Fixtures' && (
+                <button
+                  onClick={() => handleTabClick('Fixtures')}
+                  aria-label="Back"
+                  className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
+                  type="button"
+                >
+                  <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 dark:text-white" />
+                </button>
+              )}
               <div className="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">{t('app_title')}</h1>
                 <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
