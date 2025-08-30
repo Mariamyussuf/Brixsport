@@ -128,6 +128,12 @@ export default function PWARegister() {
       
       setInstallPrompt(e);
       
+      const hasBeenInstalled = localStorage.getItem('pwa-installed');
+      if (hasBeenInstalled) {
+        console.log('[PWA] App already installed, hiding prompt.');
+        return;
+      }
+
       const hasShownTip = localStorage.getItem('pwa-install-tip-shown');
       const installDismissedAt = localStorage.getItem('pwa-install-dismissed-at');
       
@@ -144,6 +150,7 @@ export default function PWARegister() {
       setShowInstallTip(false);
       setInstallPrompt(null);
       localStorage.setItem('pwa-install-tip-shown', 'true');
+      localStorage.setItem('pwa-installed', 'true'); // Remember that the app has been installed
       
       // Show push notification prompt after installation (for supported platforms)
       if (pushNotificationSupported && !isIOS) {
