@@ -5,6 +5,8 @@ import BracketView from './BracketView';
 import GroupStageTable, { GroupData } from './GroupStageTable';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/components/shared/I18nProvider';
+import { useAuth } from '@/hooks/useAuth';
+import { LoginPrompt } from '@/components/shared/LoginPrompt';
 
 interface Competition {
   id: string;
@@ -18,7 +20,8 @@ interface Competition {
 const CompetitionsScreen: React.FC = () => {
   const router = useRouter();
   const { t } = useI18n();
-  const isAuthed = typeof window !== 'undefined' && !!localStorage.getItem('token');
+  const { user } = useAuth();
+  const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
   const [matchTab, setMatchTab] = useState<'fixtures' | 'results' | 'stats' | 'standings'>('fixtures');
   const [competitions, setCompetitions] = useState<Competition[]>([
     {
@@ -80,16 +83,11 @@ const CompetitionsScreen: React.FC = () => {
     }
   ]);
 
-  const requireAuth = (next: string = '/?tab=Competition'): boolean => {
-    if (!isAuthed) {
-      router.push(`/auth/login?next=${encodeURIComponent(next)}`);
-      return true;
-    }
-    return false;
-  };
-
   const toggleFavorite = (id: string): void => {
-    if (requireAuth()) return;
+    if (!user) {
+      setIsLoginPromptOpen(true);
+      return;
+    }
     setCompetitions(prev =>
       prev.map(comp =>
         comp.id === id ? { ...comp, isFavorited: !comp.isFavorited } : comp
@@ -116,7 +114,7 @@ const CompetitionsScreen: React.FC = () => {
     try {
       const saved = typeof window !== 'undefined' ? window.localStorage.getItem('standingsTab') : null;
       if (saved === 'group' || saved === 'knockout') {
-        setStandingsTab(saved);
+        setStandingsTab(saved as 'group' | 'knockout');
       }
     } catch {}
   }, []);
@@ -191,146 +189,149 @@ const CompetitionsScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-neutral-900 dark:text-neutral-100">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-white/10 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => router.back()}
-            aria-label="Back"
-            className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
-            type="button"
-          >
-            <ArrowLeft className="w-5 h-5 text-slate-900 dark:text-white" />
-          </button>
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-              <div className="w-4 h-4 border-2 border-white rounded-full"></div>
+    <>
+      <LoginPrompt isOpen={isLoginPromptOpen} onClose={() => setIsLoginPromptOpen(false)} />
+      <div className="min-h-screen bg-white dark:bg-black text-neutral-900 dark:text-neutral-100">
+        {/* Header */}
+        <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-white/10 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => router.back()}
+              aria-label="Back"
+              className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+              type="button"
+            >
+              <ArrowLeft className="w-5 h-5 text-slate-900 dark:text-white" />
+            </button>
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                <div className="w-4 h-4 border-2 border-white rounded-full"></div>
+              </div>
+              <h1 className="text-xl font-normal text-slate-900 dark:text-white">{t('app_title')}</h1>
             </div>
-            <h1 className="text-xl font-normal text-slate-900 dark:text-white">{t('app_title')}</h1>
+          </div>
+          <div className="flex items-center">
+            <Bell className="w-6 h-6 text-slate-900 dark:text-white" />
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <div className="bg-white dark:bg-slate-900/40 min-h-screen text-slate-900 dark:text-slate-100">
+          <div className="px-6">
+            {/* Active Competition Section */}
+            <section className="py-6">
+              <h2 className="text-xl font-medium mb-6 text-gray-900 dark:text-white">{t('active_competition')}</h2>
+              <div>
+                {activeCompetitions.map((competition) => (
+                  <CompetitionItem key={competition.id} competition={competition} showBorder={false} />
+                ))}
+              </div>
+            </section>
+
+            {/* Match/Competition tabs moved to body */}
+            <section className="pt-2">
+              <div className="inline-flex rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 mb-4">
+                {([
+                  { key: 'fixtures' as const },
+                  { key: 'results' as const },
+                  { key: 'stats' as const },
+                  { key: 'standings' as const }
+                ]).map(({ key }) => (
+                  <button
+                    key={key}
+                    className={`px-4 py-2 text-sm font-medium ${
+                      matchTab === key
+                        ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
+                        : 'bg-gray-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300'
+                    } ${key !== 'fixtures' ? 'border-l border-gray-200 dark:border-white/10' : ''}`}
+                    onClick={() => setMatchTab(key)}
+                  >
+                    {t(key)}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* Content under tabs */}
+            {matchTab === 'standings' ? (
+              <section className="py-6">
+                <h2 className="text-xl font-medium mb-4 text-gray-900">{t('standings')}</h2>
+                {/* Standings sub-tabs */}
+                <div className="inline-flex rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 mb-4">
+                  <button
+                    className={`px-4 py-2 text-sm font-medium ${
+                      standingsTab === 'group'
+                        ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
+                        : 'bg-gray-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300'
+                    }`}
+                    onClick={() => setStandingsTab('group')}
+                  >
+                    {t('group_stage')}
+                  </button>
+                  <button
+                    className={`px-4 py-2 text-sm font-medium border-l border-gray-200 dark:border-white/10 ${
+                      standingsTab === 'knockout'
+                        ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
+                        : 'bg-gray-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300'
+                    }`}
+                    onClick={() => setStandingsTab('knockout')}
+                  >
+                    {t('knockout_stage')}
+                  </button>
+                </div>
+
+                {/* Standings content */}
+                {standingsTab === 'group' ? (
+                  <GroupStageTable groups={groupData} />
+                ) : (
+                  <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40">
+                    <BracketView />
+                  </div>
+                )}
+              </section>
+            ) : (
+              <section className="py-6">
+                {matchTab === 'fixtures' && (
+                  <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40 p-6 text-slate-700 dark:text-slate-300">
+                    <p>{t('coming_soon')}</p>
+                  </div>
+                )}
+                {matchTab === 'results' && (
+                  <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40 p-6 text-slate-700 dark:text-slate-300">
+                    <p>{t('coming_soon')}</p>
+                  </div>
+                )}
+                {matchTab === 'stats' && (
+                  <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40 p-6 text-slate-700 dark:text-slate-300">
+                    <p>{t('coming_soon')}</p>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Separator */}
+            <div className="border-t border-gray-200 dark:border-white/10"></div>
+
+            {/* All Competitions Section */}
+            <section className="py-6">
+              <h2 className="text-xl font-medium mb-6 text-gray-900 dark:text-white flex items-center space-x-2">
+                <span>{t('all_competitions')}</span>
+                <span className="text-gray-500 dark:text-slate-400">• {allCompetitions.length}</span>
+              </h2>
+              <div>
+                {allCompetitions.map((competition, index) => (
+                  <CompetitionItem 
+                    key={competition.id} 
+                    competition={competition} 
+                    showBorder={index !== allCompetitions.length - 1}
+                  />
+                ))}
+              </div>
+            </section>
           </div>
         </div>
-        <div className="flex items-center">
-          <Bell className="w-6 h-6 text-slate-900 dark:text-white" />
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="bg-white dark:bg-slate-900/40 min-h-screen text-slate-900 dark:text-slate-100">
-        <div className="px-6">
-          {/* Active Competition Section */}
-          <section className="py-6">
-            <h2 className="text-xl font-medium mb-6 text-gray-900 dark:text-white">{t('active_competition')}</h2>
-            <div>
-              {activeCompetitions.map((competition) => (
-                <CompetitionItem key={competition.id} competition={competition} showBorder={false} />
-              ))}
-            </div>
-          </section>
-
-          {/* Match/Competition tabs moved to body */}
-          <section className="pt-2">
-            <div className="inline-flex rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 mb-4">
-              {([
-                { key: 'fixtures' as const },
-                { key: 'results' as const },
-                { key: 'stats' as const },
-                { key: 'standings' as const }
-              ]).map(({ key }) => (
-                <button
-                  key={key}
-                  className={`px-4 py-2 text-sm font-medium ${
-                    matchTab === key
-                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
-                      : 'bg-gray-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300'
-                  } ${key !== 'fixtures' ? 'border-l border-gray-200 dark:border-white/10' : ''}`}
-                  onClick={() => setMatchTab(key)}
-                >
-                  {t(key)}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {/* Content under tabs */}
-          {matchTab === 'standings' ? (
-            <section className="py-6">
-              <h2 className="text-xl font-medium mb-4 text-gray-900">{t('standings')}</h2>
-              {/* Standings sub-tabs */}
-              <div className="inline-flex rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 mb-4">
-                <button
-                  className={`px-4 py-2 text-sm font-medium ${
-                    standingsTab === 'group'
-                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
-                      : 'bg-gray-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300'
-                  }`}
-                  onClick={() => setStandingsTab('group')}
-                >
-                  {t('group_stage')}
-                </button>
-                <button
-                  className={`px-4 py-2 text-sm font-medium border-l border-gray-200 dark:border-white/10 ${
-                    standingsTab === 'knockout'
-                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
-                      : 'bg-gray-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300'
-                  }`}
-                  onClick={() => setStandingsTab('knockout')}
-                >
-                  {t('knockout_stage')}
-                </button>
-              </div>
-
-              {/* Standings content */}
-              {standingsTab === 'group' ? (
-                <GroupStageTable groups={groupData} />
-              ) : (
-                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40">
-                  <BracketView />
-                </div>
-              )}
-            </section>
-          ) : (
-            <section className="py-6">
-              {matchTab === 'fixtures' && (
-                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40 p-6 text-slate-700 dark:text-slate-300">
-                  <p>{t('coming_soon')}</p>
-                </div>
-              )}
-              {matchTab === 'results' && (
-                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40 p-6 text-slate-700 dark:text-slate-300">
-                  <p>{t('coming_soon')}</p>
-                </div>
-              )}
-              {matchTab === 'stats' && (
-                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40 p-6 text-slate-700 dark:text-slate-300">
-                  <p>{t('coming_soon')}</p>
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* Separator */}
-          <div className="border-t border-gray-200 dark:border-white/10"></div>
-
-          {/* All Competitions Section */}
-          <section className="py-6">
-            <h2 className="text-xl font-medium mb-6 text-gray-900 dark:text-white flex items-center space-x-2">
-              <span>{t('all_competitions')}</span>
-              <span className="text-gray-500 dark:text-slate-400">• {allCompetitions.length}</span>
-            </h2>
-            <div>
-              {allCompetitions.map((competition, index) => (
-                <CompetitionItem 
-                  key={competition.id} 
-                  competition={competition} 
-                  showBorder={index !== allCompetitions.length - 1}
-                />
-              ))}
-            </div>
-          </section>
-        </div>
       </div>
-    </div>
+    </>
   );
 };
 
