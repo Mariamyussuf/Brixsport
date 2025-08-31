@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import Link from 'next/link';
 
 // Types
 interface FormData {
@@ -12,7 +13,29 @@ interface ValidationErrors {
   [key: string]: string;
 }
 
+// Mock rate limiter (replace with your actual rate limiting logic)
+class RateLimiter {
+  canAttempt(): boolean {
+    return true;
+  }
+  
+  getRemainingTime(): number {
+    return 0;
+  }
+  
+  getRemainingAttempts(): number {
+    return 5;
+  }
+}
 
+const rateLimiter = new RateLimiter();
+
+// Mock API functions (replace with your actual API calls)
+const mockForgotPassword = async (email: string) => {
+  // Simulate API call
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  return { success: true, message: 'Password reset link sent!' };
+};
 
 // Enhanced email validation
 function validateEmail(email: string): boolean {
@@ -20,9 +43,6 @@ function validateEmail(email: string): boolean {
   return emailRegex.test(email) && email.length <= 254;
 }
 
-
-
-// Mock API functions (replace with your actual API calls)
 const LoginForm: React.FC = () => {
   const { login } = useAuth();
   // Form state
@@ -35,7 +55,12 @@ const LoginForm: React.FC = () => {
   const [submitError, setSubmitError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  
+  // Forgot password state
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotError, setForgotError] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [isForgotLoading, setIsForgotLoading] = useState(false);
 
   // Handle input changes with debounced validation
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,9 +111,11 @@ const LoginForm: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // In a real app, you would call your API to get a token
-      const token = 'mock-jwt-token'; // Replace with actual token from your API
-      await login(token);
+      // Pass the form credentials to the login function
+      await login({
+        email: form.email,
+        password: form.password
+      });
 
       // Clear any previous errors
       setSubmitError('');
