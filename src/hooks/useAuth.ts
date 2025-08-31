@@ -434,7 +434,7 @@ export const useRequireAuth = (): {
     if (!loading.initializing && !user) {
       // Redirect to login page or show login modal
       if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+        window.location.href = '/auth/login';
       }
     }
   }, [user, loading.initializing]);

@@ -120,8 +120,8 @@ const LoginForm: React.FC = () => {
       // Clear any previous errors
       setSubmitError('');
 
-      // Redirect to homepage
-      window.location.href = '/';
+      // Redirect to profile page
+      window.location.href = '/profile';
     } catch (error) {
       setSubmitError('Login failed. Please try again.');
       console.error('Login error:', error);

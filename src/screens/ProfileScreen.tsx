@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import UserProfile from '@/components/shared/UserProfile';
 import { 
@@ -32,6 +32,13 @@ import { useRouter } from 'next/navigation';
 const ProfileScreen = () => {
   const { user, logout, loading, error } = useAuth();
   const router = useRouter();
+  
+  // Handle navigation error case
+  useEffect(() => {
+    if (error && error.type === 'UNAUTHORIZED') {
+      router.push('/auth/login');
+    }
+  }, [error, router]);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showModal, setShowModal] = useState<string | null>(null);
 

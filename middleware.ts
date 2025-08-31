@@ -19,9 +19,16 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/signup', request.url));
   }
 
+  // Handle profile route - make sure it's accessible
+  if (pathname === '/profile') {
+    // For simplicity, we're not checking auth token here
+    // Just ensuring the route is properly handled
+    return NextResponse.next();
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: '/auth',
+  matcher: ['/auth', '/profile'],
 }
