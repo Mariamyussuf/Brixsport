@@ -133,7 +133,7 @@ class AuthService {
 }
 
 // Token management utilities
-class TokenManager {
+export class TokenManager {
   private static readonly TOKEN_KEY: string = 'authToken';
   private static readonly REFRESH_TOKEN_KEY: string = 'refreshToken';
 

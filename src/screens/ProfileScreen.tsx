@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import UserProfile from '@/components/shared/UserProfile';
+import { FavoritesAPI, FavoriteItem } from '@/lib/api';
 import { 
   Settings, 
   HelpCircle, 
@@ -30,9 +31,48 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 
 const ProfileScreen = () => {
-  const { user, logout, loading, error } = useAuth();
+  const { user, logout, loading: authLoading, error } = useAuth();
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
   
+  // Fetch user favorites
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      if (!user) return;
+      
+      setLoadingFavorites(true);
+      setFavoritesError(null);
+      
+      try {
+        const data = await FavoritesAPI.getAll();
+        setFavorites(data);
+      } catch (error) {
+        console.error('Error fetching favorites:', error);
+        setFavoritesError('Failed to load favorites. Please try again.');
+      } finally {
+        setLoadingFavorites(false);
+      }
+    };
+    
+    fetchFavorites();
+  }, [user]);
+  
+  // Handle removing favorite
+  const handleRemoveFavorite = async (favoriteId: string) => {
+    try {
+      await FavoritesAPI.remove({ id: favoriteId });
+      setFavorites(prev => prev.filter(fav => fav.id !== favoriteId));
+    } catch (error) {
+      console.error('Error removing favorite:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (!authLoading.initializing) {
+      setLoading(false);
+    }
+  }, [authLoading.initializing]);
+
   // Handle navigation error case
   useEffect(() => {
     if (error && error.type === 'UNAUTHORIZED') {
@@ -41,6 +81,58 @@ const ProfileScreen = () => {
   }, [error, router]);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showModal, setShowModal] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
+  const [loadingFavorites, setLoadingFavorites] = useState<boolean>(false);
+  const [favoritesError, setFavoritesError] = useState<string | null>(null);
+
+  const handleTipsAndSupport = () => {
+    setShowModal('support');
+  };
+
+  // Define quickLinks array
+  const quickLinks = [
+    { 
+      icon: <Bell className="h-6 w-6" />, 
+      text: 'Notifications', 
+      onClick: () => router.push('/notifications') 
+    },
+    { 
+      icon: <Calendar className="h-6 w-6" />, 
+      text: 'Events', 
+      onClick: () => router.push('/events') 
+    },
+    { 
+      icon: <TrendingUp className="h-6 w-6" />, 
+      text: 'Stats', 
+      onClick: () => router.push('/statistics') 
+    },
+    { 
+      icon: <Gamepad2 className="h-6 w-6" />, 
+      text: 'Games', 
+      onClick: () => router.push('/games') 
+    },
+    { 
+      icon: <Star className="h-6 w-6" />, 
+      text: 'Favorites', 
+      onClick: () => router.push('/favorites') 
+    },
+    { 
+      icon: <BarChart3 className="h-6 w-6" />, 
+      text: 'Reports', 
+      onClick: () => router.push('/reports') 
+    },
+    { 
+      icon: <HelpCircle className="h-6 w-6" />, 
+      text: 'Support', 
+      onClick: handleTipsAndSupport 
+    },
+    { 
+      icon: <Plus className="h-6 w-6" />, 
+      text: 'Add', 
+      onClick: () => {}, 
+      isAdd: true 
+    }
+  ];
 
   const handleLogout = () => {
     logout();
@@ -85,10 +177,6 @@ const ProfileScreen = () => {
     setShowModal('privacy');
   };
 
-  const handleTipsAndSupport = () => {
-    setShowModal('support');
-  };
-
   const handleAbout = () => {
     setShowModal('about');
   };
@@ -110,19 +198,9 @@ const ProfileScreen = () => {
   ];
 
   // Your existing menu items converted to quick links format
-  const quickLinks = [
-    { icon: <Bell className="h-5 w-5" />, text: 'Notifications', onClick: () => {} },
-    { icon: <BarChart3 className="h-5 w-5" />, text: 'Help & Support', onClick: handleTipsAndSupport },
-    { icon: <Calendar className="h-5 w-5" />, text: 'Tips & Tricks', onClick: handleTipsAndSupport },
-    { icon: <Info className="h-5 w-5" />, text: 'About', onClick: handleAbout },
-    { icon: <FileText className="h-5 w-5" />, text: 'Privacy Policy', onClick: handlePrivacyPolicy },
-    { 
-      icon: <Plus className="h-5 w-5" />, 
-      text: 'More Options', 
-      onClick: () => setShowModal('more'),
-      isAdd: true 
-    }
-  ];
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-900 via-blue-900 to-indigo-800 text-white">
@@ -200,6 +278,69 @@ const ProfileScreen = () => {
             </div>
           ))}
         </div>
+
+        {/* Favorites Section - New */}
+        {user && (
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mb-8">
+            <h3 className="text-lg font-semibold text-white mb-4">Your Favorites</h3>
+            
+            {loadingFavorites ? (
+              <div className="py-4 flex justify-center">
+                <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : favoritesError ? (
+              <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-white/90 text-sm">
+                {favoritesError}
+              </div>
+            ) : favorites.length === 0 ? (
+              <div className="py-6 text-center text-white/70">
+                <p>You haven't added any favorites yet.</p>
+                <Button 
+                  onClick={() => router.push('/search')}
+                  className="mt-3 bg-white/10 hover:bg-white/20 text-white py-2 px-4 rounded-lg text-sm"
+                >
+                  Discover Teams & Players
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {favorites.map((favorite) => (
+                  <div 
+                    key={favorite.id} 
+                    className="bg-white/10 rounded-lg p-3 flex flex-col items-center text-center relative group"
+                  >
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleRemoveFavorite(favorite.id)}
+                        className="p-1 bg-black/20 hover:bg-black/40 rounded-full"
+                        aria-label="Remove favorite"
+                      >
+                        <X className="h-4 w-4 text-white/90" />
+                      </button>
+                    </div>
+                    <div className="w-14 h-14 bg-white/10 rounded-full mb-2 overflow-hidden">
+                      {favorite.image ? (
+                        <img 
+                          src={favorite.image} 
+                          alt={favorite.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
+                          <span className="text-xl font-bold text-white">
+                            {favorite.name.charAt(0)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <h4 className="text-sm font-medium text-white">{favorite.name}</h4>
+                    <span className="text-xs text-white/60 capitalize">{favorite.type}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Action Button */}
         {!user ? (
