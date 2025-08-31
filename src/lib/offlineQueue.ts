@@ -203,3 +203,11 @@ export const getOfflineQueue = (): OfflineQueue => {
   }
   return queueInstance;
 };
+
+/**
+ * Flush all pending items in the queue immediately
+ */
+export const flushNow = async () => {
+  const queue = getOfflineQueue();
+  await queue.processPendingItems();
+};
