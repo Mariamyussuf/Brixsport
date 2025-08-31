@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import UserProfile from '@/components/shared/UserProfile';
 import { FavoritesAPI, FavoriteItem } from '@/lib/api';
+import { useTheme } from '@/components/shared/ThemeProvider';
 import { 
   Settings, 
   HelpCircle, 
@@ -34,6 +35,7 @@ const ProfileScreen = () => {
   const { user, logout, loading: authLoading, error } = useAuth();
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { resolvedTheme } = useTheme();
   
   // Fetch user favorites
   useEffect(() => {
@@ -203,17 +205,17 @@ const ProfileScreen = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-900 via-blue-900 to-indigo-800 text-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900 text-slate-900 dark:text-white">
 
       <div className="px-4 pb-6">
         {/* Header */}
         <header className="flex items-center justify-between py-4">
-          <h1 className="text-2xl font-bold text-white">Profile</h1>
+          <h1 className="text-2xl font-bold">Profile</h1>
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={() => router.push('/settings')}
-            className="hover:bg-white/10 text-white"
+            className="hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <Settings className="h-6 w-6" />
           </Button>
@@ -231,8 +233,8 @@ const ProfileScreen = () => {
                 playerImage={user?.image || ''}
                 playerName={user?.name || 'Guest'}
               />
-              <h2 className="text-xl font-semibold mt-4 text-white">{user?.name || 'Guest User'}</h2>
-              <p className="text-white/70">{user?.email}</p>
+              <h2 className="text-xl font-semibold mt-4">{user?.name || 'Guest User'}</h2>
+              <p className="text-slate-600 dark:text-gray-400">{user?.email}</p>
               {user?.role && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-2">
                   {user.role}
@@ -241,12 +243,12 @@ const ProfileScreen = () => {
             </>
           ) : (
             <>
-              <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-4">
-                <div className="w-16 h-16 bg-white/30 rounded-full flex items-center justify-center">
-                  <div className="w-8 h-8 bg-white/50 rounded-full"></div>
+              <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                <div className="w-16 h-16 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
                 </div>
               </div>
-              <h2 className="text-xl font-medium text-white/90 mb-2">
+              <h2 className="text-xl font-medium mb-2">
                 Your home for sports insights
               </h2>
             </>
@@ -260,30 +262,30 @@ const ProfileScreen = () => {
               <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                 <Check className="h-4 w-4 text-white" />
               </div>
-              <span className="text-white/90 font-medium">{feature.text}</span>
+              <span className="font-medium">{feature.text}</span>
             </div>
           ))}
         </div>
 
         {/* Favorites Section - New */}
         {user && (
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mb-8">
-            <h3 className="text-lg font-semibold text-white mb-4">Your Favorites</h3>
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl p-4 mb-8">
+            <h3 className="text-lg font-semibold mb-4">Your Favorites</h3>
             
             {loadingFavorites ? (
               <div className="py-4 flex justify-center">
                 <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
               </div>
             ) : favoritesError ? (
-              <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-white/90 text-sm">
+              <div className="p-3 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg text-red-600 dark:text-red-300 text-sm">
                 {favoritesError}
               </div>
             ) : favorites.length === 0 ? (
-              <div className="py-6 text-center text-white/70">
+              <div className="py-6 text-center text-gray-500 dark:text-gray-400">
                 <p>You haven't added any favorites yet.</p>
                 <Button 
                   onClick={() => router.push('/search')}
-                  className="mt-3 bg-white/10 hover:bg-white/20 text-white py-2 px-4 rounded-lg text-sm"
+                  className="mt-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 py-2 px-4 rounded-lg text-sm"
                 >
                   Discover Teams & Players
                 </Button>
@@ -293,18 +295,18 @@ const ProfileScreen = () => {
                 {favorites.map((favorite) => (
                   <div 
                     key={favorite.id} 
-                    className="bg-white/10 rounded-lg p-3 flex flex-col items-center text-center relative group"
+                    className="bg-gray-200 dark:bg-gray-700 rounded-lg p-3 flex flex-col items-center text-center relative group"
                   >
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => handleRemoveFavorite(favorite.id)}
-                        className="p-1 bg-black/20 hover:bg-black/40 rounded-full"
+                        className="p-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 rounded-full"
                         aria-label="Remove favorite"
                       >
-                        <X className="h-4 w-4 text-white/90" />
+                        <X className="h-4 w-4" />
                       </button>
                     </div>
-                    <div className="w-14 h-14 bg-white/10 rounded-full mb-2 overflow-hidden">
+                    <div className="w-14 h-14 bg-gray-300 dark:bg-gray-600 rounded-full mb-2 overflow-hidden">
                       {favorite.image ? (
                         <img 
                           src={favorite.image} 
@@ -319,8 +321,8 @@ const ProfileScreen = () => {
                         </div>
                       )}
                     </div>
-                    <h4 className="text-sm font-medium text-white">{favorite.name}</h4>
-                    <span className="text-xs text-white/60 capitalize">{favorite.type}</span>
+                    <h4 className="text-sm font-medium">{favorite.name}</h4>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">{favorite.type}</span>
                   </div>
                 ))}
               </div>
@@ -332,14 +334,14 @@ const ProfileScreen = () => {
         {!user ? (
           <Button 
             onClick={() => router.push('/auth/login')}
-            className="w-full bg-white text-blue-900 hover:bg-white/90 font-semibold py-3 rounded-full mb-8"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-full mb-8"
           >
             SIGN IN
           </Button>
         ) : (
           <Button 
             onClick={handleShare}
-            className="w-full bg-white text-blue-900 hover:bg-white/90 font-semibold py-3 rounded-full mb-8 flex items-center justify-center space-x-2"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-full mb-8 flex items-center justify-center space-x-2"
           >
             {shareSuccess ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
             <span>{shareSuccess ? "SHARED!" : "SHARE BRIXSPORTS"}</span>
@@ -347,8 +349,8 @@ const ProfileScreen = () => {
         )}
 
         {/* Quick Links Section */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mb-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Quick links</h3>
+        <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl p-4 mb-6">
+          <h3 className="text-lg font-semibold mb-4">Quick links</h3>
           
           <div className="grid grid-cols-2 gap-4">
             {quickLinks.map((link, index) => (
@@ -357,12 +359,12 @@ const ProfileScreen = () => {
                 onClick={link.onClick}
                 className={`flex flex-col items-center space-y-2 p-4 rounded-xl transition-colors ${
                   link.isAdd 
-                    ? 'border-2 border-dashed border-white/30 hover:border-white/50' 
-                    : 'bg-white/10 hover:bg-white/20'
+                    ? 'border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500' 
+                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
-                <div className={`${link.isAdd ? 'text-white/60' : 'text-white/80'}`}>{link.icon}</div>
-                <span className={`text-sm font-medium ${link.isAdd ? 'text-white/60' : 'text-white/90'}`}>
+                <div className={`${link.isAdd ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>{link.icon}</div>
+                <span className={`text-sm font-medium ${link.isAdd ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
                   {link.text}
                 </span>
               </button>
