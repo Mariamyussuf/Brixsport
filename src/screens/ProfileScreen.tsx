@@ -204,20 +204,6 @@ const ProfileScreen = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-900 via-blue-900 to-indigo-800 text-white">
-      {/* Status Bar */}
-      <div className="flex justify-between items-center px-4 py-2 text-sm">
-        <span className="font-medium">17:28</span>
-        <div className="flex items-center space-x-1">
-          <div className="flex space-x-1">
-            <div className="w-1 h-3 bg-white rounded-full"></div>
-            <div className="w-1 h-3 bg-white rounded-full"></div>
-            <div className="w-1 h-3 bg-white rounded-full"></div>
-            <div className="w-1 h-3 bg-white/50 rounded-full"></div>
-          </div>
-          <span className="text-xs">LTE</span>
-          <div className="bg-white/20 rounded px-1 text-xs">5</div>
-        </div>
-      </div>
 
       <div className="px-4 pb-6">
         {/* Header */}
