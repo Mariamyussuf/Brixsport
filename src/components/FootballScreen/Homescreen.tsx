@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Bell, Clock, Star, Calendar, Trophy, ArrowLeft, Menu, X } from 'lucide-react';
+import { Search, Bell, Clock, Star, Calendar, Trophy, ArrowLeft, Menu, X, User } from 'lucide-react';
 import SettingsLauncher from '../shared/SettingsLauncher';
 import { useRouter } from 'next/navigation';
 import Favouritesscreen from './Favouritesscreen';
@@ -34,7 +34,8 @@ const Homescreen: React.FC = () => {
     { name: 'Fixtures', icon: <Calendar className="w-4 h-4 sm:w-5 sm:h-5" /> },
     { name: 'Live', icon: <Clock className="w-4 h-4 sm:w-5 sm:h-5" /> },
     { name: 'Favourites', icon: <Star className="w-4 h-4 sm:w-5 sm:h-5" /> },
-    { name: 'Competition', icon: <Trophy className="w-4 h-4 sm:w-5 sm:h-5" /> }
+    { name: 'Competition', icon: <Trophy className="w-4 h-4 sm:w-5 sm:h-5" /> },
+    { name: 'Profile', icon: <User className="w-4 h-4 sm:w-5 sm:h-5" /> }
   ];
 
   const sportTabs: (SportType | 'all')[] = ['all', 'football', 'basketball', 'track_events'];
@@ -329,6 +330,12 @@ const Homescreen: React.FC = () => {
       router.push(`/auth/login?next=${encodeURIComponent(`/?tab=${tab}`)}`);
       return;
     }
+    
+    if (tab === 'Profile') {
+      router.push('/profile');
+      return;
+    }
+    
     setActiveTab(tab);
     setMobileMenuOpen(false); // Close mobile menu when tab is selected
   };
@@ -567,6 +574,29 @@ const Homescreen: React.FC = () => {
               ))}
             </div>
           </section>
+        )}
+
+        {/* Profile Content */}
+        {activeTab === 'Profile' && (
+          <div className="flex flex-col items-center justify-center py-8">
+            <div className="bg-white dark:bg-gray-900 rounded-lg p-6 shadow-sm border border-gray-100 dark:border-gray-700 w-full max-w-md">
+              <div className="text-center">
+                <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <User className="w-10 h-10 text-gray-500 dark:text-gray-400" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">Profile</h2>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  Access your profile settings and preferences
+                </p>
+                <button
+                  onClick={() => router.push('/profile')}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                >
+                  View Full Profile
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

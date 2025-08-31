@@ -128,7 +128,7 @@ export interface UI_TrackEvent {
   results: UI_TrackResult[];
 }
 
-export type TabType = 'Fixtures' | 'Live' | 'Favourites' | 'Competition';
+export type TabType = 'Fixtures' | 'Live' | 'Favourites' | 'Competition' | 'Profile';
 
 
 export interface UI_TeamLogoProps {

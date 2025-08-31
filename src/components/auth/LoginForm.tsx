@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useCallback } from 'react';
-import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth';
 
 // Types
 interface FormData {
@@ -12,16 +12,7 @@ interface ValidationErrors {
   [key: string]: string;
 }
 
-interface LoginResponse {
-  success: boolean;
-  message?: string;
-  token?: string;
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-  };
-}
+
 
 // Enhanced email validation
 function validateEmail(email: string): boolean {
@@ -29,81 +20,11 @@ function validateEmail(email: string): boolean {
   return emailRegex.test(email) && email.length <= 254;
 }
 
-// Rate limiting helper
-class RateLimiter {
-  private attempts: number = 0;
-  private lastAttempt: number = 0;
-  private readonly maxAttempts = 5;
-  private readonly lockoutDuration = 15 * 60 * 1000; // 15 minutes
 
-  canAttempt(): boolean {
-    const now = Date.now();
-    if (now - this.lastAttempt > this.lockoutDuration) {
-      this.attempts = 0;
-    }
-    return this.attempts < this.maxAttempts;
-  }
-
-  recordAttempt(): void {
-    this.attempts++;
-    this.lastAttempt = Date.now();
-  }
-
-  getRemainingTime(): number {
-    const now = Date.now();
-    const timeSinceLastAttempt = now - this.lastAttempt;
-    return Math.max(0, this.lockoutDuration - timeSinceLastAttempt);
-  }
-
-  getRemainingAttempts(): number {
-    return Math.max(0, this.maxAttempts - this.attempts);
-  }
-}
-
-const rateLimiter = new RateLimiter();
 
 // Mock API functions (replace with your actual API calls)
-const mockLogin = async (credentials: FormData): Promise<LoginResponse> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Simulate different responses
-      if (credentials.email === 'demo@example.com' && credentials.password === 'password123') {
-        resolve({
-          success: true,
-          token: 'mock-jwt-token',
-          user: {
-            id: '1',
-            email: credentials.email,
-            name: 'Demo User'
-          }
-        });
-      } else if (credentials.email === 'locked@example.com') {
-        resolve({
-          success: false,
-          message: 'Account is temporarily locked. Please try again later.'
-        });
-      } else {
-        resolve({
-          success: false,
-          message: 'Invalid email or password. Please check your credentials.'
-        });
-      }
-    }, 1500); // Simulate network delay
-  });
-};
-
-const mockForgotPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        message: 'If this email exists in our system, you will receive a password reset link shortly.'
-      });
-    }, 1000);
-  });
-};
-
 const LoginForm: React.FC = () => {
+  const { login } = useAuth();
   // Form state
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState<FormData>({
@@ -114,12 +35,7 @@ const LoginForm: React.FC = () => {
   const [submitError, setSubmitError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  // Forgot password state
-  const [showForgot, setShowForgot] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotError, setForgotError] = useState('');
-  const [forgotSuccess, setForgotSuccess] = useState(false);
-  const [isForgotLoading, setIsForgotLoading] = useState(false);
+  
 
   // Handle input changes with debounced validation
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,43 +75,28 @@ const LoginForm: React.FC = () => {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Check rate limiting
-    if (!rateLimiter.canAttempt()) {
-      const remainingTime = Math.ceil(rateLimiter.getRemainingTime() / 1000 / 60);
-      setSubmitError(`Too many failed attempts. Please try again in ${remainingTime} minutes.`);
-      return;
-    }
 
     // Validate form
     const errs = validate();
     setErrors(errs);
     setSubmitError('');
-    
+
     if (Object.keys(errs).length > 0) return;
 
     setIsLoading(true);
-    
+
     try {
-      const response = await mockLogin(form);
-      
-      if (response.success) {
-        // Store the token securely
-        localStorage.setItem('token', response.token || '');
-        localStorage.setItem('user', JSON.stringify(response.user));
-        
-        // Clear any previous errors
-        setSubmitError('');
-        
-        // Redirect to homepage
-        window.location.href = '/';
-      } else {
-        rateLimiter.recordAttempt();
-        setSubmitError(response.message || 'Login failed. Please try again.');
-      }
+      // In a real app, you would call your API to get a token
+      const token = 'mock-jwt-token'; // Replace with actual token from your API
+      await login(token);
+
+      // Clear any previous errors
+      setSubmitError('');
+
+      // Redirect to homepage
+      window.location.href = '/';
     } catch (error) {
-      rateLimiter.recordAttempt();
-      setSubmitError('Network error. Please check your connection and try again.');
+      setSubmitError('Login failed. Please try again.');
       console.error('Login error:', error);
     } finally {
       setIsLoading(false);

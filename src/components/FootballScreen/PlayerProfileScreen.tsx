@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Star, User } from 'lucide-react';
+import { ArrowLeft, Star } from 'lucide-react';
 import SmartImage from '../shared/SmartImage';
 
 interface PlayerStats {
@@ -27,11 +27,13 @@ interface PlayerProfileProps {
   topScorers: TopScorer[];
 }
 
+import UserProfile from '../shared/UserProfile';
+
 const PlayerProfile: React.FC<PlayerProfileProps> = ({
   playerNumber = 8,
   playerName = "YANKO",
   position = "midfielder",
-  playerImage = "/api/placeholder/400/300",
+  playerImage = "", // Initially empty, can be updated
   stats = {
     gamesPlayed: 12,
     goals: 6,
@@ -48,7 +50,7 @@ const PlayerProfile: React.FC<PlayerProfileProps> = ({
   ]
 }) => {
   return (
-    <div className="min-h-screen bg-gray-50 max-w-md mx-auto lg:max-w-4xl xl:max-w-6xl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 max-w-md mx-auto lg:max-w-4xl xl:max-w-6xl">
       {/* Header */}
       <div className="relative bg-gradient-to-br from-blue-900 to-blue-700 h-16 sm:h-20 md:h-24 lg:h-32 flex items-center justify-between px-3 sm:px-4 lg:px-8">
         <div className="absolute inset-0 bg-black bg-opacity-10"></div>
@@ -62,20 +64,18 @@ const PlayerProfile: React.FC<PlayerProfileProps> = ({
       </div>
 
       {/* Player Header */}
-      <div className="bg-white px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 sm:space-x-4 lg:space-x-6">
-            <div className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl xl:text-9xl font-bold text-gray-800">
+            <div className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl xl:text-9xl font-bold text-gray-800 dark:text-gray-200">
               {playerNumber}
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl sm:text-2xl lg:text-4xl xl:text-5xl font-bold text-gray-900 truncate">{playerName}</h1>
-              <p className="text-sm sm:text-base lg:text-xl xl:text-2xl text-gray-500 capitalize">{position}</p>
+              <h1 className="text-xl sm:text-2xl lg:text-4xl xl:text-5xl font-bold text-gray-900 dark:text-white truncate">{playerName}</h1>
+              <p className="text-sm sm:text-base lg:text-xl xl:text-2xl text-gray-500 dark:text-gray-400 capitalize">{position}</p>
             </div>
           </div>
-          <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 xl:w-20 xl:h-20 rounded-full border-2 border-gray-300 flex items-center justify-center flex-shrink-0">
-            <User className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 xl:w-10 xl:h-10 text-gray-400" />
-          </div>
+          <UserProfile playerImage={playerImage} playerName={playerName} />
         </div>
       </div>
 
