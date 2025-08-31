@@ -1,11 +1,16 @@
 "use client";
 
 import { useCallback } from "react";
-import { queueEvent } from "@/lib/offlineQueue";
+import { getOfflineQueue } from "@/lib/offlineQueue";
 
 export function useLoggerQueue() {
   const enqueueLog = useCallback(async (payload: Record<string, any>) => {
-    await queueEvent(payload);
+    const queue = getOfflineQueue();
+    queue.add({
+      type: 'track_event',
+      data: payload,
+      timestamp: new Date().toISOString()
+    });
   }, []);
 
   return { enqueueLog };
