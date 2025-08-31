@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { Search, Bell, Clock, Star, Calendar, Trophy, ArrowLeft, Menu, X, User } from 'lucide-react';
-import SettingsLauncher from '../shared/SettingsLauncher';
 import { useRouter } from 'next/navigation';
 import Favouritesscreen from './Favouritesscreen';
 import { useI18n } from '../shared/I18nProvider';
@@ -412,7 +411,6 @@ const Homescreen: React.FC = () => {
                   <span className="text-white text-xs font-bold">3</span>
                 </div>
               </button>
-              <SettingsLauncher />
             </div>
           </div>
         </div>
