@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import UserProfile from '@/components/shared/UserProfile';
 import { FavoritesAPI, FavoriteItem } from '@/lib/api';
 import { useTheme } from '@/components/shared/ThemeProvider';
+import SettingsLauncher from '@/components/shared/SettingsLauncher';
 import { 
   Settings, 
   HelpCircle, 
@@ -211,14 +212,7 @@ const ProfileScreen = () => {
         {/* Header */}
         <header className="flex items-center justify-between py-4">
           <h1 className="text-2xl font-bold">Profile</h1>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => router.push('/settings')}
-            className="hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <Settings className="h-6 w-6" />
-          </Button>
+          <SettingsLauncher />
         </header>
 
         {/* User Profile Section */}
