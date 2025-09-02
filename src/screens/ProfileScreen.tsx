@@ -302,23 +302,6 @@ const ProfileScreen = () => {
             <span>Link copied to clipboard!</span>
           </div>
         )}
-
-        {/* Remove Ads Banner */}
-        <div className="bg-blue-600 rounded-2xl p-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-              <Wifi className="h-4 w-4 text-white" />
-            </div>
-            <span className="font-semibold text-white">Remove ads</span>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            className="text-white hover:bg-white/10 border border-white/30"
-          >
-            Learn more
-          </Button>
-        </div>
       </div>
 
       {/* Modals - All your original modals preserved */}
