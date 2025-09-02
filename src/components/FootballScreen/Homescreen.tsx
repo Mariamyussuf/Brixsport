@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import Favouritesscreen from './Favouritesscreen';
 import LiveMatchesScreen from './LiveMatchesScreen';
 import { useI18n } from '../shared/I18nProvider';
-import { FavoritesAuthDialog } from '../shared/FavoritesAuthDialog'; // Added import
+import { FavoritesAuthDialog } from '../shared/FavoritesAuthDialog';
+import { CompetitionsAuthDialog } from '../shared/CompetitionsAuthDialog'; // Added import
 
 import { 
   Match, 
@@ -29,11 +30,11 @@ const Homescreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('Fixtures');
   const [activeSport, setActiveSport] = useState<SportType | 'all'>('all');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showLiveMatches, setShowLiveMatches] = useState(false); // New state for live matches view
-  const [showFavoritesDialog, setShowFavoritesDialog] = useState(false); // Added state for favorites dialog
+  const [showLiveMatches, setShowLiveMatches] = useState(false);
+  const [showFavoritesDialog, setShowFavoritesDialog] = useState(false);
+  const [showCompetitionsDialog, setShowCompetitionsDialog] = useState(false); // Added state for competitions dialog
   const isAuthed = typeof window !== 'undefined' && !!localStorage.getItem('token');
 
-  // Updated tabs without 'Live'
   const tabs: { name: TabType; icon: React.ReactNode }[] = [
     { name: 'Fixtures', icon: <Calendar className="w-4 h-4 sm:w-5 sm:h-5" /> },
     { name: 'Favourites', icon: <Star className="w-4 h-4 sm:w-5 sm:h-5" /> },
@@ -43,7 +44,6 @@ const Homescreen: React.FC = () => {
 
   const sportTabs: (SportType | 'all')[] = ['all', 'football', 'basketball', 'track_events'];
 
-  // Sample teams data
   const teams: Team[] = [
     {
       id: 'team-1',
@@ -95,7 +95,6 @@ const Homescreen: React.FC = () => {
     }
   ];
 
-  // Sample matches data
   const matches: Match[] = [
     {
       id: 'match-1',
@@ -191,7 +190,6 @@ const Homescreen: React.FC = () => {
     }
   ];
 
-  // Sample track events data
   const trackEvents: UI_TrackEvent[] = [
     {
       status: 'Ended',
@@ -209,7 +207,6 @@ const Homescreen: React.FC = () => {
     }
   ];
 
-  // Helper functions
   const convertMatchToUI = (match: Match): UI_Match => {
     const team1 = match.teams[0];
     const team2 = match.teams[1];
@@ -253,16 +250,12 @@ const Homescreen: React.FC = () => {
     };
   };
 
-  // Sort matches to prioritize live matches
   const sortMatches = (matches: UI_Match[]): UI_Match[] => {
     return [...matches].sort((a, b) => {
-      // Live matches first
       if (a.status === 'Live' && b.status !== 'Live') return -1;
       if (b.status === 'Live' && a.status !== 'Live') return 1;
-      // Then upcoming matches
       if (a.status === 'Upcoming' && b.status !== 'Upcoming' && b.status !== 'Live') return -1;
       if (b.status === 'Upcoming' && a.status !== 'Upcoming' && a.status !== 'Live') return 1;
-      // For matches of same status, sort by time
       return 0;
     });
   };
@@ -284,7 +277,6 @@ const Homescreen: React.FC = () => {
   const basketballMatches = getFilteredMatches('basketball');
   const liveMatches = getAllLiveMatches();
 
-  // Enhanced responsive components
   const TeamLogo: React.FC<UI_TeamLogoProps> = ({ color }) => (
     <div className={`w-6 h-6 sm:w-8 sm:h-8 ${color} rounded-sm flex items-center justify-center flex-shrink-0`}>
       <div className="w-4 h-4 sm:w-6 sm:h-6 bg-white dark:bg-gray-800 rounded-sm opacity-80"></div>
@@ -304,15 +296,12 @@ const Homescreen: React.FC = () => {
         </div>
       </div>
       
-      {/* Mobile-optimized match layout */}
       <div className="flex items-center justify-between">
-        {/* Team 1 */}
         <div className="flex items-center space-x-2 sm:space-x-3 flex-1">
           <TeamLogo color={match.team1Color} />
           <span className="font-medium text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate">{match.team1}</span>
         </div>
         
-        {/* Score/VS - centered on both mobile and desktop for consistency */}
         <div className="px-2 sm:px-4 min-w-[80px] sm:min-w-[100px] flex justify-center">
           {match.status === 'Live' && match.score1 !== undefined && match.score2 !== undefined ? (
             <span className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
@@ -323,7 +312,6 @@ const Homescreen: React.FC = () => {
           )}
         </div>
         
-        {/* Team 2 */}
         <div className="flex items-center space-x-2 sm:space-x-3 justify-end flex-1">
           <span className="font-medium text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate">{match.team2}</span>
           <TeamLogo color={match.team2Color} />
@@ -363,8 +351,9 @@ const Homescreen: React.FC = () => {
       return;
     }
     
-    if ((tab === 'Competition') && !isAuthed) {
-      router.push(`/auth/login?next=${encodeURIComponent(`/?tab=${tab}`)}`);
+    if (tab === 'Competition' && !isAuthed) {
+      // Show the competitions auth dialog instead of redirecting directly
+      setShowCompetitionsDialog(true);
       return;
     }
     
@@ -377,10 +366,16 @@ const Homescreen: React.FC = () => {
     setMobileMenuOpen(false); // Close mobile menu when tab is selected
   };
 
-  // Function to handle demo account selection
+  // Function to handle demo account selection for favorites
   const handleDemoAccount = () => {
     setShowFavoritesDialog(false);
     setActiveTab('Favourites');
+  };
+
+  // Function to handle demo account selection for competitions
+  const handleCompetitionsDemoAccount = () => {
+    setShowCompetitionsDialog(false);
+    setActiveTab('Competition');
   };
 
   const handleSportClick = (sport: SportType | 'all'): void => {
@@ -395,7 +390,6 @@ const Homescreen: React.FC = () => {
     alert('No new notifications');
   };
 
-  // Handler for LIVE button click
   const handleLiveClick = (): void => {
     setShowLiveMatches(true);
   };
@@ -417,7 +411,6 @@ const Homescreen: React.FC = () => {
     return displayNames[sport];
   };
 
-  // If showing live matches, render the LiveMatchesScreen
   if (showLiveMatches) {
     return (
       <LiveMatchesScreen 
@@ -437,11 +430,17 @@ const Homescreen: React.FC = () => {
         onDemoAccount={handleDemoAccount}
       />
       
+      {/* Competitions Auth Dialog */}
+      <CompetitionsAuthDialog 
+        isOpen={showCompetitionsDialog} 
+        onClose={() => setShowCompetitionsDialog(false)} 
+        onDemoAccount={handleCompetitionsDemoAccount}
+      />
+      
       {/* Enhanced Mobile Header */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-slate-900 dark:text-white sticky top-0 z-30">
         <div className="px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between w-full">
-            {/* Left side - Back button and Title */}
             <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
               {activeTab !== 'Fixtures' && (
                 <button
@@ -461,9 +460,7 @@ const Homescreen: React.FC = () => {
               </div>
             </div>
             
-            {/* Right side - Action buttons */}
             <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
-              {/* LIVE button - pill-shaped with red text and red dot indicator */}
               <button 
                 className="px-3 py-1 bg-white dark:bg-gray-800 border border-red-500 rounded-full flex items-center space-x-1 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                 onClick={handleLiveClick}
@@ -497,7 +494,6 @@ const Homescreen: React.FC = () => {
       </div>
 
       <div className="w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4 max-w-7xl mx-auto">
-        {/* Enhanced Sport Filter Tabs - Better mobile scrolling */}
         <div className="mb-4 sm:mb-6">
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" 
                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -520,10 +516,8 @@ const Homescreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Content Sections - Enhanced mobile spacing */}
         {activeTab === 'Fixtures' && (
           <div className="space-y-6 sm:space-y-8">
-            {/* Football Section */}
             {(activeSport === 'all' || activeSport === 'football') && footballMatches.length > 0 && (
               <section>
                 <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4 px-1">{t('football_section')}</h2>
@@ -535,7 +529,6 @@ const Homescreen: React.FC = () => {
               </section>
             )}
 
-            {/* Basketball Section */}
             {(activeSport === 'all' || activeSport === 'basketball') && basketballMatches.length > 0 && (
               <section>
                 <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4 px-1">{t('basketball_section')}</h2>
@@ -547,7 +540,6 @@ const Homescreen: React.FC = () => {
               </section>
             )}
 
-            {/* Track Events Section */}
             {(activeSport === 'all' || activeSport === 'track_events') && (
               <section>
                 <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4 px-1">{t('track_events')}</h2>
@@ -561,14 +553,12 @@ const Homescreen: React.FC = () => {
           </div>
         )}
 
-        {/* Favourites Content */}
         {activeTab === 'Favourites' && (
           <div className="space-y-6 sm:space-y-8">
             <Favouritesscreen activeSport={activeSport} />
           </div>
         )}
 
-        {/* Competition Content */}
         {activeTab === 'Competition' && (
           <section>
             <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4 px-1">{t('competitions')}</h2>
@@ -592,7 +582,6 @@ const Homescreen: React.FC = () => {
           </section>
         )}
 
-        {/* Profile Content */}
         {activeTab === 'Profile' && (
           <div className="flex flex-col items-center justify-center py-8">
             <div className="bg-white dark:bg-gray-900 rounded-lg p-6 shadow-sm border border-gray-100 dark:border-gray-700 w-full max-w-md">
@@ -616,7 +605,6 @@ const Homescreen: React.FC = () => {
         )}
       </div>
 
-      {/* Enhanced Bottom Navigation - Better mobile touch targets */}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 backdrop-blur supports-[backdrop-filter]:bg-white/90 dark:supports-[backdrop-filter]:bg-slate-900/90 border-t border-gray-200 dark:border-gray-700 px-2 sm:px-4 py-2 z-20">
         <div className="flex justify-around items-center w-full max-w-7xl mx-auto">
           {tabs.map((tab) => (
@@ -646,7 +634,6 @@ const Homescreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile-specific styles */}
       <style jsx>{`
         .scrollbar-hide {
           -webkit-overflow-scrolling: touch;
