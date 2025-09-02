@@ -368,7 +368,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         id: 'demo-user-id',
         name: 'Demo User',
         email: 'demo@example.com',
-        role: 'user'
+        role: 'user',
+        image: 'https://i.pravatar.cc/300?u=demo@example.com' // Added profile image
       };
       
       // Create a mock token (in a real app, this would come from the server)
