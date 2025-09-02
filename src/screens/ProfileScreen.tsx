@@ -88,11 +88,28 @@ const ProfileScreen = () => {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [loadingFavorites, setLoadingFavorites] = useState<boolean>(false);
   const [favoritesError, setFavoritesError] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
 
   const handleTipsAndSupport = () => {
     setShowModal('support');
   };
 
+  const handleLogout = () => {
+    // Show logout confirmation dialog
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = () => {
+    // Perform the actual logout
+    logout();
+    setShowLogoutConfirm(false);
+    router.push('/auth/login');
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutConfirm(false);
+  };
+  
   // Define quickLinks array
   const quickLinks = [
     { 
@@ -126,17 +143,11 @@ const ProfileScreen = () => {
       onClick: handleTipsAndSupport 
     },
     { 
-      icon: <Plus className="h-6 w-6" />, 
-      text: 'Add', 
-      onClick: () => {}, 
-      isAdd: true 
+      icon: <LogOut className="h-6 w-6" />, 
+      text: 'Logout', 
+      onClick: handleLogout 
     }
   ];
-
-  const handleLogout = () => {
-    logout();
-    router.push('/auth/login');
-  };
 
   const handleShare = async () => {
     const shareData = {
@@ -297,6 +308,18 @@ const ProfileScreen = () => {
             <span className="font-medium">{shareSuccess ? "SHARED!" : "SHARE BRIXSPORTS"}</span>
           </Button>
         )}
+        
+        {/* Logout Button */}
+        {user && (
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            className="mt-4 py-3 px-6 rounded-xl w-full flex items-center justify-center space-x-3 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+          >
+            <LogOut className="h-5 w-5" />
+            <span className="font-medium">Logout</span>
+          </Button>
+        )}
 
         {/* Share Success Toast */}
         {shareSuccess && (
@@ -447,6 +470,34 @@ const ProfileScreen = () => {
               <div className="mt-6 flex justify-end">
                 <Button onClick={closeModal} variant="outline">
                   Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Logout Confirmation Dialog */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-sm w-full">
+            <div className="p-6">
+              <div className="mb-5 text-center">
+                <div className="w-12 h-12 mx-auto mb-4 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+                  <LogOut className="h-6 w-6 text-red-600 dark:text-red-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Confirm Logout</h3>
+                <p className="text-gray-600 dark:text-gray-400">Are you sure you want to logout? Any unsynchronized data will be kept locally until you log back in.</p>
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button variant="outline" onClick={cancelLogout}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={confirmLogout}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Logout
                 </Button>
               </div>
             </div>
