@@ -25,9 +25,8 @@ import {
   Bell,
   Calendar,
   TrendingUp,
-  Gamepad2,
+  Trophy,
   Star,
-  BarChart3,
   Plus,
   Wifi
 } from 'lucide-react';
@@ -112,19 +111,14 @@ const ProfileScreen = () => {
       onClick: () => router.push('/statistics') 
     },
     { 
-      icon: <Gamepad2 className="h-6 w-6" />, 
-      text: 'Games', 
-      onClick: () => router.push('/games') 
+      icon: <Trophy className="h-6 w-6" />, 
+      text: 'Competition', 
+      onClick: () => router.push('/competition') 
     },
     { 
       icon: <Star className="h-6 w-6" />, 
       text: 'Favorites', 
       onClick: () => router.push('/favorites') 
-    },
-    { 
-      icon: <BarChart3 className="h-6 w-6" />, 
-      text: 'Reports', 
-      onClick: () => router.push('/reports') 
     },
     { 
       icon: <HelpCircle className="h-6 w-6" />, 
@@ -290,22 +284,23 @@ const ProfileScreen = () => {
           ))}
         </div>
 
-        {/* Action Button */}
-        {!user ? (
-          <Button 
-            onClick={() => router.push('/auth/login')}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-full mb-8"
-          >
-            SIGN IN
-          </Button>
-        ) : (
-          <Button 
+        {/* Share Button */}
+        {user && (
+          <Button
             onClick={handleShare}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-full mb-8 flex items-center justify-center space-x-2"
+            className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl w-full flex items-center justify-center space-x-2 mt-4"
           >
-            {shareSuccess ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+            <Share2 className="h-5 w-5" />
             <span>{shareSuccess ? "SHARED!" : "SHARE BRIXSPORTS"}</span>
           </Button>
+        )}
+
+        {/* Share Success Toast */}
+        {shareSuccess && (
+          <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2 z-50">
+            <Check className="h-4 w-4" />
+            <span>Link copied to clipboard!</span>
+          </div>
         )}
 
         {/* Remove Ads Banner */}
@@ -325,14 +320,6 @@ const ProfileScreen = () => {
           </Button>
         </div>
       </div>
-
-      {/* Share Success Toast */}
-      {shareSuccess && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2 z-50">
-          <Check className="h-4 w-4" />
-          <span>Link copied to clipboard!</span>
-        </div>
-      )}
 
       {/* Modals - All your original modals preserved */}
       {showModal && (
