@@ -267,6 +267,33 @@ const ProfileScreen = () => {
                 ))}
               </div>
             </div>
+            
+            {/* Additional Menu Items */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-5 mb-4 shadow-sm border border-gray-100 dark:border-gray-700">
+              <h3 className="text-lg sm:text-xl font-semibold mb-4">More</h3>
+              <div className="space-y-2">
+                <MenuItem 
+                  icon={<Users className="h-5 w-5" />} 
+                  text="Follow Us" 
+                  onClick={handleFollowUs} 
+                />
+                <MenuItem 
+                  icon={<Shield className="h-5 w-5" />} 
+                  text="Privacy Policy" 
+                  onClick={handlePrivacyPolicy} 
+                />
+                <MenuItem 
+                  icon={<HelpCircle className="h-5 w-5" />} 
+                  text="Help & Support" 
+                  onClick={handleTipsAndSupport} 
+                />
+                <MenuItem 
+                  icon={<Info className="h-5 w-5" />} 
+                  text="About Brixsports" 
+                  onClick={handleAbout} 
+                />
+              </div>
+            </div>
           </div>
 
           {/* Quick Links Section - Full width on mobile, 1/3 on desktop */}
