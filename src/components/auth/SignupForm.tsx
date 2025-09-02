@@ -247,8 +247,7 @@ const SignupForm: React.FC = () => {
         // Clear any previous errors
         setSubmitError('');
         
-        // For new users, redirect to onboarding
-        // We don't mark onboarding as completed yet since this is their first time
+        
         window.location.href = '/onboarding';
       } else {
         rateLimiter.recordAttempt();
