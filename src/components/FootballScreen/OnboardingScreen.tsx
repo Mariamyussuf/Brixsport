@@ -76,21 +76,24 @@ export const OnboardingScreen: React.FC<{ onFinish?: () => void; userName?: stri
   };
 
   return (
-    <div className="relative z-10 w-full flex flex-col min-h-screen justify-between px-6 pt-0 pb-16 sm:pb-24 items-center max-w-5xl mx-auto">
+    <div className="relative z-10 w-full flex flex-col min-h-screen justify-between px-0 pt-0 pb-8 sm:pb-10 items-center max-w-5xl mx-auto">
       {/* Skip button - top right */}
       {step < totalSteps - 1 && (
-        <button
-          className="fixed top-4 right-4 sm:top-6 sm:right-8 md:top-8 md:right-10 text-white text-sm sm:text-base md:text-lg font-medium px-4 py-1.5 md:px-5 md:py-2 rounded-full bg-black/30 backdrop-blur-sm border border-white/30 hover:bg-black/40 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400 z-50"
-          onClick={handleSkip}
-          aria-label="Skip onboarding"
-        >
-          Skip
-        </button>
+        <div className="absolute top-0 right-0 p-3 sm:p-4 md:p-5 z-50">
+          <button
+            className="text-white text-xs sm:text-sm md:text-base font-medium px-3 py-1 md:px-4 md:py-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/30 hover:bg-black/60 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-md"
+            onClick={handleSkip}
+            aria-label="Skip onboarding"
+          >
+            Skip
+          </button>
+        </div>
       )}
+      
       {/* ARIA live region */}
       <div className="sr-only" aria-live="polite">{liveMsg}</div>
       
-      <div className="mt-32 sm:mt-40 md:mt-52 flex flex-col w-full">
+      <div className="w-full px-6 mt-16 sm:mt-20 md:mt-24 flex flex-col">
         <AnimatePresence mode="wait">
           <motion.h1
             key={step}
@@ -100,7 +103,7 @@ export const OnboardingScreen: React.FC<{ onFinish?: () => void; userName?: stri
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="text-5xl sm:text-6xl md:text-7xl font-bold mb-6 md:mb-8 text-white text-center w-full max-w-3xl mx-auto outline-none leading-tight"
+            className="text-4xl sm:text-5xl md:text-6xl font-bold mb-3 md:mb-4 text-white text-center w-full max-w-3xl mx-auto outline-none leading-tight"
             aria-level={1}
             role="heading"
           >
@@ -115,15 +118,15 @@ export const OnboardingScreen: React.FC<{ onFinish?: () => void; userName?: stri
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-lg sm:text-xl md:text-2xl mb-12 text-gray-300 max-w-2xl w-full text-center mx-auto"
+          className="text-base sm:text-lg md:text-xl mb-6 text-gray-300 max-w-2xl w-full text-center mx-auto"
         >
           {current.subtitle}
         </motion.p>
       </div>
       
-      <div className="mb-16">
+      <div className="w-full px-6 mb-8">
         {/* Progress Dots */}
-        <div className="flex gap-4 mb-16 justify-center" role="tablist" aria-label="Onboarding steps">
+        <div className="flex gap-3 mb-6 justify-center" role="tablist" aria-label="Onboarding steps">
           {steps.map((_, i) => (
             <motion.button
               key={i}
@@ -136,22 +139,23 @@ export const OnboardingScreen: React.FC<{ onFinish?: () => void; userName?: stri
             />
           ))}
         </div>
+        
         {/* Next/Get Started Button */}
-        <div className="mt-8 flex flex-col items-center w-full">
-        <motion.button
-          className="w-full max-w-md md:max-w-lg py-4 md:py-5 rounded-full bg-white/20 backdrop-blur-sm border border-white/60 text-white text-xl md:text-2xl font-semibold mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:bg-white/30 shadow-md hover:shadow-lg active:scale-98"
-          onClick={() => {
-            setBtnPressed(true);
-            setTimeout(() => setBtnPressed(false), 120);
-            if (step < totalSteps - 1) setStep(step + 1);
-            else handleFinish();
-          }}
-          aria-label={buttonText}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          {buttonText}
-        </motion.button>
+        <div className="mt-4 flex flex-col items-center w-full">
+          <motion.button
+            className="w-full max-w-md md:max-w-lg py-3 md:py-4 rounded-full bg-white/20 backdrop-blur-sm border border-white/60 text-white text-lg md:text-xl font-semibold mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:bg-white/30 shadow-md hover:shadow-lg active:scale-98"
+            onClick={() => {
+              setBtnPressed(true);
+              setTimeout(() => setBtnPressed(false), 120);
+              if (step < totalSteps - 1) setStep(step + 1);
+              else handleFinish();
+            }}
+            aria-label={buttonText}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {buttonText}
+          </motion.button>
         </div>
         
         {/* Language selector placeholder */}

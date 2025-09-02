@@ -77,17 +77,19 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col justify-end items-center text-white bg-black">
-      {/* SVG Logo */}
-      <div className="absolute top-10 left-0 right-0 flex justify-center">
-        <svg width="180" height="48" viewBox="0 0 180 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="BrixSports logo">
-          <text x="0" y="36" fontFamily="'Montserrat',sans-serif" fontWeight="bold" fontSize="36" fill="white">BrixSports</text>
-          <circle cx="160" cy="24" r="16" stroke="white" strokeWidth="3" fill="none" />
-          <path d="M160 8v32M144 24h32M150 14l20 20M170 14l-20 20" stroke="white" strokeWidth="2" />
-        </svg>
+    <div className="relative min-h-screen w-full flex flex-col justify-start items-center text-white overflow-hidden" style={{ background: 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.6)), url(/onboarding-bg-1.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      {/* BrixSports Logo */}
+      <div className="absolute top-8 sm:top-12 md:top-16 left-0 right-0 flex justify-center z-20">
+        <div className="flex items-center gap-1">
+          <span className="text-white text-4xl sm:text-5xl md:text-6xl font-bold">BrixSports</span>
+          <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="ml-2 sm:w-12 sm:h-12 md:w-14 md:h-14">
+            <circle cx="16" cy="16" r="15" stroke="white" strokeWidth="2" fill="none" />
+            <path d="M16 1v30M1 16h30M6 6l20 20M26 6L6 26" stroke="white" strokeWidth="1.5" />
+          </svg>
+        </div>
       </div>
       {/* Content */}
-      <div className="relative z-10 w-full flex flex-col items-center px-6 pb-10 pt-24 min-h-screen justify-end">
+      <div className="relative z-10 w-full flex flex-col items-center px-6 pb-10 pt-24 min-h-screen justify-end max-w-6xl mx-auto">
         {/* Tabs */}
         <div className="flex w-full max-w-md mx-auto mb-8 mt-24">
           <button
@@ -224,7 +226,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
             )}
             <button
               type="submit"
-              className="w-full py-3 rounded-2xl bg-white/10 border-2 border-white text-white text-lg font-semibold mt-8 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:bg-white/20"
+              className="w-full py-4 rounded-full bg-white/20 backdrop-blur-sm border border-white/60 text-white text-xl font-semibold mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:bg-white/30 shadow-md hover:shadow-lg active:scale-98 mt-8"
               aria-label={tab === 'signup' ? 'Sign Up' : 'Log in'}
             >
               {tab === 'signup' ? 'Sign Up' : 'Log in'}
@@ -253,14 +255,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
             <div className="flex gap-4">
               <button
                 type="button"
-                className="flex-1 py-3 rounded-2xl bg-white/10 border-2 border-white text-white text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:bg-white/20"
+                className="flex-1 py-3 rounded-full bg-white/20 backdrop-blur-sm border border-white/60 text-white text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:bg-white/30 shadow-md"
                 onClick={() => setShowForgot(false)}
               >
                 Back to Log in
               </button>
               <button
                 type="submit"
-                className="flex-1 py-3 rounded-2xl bg-blue-500 border-2 border-blue-500 text-white text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:bg-blue-600"
+                className="flex-1 py-3 rounded-full bg-blue-500/80 backdrop-blur-sm border border-blue-400 text-white text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:bg-blue-600 shadow-md"
               >
                 Recover password
               </button>
