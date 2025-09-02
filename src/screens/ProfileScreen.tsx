@@ -35,7 +35,7 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 
 const ProfileScreen = () => {
-  const { user, logout, loading: authLoading, error } = useAuth();
+  const { user, logout, loading: authLoading, error, demoLogin } = useAuth();
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { resolvedTheme } = useTheme();
@@ -143,11 +143,23 @@ const ProfileScreen = () => {
       text: 'Support', 
       onClick: handleTipsAndSupport 
     },
-    { 
+    // Show either logout (when authenticated) or signup/login (when not authenticated)
+    ...(user ? [{
       icon: <LogOut className="h-6 w-6" />, 
       text: 'Logout', 
       onClick: handleLogout 
-    }
+    }] : [
+      {
+        icon: <Users className="h-6 w-6" />, 
+        text: 'Sign Up', 
+        onClick: () => router.push('/auth/signup') 
+      },
+      {
+        icon: <LogOut className="h-6 w-6" />, 
+        text: 'Login', 
+        onClick: () => router.push('/auth/login') 
+      }
+    ])
   ];
 
   const handleShare = async () => {
@@ -262,6 +274,37 @@ const ProfileScreen = () => {
               <h2 className="text-xl font-medium mb-2">
                 Your home for sports insights
               </h2>
+              <p className="text-slate-600 dark:text-gray-400 mb-6">
+                Sign up or log in to access your favorites, track events, and more.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+                <Button 
+                  onClick={() => router.push('/auth/signup')}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg"
+                >
+                  Sign Up
+                </Button>
+                <Button 
+                  onClick={() => router.push('/auth/login')}
+                  variant="outline"
+                  className="flex-1 py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600"
+                >
+                  Log In
+                </Button>
+              </div>
+              <Button 
+                onClick={async () => {
+                  try {
+                    await demoLogin();
+                  } catch (error) {
+                    console.error('Demo login failed:', error);
+                  }
+                }}
+                variant="ghost"
+                className="mt-4 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+              >
+                Try Demo Account
+              </Button>
             </>
           )}
         </div>
