@@ -112,7 +112,7 @@ const LiveMatchesScreen: React.FC<LiveMatchesScreenProps> = ({
               </button>
               <div className="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                  {t('live_matches')}
+                  {t('live_events')}
                 </h1>
               </div>
             </div>
