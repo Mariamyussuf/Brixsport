@@ -4,6 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 
 interface CompetitionsAuthDialogProps {
   isOpen: boolean;
@@ -13,15 +14,25 @@ interface CompetitionsAuthDialogProps {
 
 export const CompetitionsAuthDialog: React.FC<CompetitionsAuthDialogProps> = ({ isOpen, onClose, onDemoAccount }) => {
   const router = useRouter();
+  const { demoLogin } = useAuth();
 
   const handleSignIn = () => {
     router.push('/auth/login?next=/profile');
     onClose();
   };
 
-  const handleDemoAccount = () => {
-    // Call the onDemoAccount callback
-    onDemoAccount();
+  const handleSignUp = () => {
+    router.push('/auth/signup');
+    onClose();
+  };
+
+  const handleDemoAccount = async () => {
+    try {
+      await demoLogin();
+      onDemoAccount();
+    } catch (error) {
+      console.error('Demo login failed:', error);
+    }
   };
 
   return (
@@ -33,6 +44,9 @@ export const CompetitionsAuthDialog: React.FC<CompetitionsAuthDialogProps> = ({ 
         </Button>
         <Button variant="outline" onClick={handleDemoAccount}>
           Use Demo Account
+        </Button>
+        <Button variant="outline" onClick={handleSignUp}>
+          Sign Up
         </Button>
         <Button onClick={handleSignIn}>
           Sign In

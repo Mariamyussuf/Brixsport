@@ -8,6 +8,7 @@ import LiveMatchesScreen from './LiveMatchesScreen';
 import { useI18n } from '../shared/I18nProvider';
 import { FavoritesAuthDialog } from '../shared/FavoritesAuthDialog';
 import { CompetitionsAuthDialog } from '../shared/CompetitionsAuthDialog'; // Added import
+import { useAuth } from '@/hooks/useAuth'; // Added import for useAuth
 
 import { 
   Match, 
@@ -27,13 +28,14 @@ import {
 const Homescreen: React.FC = () => {
   const { t } = useI18n();
   const router = useRouter();
+  const { isAuthenticated } = useAuth(); // Using proper auth hook
   const [activeTab, setActiveTab] = useState<TabType>('Fixtures');
   const [activeSport, setActiveSport] = useState<SportType | 'all'>('all');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLiveMatches, setShowLiveMatches] = useState(false);
   const [showFavoritesDialog, setShowFavoritesDialog] = useState(false);
   const [showCompetitionsDialog, setShowCompetitionsDialog] = useState(false); // Added state for competitions dialog
-  const isAuthed = typeof window !== 'undefined' && !!localStorage.getItem('token');
+  // Removed the old isAuthed check since we're using the proper hook now
 
   const tabs: { name: TabType; icon: React.ReactNode }[] = [
     { name: 'Fixtures', icon: <Calendar className="w-4 h-4 sm:w-5 sm:h-5" /> },
@@ -345,13 +347,13 @@ const Homescreen: React.FC = () => {
 
   // Event handlers
   const handleTabClick = (tab: TabType): void => {
-    if (tab === 'Favourites' && !isAuthed) {
+    if (tab === 'Favourites' && !isAuthenticated) {
       // Show the favorites auth dialog instead of redirecting directly
       setShowFavoritesDialog(true);
       return;
     }
     
-    if (tab === 'Competition' && !isAuthed) {
+    if (tab === 'Competition' && !isAuthenticated) {
       // Show the competitions auth dialog instead of redirecting directly
       setShowCompetitionsDialog(true);
       return;

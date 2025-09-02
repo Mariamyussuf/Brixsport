@@ -56,6 +56,7 @@ interface AuthContextType {
   loading: LoadingStates;
   error: AuthError | null;
   login: (credentials: LoginCredentials) => Promise<void>;
+  demoLogin: () => Promise<void>; // Added demoLogin function
   logout: () => void;
   refreshToken: () => Promise<void>;
   clearError: () => void;
@@ -356,6 +357,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Demo login function
+  const demoLogin = async (): Promise<void> => {
+    updateLoading('loggingIn', true);
+    setError(null);
+
+    try {
+      // For demo purposes, we'll create a mock user and token
+      const demoUser: User = {
+        id: 'demo-user-id',
+        name: 'Demo User',
+        email: 'demo@example.com',
+        role: 'user'
+      };
+      
+      // Create a mock token (in a real app, this would come from the server)
+      const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+      const payload = btoa(JSON.stringify({ 
+        sub: 'demo-user-id',
+        name: 'Demo User',
+        email: 'demo@example.com',
+        exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
+        iat: Math.floor(Date.now() / 1000)
+      }));
+      const signature = 'demo-signature';
+      const demoToken = `${header}.${payload}.${signature}`;
+      
+      const demoRefreshToken = 'demo-refresh-token';
+      
+      TokenManager.setTokens(demoToken, demoRefreshToken);
+      setUser(demoUser);
+    } catch (err) {
+      let errorMessage = 'Failed to log in with demo account.';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
+      setError(createError('UNKNOWN', errorMessage));
+      throw new Error(errorMessage);
+    } finally {
+      updateLoading('loggingIn', false);
+    }
+  };
+
   // Logout function
   const logout = useCallback((): void => {
     const currentToken = TokenManager.getToken();
@@ -384,6 +429,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     error,
     login,
+    demoLogin, // Added demoLogin to the context value
     logout,
     refreshToken,
     clearError,
