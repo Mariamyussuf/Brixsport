@@ -169,9 +169,9 @@ const ProfileScreen = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-slate-900 dark:text-white">
 
-      <div className="px-4 py-4 pb-8 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div className="py-4 max-w-full">
         {/* Header */}
-        <header className="flex items-center justify-between py-4 mb-2">
+        <header className="flex items-center justify-between py-3 px-4 sm:px-6">
           <div className="flex items-center space-x-2">
             <button
               onClick={() => router.back()}
@@ -186,10 +186,10 @@ const ProfileScreen = () => {
         </header>
 
         {/* Main Content - Responsive Grid for Desktop */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 px-2 sm:px-4">
           {/* User Profile Section - Full width on mobile, 2/3 on desktop */}
           <div className="lg:col-span-2">
-            <div className="flex flex-col items-center text-center mb-8 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+            <div className="flex flex-col items-center text-center mb-4 bg-white dark:bg-gray-800 rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
               {loading ? (
                 <p>Loading...</p>
               ) : error ? (
@@ -254,7 +254,7 @@ const ProfileScreen = () => {
             </div>
 
             {/* Features List */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-5 mb-8 shadow-sm border border-gray-100 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-5 mb-4 shadow-sm border border-gray-100 dark:border-gray-700">
               <h3 className="text-lg sm:text-xl font-semibold mb-4">Features</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {features.map((feature, index) => (
@@ -273,15 +273,15 @@ const ProfileScreen = () => {
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 h-full">
               <h3 className="text-lg sm:text-xl font-semibold mb-4">Quick Links</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-1 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
                 {quickLinks.map((link, index) => (
                   <button
                     key={index}
                     onClick={link.onClick}
-                    className="flex flex-col items-center justify-center py-4 px-2 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95 border border-gray-100 dark:border-gray-700"
+                    className="flex flex-col items-center justify-center py-3 px-2 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95 border border-gray-100 dark:border-gray-700"
                     aria-label={link.text}
                   >
-                    <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-3 text-blue-600 dark:text-blue-400">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-2 text-blue-600 dark:text-blue-400">
                       {link.icon}
                     </div>
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center">{link.text}</span>
@@ -293,7 +293,7 @@ const ProfileScreen = () => {
               {user && (
                 <Button
                   onClick={handleShare}
-                  className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-xl w-full flex items-center justify-center space-x-3 mt-6 shadow-sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-6 rounded-xl w-full flex items-center justify-center space-x-3 mt-5 shadow-sm"
                 >
                   <Share2 className="h-5 w-5" />
                   <span className="font-medium">{shareSuccess ? "SHARED!" : "SHARE BRIXSPORTS"}</span>
@@ -305,7 +305,7 @@ const ProfileScreen = () => {
                 <Button
                   onClick={handleLogout}
                   variant="outline"
-                  className="mt-4 py-3 px-6 rounded-xl w-full flex items-center justify-center space-x-3 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  className="mt-3 py-2.5 px-6 rounded-xl w-full flex items-center justify-center space-x-3 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
                   <LogOut className="h-5 w-5" />
                   <span className="font-medium">Logout</span>
@@ -326,9 +326,9 @@ const ProfileScreen = () => {
 
       {/* Modals - All your original modals preserved */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
-            <div className="p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-5 sm:p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {showModal === 'social' && 'Follow Us'}
@@ -463,9 +463,9 @@ const ProfileScreen = () => {
       
       {/* Logout Confirmation Dialog */}
       {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-sm w-full">
-            <div className="p-6">
+            <div className="p-5 sm:p-6">
               <div className="mb-5 text-center">
                 <div className="w-12 h-12 mx-auto mb-4 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
                   <LogOut className="h-6 w-6 text-red-600 dark:text-red-400" />
