@@ -246,7 +246,8 @@ const Homescreen: React.FC = () => {
       score1: match.status === 'live' ? team1Score : undefined,
       score2: match.status === 'live' ? team2Score : undefined,
       team1Color: `bg-blue-600`,
-      team2Color: `bg-red-600`
+      team2Color: `bg-red-600`,
+      sportType: match.sportType
     };
   };
 

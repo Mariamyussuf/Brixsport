@@ -8,7 +8,7 @@ export type SportType =
   | 'badminton';
   'all';
 
-// Event types per sport
+
 export type FootballEvent =
   | 'goal' | 'assist' | 'save' | 'yellow_card' | 'red_card' | 'foul'
   | 'substitution' | 'corner' | 'free_kick' | 'penalty';
@@ -47,8 +47,8 @@ export interface Player {
   position?: string;
   college?: string;
   department?: string;
-  team?: string; // team name (optional, for display)
-  teamColor?: string; // color for team (optional, for display)
+  team?: string; 
+  teamColor?: string;
   injured?: boolean;
   suspended?: boolean;
   captain?: boolean;
@@ -57,14 +57,14 @@ export interface Player {
 export interface Team {
   id: string;
   name: string;
-  color: string; // HEX or Tailwind color
+  color: string; 
   logoUrl?: string;
   players: Player[];
 }
 export interface Match {
   id: string;
   sportType: SportType;
-  teams: Team[]; // supports >2 teams
+  teams: Team[];
   startTime: number;
   endTime?: number;
   status: 'upcoming' | 'live' | 'paused' | 'finished';
@@ -79,7 +79,7 @@ export interface EventLog {
   eventType: CampusEventType;
   timestamp: number;
   value?: number | string; 
-  offline?: boolean; // true if not yet synced
+  offline?: boolean; 
   eventScope?: EventScope;
   semester?: Semester;
   createdBy?: string; 
@@ -115,6 +115,7 @@ export interface UI_Match {
   score2?: number;
   team1Color: string;
   team2Color: string;
+  sportType?: SportType; // Add sportType property
 }
 
 export interface UI_TrackResult {
