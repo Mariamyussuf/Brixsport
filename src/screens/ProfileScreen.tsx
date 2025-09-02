@@ -3,10 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import UserProfile from '@/components/shared/UserProfile';
-import { FavoritesAPI, FavoriteItem } from '@/lib/api';
 import { useTheme } from '@/components/shared/ThemeProvider';
 import SettingsLauncher from '@/components/shared/SettingsLauncher';
-import Favouritesscreen from '@/components/FootballScreen/Favouritesscreen';
 
 import { 
   Settings, 
@@ -26,7 +24,6 @@ import {
   Calendar,
   TrendingUp,
   Trophy,
-  Star,
   Plus,
   Wifi,
   ArrowLeft
@@ -40,38 +37,6 @@ const ProfileScreen = () => {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
   
-  // Fetch user favorites
-  useEffect(() => {
-    const fetchFavorites = async () => {
-      if (!user) return;
-      
-      setLoadingFavorites(true);
-      setFavoritesError(null);
-      
-      try {
-        const data = await FavoritesAPI.getAll();
-        setFavorites(data);
-      } catch (error) {
-        console.error('Error fetching favorites:', error);
-        setFavoritesError('Failed to load favorites. Please try again.');
-      } finally {
-        setLoadingFavorites(false);
-      }
-    };
-    
-    fetchFavorites();
-  }, [user]);
-  
-  // Handle removing favorite
-  const handleRemoveFavorite = async (favoriteId: string) => {
-    try {
-      await FavoritesAPI.remove({ id: favoriteId });
-      setFavorites(prev => prev.filter(fav => fav.id !== favoriteId));
-    } catch (error) {
-      console.error('Error removing favorite:', error);
-    }
-  };
-
   useEffect(() => {
     if (!authLoading.initializing) {
       setLoading(false);
@@ -86,9 +51,6 @@ const ProfileScreen = () => {
   }, [error, router]);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showModal, setShowModal] = useState<string | null>(null);
-  const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
-  const [loadingFavorites, setLoadingFavorites] = useState<boolean>(false);
-  const [favoritesError, setFavoritesError] = useState<string | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
 
   const handleTipsAndSupport = () => {
@@ -132,11 +94,6 @@ const ProfileScreen = () => {
       icon: <Trophy className="h-6 w-6" />, 
       text: 'Competition', 
       onClick: () => router.push('/competition') 
-    },
-    { 
-      icon: <Star className="h-6 w-6" />, 
-      text: 'Favorites', 
-      onClick: () => router.push('/favorites') 
     },
     { 
       icon: <HelpCircle className="h-6 w-6" />, 
@@ -323,16 +280,6 @@ const ProfileScreen = () => {
             ))}
           </div>
         </div>
-
-        {/* Favorites Section - Updated to use the same component as the bottom nav */}
-        {user && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 mb-8 shadow-sm border border-gray-100 dark:border-gray-700">
-            <h3 className="text-lg font-semibold mb-4">Your Favorites</h3>
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-              <Favouritesscreen activeSport="all" />
-            </div>
-          </div>
-        )}
 
         {/* Quick Links Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">

@@ -365,10 +365,10 @@ const Homescreen: React.FC = () => {
     }
     
     setActiveTab(tab);
-    setMobileMenuOpen(false); // Close mobile menu when tab is selected
+    setMobileMenuOpen(false); 
   };
 
-  // Function to handle demo account selection for favorites
+
   const handleDemoAccount = () => {
     setShowFavoritesDialog(false);
     setActiveTab('Favourites');
