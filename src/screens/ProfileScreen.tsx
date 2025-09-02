@@ -378,8 +378,7 @@ const ProfileScreen = () => {
                       Stay connected with us on social media for updates, tips, and community discussions!
                     </p>
                     <div className="space-y-3">
-                      <SocialLink platform="Twitter" url="https://twitter.com/brixsports" />
-                      <SocialLink platform="Facebook" url="https://facebook.com/brixsports" />
+                      <SocialLink platform="X" url="https://x.com/brixsports" />
                       <SocialLink platform="Instagram" url="https://www.instagram.com/brixsports?utm_source=qr&igsh=MWZtNG5sNW5xNDU2aw==" />
                       <SocialLink platform="Snapchat" url="https://www.snapchat.com/add/brixsports?share_id=oNUySWww-dU&locale=en-NG" />
                       <SocialLink platform="TikTok" url="https://www.tiktok.com/@brixsports7?_t=ZS-8zOVaWpLoHc&_r=1" />
