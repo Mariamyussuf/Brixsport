@@ -267,38 +267,11 @@ const ProfileScreen = () => {
                 ))}
               </div>
             </div>
-            
-            {/* Additional Menu Items */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-5 mb-4 shadow-sm border border-gray-100 dark:border-gray-700">
-              <h3 className="text-lg sm:text-xl font-semibold mb-4">More</h3>
-              <div className="space-y-2">
-                <MenuItem 
-                  icon={<Users className="h-5 w-5" />} 
-                  text="Follow Us" 
-                  onClick={handleFollowUs} 
-                />
-                <MenuItem 
-                  icon={<Shield className="h-5 w-5" />} 
-                  text="Privacy Policy" 
-                  onClick={handlePrivacyPolicy} 
-                />
-                <MenuItem 
-                  icon={<HelpCircle className="h-5 w-5" />} 
-                  text="Help & Support" 
-                  onClick={handleTipsAndSupport} 
-                />
-                <MenuItem 
-                  icon={<Info className="h-5 w-5" />} 
-                  text="About Brixsports" 
-                  onClick={handleAbout} 
-                />
-              </div>
-            </div>
           </div>
 
           {/* Quick Links Section - Full width on mobile, 1/3 on desktop */}
           <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 h-full">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-5 mb-4 shadow-sm border border-gray-100 dark:border-gray-700">
               <h3 className="text-lg sm:text-xl font-semibold mb-4">Quick Links</h3>
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
                 {quickLinks.map((link, index) => (
@@ -338,6 +311,33 @@ const ProfileScreen = () => {
                   <span className="font-medium">Logout</span>
                 </Button>
               )}
+            </div>
+            
+            {/* Additional Menu Items */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+              <h3 className="text-lg sm:text-xl font-semibold mb-4">More</h3>
+              <div className="space-y-2">
+                <MenuItem 
+                  icon={<Users className="h-5 w-5" />} 
+                  text="Follow Us" 
+                  onClick={handleFollowUs} 
+                />
+                <MenuItem 
+                  icon={<Shield className="h-5 w-5" />} 
+                  text="Privacy Policy" 
+                  onClick={handlePrivacyPolicy} 
+                />
+                <MenuItem 
+                  icon={<HelpCircle className="h-5 w-5" />} 
+                  text="Help & Support" 
+                  onClick={handleTipsAndSupport} 
+                />
+                <MenuItem 
+                  icon={<Info className="h-5 w-5" />} 
+                  text="About Brixsports" 
+                  onClick={handleAbout} 
+                />
+              </div>
             </div>
           </div>
         </div>
