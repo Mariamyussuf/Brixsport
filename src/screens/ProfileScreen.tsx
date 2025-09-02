@@ -6,6 +6,8 @@ import UserProfile from '@/components/shared/UserProfile';
 import { FavoritesAPI, FavoriteItem } from '@/lib/api';
 import { useTheme } from '@/components/shared/ThemeProvider';
 import SettingsLauncher from '@/components/shared/SettingsLauncher';
+import Favouritesscreen from '@/components/FootballScreen/Favouritesscreen';
+
 import { 
   Settings, 
   HelpCircle, 
@@ -261,68 +263,32 @@ const ProfileScreen = () => {
           ))}
         </div>
 
-        {/* Favorites Section - New */}
+        {/* Favorites Section - Updated to use the same component as the bottom nav */}
         {user && (
           <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl p-4 mb-8">
             <h3 className="text-lg font-semibold mb-4">Your Favorites</h3>
-            
-            {loadingFavorites ? (
-              <div className="py-4 flex justify-center">
-                <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            ) : favoritesError ? (
-              <div className="p-3 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg text-red-600 dark:text-red-300 text-sm">
-                {favoritesError}
-              </div>
-            ) : favorites.length === 0 ? (
-              <div className="py-6 text-center text-gray-500 dark:text-gray-400">
-                <p>You haven't added any favorites yet.</p>
-                <Button 
-                  onClick={() => router.push('/search')}
-                  className="mt-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 py-2 px-4 rounded-lg text-sm"
-                >
-                  Discover Teams & Players
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {favorites.map((favorite) => (
-                  <div 
-                    key={favorite.id} 
-                    className="bg-gray-200 dark:bg-gray-700 rounded-lg p-3 flex flex-col items-center text-center relative group"
-                  >
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => handleRemoveFavorite(favorite.id)}
-                        className="p-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 rounded-full"
-                        aria-label="Remove favorite"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <div className="w-14 h-14 bg-gray-300 dark:bg-gray-600 rounded-full mb-2 overflow-hidden">
-                      {favorite.image ? (
-                        <img 
-                          src={favorite.image} 
-                          alt={favorite.name} 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
-                          <span className="text-xl font-bold text-white">
-                            {favorite.name.charAt(0)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <h4 className="text-sm font-medium">{favorite.name}</h4>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">{favorite.type}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="bg-white dark:bg-gray-900 rounded-lg p-4">
+              <Favouritesscreen activeSport="all" />
+            </div>
           </div>
         )}
+
+        {/* Quick Links Grid */}
+        <div className="grid grid-cols-4 gap-3 mb-8">
+          {quickLinks.map((link, index) => (
+            <button
+              key={index}
+              onClick={link.onClick}
+              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95"
+              aria-label={link.text}
+            >
+              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-2 text-blue-600 dark:text-blue-400">
+                {link.icon}
+              </div>
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 text-center">{link.text}</span>
+            </button>
+          ))}
+        </div>
 
         {/* Action Button */}
         {!user ? (
@@ -341,30 +307,6 @@ const ProfileScreen = () => {
             <span>{shareSuccess ? "SHARED!" : "SHARE BRIXSPORTS"}</span>
           </Button>
         )}
-
-        {/* Quick Links Section */}
-        <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl p-4 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Quick links</h3>
-          
-          <div className="grid grid-cols-2 gap-4">
-            {quickLinks.map((link, index) => (
-              <button
-                key={index}
-                onClick={link.onClick}
-                className={`flex flex-col items-center space-y-2 p-4 rounded-xl transition-colors ${
-                  link.isAdd 
-                    ? 'border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500' 
-                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                <div className={`${link.isAdd ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>{link.icon}</div>
-                <span className={`text-sm font-medium ${link.isAdd ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                  {link.text}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Remove Ads Banner */}
         <div className="bg-blue-600 rounded-2xl p-4 flex items-center justify-between">
