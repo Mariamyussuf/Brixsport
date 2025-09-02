@@ -288,33 +288,10 @@ const ProfileScreen = () => {
                   </button>
                 ))}
               </div>
-
-              {/* Share Button */}
-              {user && (
-                <Button
-                  onClick={handleShare}
-                  className="bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-6 rounded-xl w-full flex items-center justify-center space-x-3 mt-5 shadow-sm"
-                >
-                  <Share2 className="h-5 w-5" />
-                  <span className="font-medium">{shareSuccess ? "SHARED!" : "SHARE BRIXSPORTS"}</span>
-                </Button>
-              )}
-              
-              {/* Logout Button */}
-              {user && (
-                <Button
-                  onClick={handleLogout}
-                  variant="outline"
-                  className="mt-3 py-2.5 px-6 rounded-xl w-full flex items-center justify-center space-x-3 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span className="font-medium">Logout</span>
-                </Button>
-              )}
             </div>
             
             {/* Additional Menu Items */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-5 mb-4 shadow-sm border border-gray-100 dark:border-gray-700">
               <h3 className="text-lg sm:text-xl font-semibold mb-4">More</h3>
               <div className="space-y-2">
                 <MenuItem 
@@ -338,6 +315,32 @@ const ProfileScreen = () => {
                   onClick={handleAbout} 
                 />
               </div>
+            </div>
+            
+            {/* Share and Logout Buttons */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+              {/* Share Button */}
+              {user && (
+                <Button
+                  onClick={handleShare}
+                  className="bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-6 rounded-xl w-full flex items-center justify-center space-x-3 shadow-sm"
+                >
+                  <Share2 className="h-5 w-5" />
+                  <span className="font-medium">{shareSuccess ? "SHARED!" : "SHARE BRIXSPORTS"}</span>
+                </Button>
+              )}
+              
+              {/* Logout Button */}
+              {user && (
+                <Button
+                  onClick={handleLogout}
+                  variant="outline"
+                  className="mt-3 py-2.5 px-6 rounded-xl w-full flex items-center justify-center space-x-3 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span className="font-medium">Logout</span>
+                </Button>
+              )}
             </div>
           </div>
         </div>
