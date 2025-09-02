@@ -169,7 +169,7 @@ const ProfileScreen = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-slate-900 dark:text-white">
 
-      <div className="px-5 py-4 pb-8 max-w-4xl mx-auto">
+      <div className="px-4 py-4 pb-8 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         {/* Header */}
         <header className="flex items-center justify-between py-4 mb-2">
           <div className="flex items-center space-x-2">
@@ -180,130 +180,140 @@ const ProfileScreen = () => {
             >
               <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
             </button>
-            <h1 className="text-2xl font-bold">Profile</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Profile</h1>
           </div>
           <SettingsLauncher />
         </header>
 
-        {/* User Profile Section */}
-        <div className="flex flex-col items-center text-center mb-8 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          {loading ? (
-            <p>Loading...</p>
-          ) : error ? (
-            <p className="text-red-500">{error.message}</p>
-          ) : user ? (
-            <>
-              <UserProfile
-                playerImage={user?.image || ''}
-                playerName={user?.name || 'Guest'}
-              />
-              <h2 className="text-xl font-semibold mt-4">{user?.name || 'Guest User'}</h2>
-              <p className="text-slate-600 dark:text-gray-400">{user?.email}</p>
-              {user?.role && (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-3">
-                  {user.role}
-                </span>
+        {/* Main Content - Responsive Grid for Desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* User Profile Section - Full width on mobile, 2/3 on desktop */}
+          <div className="lg:col-span-2">
+            <div className="flex flex-col items-center text-center mb-8 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+              {loading ? (
+                <p>Loading...</p>
+              ) : error ? (
+                <p className="text-red-500">{error.message}</p>
+              ) : user ? (
+                <>
+                  <UserProfile
+                    playerImage={user?.image || ''}
+                    playerName={user?.name || 'Guest'}
+                  />
+                  <h2 className="text-xl sm:text-2xl font-semibold mt-4">{user?.name || 'Guest User'}</h2>
+                  <p className="text-slate-600 dark:text-gray-400 mt-1">{user?.email}</p>
+                  {user?.role && (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-3">
+                      {user.role}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                    </div>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-medium mb-2">
+                    Your home for sports insights
+                  </h2>
+                  <p className="text-slate-600 dark:text-gray-400 mb-6 max-w-md">
+                    Sign up or log in to access your favorites, track events, and more.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+                    <Button 
+                      onClick={() => router.push('/auth/signup')}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg"
+                    >
+                      Sign Up
+                    </Button>
+                    <Button 
+                      onClick={() => router.push('/auth/login')}
+                      variant="outline"
+                      className="flex-1 py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600"
+                    >
+                      Log In
+                    </Button>
+                  </div>
+                  <Button 
+                    onClick={async () => {
+                      try {
+                        await demoLogin();
+                      } catch (error) {
+                        console.error('Demo login failed:', error);
+                      }
+                    }}
+                    variant="ghost"
+                    className="mt-4 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  >
+                    Try Demo Account
+                  </Button>
+                </>
               )}
-            </>
-          ) : (
-            <>
-              <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-                <div className="w-16 h-16 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                  <div className="w-8 h-8 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
-                </div>
-              </div>
-              <h2 className="text-xl font-medium mb-2">
-                Your home for sports insights
-              </h2>
-              <p className="text-slate-600 dark:text-gray-400 mb-6">
-                Sign up or log in to access your favorites, track events, and more.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
-                <Button 
-                  onClick={() => router.push('/auth/signup')}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg"
-                >
-                  Sign Up
-                </Button>
-                <Button 
-                  onClick={() => router.push('/auth/login')}
-                  variant="outline"
-                  className="flex-1 py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600"
-                >
-                  Log In
-                </Button>
-              </div>
-              <Button 
-                onClick={async () => {
-                  try {
-                    await demoLogin();
-                  } catch (error) {
-                    console.error('Demo login failed:', error);
-                  }
-                }}
-                variant="ghost"
-                className="mt-4 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-              >
-                Try Demo Account
-              </Button>
-            </>
-          )}
-        </div>
+            </div>
 
-        {/* Features List */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 mb-8 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold mb-4">Features</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {features.map((feature, index) => (
-              <div key={index} className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Check className="h-5 w-5 text-white" />
-                </div>
-                <span className="font-medium">{feature.text}</span>
+            {/* Features List */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-5 mb-8 shadow-sm border border-gray-100 dark:border-gray-700">
+              <h3 className="text-lg sm:text-xl font-semibold mb-4">Features</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {features.map((feature, index) => (
+                  <div key={index} className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Check className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="font-medium">{feature.text}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+          </div>
+
+          {/* Quick Links Section - Full width on mobile, 1/3 on desktop */}
+          <div className="lg:col-span-1">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 h-full">
+              <h3 className="text-lg sm:text-xl font-semibold mb-4">Quick Links</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-1 gap-4">
+                {quickLinks.map((link, index) => (
+                  <button
+                    key={index}
+                    onClick={link.onClick}
+                    className="flex flex-col items-center justify-center py-4 px-2 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95 border border-gray-100 dark:border-gray-700"
+                    aria-label={link.text}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-3 text-blue-600 dark:text-blue-400">
+                      {link.icon}
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center">{link.text}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Share Button */}
+              {user && (
+                <Button
+                  onClick={handleShare}
+                  className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-xl w-full flex items-center justify-center space-x-3 mt-6 shadow-sm"
+                >
+                  <Share2 className="h-5 w-5" />
+                  <span className="font-medium">{shareSuccess ? "SHARED!" : "SHARE BRIXSPORTS"}</span>
+                </Button>
+              )}
+              
+              {/* Logout Button */}
+              {user && (
+                <Button
+                  onClick={handleLogout}
+                  variant="outline"
+                  className="mt-4 py-3 px-6 rounded-xl w-full flex items-center justify-center space-x-3 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span className="font-medium">Logout</span>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-
-        {/* Quick Links Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-          {quickLinks.map((link, index) => (
-            <button
-              key={index}
-              onClick={link.onClick}
-              className="flex flex-col items-center justify-center py-4 px-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95 border border-gray-100 dark:border-gray-700"
-              aria-label={link.text}
-            >
-              <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-3 text-blue-600 dark:text-blue-400">
-                {link.icon}
-              </div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center">{link.text}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Share Button */}
-        {user && (
-          <Button
-            onClick={handleShare}
-            className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-xl w-full flex items-center justify-center space-x-3 mt-4 shadow-sm"
-          >
-            <Share2 className="h-5 w-5" />
-            <span className="font-medium">{shareSuccess ? "SHARED!" : "SHARE BRIXSPORTS"}</span>
-          </Button>
-        )}
-        
-        {/* Logout Button */}
-        {user && (
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="mt-4 py-3 px-6 rounded-xl w-full flex items-center justify-center space-x-3 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-          >
-            <LogOut className="h-5 w-5" />
-            <span className="font-medium">Logout</span>
-          </Button>
-        )}
 
         {/* Share Success Toast */}
         {shareSuccess && (
