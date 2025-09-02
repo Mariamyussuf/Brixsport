@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Search, Bell, Clock, Star, Calendar, Trophy, ArrowLeft, Menu, X, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Favouritesscreen from './Favouritesscreen';
+import LiveMatchesScreen from './LiveMatchesScreen';
 import { useI18n } from '../shared/I18nProvider';
 
 import { 
@@ -27,11 +28,12 @@ const Homescreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('Fixtures');
   const [activeSport, setActiveSport] = useState<SportType | 'all'>('all');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLiveMatches, setShowLiveMatches] = useState(false); // New state for live matches view
   const isAuthed = typeof window !== 'undefined' && !!localStorage.getItem('token');
 
+  // Updated tabs without 'Live'
   const tabs: { name: TabType; icon: React.ReactNode }[] = [
     { name: 'Fixtures', icon: <Calendar className="w-4 h-4 sm:w-5 sm:h-5" /> },
-    { name: 'Live', icon: <Clock className="w-4 h-4 sm:w-5 sm:h-5" /> },
     { name: 'Favourites', icon: <Star className="w-4 h-4 sm:w-5 sm:h-5" /> },
     { name: 'Competition', icon: <Trophy className="w-4 h-4 sm:w-5 sm:h-5" /> },
     { name: 'Profile', icon: <User className="w-4 h-4 sm:w-5 sm:h-5" /> }
@@ -197,6 +199,11 @@ const Homescreen: React.FC = () => {
         { position: '2nd.', team: 'Team C' },
         { position: '3rd.', team: 'Team A' }
       ]
+    },
+    {
+      status: 'Live',
+      event: '100m Sprint - Male',
+      results: []
     }
   ];
 
@@ -243,14 +250,36 @@ const Homescreen: React.FC = () => {
     };
   };
 
+  // Sort matches to prioritize live matches
+  const sortMatches = (matches: UI_Match[]): UI_Match[] => {
+    return [...matches].sort((a, b) => {
+      // Live matches first
+      if (a.status === 'Live' && b.status !== 'Live') return -1;
+      if (b.status === 'Live' && a.status !== 'Live') return 1;
+      // Then upcoming matches
+      if (a.status === 'Upcoming' && b.status !== 'Upcoming' && b.status !== 'Live') return -1;
+      if (b.status === 'Upcoming' && a.status !== 'Upcoming' && a.status !== 'Live') return 1;
+      // For matches of same status, sort by time
+      return 0;
+    });
+  };
+
   const getFilteredMatches = (sportType: SportType): UI_Match[] => {
-    return matches
+    const filtered = matches
       .filter(match => match.sportType === sportType)
+      .map(convertMatchToUI);
+    return sortMatches(filtered);
+  };
+
+  const getAllLiveMatches = (): UI_Match[] => {
+    return matches
+      .filter(match => match.status === 'live')
       .map(convertMatchToUI);
   };
 
   const footballMatches = getFilteredMatches('football');
   const basketballMatches = getFilteredMatches('basketball');
+  const liveMatches = getAllLiveMatches();
 
   // Enhanced responsive components
   const TeamLogo: React.FC<UI_TeamLogoProps> = ({ color }) => (
@@ -351,6 +380,15 @@ const Homescreen: React.FC = () => {
     alert('No new notifications');
   };
 
+  // Handler for LIVE button click
+  const handleLiveClick = (): void => {
+    setShowLiveMatches(true);
+  };
+
+  const handleBackFromLive = (): void => {
+    setShowLiveMatches(false);
+  };
+
   const getSportDisplayName = (sport: SportType | 'all'): string => {
     const displayNames = {
       'all': t('all'),
@@ -363,6 +401,17 @@ const Homescreen: React.FC = () => {
     } as const;
     return displayNames[sport];
   };
+
+  // If showing live matches, render the LiveMatchesScreen
+  if (showLiveMatches) {
+    return (
+      <LiveMatchesScreen 
+        liveMatches={liveMatches} 
+        trackEvents={trackEvents} 
+        onBack={handleBackFromLive} 
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-neutral-900 dark:text-neutral-100 pb-24 sm:pb-28">
@@ -392,6 +441,15 @@ const Homescreen: React.FC = () => {
             
             {/* Right side - Action buttons */}
             <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+              {/* LIVE button - pill-shaped with red text and red dot indicator */}
+              <button 
+                className="px-3 py-1 bg-white dark:bg-gray-800 border border-red-500 rounded-full flex items-center space-x-1 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                onClick={handleLiveClick}
+                type="button"
+              >
+                <span className="text-red-500 font-bold text-xs">LIVE</span>
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              </button>
               <button 
                 className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                 aria-label="Search"
@@ -475,68 +533,6 @@ const Homescreen: React.FC = () => {
                   {trackEvents.map((event, index) => (
                     <TrackEventCard key={`track-fixture-${index}`} event={event} />
                   ))}
-                </div>
-              </section>
-            )}
-          </div>
-        )}
-
-        {/* Live Content */}
-        {activeTab === 'Live' && (
-          <div className="space-y-6 sm:space-y-8">
-            {((activeSport === 'all' || activeSport === 'football') && footballMatches.some(match => match.status === 'Live')) || 
-             ((activeSport === 'all' || activeSport === 'basketball') && basketballMatches.some(match => match.status === 'Live')) || 
-             ((activeSport === 'all' || activeSport === 'track_events') && trackEvents.some(event => event.status === 'Live')) ? (
-              <>
-                {/* Live Football Section */}
-                {(activeSport === 'all' || activeSport === 'football') && 
-                 footballMatches.some(match => match.status === 'Live') && (
-                  <section>
-                    <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4 px-1">BUSA league - Football</h2>
-                    <div className="space-y-2 sm:space-y-3">
-                      {footballMatches.filter(match => match.status === 'Live').map((match, index) => (
-                        <MatchCard key={`football-live-${index}`} match={match} />
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {/* Live Basketball Section */}
-                {(activeSport === 'all' || activeSport === 'basketball') && 
-                 basketballMatches.some(match => match.status === 'Live') && (
-                  <section>
-                    <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4 px-1">BUSA league - Basketball</h2>
-                    <div className="space-y-2 sm:space-y-3">
-                      {basketballMatches.filter(match => match.status === 'Live').map((match, index) => (
-                        <MatchCard key={`basketball-live-${index}`} match={match} isBasketball={true} />
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {/* Live Track Events Section */}
-                {(activeSport === 'all' || activeSport === 'track_events') && 
-                 trackEvents.some(event => event.status === 'Live') && (
-                  <section>
-                    <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4 px-1">Track events</h2>
-                    <div className="space-y-2 sm:space-y-3">
-                      {trackEvents.filter(event => event.status === 'Live').map((event, index) => (
-                        <TrackEventCard key={`track-live-${index}`} event={event} />
-                      ))}
-                    </div>
-                  </section>
-                )}
-              </>
-            ) : (
-              <section>
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-4 sm:p-6 md:p-8 text-center border border-gray-100 dark:border-gray-700">
-                  <Clock className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-gray-300 dark:text-slate-500 mx-auto mb-3 sm:mb-4" />
-                  <p className="text-gray-500 dark:text-gray-300 text-sm sm:text-base mb-1 sm:mb-2">
-                    {activeSport === 'all' 
-                      ? t('no_live_matches') 
-                      : `${t('no_live_matches')} for ${getSportDisplayName(activeSport)}`}
-                  </p>
-                  <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-400">{t('check_back_later')}</p>
                 </div>
               </section>
             )}
