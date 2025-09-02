@@ -26,9 +26,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Handle root route - check if user needs onboarding
+  if (pathname === '/') {
+    // We'll let the client-side handle redirection based on auth status and onboarding completion
+    return NextResponse.next();
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/auth', '/profile'],
+  matcher: ['/auth', '/profile', '/'],
 }
