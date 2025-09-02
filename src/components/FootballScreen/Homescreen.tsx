@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Favouritesscreen from './Favouritesscreen';
 import LiveMatchesScreen from './LiveMatchesScreen';
 import { useI18n } from '../shared/I18nProvider';
+import { FavoritesAuthDialog } from '../shared/FavoritesAuthDialog'; // Added import
 
 import { 
   Match, 
@@ -29,6 +30,7 @@ const Homescreen: React.FC = () => {
   const [activeSport, setActiveSport] = useState<SportType | 'all'>('all');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLiveMatches, setShowLiveMatches] = useState(false); // New state for live matches view
+  const [showFavoritesDialog, setShowFavoritesDialog] = useState(false); // Added state for favorites dialog
   const isAuthed = typeof window !== 'undefined' && !!localStorage.getItem('token');
 
   // Updated tabs without 'Live'
@@ -355,7 +357,13 @@ const Homescreen: React.FC = () => {
 
   // Event handlers
   const handleTabClick = (tab: TabType): void => {
-    if ((tab === 'Favourites' || tab === 'Competition') && !isAuthed) {
+    if (tab === 'Favourites' && !isAuthed) {
+      // Show the favorites auth dialog instead of redirecting directly
+      setShowFavoritesDialog(true);
+      return;
+    }
+    
+    if ((tab === 'Competition') && !isAuthed) {
       router.push(`/auth/login?next=${encodeURIComponent(`/?tab=${tab}`)}`);
       return;
     }
@@ -367,6 +375,12 @@ const Homescreen: React.FC = () => {
     
     setActiveTab(tab);
     setMobileMenuOpen(false); // Close mobile menu when tab is selected
+  };
+
+  // Function to handle demo account selection
+  const handleDemoAccount = () => {
+    setShowFavoritesDialog(false);
+    setActiveTab('Favourites');
   };
 
   const handleSportClick = (sport: SportType | 'all'): void => {
@@ -416,6 +430,13 @@ const Homescreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-neutral-900 dark:text-neutral-100 pb-24 sm:pb-28">
+      {/* Favorites Auth Dialog */}
+      <FavoritesAuthDialog 
+        isOpen={showFavoritesDialog} 
+        onClose={() => setShowFavoritesDialog(false)} 
+        onDemoAccount={handleDemoAccount}
+      />
+      
       {/* Enhanced Mobile Header */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-slate-900 dark:text-white sticky top-0 z-30">
         <div className="px-3 sm:px-4 py-3 sm:py-4">
