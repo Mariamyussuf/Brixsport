@@ -380,7 +380,9 @@ const ProfileScreen = () => {
                     <div className="space-y-3">
                       <SocialLink platform="Twitter" url="https://twitter.com/brixsports" />
                       <SocialLink platform="Facebook" url="https://facebook.com/brixsports" />
-                      <SocialLink platform="Instagram" url="https://instagram.com/brixsports" />
+                      <SocialLink platform="Instagram" url="https://www.instagram.com/brixsports?utm_source=qr&igsh=MWZtNG5sNW5xNDU2aw==" />
+                      <SocialLink platform="Snapchat" url="https://www.snapchat.com/add/brixsports?share_id=oNUySWww-dU&locale=en-NG" />
+                      <SocialLink platform="TikTok" url="https://www.tiktok.com/@brixsports7?_t=ZS-8zOVaWpLoHc&_r=1" />
                     </div>
                   </>
                 )}
@@ -449,8 +451,8 @@ const ProfileScreen = () => {
                     <div>
                       <h4 className="font-semibold mb-2">Contact Support</h4>
                       <div className="space-y-2 text-sm">
-                        <p>Technical issues: <a href="mailto:support@brixsports.com" className="text-blue-600 dark:text-blue-400">support@brixsports.com</a></p>
-                        <p>Feature requests: <a href="mailto:feedback@brixsports.com" className="text-blue-600 dark:text-blue-400">feedback@brixsports.com</a></p>
+                        <p>Technical issues: <a href="mailto:brixsports2025@gmail.com" className="text-blue-600 dark:text-blue-400">brixsports2025@gmail.com</a></p>
+                        <p>Feature requests: <a href="mailto:brixsports2025@gmail.com" className="text-blue-600 dark:text-blue-400">brixsports2025@gmail.com</a></p>
                       </div>
                     </div>
                   </div>
