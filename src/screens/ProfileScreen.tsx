@@ -99,24 +99,8 @@ const ProfileScreen = () => {
       icon: <HelpCircle className="h-6 w-6" />, 
       text: 'Support', 
       onClick: handleTipsAndSupport 
-    },
-    // Show either logout (when authenticated) or signup/login (when not authenticated)
-    ...(user ? [{
-      icon: <LogOut className="h-6 w-6" />, 
-      text: 'Logout', 
-      onClick: handleLogout 
-    }] : [
-      {
-        icon: <Users className="h-6 w-6" />, 
-        text: 'Sign Up', 
-        onClick: () => router.push('/auth/signup') 
-      },
-      {
-        icon: <LogOut className="h-6 w-6" />, 
-        text: 'Login', 
-        onClick: () => router.push('/auth/login') 
-      }
-    ])
+    }
+    
   ];
 
   const handleShare = async () => {
@@ -341,7 +325,6 @@ const ProfileScreen = () => {
                   {showModal === 'privacy' && 'Privacy Policy'}
                   {showModal === 'support' && 'Help & Support'}
                   {showModal === 'about' && 'About Brixsports'}
-                  {showModal === 'more' && 'More Options'}
                 </h3>
                 <Button variant="ghost" size="icon" onClick={closeModal}>
                   <X className="h-5 w-5" />
@@ -454,15 +437,6 @@ const ProfileScreen = () => {
                         <li>Cross-device synchronization</li>
                       </ul>
                     </div>
-                  </div>
-                )}
-
-                {showModal === 'more' && (
-                  <div className="space-y-2">
-                    <MenuItem icon={<Share2 />} text="Share Brixsports" onClick={handleShare} />
-                    <MenuItem icon={<Users />} text="Follow Us" onClick={handleFollowUs} />
-                    <MenuItem icon={<Shield />} text="Change Password" onClick={handleChangePassword} />
-                    <MenuItem icon={<LogOut />} text="Logout" onClick={handleLogout} isDestructive />
                   </div>
                 )}
               </div>
