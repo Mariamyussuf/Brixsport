@@ -2,6 +2,7 @@
 import React, { useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
+import { hasCompletedOnboarding } from '@/utils/onboarding';
 
 // Types
 interface FormData {
@@ -120,8 +121,14 @@ const LoginForm: React.FC = () => {
       // Clear any previous errors
       setSubmitError('');
 
-      // Redirect to profile page
-      window.location.href = '/profile';
+      // Check if this is the user's first login
+      if (!hasCompletedOnboarding()) {
+        // Redirect to onboarding
+        window.location.href = '/onboarding';
+      } else {
+        // Redirect to profile page
+        window.location.href = '/profile';
+      }
     } catch (error) {
       setSubmitError('Login failed. Please try again.');
       console.error('Login error:', error);

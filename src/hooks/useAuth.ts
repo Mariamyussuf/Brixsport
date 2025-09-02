@@ -492,3 +492,32 @@ export const useRequireAuth = (): {
     isLoading: loading.initializing 
   };
 };
+
+// Hook to check if user needs onboarding
+export const useRequireOnboarding = (): { 
+  user: User | null; 
+  isAuthenticated: boolean; 
+  hasCompletedOnboarding: boolean;
+  isLoading: boolean 
+} => {
+  const { user, loading, isAuthenticated } = useAuth();
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const completed = localStorage.getItem('hasCompletedOnboarding') === 'true';
+      setHasCompletedOnboarding(completed);
+      setIsLoading(false);
+    } else {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  return { 
+    user, 
+    isAuthenticated, 
+    hasCompletedOnboarding,
+    isLoading: loading.initializing || isLoading
+  };
+};

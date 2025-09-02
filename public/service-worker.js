@@ -1,5 +1,5 @@
 // ----- Cache versions -----
-const STATIC_CACHE = 'brixsports-static-v3';
+const STATIC_CACHE = 'brixsports-static-v4';
 const API_CACHE = 'brixsports-api-v1';
 const IMAGE_CACHE = 'brixsports-img-v1';
 const OFFLINE_URL = '/offline.html';

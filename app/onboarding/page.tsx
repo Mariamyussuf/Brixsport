@@ -1,22 +1,39 @@
-import Link from 'next/link';
+'use client';
+
+import React from 'react';
+import { OnboardingScreen } from '@/components/FootballScreen/OnboardingScreen';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 export default function OnboardingPage() {
+  const { user } = useAuth();
+  const router = useRouter();
+
+  const handleFinish = () => {
+    // Redirect to home page after onboarding is completed
+    router.push('/');
+  };
+
   return (
-    <main className="min-h-screen flex flex-col items-center justify-between p-8 bg-black text-white">
-      <section className="flex-1 w-full max-w-2xl flex flex-col items-center justify-center text-center gap-6">
-        <h1 className="text-4xl font-extrabold">Welcome to BrixSports</h1>
-        <p className="text-white/80 max-w-prose">
-          Track campus sports with an offline-first, installable web app.
-          Continue to create an account or log in to get started.
-        </p>
-        <div className="flex gap-4 mt-4">
-          <Link href="/auth?tab=signup" className="px-6 py-3 rounded-xl bg-white/10 border-2 border-white hover:bg-white/20 transition">Sign Up</Link>
-          <Link href="/auth?tab=login" className="px-6 py-3 rounded-xl bg-blue-600 border-2 border-blue-600 hover:bg-blue-700 transition">Log in</Link>
+    <div className="relative min-h-screen w-full flex flex-col justify-start items-center text-white overflow-hidden" style={{ background: 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.6)), url(/onboarding-bg-1.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      {/* BrixSports Logo */}
+      <div className="absolute top-8 sm:top-12 md:top-16 left-0 right-0 flex justify-center z-20">
+        <div className="flex items-center gap-1">
+          <span className="text-white text-4xl sm:text-5xl md:text-6xl font-bold">BrixSports</span>
+          <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="ml-2 sm:w-12 sm:h-12 md:w-14 md:h-14">
+            <circle cx="16" cy="16" r="15" stroke="white" strokeWidth="2" fill="none" />
+            <path d="M16 1v30M1 16h30M6 6l20 20M26 6L6 26" stroke="white" strokeWidth="1.5" />
+          </svg>
         </div>
-      </section>
-      <footer className="w-full max-w-2xl py-6 text-center text-white/60">
-        Tip: You can install this app to your home screen from your browser menu for a native-like experience.
-      </footer>
-    </main>
+      </div>
+      
+      {/* Content */}
+      <div className="w-full max-w-6xl mx-auto flex justify-center h-full">
+        <OnboardingScreen 
+          onFinish={handleFinish} 
+          userName={user?.name} 
+        />
+      </div>
+    </div>
   );
 }

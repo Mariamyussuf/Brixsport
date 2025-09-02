@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
+import { markOnboardingCompleted } from '@/utils/onboarding';
 
 // Types
 interface FormData {
@@ -246,8 +247,9 @@ const SignupForm: React.FC = () => {
         // Clear any previous errors
         setSubmitError('');
         
-        // Redirect to homepage
-        window.location.href = '/';
+        // For new users, redirect to onboarding
+        // We don't mark onboarding as completed yet since this is their first time
+        window.location.href = '/onboarding';
       } else {
         rateLimiter.recordAttempt();
         setSubmitError(response.message || 'Signup failed. Please try again.');

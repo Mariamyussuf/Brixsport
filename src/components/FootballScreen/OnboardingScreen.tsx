@@ -1,21 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { markOnboardingCompleted } from '@/utils/onboarding';
 
 const steps = [
   {
     headline: 'Stay in the Game – Always!',
     subtitle: 'Never miss a match or goal again. Your one-stop hub for all Brixcity sports – from live scores to team updates and competition info',
-    bg: '/onboarding-bg-1.jpg',
   },
   {
     headline: 'Everything You Need in One Place',
     subtitle: 'Track inter-school competitions,  follow your favorite teams & players, view lineups and game schedules all in real time',
-    bg: '/onboarding-bg-2.jpg',
   },
   {
     headline: 'All Your Teams, One Place',
     subtitle: 'Follow your favorite teams, view schedules, and stay connected with the campus sports community.',
-    bg: '/onboarding-bg-3.jpg',
   },
 ];
 
@@ -51,11 +49,13 @@ export const OnboardingScreen: React.FC<{ onFinish?: () => void; userName?: stri
 
   const current = steps[step];
 
-  // Button text
-  const buttonText = step === totalSteps - 1 ? 'Get Started' : 'Next';
+  // Button text - show "Get Started" on the first screen too
+  const buttonText = "Get Started";
 
   // Skip button
   const handleSkip = () => {
+    // Mark onboarding as completed
+    markOnboardingCompleted();
     if (onFinish) onFinish();
   };
 
@@ -68,65 +68,67 @@ export const OnboardingScreen: React.FC<{ onFinish?: () => void; userName?: stri
   // Animate button feedback
   const [btnPressed, setBtnPressed] = useState(false);
 
+  // Handle finish
+  const handleFinish = () => {
+    // Mark onboarding as completed
+    markOnboardingCompleted();
+    if (onFinish) onFinish();
+  };
+
   return (
-    <div className="relative min-h-screen flex flex-col justify-end items-center text-white bg-black" style={{ backgroundImage: `url(${current.bg}), linear-gradient(to bottom, #111, #111)`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-      {/* SVG Logo */}
-      <div className="absolute top-10 left-0 right-0 flex justify-center">
-        <svg width="180" height="48" viewBox="0 0 180 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="BrixSports logo">
-          <text x="0" y="36" fontFamily="'Montserrat',sans-serif" fontWeight="bold" fontSize="36" fill="white">BrixSports</text>
-          <circle cx="160" cy="24" r="16" stroke="white" strokeWidth="3" fill="none" />
-          <path d="M160 8v32M144 24h32M150 14l20 20M170 14l-20 20" stroke="white" strokeWidth="2" />
-        </svg>
-      </div>
-      {/* Skip button */}
+    <div className="relative z-10 w-full flex flex-col min-h-screen justify-between px-6 pt-0 pb-16 sm:pb-24 items-center max-w-5xl mx-auto">
+      {/* Skip button - top right */}
       {step < totalSteps - 1 && (
         <button
-          className="absolute top-8 right-6 text-white/80 text-base font-semibold underline focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="fixed top-4 right-4 sm:top-6 sm:right-8 md:top-8 md:right-10 text-white text-sm sm:text-base md:text-lg font-medium px-4 py-1.5 md:px-5 md:py-2 rounded-full bg-black/30 backdrop-blur-sm border border-white/30 hover:bg-black/40 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400 z-50"
           onClick={handleSkip}
           aria-label="Skip onboarding"
         >
           Skip
         </button>
       )}
-      {/* Content */}
-      <div className="relative z-10 w-full flex flex-col items-center px-6 pb-10 pt-24 min-h-screen justify-end">
-        {/* ARIA live region */}
-        <div className="sr-only" aria-live="polite">{liveMsg}</div>
-        {/* Headline */}
+      {/* ARIA live region */}
+      <div className="sr-only" aria-live="polite">{liveMsg}</div>
+      
+      <div className="mt-32 sm:mt-40 md:mt-52 flex flex-col w-full">
         <AnimatePresence mode="wait">
           <motion.h1
             key={step}
             ref={headlineRef}
             tabIndex={-1}
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -40 }}
-            transition={{ duration: 0.4 }}
-            className="text-3xl sm:text-4xl font-bold mb-4 mt-32 text-left w-full max-w-md mx-auto outline-none"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="text-5xl sm:text-6xl md:text-7xl font-bold mb-6 md:mb-8 text-white text-center w-full max-w-3xl mx-auto outline-none leading-tight"
             aria-level={1}
             role="heading"
           >
-            {userName ? `Hi ${userName}, ` : ''}{current.headline}
+            {userName ? `Hi ${userName}, ` : ''}<span className="inline-block">{current.headline}</span>
           </motion.h1>
         </AnimatePresence>
+        
         {/* Subtitle */}
         <motion.p
           key={step + '-subtitle'}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="text-base sm:text-lg mb-8 text-gray-200 max-w-md w-full mx-auto text-left"
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="text-lg sm:text-xl md:text-2xl mb-12 text-gray-300 max-w-2xl w-full text-center mx-auto"
         >
           {current.subtitle}
         </motion.p>
+      </div>
+      
+      <div className="mb-16">
         {/* Progress Dots */}
-        <div className="flex gap-2 mb-8" role="tablist" aria-label="Onboarding steps">
+        <div className="flex gap-4 mb-16 justify-center" role="tablist" aria-label="Onboarding steps">
           {steps.map((_, i) => (
             <motion.button
               key={i}
               type="button"
-              className={`w-8 h-2 rounded-full transition-all duration-200 focus:outline-none ${i === step ? 'bg-white scale-110' : 'bg-gray-500/60'}`}
+              className={`w-3 h-3 md:w-4 md:h-4 rounded-full transition-all duration-200 focus:outline-none ${i === step ? 'bg-white scale-110' : 'bg-gray-500/60'}`}
               aria-label={`Go to step ${i + 1}`}
               aria-current={i === step ? 'step' : undefined}
               onClick={() => handleDotClick(i)}
@@ -135,23 +137,28 @@ export const OnboardingScreen: React.FC<{ onFinish?: () => void; userName?: stri
           ))}
         </div>
         {/* Next/Get Started Button */}
+        <div className="mt-8 flex flex-col items-center w-full">
         <motion.button
-          className="w-full max-w-md py-3 rounded-2xl bg-white/10 border-2 border-white text-white text-lg font-semibold mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:bg-white/20"
+          className="w-full max-w-md md:max-w-lg py-4 md:py-5 rounded-full bg-white/20 backdrop-blur-sm border border-white/60 text-white text-xl md:text-2xl font-semibold mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:bg-white/30 shadow-md hover:shadow-lg active:scale-98"
           onClick={() => {
             setBtnPressed(true);
             setTimeout(() => setBtnPressed(false), 120);
             if (step < totalSteps - 1) setStep(step + 1);
-            else if (onFinish) onFinish();
+            else handleFinish();
           }}
           aria-label={buttonText}
-          whileTap={{ scale: 0.97 }}
-          style={{ transform: btnPressed ? 'scale(0.97)' : undefined }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
           {buttonText}
         </motion.button>
+        </div>
+        
         {/* Language selector placeholder */}
-        <div className="mt-2 text-xs text-gray-400">Language: English (more soon)</div>
+        <div className="mt-3 text-xs text-gray-400 text-center opacity-70">
+          Language: English (more soon)
+        </div>
       </div>
     </div>
   );
-}; 
+};
