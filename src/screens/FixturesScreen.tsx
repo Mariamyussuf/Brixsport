@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Bell, Clock, Play } from 'lucide-react';
 import { useI18n } from '@/components/shared/I18nProvider';
+import { useRouter } from 'next/navigation';
 
 interface Match {
   id: string;
@@ -23,6 +24,7 @@ interface TrackEvent {
 
 const FixturesScreen = () => {
   const { t } = useI18n();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'all' | 'football' | 'basketball' | 'track'>('all');
   const [currentView, setCurrentView] = useState<'dashboard' | 'track'>('dashboard');
 
@@ -155,7 +157,13 @@ const FixturesScreen = () => {
   };
 
   const MatchCard = ({ match }: { match: Match }) => (
-    <div className="flex items-center justify-between py-4 px-4 bg-white rounded-lg border border-gray-200 mb-3">
+    <div 
+      className="flex items-center justify-between py-4 px-4 bg-white rounded-lg border border-gray-200 mb-3 cursor-pointer hover:bg-gray-50 transition-colors"
+      onClick={() => {
+        // Navigate to match details page
+        router.push(`/match/${match.id}`);
+      }}
+    >
       <div className="flex items-center space-x-3">
         {match.status === 'live' && (
           <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">

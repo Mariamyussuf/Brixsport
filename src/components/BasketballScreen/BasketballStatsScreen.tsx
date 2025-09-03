@@ -69,26 +69,24 @@ const StatRow: React.FC<StatRowProps> = ({
   );
 };
 
-const StatsScreen: React.FC<{
+const BasketballStatsScreen: React.FC<{
   homeTeam?: string;
   awayTeam?: string;
 }> = ({ 
-  homeTeam = "Pirates FC",
-  awayTeam = "Joga FC"
+  homeTeam = "Phoenix",
+  awayTeam = "Blazers"
 }) => {
-  // Sample stats data
+  // Sample basketball stats data
   const stats = {
-    possession: [32, 68] as [number, number],
-    shots: [8, 14] as [number, number],
-    shotsOnTarget: [2, 8] as [number, number],
-    corners: [3, 6] as [number, number],
-    fouls: [9, 2] as [number, number],
-    passes: [348, 578] as [number, number],
-    passAccuracy: [82, 89] as [number, number],
-    offsides: [4, 7] as [number, number],
-    throwIns: [9, 2] as [number, number],
-    yellowCards: [1, 1] as [number, number],
-    redCards: [0, 0] as [number, number]
+    fieldGoals: [28, 35] as [number, number],
+    threePointers: [8, 12] as [number, number],
+    freeThrows: [12, 14] as [number, number],
+    rebounds: [32, 41] as [number, number],
+    assists: [18, 22] as [number, number],
+    steals: [7, 9] as [number, number],
+    blocks: [3, 5] as [number, number],
+    turnovers: [11, 8] as [number, number],
+    fouls: [18, 15] as [number, number]
   };
 
   return (
@@ -102,81 +100,65 @@ const StatsScreen: React.FC<{
         </div>
         <div className="p-3 sm:p-6 space-y-4 sm:space-y-8">
           <StatRow 
-            label="Possession" 
-            values={stats.possession} 
-            showPercentage={true}
-            icon={<div className="w-3 h-3 sm:w-4 sm:h-4 bg-blue-500 dark:bg-blue-400 rounded-full" />}
-            homeTeam={homeTeam}
-            awayTeam={awayTeam}
-          />
-          <StatRow 
-            label="Shots" 
-            values={stats.shots} 
+            label="Field Goals" 
+            values={stats.fieldGoals} 
             icon={<Target size={14} className="sm:size-16 text-slate-600 dark:text-slate-300" />}
             homeTeam={homeTeam}
             awayTeam={awayTeam}
           />
           <StatRow 
-            label="Shots on Target" 
-            values={stats.shotsOnTarget} 
+            label="3-Pointers" 
+            values={stats.threePointers} 
+            icon={<div className="w-3 h-3 sm:w-4 sm:h-4 bg-orange-500 dark:bg-orange-400 rounded-full" />}
+            homeTeam={homeTeam}
+            awayTeam={awayTeam}
+          />
+          <StatRow 
+            label="Free Throws" 
+            values={stats.freeThrows} 
             icon={<div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-500 dark:bg-green-400 rounded-full" />}
             homeTeam={homeTeam}
             awayTeam={awayTeam}
           />
           <StatRow 
-            label="Corners" 
-            values={stats.corners} 
+            label="Rebounds" 
+            values={stats.rebounds} 
             icon={<CornerDownLeft size={14} className="sm:size-16 text-slate-600 dark:text-slate-300" />}
+            homeTeam={homeTeam}
+            awayTeam={awayTeam}
+          />
+          <StatRow 
+            label="Assists" 
+            values={stats.assists} 
+            icon={<AlertTriangle size={14} className="sm:size-16 text-blue-500 dark:text-blue-400" />}
+            homeTeam={homeTeam}
+            awayTeam={awayTeam}
+          />
+          <StatRow 
+            label="Steals" 
+            values={stats.steals} 
+            icon={<div className="w-3 h-3 sm:w-4 sm:h-4 bg-purple-500 dark:bg-purple-400 rounded-full" />}
+            homeTeam={homeTeam}
+            awayTeam={awayTeam}
+          />
+          <StatRow 
+            label="Blocks" 
+            values={stats.blocks} 
+            icon={<div className="w-3 h-3 sm:w-4 sm:h-4 bg-indigo-500 dark:bg-indigo-400 rounded-full" />}
+            homeTeam={homeTeam}
+            awayTeam={awayTeam}
+          />
+          <StatRow 
+            label="Turnovers" 
+            values={stats.turnovers} 
+            icon={<div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 dark:bg-red-400 rounded-full" />}
             homeTeam={homeTeam}
             awayTeam={awayTeam}
           />
           <StatRow 
             label="Fouls" 
             values={stats.fouls} 
-            icon={<AlertTriangle size={14} className="sm:size-16 text-orange-500 dark:text-orange-400" />}
-            homeTeam={homeTeam}
-            awayTeam={awayTeam}
-          />
-          <StatRow 
-            label="Total Passes" 
-            values={stats.passes} 
-            icon={<div className="w-3 h-3 sm:w-4 sm:h-4 bg-purple-500 dark:bg-purple-400 rounded-full" />}
-            homeTeam={homeTeam}
-            awayTeam={awayTeam}
-          />
-          <StatRow 
-            label="Pass Accuracy" 
-            values={stats.passAccuracy} 
-            showPercentage={true}
-            icon={<div className="w-3 h-3 sm:w-4 sm:h-4 bg-indigo-500 dark:bg-indigo-400 rounded-full" />}
-            homeTeam={homeTeam}
-            awayTeam={awayTeam}
-          />
-          <StatRow 
-            label="Offsides" 
-            values={stats.offsides} 
-            icon={<div className="w-3 h-3 sm:w-4 sm:h-4 bg-teal-500 dark:bg-teal-400 rounded-full" />}
-            homeTeam={homeTeam}
-            awayTeam={awayTeam}
-          />
-          <StatRow 
-            label="Throw Ins" 
-            values={stats.throwIns} 
-            icon={<div className="w-3 h-3 sm:w-4 sm:h-4 bg-cyan-500 dark:bg-cyan-400 rounded-full" />}
-            homeTeam={homeTeam}
-            awayTeam={awayTeam}
-          />
-          <StatRow 
-            label="Yellow Cards" 
-            values={stats.yellowCards} 
             icon={<div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-500 dark:bg-yellow-400 rounded-sm" />}
-            homeTeam={homeTeam}
-            awayTeam={awayTeam}
-          />
-          <StatRow 
-            label="Red Cards" 
-            values={stats.redCards} 
-            icon={<div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-600 dark:bg-red-500 rounded-sm" />}
             homeTeam={homeTeam}
             awayTeam={awayTeam}
           />
@@ -186,4 +168,4 @@ const StatsScreen: React.FC<{
   );
 };
 
-export default StatsScreen;
+export default BasketballStatsScreen;

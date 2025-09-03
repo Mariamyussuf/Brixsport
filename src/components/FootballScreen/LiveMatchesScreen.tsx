@@ -26,7 +26,18 @@ const LiveMatchesScreen: React.FC<LiveMatchesScreenProps> = ({
   );
 
   const MatchCard: React.FC<UI_MatchCardProps> = ({ match, isBasketball = false }) => (
-    <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 mb-3 shadow-sm border border-gray-100 dark:border-gray-700 touch-manipulation">
+    <div 
+      className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 mb-3 shadow-sm border border-gray-100 dark:border-gray-700 touch-manipulation cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+      onClick={() => {
+        // Navigate to match details page using the match ID
+        if (match.id) {
+          router.push(`/match/${match.id}`);
+        } else {
+          // Fallback to default match if no ID is available
+          router.push(`/match/match-1`);
+        }
+      }}
+    >
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div className="flex items-center space-x-2">
           {match.status === 'Live' && (

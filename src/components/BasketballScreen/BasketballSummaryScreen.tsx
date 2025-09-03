@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Clock } from 'lucide-react';
 
 interface MatchSummaryProps {
@@ -9,10 +9,10 @@ interface MatchSummaryProps {
   matchDate: string;
   matchVenue?: string;
   events?: Array<{
-    time: number;
+    time: string; // Basketball uses period and time (e.g., "1st 8:45")
     team: 'home' | 'away';
     player: string;
-    eventType: 'goal' | 'yellow' | 'red' | 'substitution';
+    eventType: 'field_goal' | 'three_pointer' | 'free_throw' | 'rebound' | 'assist' | 'steal' | 'block' | 'turnover' | 'foul' | 'substitution';
     assistBy?: string;
     inPlayer?: string;
     outPlayer?: string;
@@ -33,14 +33,40 @@ const TimelineEvent: React.FC<{
     const cardSize = 'w-4 h-6 sm:w-6 sm:h-8';
     
     switch (event.eventType) {
-      case 'goal':
+      case 'field_goal':
         return <div className={`${mobileSize} bg-green-500 dark:bg-green-600 rounded-full flex items-center justify-center shadow-lg`}>
-          <span className="text-white text-xs font-bold">⚽</span>
+          <span className="text-white text-xs font-bold">🏀</span>
         </div>;
-      case 'yellow':
+      case 'three_pointer':
+        return <div className={`${mobileSize} bg-orange-500 dark:bg-orange-600 rounded-full flex items-center justify-center shadow-lg`}>
+          <span className="text-white text-xs font-bold">3️⃣</span>
+        </div>;
+      case 'free_throw':
+        return <div className={`${mobileSize} bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center shadow-lg`}>
+          <span className="text-white text-xs font-bold">FT</span>
+        </div>;
+      case 'rebound':
+        return <div className={`${mobileSize} bg-purple-500 dark:bg-purple-600 rounded-full flex items-center justify-center shadow-lg`}>
+          <span className="text-white text-xs font-bold">🔄</span>
+        </div>;
+      case 'assist':
+        return <div className={`${mobileSize} bg-yellow-500 dark:bg-yellow-600 rounded-full flex items-center justify-center shadow-lg`}>
+          <span className="text-white text-xs font-bold">🤝</span>
+        </div>;
+      case 'steal':
+        return <div className={`${mobileSize} bg-teal-500 dark:bg-teal-600 rounded-full flex items-center justify-center shadow-lg`}>
+          <span className="text-white text-xs font-bold">🧤</span>
+        </div>;
+      case 'block':
+        return <div className={`${mobileSize} bg-indigo-500 dark:bg-indigo-600 rounded-full flex items-center justify-center shadow-lg`}>
+          <span className="text-white text-xs font-bold">🛡️</span>
+        </div>;
+      case 'turnover':
+        return <div className={`${mobileSize} bg-red-500 dark:bg-red-600 rounded-full flex items-center justify-center shadow-lg`}>
+          <span className="text-white text-xs font-bold"> turnovers</span>
+        </div>;
+      case 'foul':
         return <div className={`${cardSize} bg-yellow-400 dark:bg-yellow-500 border-2 border-yellow-500 dark:border-yellow-600 rounded-sm shadow-sm`} />;
-      case 'red':
-        return <div className={`${cardSize} bg-red-600 dark:bg-red-700 border-2 border-red-700 dark:border-red-800 rounded-sm shadow-sm`} />;
       case 'substitution':
         return <div className={`${mobileSize} bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center shadow-lg`}>
           <span className="text-white text-xs font-bold">↔️</span>
@@ -56,7 +82,7 @@ const TimelineEvent: React.FC<{
         {/* Time badge - Fully responsive */}
         <div className="flex-shrink-0">
           <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-gray-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full whitespace-nowrap">
-            {event.time}'
+            {event.time}
           </span>
         </div>
         
@@ -84,13 +110,13 @@ const TimelineEvent: React.FC<{
             )}
           </div>
           
-          {event.assistBy && event.eventType === 'goal' && (
+          {event.assistBy && (event.eventType === 'field_goal' || event.eventType === 'three_pointer') && (
             <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
               Assist: <span className="font-medium">{event.assistBy}</span>
             </div>
           )}
           
-          {event.score && event.eventType === 'goal' && (
+          {event.score && (
             <div className="text-xs sm:text-sm font-bold text-green-600 dark:text-green-400 mt-1 bg-green-50 dark:bg-green-900/30 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded inline-block">
               {event.score}
             </div>
@@ -101,24 +127,31 @@ const TimelineEvent: React.FC<{
   );
 };
 
-const SummaryScreen: React.FC<MatchSummaryProps> = ({
-  homeTeam = "Arsenal",
-  awayTeam = "Manchester United",
+const BasketballSummaryScreen: React.FC<MatchSummaryProps> = ({
+  homeTeam = "Phoenix",
+  awayTeam = "Blazers",
   homeScore,
   awayScore,
   matchDate,
   matchVenue,
   events
 }) => {
-  // Sample events if none provided
-  const displayEvents = events && events.length > 0 ? [...events].sort((a, b) => a.time - b.time) : [
-    { time: 21, team: 'home', player: 'Calafiori', eventType: 'yellow' },
-    { time: 33, team: 'away', player: 'McTominay', eventType: 'yellow' },
-    { time: 59, team: 'home', player: 'Saka', eventType: 'goal', assistBy: 'Ødegaard', score: '1-0' },
-    { time: 71, team: 'away', player: 'Rashford', eventType: 'goal', score: '1-1' },
-    { time: 72, team: 'away', player: 'Antony', eventType: 'substitution', inPlayer: 'Garnacho', outPlayer: 'Antony' },
-    { time: 85, team: 'home', player: 'Jesus', eventType: 'goal', assistBy: 'Martinelli', score: '2-1' },
-    { time: 90, team: 'away', player: 'Bruno Fernandes', eventType: 'goal', score: '2-2' }
+  // Sample basketball events if none provided
+  const displayEvents = events && events.length > 0 ? [...events].sort((a, b) => {
+    // Simple sort by time for basketball events
+    return a.time.localeCompare(b.time);
+  }) : [
+    { time: "1st 8:45", team: 'home', player: 'Johnson', eventType: 'field_goal', assistBy: 'Williams', score: '2-0' },
+    { time: "1st 7:21", team: 'away', player: 'Davis', eventType: 'three_pointer', assistBy: 'Brown', score: '2-3' },
+    { time: "1st 5:33", team: 'home', player: 'Miller', eventType: 'free_throw', score: '3-3' },
+    { time: "1st 5:33", team: 'home', player: 'Miller', eventType: 'free_throw', score: '4-3' },
+    { time: "1st 2:15", team: 'away', player: 'Wilson', eventType: 'rebound' },
+    { time: "2nd 9:12", team: 'home', player: 'Johnson', eventType: 'assist' },
+    { time: "2nd 7:45", team: 'away', player: 'Davis', eventType: 'steal' },
+    { time: "2nd 6:33", team: 'home', player: 'Williams', eventType: 'turnover' },
+    { time: "2nd 4:21", team: 'away', player: 'Brown', eventType: 'block' },
+    { time: "2nd 3:15", team: 'home', player: 'Miller', eventType: 'foul' },
+    { time: "2nd 3:15", team: 'away', player: 'Davis', eventType: 'substitution', inPlayer: 'Taylor', outPlayer: 'Davis' }
   ];
 
   return (
@@ -150,4 +183,4 @@ const SummaryScreen: React.FC<MatchSummaryProps> = ({
   );
 };
 
-export default SummaryScreen;
+export default BasketballSummaryScreen;

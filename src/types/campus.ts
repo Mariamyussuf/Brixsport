@@ -107,6 +107,7 @@ export interface User {
   role: UserRole;
 }
 export interface UI_Match {
+  id?: string; // Add optional ID field
   status: 'Live' | 'Upcoming';
   time: string;
   team1: string;
