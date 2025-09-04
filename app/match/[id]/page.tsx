@@ -7,10 +7,7 @@ import FootballFormation from '@/components/FootballScreen/Formationscreen';
 import StatsScreen from '@/components/FootballScreen/StatsScreen';
 import MatchLineupTab from '@/components/FootballScreen/MatchLineupTab';
 import SummaryScreen from '@/components/FootballScreen/SummaryScreen';
-// Basketball specific components
-import BasketballStatsScreen from '@/components/BasketballScreen/BasketballStatsScreen';
-import BasketballSummaryScreen from '@/components/BasketballScreen/BasketballSummaryScreen';
-import BasketballLineupTab from '@/components/BasketballScreen/BasketballLineupTab';
+import BasketballMatchCenter from '@/components/BasketballScreen/BasketballMatchCenter';
 import { useAuth } from '@/hooks/useAuth';
 import { LoginPrompt } from '@/components/shared/LoginPrompt';
 
@@ -145,29 +142,7 @@ const MatchDetailsScreen = () => {
   // Render sport-specific components
   const renderSummaryScreen = () => {
     if (match.sportType === 'basketball') {
-      return (
-        <BasketballSummaryScreen 
-          homeTeam={match.homeTeam}
-          awayTeam={match.awayTeam}
-          homeScore={match.homeScore || 0}
-          awayScore={match.awayScore || 0}
-          matchDate={match.date}
-          matchVenue={match.venue}
-          events={[
-            { time: "1st 8:45", team: 'home', player: 'Johnson', eventType: 'field_goal', assistBy: 'Williams', score: '2-0' },
-            { time: "1st 7:21", team: 'away', player: 'Davis', eventType: 'three_pointer', assistBy: 'Brown', score: '2-3' },
-            { time: "1st 5:33", team: 'home', player: 'Miller', eventType: 'free_throw', score: '3-3' },
-            { time: "1st 5:33", team: 'home', player: 'Miller', eventType: 'free_throw', score: '4-3' },
-            { time: "1st 2:15", team: 'away', player: 'Wilson', eventType: 'rebound' },
-            { time: "2nd 9:12", team: 'home', player: 'Johnson', eventType: 'assist' },
-            { time: "2nd 7:45", team: 'away', player: 'Davis', eventType: 'steal' },
-            { time: "2nd 6:33", team: 'home', player: 'Williams', eventType: 'turnover' },
-            { time: "2nd 4:21", team: 'away', player: 'Brown', eventType: 'block' },
-            { time: "2nd 3:15", team: 'home', player: 'Miller', eventType: 'foul' },
-            { time: "2nd 3:15", team: 'away', player: 'Davis', eventType: 'substitution', inPlayer: 'Taylor', outPlayer: 'Davis' }
-          ]}
-        />
-      );
+      return <BasketballMatchCenter match={match} />;
     }
     
     // Default to football
@@ -195,27 +170,25 @@ const MatchDetailsScreen = () => {
   };
 
   const renderLineupTab = () => {
-    if (match.sportType === 'basketball') {
+    // Only football has lineups in the tab structure
+    if (match.sportType === 'football') {
       return (
         <div className="w-full">
-          <BasketballLineupTab />
+          <MatchLineupTab />
         </div>
       );
     }
     
-    // Default to football
-    return (
-      <div className="w-full">
-        <MatchLineupTab />
-      </div>
-    );
+    // For basketball, we use the unified view
+    return null;
   };
 
   const renderStatsScreen = () => {
-    if (match.sportType === 'basketball') {
+    // Only football has stats in the tab structure
+    if (match.sportType === 'football') {
       return (
         <div className="bg-white dark:bg-gray-800 rounded-lg p-0 w-full">
-          <BasketballStatsScreen
+          <StatsScreen
             homeTeam={match.homeTeam}
             awayTeam={match.awayTeam}
           />
@@ -223,15 +196,8 @@ const MatchDetailsScreen = () => {
       );
     }
     
-    // Default to football
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-0 w-full">
-        <StatsScreen
-          homeTeam={match.homeTeam}
-          awayTeam={match.awayTeam}
-        />
-      </div>
-    );
+    // For basketball, we use the unified view
+    return null;
   };
 
   const renderFormationTab = () => {
@@ -320,55 +286,65 @@ const MatchDetailsScreen = () => {
 
         {/* Tab Content */}
         <div className="p-4 w-full">
-          <div className="mb-4 px-1">
-            <div className="flex w-full border-b border-slate-200 dark:border-gray-700 overflow-x-auto no-scrollbar">
-              <button
-                onClick={() => setActiveTab('summary')}
-                className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
-                  activeTab === 'summary'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                Summary
-              </button>
-              <button
-                onClick={() => setActiveTab('lineup')}
-                className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
-                  activeTab === 'lineup'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                Lineup
-              </button>
-              <button
-                onClick={() => setActiveTab('formation')}
-                className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
-                  activeTab === 'formation'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                Formation
-              </button>
-              <button
-                onClick={() => setActiveTab('stats')}
-                className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
-                  activeTab === 'stats'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                Stats
-              </button>
+          {/* Only show tabs for football, basketball uses its own navigation */}
+          {match.sportType === 'football' && (
+            <div className="mb-4 px-1">
+              <div className="flex w-full border-b border-slate-200 dark:border-gray-700 overflow-x-auto no-scrollbar">
+                <button
+                  onClick={() => setActiveTab('summary')}
+                  className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
+                    activeTab === 'summary'
+                      ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Summary
+                </button>
+                <button
+                  onClick={() => setActiveTab('lineup')}
+                  className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
+                    activeTab === 'lineup'
+                      ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Lineup
+                </button>
+                <button
+                  onClick={() => setActiveTab('formation')}
+                  className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
+                    activeTab === 'formation'
+                      ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Formation
+                </button>
+                <button
+                  onClick={() => setActiveTab('stats')}
+                  className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
+                    activeTab === 'stats'
+                      ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Stats
+                </button>
+              </div>
             </div>
-          </div>
+          )}
           
-          {activeTab === 'summary' && renderSummaryScreen()}
-          {activeTab === 'lineup' && renderLineupTab()}
-          {activeTab === 'formation' && renderFormationTab()}
-          {activeTab === 'stats' && renderStatsScreen()}
+          {/* For basketball, render the new component directly */}
+          {match.sportType === 'basketball' ? (
+            renderSummaryScreen()
+          ) : (
+            <>
+              {activeTab === 'summary' && renderSummaryScreen()}
+              {activeTab === 'lineup' && renderLineupTab()}
+              {activeTab === 'formation' && renderFormationTab()}
+              {activeTab === 'stats' && renderStatsScreen()}
+            </>
+          )}
         </div>
       </div>
     </>
