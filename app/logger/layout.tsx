@@ -6,7 +6,6 @@ import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import OfflineWrapper from "@/components/shared/OfflineWrapper";
 import { SettingsProvider } from "@/components/shared/SettingsContext";
 import { I18nProvider } from "@/components/shared/I18nProvider";
-import { AuthProvider } from "@/hooks/useAuth";
 import { NotificationsProvider } from "@/components/shared/NotificationsContext";
 import NotificationsGate from "@/components/shared/NotificationsGate";
 import DataSaverGate from "@/components/shared/DataSaverGate";
@@ -74,17 +73,16 @@ export default function LoggerLayout({
         <ThemeProvider>
           <SettingsProvider>
             <I18nProvider>
-              <AuthProvider>
-                <ClientLoggerProvider>
-                  <NotificationsProvider>
-                    <LoggerPWARegister />
-                    <OfflineWrapper />
-                    <NotificationsGate />
-                    <DataSaverGate />
-                    {children}
-                  </NotificationsProvider>
-                </ClientLoggerProvider>
-              </AuthProvider>
+              {/* Removed the duplicate AuthProvider here since it's provided by the root layout */}
+              <ClientLoggerProvider>
+                <NotificationsProvider>
+                  <LoggerPWARegister />
+                  <OfflineWrapper />
+                  <NotificationsGate />
+                  <DataSaverGate />
+                  {children}
+                </NotificationsProvider>
+              </ClientLoggerProvider>
             </I18nProvider>
           </SettingsProvider>
         </ThemeProvider>
