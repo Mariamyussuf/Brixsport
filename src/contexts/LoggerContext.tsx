@@ -1,5 +1,5 @@
-// Logger Context
-// Context for managing logger-specific state and data
+"use client";
+
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { loggerService } from '@/lib/loggerService';
