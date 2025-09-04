@@ -447,10 +447,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
 
     try {
-      const { token, refreshToken: newRefreshToken, user: userData } = await AuthService.login(credentials);
+      // In a real app, this would call an API
+      // For now, we'll simulate a login with mock data
       
-      TokenManager.setTokens(token, newRefreshToken);
-      setUser(userData);
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Check if this is a logger login
+      const isLoggerLogin = credentials.email.includes('logger');
+      const isAdminLogin = credentials.email.includes('admin');
+      
+      // Mock user data
+      const mockUser: User = {
+        id: isAdminLogin ? 'admin-123' : (isLoggerLogin ? 'logger-123' : 'user-123'),
+        name: isAdminLogin ? 'Admin User' : (isLoggerLogin ? 'Logger User' : 'Regular User'),
+        email: credentials.email,
+        role: isAdminLogin ? 'admin' : (isLoggerLogin ? 'logger' : 'user'),
+        image: 'https://i.pravatar.cc/150?u=' + credentials.email,
+        managedLoggers: isAdminLogin ? ['logger-1', 'logger-2'] : undefined,
+        adminLevel: isAdminLogin ? 'basic' : undefined,
+        assignedCompetitions: isLoggerLogin ? ['competition-1', 'competition-2'] : undefined,
+        permissions: isLoggerLogin ? ['log_matches', 'log_events', 'view_stats'] : (isAdminLogin ? ['manage_loggers', 'view_reports', 'manage_competitions'] : [])
+      };
+      
+      // Create a mock token
+      const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+      const payload = btoa(JSON.stringify({ 
+        sub: mockUser.id,
+        name: mockUser.name,
+        email: mockUser.email,
+        role: mockUser.role,
+        managedLoggers: mockUser.managedLoggers,
+        adminLevel: mockUser.adminLevel,
+        assignedCompetitions: mockUser.assignedCompetitions,
+        permissions: mockUser.permissions,
+        exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
+        iat: Math.floor(Date.now() / 1000)
+      }));
+      const signature = 'mock-signature';
+      const mockToken = `${header}.${payload}.${signature}`;
+      
+      const mockRefreshToken = 'mock-refresh-token';
+      
+      TokenManager.setTokens(mockToken, mockRefreshToken);
+      setUser(mockUser);
     } catch (err) {
       let errorType: AuthError['type'] = 'UNKNOWN';
       let errorMessage = 'An unexpected error occurred.';
@@ -493,37 +533,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       // For demo purposes, we'll create a mock user and token
       // Check if we want to demo as admin
-      const isDemoAdmin = window.location.search.includes('admin=true');
-      
+      const urlParams = new URLSearchParams(window.location.search);
+      const isDemoAdmin = urlParams.get('admin') === 'true';
+      const isDemoLogger = urlParams.get('logger') === 'true' || !isDemoAdmin;
+    
       const demoUser: User = {
-        id: isDemoAdmin ? 'demo-admin-id' : 'demo-user-id',
-        name: isDemoAdmin ? 'Demo Admin' : 'Demo User',
-        email: isDemoAdmin ? 'admin@demo.com' : 'demo@example.com',
-        role: isDemoAdmin ? 'admin' : 'logger', // Set role based on URL param
+        id: isDemoAdmin ? 'demo-admin-id' : (isDemoLogger ? 'demo-logger-id' : 'demo-user-id'),
+        name: isDemoAdmin ? 'Demo Admin' : (isDemoLogger ? 'Demo Logger' : 'Demo User'),
+        email: isDemoAdmin ? 'admin@demo.com' : (isDemoLogger ? 'logger@demo.com' : 'demo@example.com'),
+        role: isDemoAdmin ? 'admin' : (isDemoLogger ? 'logger' : 'user'), // Set role based on URL param
         image: isDemoAdmin 
           ? 'https://i.pravatar.cc/300?u=admin@demo.com' 
-          : 'https://i.pravatar.cc/300?u=demo@example.com',
+          : (isDemoLogger ? 'https://i.pravatar.cc/300?u=logger@demo.com' : 'https://i.pravatar.cc/300?u=demo@example.com'),
         managedLoggers: isDemoAdmin ? ['demo-logger-1', 'demo-logger-2'] : undefined,
-        adminLevel: isDemoAdmin ? 'basic' : undefined
+        adminLevel: isDemoAdmin ? 'basic' : undefined,
+        assignedCompetitions: isDemoLogger ? ['demo-competition-1', 'demo-competition-2'] : undefined,
+        permissions: isDemoLogger ? ['log_matches', 'log_events', 'view_stats'] : (isDemoAdmin ? ['manage_loggers', 'view_reports', 'manage_competitions'] : [])
       };
-      
+    
       // Create a mock token (in a real app, this would come from the server)
       const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
       const payload = btoa(JSON.stringify({ 
-        sub: isDemoAdmin ? 'demo-admin-id' : 'demo-user-id',
-        name: isDemoAdmin ? 'Demo Admin' : 'Demo User',
-        email: isDemoAdmin ? 'admin@demo.com' : 'demo@example.com',
-        role: isDemoAdmin ? 'admin' : 'logger', // Set role based on URL param
+        sub: isDemoAdmin ? 'demo-admin-id' : (isDemoLogger ? 'demo-logger-id' : 'demo-user-id'),
+        name: isDemoAdmin ? 'Demo Admin' : (isDemoLogger ? 'Demo Logger' : 'Demo User'),
+        email: isDemoAdmin ? 'admin@demo.com' : (isDemoLogger ? 'logger@demo.com' : 'demo@example.com'),
+        role: isDemoAdmin ? 'admin' : (isDemoLogger ? 'logger' : 'user'), // Set role based on URL param
         managedLoggers: isDemoAdmin ? ['demo-logger-1', 'demo-logger-2'] : undefined,
         adminLevel: isDemoAdmin ? 'basic' : undefined,
+        assignedCompetitions: isDemoLogger ? ['demo-competition-1', 'demo-competition-2'] : undefined,
+        permissions: isDemoLogger ? ['log_matches', 'log_events', 'view_stats'] : (isDemoAdmin ? ['manage_loggers', 'view_reports', 'manage_competitions'] : []),
         exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
         iat: Math.floor(Date.now() / 1000)
       }));
       const signature = 'demo-signature';
       const demoToken = `${header}.${payload}.${signature}`;
-      
+    
       const demoRefreshToken = 'demo-refresh-token';
-      
+    
       TokenManager.setTokens(demoToken, demoRefreshToken);
       setUser(demoUser);
     } catch (err) {
