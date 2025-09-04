@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Match, SportType, EventLog, CampusEventType, Team, Player, Semester, EventScope } from '../../types/campus';
-import { campusDesign } from '../../styles/campusDesign';
-import { PlayerSelector } from './PlayerSelector';
+import { Match, SportType, EventLog, CampusEventType, Team, Player, Semester, EventScope } from '../../../types/campus';
+import { campusDesign } from '../../../styles/campusDesign';
+import { PlayerSelector } from '../players/PlayerSelector';
 import { EventTypeButtons } from './EventTypeButtons';
 import { FixedSizeList as List } from 'react-window';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { useLoggerNotifications } from '@/hooks/useLoggerNotifications';
 
 export interface EventLoggerFormProps {
   currentMatch: Match;
@@ -51,6 +52,7 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
 
   const [liveMessage, setLiveMessage] = useState('');
   const eventRefs = React.useRef<(HTMLLIElement | null)[]>([]);
+  const { sendEventAddedNotification } = useLoggerNotifications();
 
 
   const eventTypes: CampusEventType[] = React.useMemo(() => {
@@ -144,6 +146,25 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
       }
       return [newEvent, ...q];
     });
+    
+    // Send notification for the new event
+    // Note: This is a simplified version - in a real implementation, you would have more detailed match/event data
+    const mockMatch = {
+      id: currentMatch.id,
+      homeTeamId: currentMatch.teams[0]?.name || 'Home Team',
+      awayTeamId: currentMatch.teams[1]?.name || 'Away Team',
+      homeScore: 0,
+      awayScore: 0,
+      status: 'in-progress' as const
+    };
+    
+    const mockEvent = {
+      type: eventType as any,
+      minute: Math.floor((Date.now() - currentMatch.startTime) / 60000)
+    };
+    
+    sendEventAddedNotification(mockEvent as any, mockMatch as any);
+    
     setEditingEvent(null);
     setEventType(null);
     setSelectedPlayerId(null);
@@ -198,6 +219,7 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
     setSelectedEventIds(new Set());
   };
   const handleBatchDelete = handleBatchUndo; // For now, same as undo
+
   const handleBatchEdit = () => {
     // For demo: just edit the first selected event
     const firstId = Array.from(selectedEventIds)[0];

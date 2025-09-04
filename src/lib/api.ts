@@ -161,6 +161,8 @@ export interface FavoriteItem {
 
 // Interface for Match
 export interface Match {
+ homeScore: any;
+  awayScore: any;
   id: string;
   name: string;
   date: string;

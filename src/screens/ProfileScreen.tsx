@@ -267,6 +267,8 @@ const ProfileScreen = () => {
                 ))}
               </div>
             </div>
+            
+            {/* Removed Notification Settings - now in SettingsSheet */}
           </div>
 
           {/* Quick Links Section - Full width on mobile, 1/3 on desktop */}

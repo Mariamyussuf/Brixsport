@@ -7,8 +7,11 @@ import Favouritesscreen from './Favouritesscreen';
 import LiveMatchesScreen from './LiveMatchesScreen';
 import { useI18n } from '../shared/I18nProvider';
 import { FavoritesAuthDialog } from '../shared/FavoritesAuthDialog';
-import { CompetitionsAuthDialog } from '../shared/CompetitionsAuthDialog'; // Added import
-import { useAuth } from '@/hooks/useAuth'; // Added import for useAuth
+import { CompetitionsAuthDialog } from '../shared/CompetitionsAuthDialog';
+import { useAuth } from '@/hooks/useAuth';
+import MatchCard from '../shared/MatchCard';
+import TrackEventCard from '../shared/TrackEventCard';
+import NotificationsBadge from '../shared/NotificationsBadge';
 
 import { 
   Match, 
@@ -17,9 +20,7 @@ import {
   Tournament, 
   SportType, 
   TabType, 
-  UI_TeamLogoProps, 
-  UI_MatchCardProps, 
-  UI_TrackEventCardProps,
+  UI_TeamLogoProps,
   UI_Match,
   UI_TrackEvent,
   UI_TrackResult
@@ -253,6 +254,14 @@ const Homescreen: React.FC = () => {
     };
   };
 
+  const convertUITrackEventToTrackEvent = (uiEvent: UI_TrackEvent): any => {
+    return {
+      ...uiEvent,
+      status: uiEvent.status === 'Ended' ? 'ended' : 
+              uiEvent.status === 'Live' ? 'live' : 'scheduled'
+    };
+  };
+
   const sortMatches = (matches: UI_Match[]): UI_Match[] => {
     return [...matches].sort((a, b) => {
       if (a.status === 'Live' && b.status !== 'Live') return -1;
@@ -286,77 +295,6 @@ const Homescreen: React.FC = () => {
     </div>
   );
 
-  const MatchCard: React.FC<UI_MatchCardProps> = ({ match, isBasketball = false }) => (
-    <div 
-      className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 mb-3 shadow-sm border border-gray-100 dark:border-gray-700 touch-manipulation cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-      onClick={() => {
-        // Navigate to match details page using the match ID
-        if (match.id) {
-          router.push(`/match/${match.id}`);
-        } else {
-          // Fallback to default match if no ID is available
-          router.push(`/match/1`);
-        }
-      }}
-    >
-      <div className="flex items-center justify-between mb-2 sm:mb-3">
-        <div className="flex items-center space-x-2">
-          {match.status === 'Live' && (
-            <span className="bg-green-500 text-white px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium animate-pulse">
-              {t('live')}
-            </span>
-          )}
-          <span className="text-gray-600 dark:text-gray-300 font-medium text-xs sm:text-sm">{match.time}</span>
-        </div>
-      </div>
-      
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2 sm:space-x-3 flex-1">
-          <TeamLogo color={match.team1Color} />
-          <span className="font-medium text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate">{match.team1}</span>
-        </div>
-        
-        <div className="px-2 sm:px-4 min-w-[80px] sm:min-w-[100px] flex justify-center">
-          {match.status === 'Live' && match.score1 !== undefined && match.score2 !== undefined ? (
-            <span className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
-              {match.score1} - {match.score2}
-            </span>
-          ) : (
-            <span className="text-gray-400 dark:text-gray-500 text-sm sm:text-base">{t('vs')}</span>
-          )}
-        </div>
-        
-        <div className="flex items-center space-x-2 sm:space-x-3 justify-end flex-1">
-          <span className="font-medium text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate">{match.team2}</span>
-          <TeamLogo color={match.team2Color} />
-        </div>
-      </div>
-    </div>
-  );
-
-  const TrackEventCard: React.FC<UI_TrackEventCardProps> = ({ event }) => (
-    <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 mb-3 shadow-sm border border-gray-100 dark:border-gray-700 touch-manipulation">
-      <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-3">
-        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium text-white w-fit ${
-          event.status === 'Ended' ? 'bg-red-500' : 
-          event.status === 'Live' ? 'bg-green-500' : 'bg-gray-500'
-        }`}>
-          {event.status}
-        </span>
-        <span className="font-medium text-gray-800 dark:text-gray-100 text-sm sm:text-base">{event.event}</span>
-      </div>
-      
-      <div className="space-y-1.5 sm:space-y-2">
-        {event.results.map((result, index) => (
-          <div key={index} className="flex items-center space-x-2 sm:space-x-3">
-            <span className="text-gray-600 dark:text-gray-300 font-medium w-8 sm:w-10 text-xs sm:text-sm">{result.position}</span>
-            <span className="text-gray-800 dark:text-gray-100 text-xs sm:text-sm">{result.team}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
   // Event handlers
   const handleTabClick = (tab: TabType): void => {
     if (tab === 'Favourites' && !isAuthenticated) {
@@ -373,6 +311,12 @@ const Homescreen: React.FC = () => {
     
     if (tab === 'Profile') {
       router.push('/profile');
+      return;
+    }
+
+    if (tab === 'Fixtures') {
+      // Navigate to dedicated fixtures screen for more detailed view
+      router.push('/fixtures');
       return;
     }
     
@@ -401,7 +345,7 @@ const Homescreen: React.FC = () => {
   };
 
   const handleNotificationClick = (): void => {
-    alert('No new notifications');
+    router.push('/notifications');
   };
 
   const handleLiveClick = (): void => {
@@ -491,17 +435,7 @@ const Homescreen: React.FC = () => {
               >
                 <Search className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 dark:text-white" />
               </button>
-              <button 
-                className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors relative"
-                aria-label="Notifications"
-                onClick={handleNotificationClick}
-                type="button"
-              >
-                <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 dark:text-white" />
-                <div className="absolute -top-0.5 -right-0.5 w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">3</span>
-                </div>
-              </button>
+              <NotificationsBadge onClick={handleNotificationClick} />
             </div>
           </div>
         </div>
@@ -559,7 +493,7 @@ const Homescreen: React.FC = () => {
                 <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4 px-1">{t('track_events')}</h2>
                 <div className="space-y-2 sm:space-y-3">
                   {trackEvents.map((event, index) => (
-                    <TrackEventCard key={`track-fixture-${index}`} event={event} />
+                    <TrackEventCard key={`track-fixture-${index}`} event={convertUITrackEventToTrackEvent(event)} />
                   ))}
                 </div>
               </section>

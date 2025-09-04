@@ -2,31 +2,18 @@ import React, { useState } from 'react';
 import { Search, Bell, Clock, Play } from 'lucide-react';
 import { useI18n } from '@/components/shared/I18nProvider';
 import { useRouter } from 'next/navigation';
+import MatchCard, { Match } from '@/components/shared/MatchCard';
+import TrackEventCard, { TrackEvent } from '@/components/shared/TrackEventCard';
 
-interface Match {
-  id: string;
-  homeTeam: string;
-  awayTeam: string;
-  homeScore?: number;
-  awayScore?: number;
-  time?: string;
-  status: 'live' | 'scheduled' | 'ended';
-  quarter?: string;
-}
-
-interface TrackEvent {
-  id: string;
-  name: string;
-  time: string;
-  status: 'live' | 'scheduled' | 'ended';
-  results?: { position: string; team: string }[];
-}
+// No need to redefine the interfaces, we're using the exported ones
 
 const FixturesScreen = () => {
   const { t } = useI18n();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'all' | 'football' | 'basketball' | 'track'>('all');
   const [currentView, setCurrentView] = useState<'dashboard' | 'track'>('dashboard');
+
+  // Using shared components instead of local implementations
 
   const footballMatches: Match[] = [
     {
@@ -142,109 +129,11 @@ const FixturesScreen = () => {
     ]
   };
 
-  const getTeamIcon = (team: string, isHome: boolean = true) => {
-    const baseClasses = "w-8 h-8 rounded-sm flex items-center justify-center text-white text-xs font-bold";
-    
-    // Team color mapping
-    if (team.includes('Pirates') || team.includes('Los Blancos') || team.includes('Pheonix') || team.includes('Kings')) {
-      return <div className={`${baseClasses} bg-blue-600`}>🛡️</div>;
-    }
-    if (team.includes('Joja') || team.includes('La Masia') || team.includes('Spartans') || team.includes('Blazers')) {
-      return <div className={`${baseClasses} bg-red-600`}>🛡️</div>;
-    }
-    
-    return <div className={`${baseClasses} bg-gray-600`}>🛡️</div>;
-  };
-
-  const MatchCard = ({ match }: { match: Match }) => (
-    <div 
-      className="flex items-center justify-between py-4 px-4 bg-white rounded-lg border border-gray-200 mb-3 cursor-pointer hover:bg-gray-50 transition-colors"
-      onClick={() => {
-        // Navigate to match details page
-        router.push(`/match/${match.id}`);
-      }}
-    >
-      <div className="flex items-center space-x-3">
-        {match.status === 'live' && (
-          <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-            {t('live')}
-          </div>
-        )}
-        {match.quarter && (
-          <div className="text-gray-600 text-sm font-medium">
-            {match.quarter}
-          </div>
-        )}
-        {match.time && !match.quarter && (
-          <div className="text-gray-600 text-sm font-medium">
-            {match.time}
-          </div>
-        )}
-      </div>
-      
-      <div className="flex items-center space-x-4">
-        <div className="flex items-center space-x-2">
-          <span className="text-gray-800 font-medium">{match.homeTeam}</span>
-          {getTeamIcon(match.homeTeam, true)}
-        </div>
-        
-        <div className="text-center min-w-[60px] px-2 sm:px-4">
-          {match.homeScore !== undefined && match.awayScore !== undefined ? (
-            <span className="text-lg font-bold text-gray-800">
-              {match.homeScore} - {match.awayScore}
-            </span>
-          ) : (
-            <span className="text-gray-500">{t('vs')}</span>
-          )}
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          {getTeamIcon(match.awayTeam, false)}
-          <span className="text-gray-800 font-medium">{match.awayTeam}</span>
-        </div>
-      </div>
-    </div>
-  );
-
-  const TrackEventCard = ({ event }: { event: TrackEvent }) => (
-    <div className="flex items-center justify-between py-4 px-4 bg-white rounded-lg border border-gray-200 mb-3">
-      <div className="flex-1">
-        <div className="flex items-center space-x-3">
-          {event.status === 'live' && (
-            <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-              {t('live')}
-            </div>
-          )}
-          {event.status === 'ended' && (
-            <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-              {t('ended')}
-            </div>
-          )}
-          <span className="text-gray-800 font-medium">{event.name}</span>
-        </div>
-        
-        {event.results && (
-          <div className="mt-2 space-y-1">
-            {event.results.map((result, idx) => (
-              <div key={idx} className="text-sm text-gray-600">
-                {result.position}. {result.team}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      
-      <div className="text-gray-600 font-medium">
-        {event.time}
-      </div>
-    </div>
-  );
-
   if (currentView === 'track') {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Header */}
-        <div className="bg-slate-800 px-6 py-4">
+        <div className="bg-slate-800 dark:bg-slate-900 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <h1 className="text-white text-2xl font-bold">{t('app_title')}</h1>
@@ -260,7 +149,7 @@ const FixturesScreen = () => {
         </div>
 
         {/* Navigation */}
-        <div className="bg-white px-6 py-4 border-b border-gray-200">
+        <div className="bg-white dark:bg-gray-900 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex space-x-4">
             {[t('track_events'), t('basketball'), t('football')].map((tab) => (
               <button
@@ -272,7 +161,7 @@ const FixturesScreen = () => {
                 className={`px-6 py-2 rounded-full font-medium transition-colors ${
                   tab === t('track_events')
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
                 {tab}
@@ -283,9 +172,9 @@ const FixturesScreen = () => {
 
         {/* Track Events Content */}
         <div className="px-6 py-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-6">{t('current_competition_fixtures')}</h2>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6">{t('current_competition_fixtures')}</h2>
           
-          <div className="text-center text-gray-600 font-medium mb-6">
+          <div className="text-center text-gray-600 dark:text-gray-400 font-medium mb-6">
             18th OCT
           </div>
 
@@ -301,9 +190,9 @@ const FixturesScreen = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-slate-800 px-6 py-4">
+      <div className="bg-slate-800 dark:bg-slate-900 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <h1 className="text-white text-2xl font-bold">{t('app_title')}</h1>
@@ -319,7 +208,7 @@ const FixturesScreen = () => {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="bg-white px-6 py-4 border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-900 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex space-x-4">
           {[t('all'), t('football'), t('basketball'), t('track_events')].map((tab) => (
             <button
@@ -335,7 +224,7 @@ const FixturesScreen = () => {
               className={`px-6 py-2 rounded-full font-medium transition-colors ${
                 ((activeTab === 'all' && tab === t('all')) || (activeTab === 'football' && tab === t('football')) || (activeTab === 'basketball' && tab === t('basketball'))) && currentView === 'dashboard'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
               }`}
             >
               {tab}
@@ -349,7 +238,7 @@ const FixturesScreen = () => {
         {/* Football Section */}
         {(activeTab === 'all' || activeTab === 'football') && (
           <div>
-            <h2 className="text-xl font-bold text-gray-800 mb-6">{t('football_section')}</h2>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6">{t('football_section')}</h2>
             <div className="space-y-4">
               {footballMatches.map((match) => (
                 <MatchCard key={match.id} match={match} />
@@ -361,10 +250,10 @@ const FixturesScreen = () => {
         {/* Basketball Section */}
         {(activeTab === 'all' || activeTab === 'basketball') && (
           <div>
-            <h2 className="text-xl font-bold text-gray-800 mb-6">{t('basketball_section')}</h2>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6">{t('basketball_section')}</h2>
             <div className="space-y-4">
               {basketballMatches.map((match) => (
-                <MatchCard key={match.id} match={match} />
+                <MatchCard key={match.id} match={match} isBasketball={true} />
               ))}
             </div>
           </div>
@@ -373,11 +262,11 @@ const FixturesScreen = () => {
         {/* Track Events Preview */}
         {activeTab === 'all' && (
           <div>
-            <h2 className="text-xl font-bold text-gray-800 mb-6">{t('track_events')}</h2>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6">{t('track_events')}</h2>
             <TrackEventCard event={endedTrackEvent} />
             <button
               onClick={() => setCurrentView('track')}
-              className="mt-4 text-blue-600 hover:text-blue-800 font-medium"
+              className="mt-4 text-blue-600 dark:text-blue-500 hover:text-blue-800 dark:hover:text-blue-400 font-medium"
             >
               {t('view_all_track_events')}
             </button>

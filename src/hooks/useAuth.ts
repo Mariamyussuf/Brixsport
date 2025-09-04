@@ -10,17 +10,35 @@ import React, {
 } from 'react';
 
 // Define the shape of the user object
-interface User {
+export interface User {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: 'user' | 'logger' | 'senior-logger' | 'logger-admin' | 'admin';
   image?: string;
+  assignedCompetitions?: string[]; // Logger-specific field
+  permissions?: string[]; // Logger-specific field
+  // Admin-specific fields
+  managedLoggers?: string[]; // Admin can manage these loggers
+  adminLevel?: 'basic' | 'super'; // Admin level for permission granularity
+}
+
+// Define the AuthContextType interface
+interface AuthContextType {
+  user: User | null;
+  loading: LoadingStates;
+  error: AuthError | null;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  demoLogin: () => Promise<void>;
+  logout: () => void;
+  refreshToken: () => Promise<void>;
+  clearError: () => void;
+  isAuthenticated: boolean;
 }
 
 // Define error types for better error handling
 interface AuthError {
-  type: 'NETWORK' | 'UNAUTHORIZED' | 'VALIDATION' | 'TOKEN_EXPIRED' | 'UNKNOWN';
+  type: 'NETWORK' | 'UNAUTHORIZED' | 'VALIDATION' | 'TOKEN_EXPIRED' | 'RATE_LIMITED' | 'UNKNOWN';
   message: string;
   code?: string;
 }
@@ -50,22 +68,22 @@ interface RefreshResponse {
   refreshToken: string;
 }
 
-// Define the shape of the auth context state
-interface AuthContextType {
-  user: User | null;
-  loading: LoadingStates;
-  error: AuthError | null;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  demoLogin: () => Promise<void>; // Added demoLogin function
-  logout: () => void;
-  refreshToken: () => Promise<void>;
-  clearError: () => void;
-  isAuthenticated: boolean;
+// Rate limiting interface
+interface RateLimitState {
+  attempts: number;
+  lastAttempt: number;
+  isLocked: boolean;
+  lockUntil: number;
 }
 
 // Auth Service for API calls
 class AuthService {
   private static readonly API_BASE: string = '/api/auth';
+  private static readonly MAX_ATTEMPTS: number = 5;
+  private static readonly LOCKOUT_DURATION: number = 15 * 60 * 1000; // 15 minutes
+
+  // Rate limiting storage key
+  private static readonly RATE_LIMIT_KEY: string = 'auth_rate_limit';
 
   static async validateToken(token: string): Promise<User> {
     const response = await fetch(`${this.API_BASE}/me`, {
@@ -86,6 +104,11 @@ class AuthService {
   }
 
   static async login(credentials: LoginCredentials): Promise<LoginResponse> {
+    // Check rate limiting before attempting login
+    if (this.isRateLimited()) {
+      throw new Error('RATE_LIMITED');
+    }
+
     const response = await fetch(`${this.API_BASE}/login`, {
       method: 'POST',
       headers: {
@@ -94,6 +117,9 @@ class AuthService {
       body: JSON.stringify(credentials),
     });
 
+    // Update rate limiting after attempt
+    this.updateRateLimit(response.status === 401 || response.status === 422);
+
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error('UNAUTHORIZED');
@@ -101,8 +127,14 @@ class AuthService {
       if (response.status === 422) {
         throw new Error('VALIDATION');
       }
+      if (response.status === 429) {
+        throw new Error('RATE_LIMITED');
+      }
       throw new Error('NETWORK');
     }
+
+    // Reset rate limiting on successful login
+    this.resetRateLimit();
 
     return response.json() as Promise<LoginResponse>;
   }
@@ -131,12 +163,76 @@ class AuthService {
       return true;
     }
   }
+
+  // Rate limiting methods
+  private static getRateLimitState(): RateLimitState {
+    if (typeof window === 'undefined') return { attempts: 0, lastAttempt: 0, isLocked: false, lockUntil: 0 };
+    
+    const stored = localStorage.getItem(this.RATE_LIMIT_KEY);
+    if (stored) {
+      const state = JSON.parse(stored) as RateLimitState;
+      // Check if lockout has expired
+      if (state.isLocked && Date.now() > state.lockUntil) {
+        this.resetRateLimit();
+        return { attempts: 0, lastAttempt: 0, isLocked: false, lockUntil: 0 };
+      }
+      return state;
+    }
+    return { attempts: 0, lastAttempt: 0, isLocked: false, lockUntil: 0 };
+  }
+
+  private static saveRateLimitState(state: RateLimitState): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(this.RATE_LIMIT_KEY, JSON.stringify(state));
+  }
+
+  private static isRateLimited(): boolean {
+    const state = this.getRateLimitState();
+    return state.isLocked;
+  }
+
+  private static updateRateLimit(failedAttempt: boolean): void {
+    const state = this.getRateLimitState();
+    
+    if (failedAttempt) {
+      const now = Date.now();
+      state.attempts += 1;
+      state.lastAttempt = now;
+      
+      if (state.attempts >= this.MAX_ATTEMPTS) {
+        state.isLocked = true;
+        state.lockUntil = now + this.LOCKOUT_DURATION;
+      }
+    }
+    
+    this.saveRateLimitState(state);
+  }
+
+  private static resetRateLimit(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(this.RATE_LIMIT_KEY);
+  }
+
+  // Get remaining lockout time in minutes
+  static getLockoutTime(): number {
+    const state = this.getRateLimitState();
+    if (!state.isLocked) return 0;
+    return Math.ceil((state.lockUntil - Date.now()) / 60000);
+  }
+
+  // Get remaining attempts
+  static getRemainingAttempts(): number {
+    const state = this.getRateLimitState();
+    if (state.isLocked) return 0;
+    return Math.max(0, this.MAX_ATTEMPTS - state.attempts);
+  }
 }
 
 // Token management utilities
 export class TokenManager {
   private static readonly TOKEN_KEY: string = 'authToken';
   private static readonly REFRESH_TOKEN_KEY: string = 'refreshToken';
+  private static readonly TOKEN_EXPIRY_KEY: string = 'tokenExpiry';
 
   static getToken(): string | null {
     if (typeof window === 'undefined') return null;
@@ -150,14 +246,40 @@ export class TokenManager {
 
   static setTokens(token: string, refreshToken: string): void {
     if (typeof window === 'undefined') return;
+    
+    // Store tokens
     localStorage.setItem(this.TOKEN_KEY, token);
     localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
+    
+    // Store token expiry time
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const expiry = payload.exp * 1000;
+      localStorage.setItem(this.TOKEN_EXPIRY_KEY, expiry.toString());
+    } catch {
+      // If we can't parse the token, remove the expiry time
+      localStorage.removeItem(this.TOKEN_EXPIRY_KEY);
+    }
   }
 
   static clearTokens(): void {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+    localStorage.removeItem(this.TOKEN_EXPIRY_KEY);
+  }
+
+  static isTokenExpiringSoon(): boolean {
+    if (typeof window === 'undefined') return false;
+    
+    const expiryStr = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
+    if (!expiryStr) return true; // If we don't have expiry info, assume it's expiring
+    
+    const expiry = parseInt(expiryStr, 10);
+    const now = Date.now();
+    
+    // Consider token expiring soon if it expires in less than 10 minutes
+    return (expiry - now) < 10 * 60 * 1000;
   }
 }
 
@@ -292,8 +414,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const currentTime: number = Date.now();
         const timeUntilExpiration: number = expirationTime - currentTime;
         
-        // Refresh 5 minutes before expiration
-        const refreshTime: number = Math.max(timeUntilExpiration - 5 * 60 * 1000, 0);
+        // Refresh 5 minutes before expiration or immediately if expiring soon
+        const refreshTime: number = TokenManager.isTokenExpiringSoon() 
+          ? 0 
+          : Math.max(timeUntilExpiration - 5 * 60 * 1000, 0);
 
         timeoutId = setTimeout(async () => {
           try {
@@ -341,6 +465,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             errorType = 'VALIDATION';
             errorMessage = 'Please check your input and try again.';
             break;
+          case 'RATE_LIMITED':
+            errorType = 'RATE_LIMITED';
+            errorMessage = `Too many failed attempts. Please try again in ${AuthService.getLockoutTime()} minutes.`;
+            break;
           case 'NETWORK':
             errorType = 'NETWORK';
             errorMessage = 'Network error. Please check your connection.';
@@ -364,20 +492,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       // For demo purposes, we'll create a mock user and token
+      // Check if we want to demo as admin
+      const isDemoAdmin = window.location.search.includes('admin=true');
+      
       const demoUser: User = {
-        id: 'demo-user-id',
-        name: 'Demo User',
-        email: 'demo@example.com',
-        role: 'user',
-        image: 'https://i.pravatar.cc/300?u=demo@example.com' // Added profile image
+        id: isDemoAdmin ? 'demo-admin-id' : 'demo-user-id',
+        name: isDemoAdmin ? 'Demo Admin' : 'Demo User',
+        email: isDemoAdmin ? 'admin@demo.com' : 'demo@example.com',
+        role: isDemoAdmin ? 'admin' : 'logger', // Set role based on URL param
+        image: isDemoAdmin 
+          ? 'https://i.pravatar.cc/300?u=admin@demo.com' 
+          : 'https://i.pravatar.cc/300?u=demo@example.com',
+        managedLoggers: isDemoAdmin ? ['demo-logger-1', 'demo-logger-2'] : undefined,
+        adminLevel: isDemoAdmin ? 'basic' : undefined
       };
       
       // Create a mock token (in a real app, this would come from the server)
       const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
       const payload = btoa(JSON.stringify({ 
-        sub: 'demo-user-id',
-        name: 'Demo User',
-        email: 'demo@example.com',
+        sub: isDemoAdmin ? 'demo-admin-id' : 'demo-user-id',
+        name: isDemoAdmin ? 'Demo Admin' : 'Demo User',
+        email: isDemoAdmin ? 'admin@demo.com' : 'demo@example.com',
+        role: isDemoAdmin ? 'admin' : 'logger', // Set role based on URL param
+        managedLoggers: isDemoAdmin ? ['demo-logger-1', 'demo-logger-2'] : undefined,
+        adminLevel: isDemoAdmin ? 'basic' : undefined,
         exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
         iat: Math.floor(Date.now() / 1000)
       }));
@@ -430,7 +568,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     error,
     login,
-    demoLogin, // Added demoLogin to the context value
+    demoLogin,
     logout,
     refreshToken,
     clearError,
@@ -519,5 +657,33 @@ export const useRequireOnboarding = (): {
     isAuthenticated, 
     hasCompletedOnboarding,
     isLoading: loading.initializing || isLoading
+  };
+};
+
+// Logger-specific authentication hook
+export const useLoggerAuth = (): { 
+  user: User | null; 
+  isAuthenticated: boolean; 
+  isLogger: boolean;
+  isLoading: boolean;
+  hasLoggerPermissions: boolean;
+} => {
+  const { user, loading } = useAuth();
+  
+  // Check if user has logger permissions
+  const isLogger = user?.role?.startsWith('logger') || false;
+  const hasLoggerPermissions = user !== null && (
+    user.role === 'logger' || 
+    user.role === 'senior-logger' || 
+    user.role === 'logger-admin' ||
+    user.role === 'admin'
+  );
+  
+  return { 
+    user, 
+    isAuthenticated: user !== null, 
+    isLogger,
+    hasLoggerPermissions,
+    isLoading: loading.initializing 
   };
 };

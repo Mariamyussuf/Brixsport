@@ -47,6 +47,13 @@ const DICTS: Record<string, Messages> = {
     add_favourite_team: "Add favourite team",
     add_favourite_player: "Add favourite player",
     add_favourite_competition: "Add favourite competition",
+    notifications: "Notifications",
+    mark_all_read: "Mark all as read",
+    unread: "Unread",
+    no_notifications: "No notifications",
+    no_unread_notifications: "No unread notifications",
+    all_caught_up: "You're all caught up!",
+    notifications_appear_here: "Your notifications will appear here"
   },
   fr: {
     no_items_found: "Aucun élément trouvé",
@@ -90,6 +97,13 @@ const DICTS: Record<string, Messages> = {
     add_favourite_team: "Ajouter une équipe favorite",
     add_favourite_player: "Ajouter un joueur favori",
     add_favourite_competition: "Ajouter une compétition favorite",
+    notifications: "Notifications",
+    mark_all_read: "Tout marquer comme lu",
+    unread: "Non lu",
+    no_notifications: "Aucune notification",
+    no_unread_notifications: "Aucune notification non lue",
+    all_caught_up: "Vous êtes à jour !",
+    notifications_appear_here: "Vos notifications apparaîtront ici"
   },
   es: {
     no_items_found: "No se encontraron elementos",
@@ -133,6 +147,13 @@ const DICTS: Record<string, Messages> = {
     add_favourite_team: "Añadir equipo favorito",
     add_favourite_player: "Añadir jugador favorito",
     add_favourite_competition: "Añadir competición favorita",
+    notifications: "Notificaciones",
+    mark_all_read: "Marcar todo como leído",
+    unread: "No leído",
+    no_notifications: "Sin notificaciones",
+    no_unread_notifications: "Sin notificaciones no leídas",
+    all_caught_up: "¡Estás al día!",
+    notifications_appear_here: "Tus notificaciones aparecerán aquí"
   },
 };
 
