@@ -4,6 +4,7 @@ import NoFlashThemeScript from "@/components/shared/NoFlashThemeScript";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import { AdminProvider } from "@/contexts/AdminContext";
 import { cookies } from 'next/headers';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifyAdminToken } from '@/lib/adminAuth';
 
@@ -30,24 +31,36 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { headers } = require('next/headers');
-  const pathname = headers().get('next-url') || '';
+  const headersList = await headers();
+  const pathname = headersList.get('next-url') || '';
 
-  let user = null;
+  // If we are on the login page, render the children directly without auth checks
+  if (pathname === '/admin/login') {
+    return (
+        <html lang="en" suppressHydrationWarning>
+            <head>
+                <NoFlashThemeScript />
+            </head>
+            <body>
+                <ThemeProvider>
+                    {children}
+                </ThemeProvider>
+            </body>
+        </html>
+    );
+  }
 
-  // Only perform auth check for pages other than login
-  if (pathname !== '/admin/login') {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('admin_token')?.value;
+  // For all other admin pages, perform authentication
+  const cookieStore = await cookies();
+  const token = cookieStore.get('admin_token')?.value;
 
-    if (!token) {
-      return redirect('/admin/login');
-    }
+  if (!token) {
+    redirect('/admin/login');
+  }
 
-    user = await verifyAdminToken(token);
-    if (!user) {
-      return redirect('/admin/login');
-    }
+  const user = await verifyAdminToken(token);
+  if (!user) {
+    redirect('/admin/login');
   }
 
   return (
@@ -56,8 +69,6 @@ export default async function AdminLayout({
         <link rel="manifest" href="/admin-manifest.json" />
         <meta name="theme-color" content="#dc2626" />
         <meta name="application-name" content="BrixSports Admin" />
-        
-        {/* iOS PWA meta tags */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="BrixSports Admin" />
