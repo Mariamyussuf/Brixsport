@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminToken } from '@/lib/adminAuth';
-import { cookies } from 'next/headers';
+
+// Simple cookie parser from header
+function getCookieFromHeader(name: string, cookieHeader: string | null): string | undefined {
+  if (!cookieHeader) return undefined;
+  const cookies = cookieHeader.split(';');
+  for (const c of cookies) {
+    const [k, ...rest] = c.trim().split('=');
+    if (k === name) return decodeURIComponent(rest.join('='));
+  }
+  return undefined;
+}
 
 // In-memory storage for admins (in production, this would be a database)
 let admins = [
@@ -40,7 +50,8 @@ function hashPassword(password: string): string {
 export async function GET(request: Request) {
   try {
     // Verify admin token
-    const token = (await cookies()).get('admin_token')?.value;
+    const token = getCookieFromHeader('admin_token', request.headers.get('cookie'));
+
     if (!token) {
       return NextResponse.json({ 
         success: false, 
@@ -74,7 +85,7 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   try {
     // Verify admin token
-    const token = (await cookies()).get('admin_token')?.value;
+    const token = getCookieFromHeader('admin_token', request.headers.get('cookie'));
     if (!token) {
       return NextResponse.json({ 
         success: false, 

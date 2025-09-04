@@ -5,6 +5,7 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import { adminService } from '@/lib/adminService';
 import { Logger } from '@/lib/adminService';
 import { useAuth } from '@/hooks/useAuth';
+import type { AdminUser } from '@/lib/adminAuth';
 
 // Admin context state
 interface AdminState {
@@ -15,6 +16,7 @@ interface AdminState {
     logger: boolean;
   };
   error: string | null;
+  adminUser: AdminUser | null;
 }
 
 // Admin context actions
@@ -24,6 +26,7 @@ type AdminAction =
   | { type: 'SET_LOADING'; payload: { key: keyof AdminState['loading']; value: boolean } }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'CLEAR_ERROR' }
+  | { type: 'SET_ADMIN_USER'; payload: AdminUser | null }
   | { type: 'RESET' };
 
 // Initial state
@@ -34,7 +37,8 @@ const initialState: AdminState = {
     loggers: false,
     logger: false
   },
-  error: null
+  error: null,
+  adminUser: null
 };
 
 // Admin reducer
@@ -58,6 +62,9 @@ function adminReducer(state: AdminState, action: AdminAction): AdminState {
     case 'CLEAR_ERROR':
       return { ...state, error: null };
     
+    case 'SET_ADMIN_USER':
+      return { ...state, adminUser: action.payload };
+    
     case 'RESET':
       return initialState;
     
@@ -77,6 +84,7 @@ interface AdminContextType extends AdminState {
   activateLogger: (loggerId: string) => Promise<void>;
   clearError: () => void;
   reset: () => void;
+  setAdminUser: (user: AdminUser | null) => void;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -84,10 +92,11 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined);
 // Admin provider props
 interface AdminProviderProps {
   children: ReactNode;
+  currentAdmin?: AdminUser | null;
 }
 
 // Admin provider component
-export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
+export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentAdmin = null }) => {
   const [state, dispatch] = useReducer(adminReducer, initialState);
   const { user, isAuthenticated } = useAuth();
   
@@ -100,6 +109,11 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       adminService.setAuthToken(null);
     }
   }, [user]);
+
+  // Initialize verified admin user provided by server layout
+  useEffect(() => {
+    dispatch({ type: 'SET_ADMIN_USER', payload: currentAdmin });
+  }, [currentAdmin]);
   
   // Load loggers when admin is authenticated
   useEffect(() => {
@@ -329,7 +343,8 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     suspendLogger,
     activateLogger,
     clearError,
-    reset
+    reset,
+    setAdminUser: (admin: AdminUser | null) => dispatch({ type: 'SET_ADMIN_USER', payload: admin })
   };
   
   return (

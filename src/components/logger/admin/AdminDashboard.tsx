@@ -4,7 +4,7 @@ import { useLoggerAuth, useAuth } from '@/hooks/useAuth';
 import LoggerNotifications from '@/components/logger/notifications/LoggerNotifications';
 import LoggerManagement from './LoggerManagement';
 import ActivityLogs from './ActivityLogs';
-import { AdminProvider } from '@/contexts/AdminContext';
+import { useAdmin } from '@/contexts/AdminContext';
 import MatchesManagement from './MatchesManagement';
 import LiveLoggerMonitoring from './LiveLoggerMonitoring';
 import StatisticsDashboard from './StatisticsDashboard';
@@ -14,6 +14,7 @@ import PWAAdminManagement from './PWAAdminManagement';
 const AdminDashboard = () => {
   const { user, hasLoggerPermissions } = useLoggerAuth();
   const { logout } = useAuth();
+  const { adminUser } = useAdmin();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -30,33 +31,10 @@ const AdminDashboard = () => {
     }
   }, []);
 
-  // Security check - only show dashboard to authenticated admins
-  if (!user || !isAdmin) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
-        <div className="bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-2xl border border-gray-700/50 p-8 max-w-md w-full text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-900/30 mb-6">
-            <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
-          <p className="text-gray-400 mb-6">
-            You need to be logged in with admin permissions to access this dashboard.
-          </p>
-          <button
-            onClick={() => window.location.href = '/admin/login'}
-            className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200"
-          >
-            Admin Login
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Client-side guard removed; server-side guard in app/admin/layout.tsx enforces access
 
   return (
-    <AdminProvider>
+    <>
       <Head>
         <link rel="manifest" href="/admin-manifest.json" />
         <meta name="theme-color" content="#dc2626" />
@@ -102,7 +80,7 @@ const AdminDashboard = () => {
               <div className="flex items-center space-x-2">
                 <div className="bg-gray-200 border-2 border-dashed rounded-xl w-8 h-8" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{user?.name || 'Admin'}</p>
+                  <p className="text-sm font-medium text-white truncate">{adminUser?.name || user?.name || 'Admin'}</p>
                   <p className="text-xs text-gray-400 truncate">Administrator</p>
                 </div>
               </div>
@@ -249,7 +227,7 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
-    </AdminProvider>
+    </>
   );
 };
 

@@ -3,6 +3,9 @@ import '../globals.css';
 import NoFlashThemeScript from "@/components/shared/NoFlashThemeScript";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import { AdminProvider } from "@/contexts/AdminContext";
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { verifyAdminToken } from '@/lib/adminAuth';
 
 export const viewport = {
   width: 'device-width',
@@ -22,11 +25,24 @@ export const metadata = {
   }
 };
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Server-side auth guard for admin area
+  const cookieStore = await cookies();
+  const token = cookieStore.get('admin_token')?.value;
+
+  if (!token) {
+    redirect('/admin/login');
+  }
+
+  const user = await verifyAdminToken(token);
+  if (!user) {
+    redirect('/admin/login');
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -45,7 +61,7 @@ export default function AdminLayout({
       </head>
       <body>
         <ThemeProvider>
-          <AdminProvider>
+          <AdminProvider currentAdmin={user}>
             {children}
           </AdminProvider>
         </ThemeProvider>

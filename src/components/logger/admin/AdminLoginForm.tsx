@@ -305,8 +305,8 @@ const AdminLoginForm: React.FC = () => {
         onClick={() => {
           // Set demo credentials
           setForm({
-            email: 'admin@demo.com',
-            password: 'demo1234'
+            email: 'john.admin@example.com',
+            password: 'admin_password_123'
           });
         }}
         className="w-full py-3 px-4 rounded-lg font-medium text-gray-300 border border-gray-600 hover:border-gray-500 hover:text-white transition-all duration-200 flex items-center justify-center gap-2 bg-gray-800/50 hover:bg-gray-700/50"
