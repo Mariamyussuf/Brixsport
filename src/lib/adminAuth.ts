@@ -167,8 +167,8 @@ export const AdminAuthAPI = {
    */
   logout: async (): Promise<{ success: boolean; message?: string; error?: string }> => {
     try {
-      const response = await fetch('/api/admin/login', {
-        method: 'DELETE',
+      const response = await fetch('/api/admin/logout', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },

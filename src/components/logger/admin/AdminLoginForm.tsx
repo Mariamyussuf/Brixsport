@@ -99,7 +99,7 @@ const AdminLoginForm: React.FC = () => {
       }
 
       // Redirect to admin dashboard
-      window.location.href = '/admin';
+      window.location.href = '/admin/dashboard';
     } catch (error: any) {
       if (error.message === 'INVALID_TWO_FACTOR') {
         setSubmitError('Invalid two-factor code. Please try again.');

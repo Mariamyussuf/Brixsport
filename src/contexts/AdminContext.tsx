@@ -6,6 +6,7 @@ import { adminService } from '@/lib/adminService';
 import { Logger } from '@/lib/adminService';
 import { useAuth } from '@/hooks/useAuth';
 import type { AdminUser } from '@/lib/adminAuth';
+import { AdminAuthAPI } from '@/lib/adminAuth';
 
 // Admin context state
 interface AdminState {
@@ -333,6 +334,22 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     dispatch({ type: 'RESET' });
   };
   
+  // Admin logout function
+  const adminLogout = async (): Promise<void> => {
+    try {
+      // Call admin logout API
+      const result = await AdminAuthAPI.logout();
+      if (result.success) {
+        // Clear admin state
+        dispatch({ type: 'RESET' });
+        // Redirect to admin login
+        window.location.href = '/admin/login';
+      }
+    } catch (error) {
+      console.error('Admin logout error:', error);
+    }
+  };
+
   // Context value
   const value: AdminContextType = {
     ...state,
@@ -346,7 +363,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     clearError,
     reset,
     setAdminUser: (admin: AdminUser | null) => dispatch({ type: 'SET_ADMIN_USER', payload: admin }),
-    logout
+    logout: adminLogout
   };
   
   return (
