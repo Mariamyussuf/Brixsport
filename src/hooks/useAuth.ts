@@ -719,10 +719,9 @@ export const useLoggerAuth = (): {
   // Check if user has logger permissions
   const isLogger = user?.role?.startsWith('logger') || false;
   const hasLoggerPermissions = user !== null && (
-    user.role === 'logger' || 
-    user.role === 'senior-logger' || 
-    user.role === 'logger-admin' ||
-    user.role === 'admin'
+    user.role.startsWith('logger') || 
+    user.role === 'admin' ||
+    user.role === 'super-admin'
   );
   
   return { 

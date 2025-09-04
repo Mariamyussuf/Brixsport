@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       );
     }
-    if (session.user.role !== 'logger') {
+    if (!session.user.role.startsWith('logger') && session.user.role !== 'admin' && session.user.role !== 'super-admin') {
       return NextResponse.json(
         { error: 'Insufficient permissions' },
         { status: 403 }
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
-    if (session.user.role !== 'logger') {
+    if (!session.user.role.startsWith('logger') && session.user.role !== 'admin' && session.user.role !== 'super-admin') {
       return NextResponse.json(
         { error: 'Insufficient permissions' },
         { status: 403 }
