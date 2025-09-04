@@ -11,10 +11,24 @@ export function middleware(request: NextRequest) {
   if (host === 'logger.brixsports.com') {
     // Route logger subdomain requests
     console.log(`[Middleware] Routing logger request: ${pathname}`);
+    
+    // If the request is not for the logger section, redirect to logger
+    if (!pathname.startsWith('/logger')) {
+      // But allow API routes and static assets
+      if (!pathname.startsWith('/api') && !pathname.startsWith('/_next') && pathname !== '/favicon.ico') {
+        return NextResponse.redirect(new URL(`/logger${pathname === '/' ? '' : pathname}`, request.url));
+      }
+    }
+    
     return NextResponse.next();
   } else if (host === 'brixsports.com' || host === 'www.brixsports.com' || host?.endsWith('vercel.app')) {
     // Route main domain requests
     console.log(`[Middleware] Routing main site request: ${pathname}`);
+    
+    // Prevent access to logger routes from main domain
+    if (pathname.startsWith('/logger')) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
     
     // Handle /auth route
     if (pathname === '/auth') {
@@ -51,5 +65,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/auth', '/profile', '/', '/((?!_next|api|static|favicon.ico).*)'],
+  matcher: ['/((?!_next|api|static|favicon.ico).*)'],
 }
