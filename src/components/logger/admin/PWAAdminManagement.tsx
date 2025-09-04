@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '@/hooks/useAuth';
-import { AdminUser } from '@/lib/adminAuth';
-import { AdminAPI, AdminUserData } from '@/lib/adminAPI';
+import { AdminUser, AdminAuthAPI } from '@/lib/adminAuth';
 
 interface PWAAdminManagementProps {
   currentUser: User;
@@ -15,12 +14,12 @@ const PWAAdminManagement: React.FC<PWAAdminManagementProps> = ({ currentUser }) 
   const [selectedAdmin, setSelectedAdmin] = useState<AdminUser | null>(null);
   
   // Form state
-  const [formData, setFormData] = useState<Omit<AdminUserData, 'id'>>({
+  const [formData, setFormData] = useState({
     name: '',
     email: '',
-    role: 'admin',
-    adminLevel: 'basic',
-    permissions: [],
+    role: 'admin' as 'admin' | 'super-admin',
+    adminLevel: 'basic' as 'basic' | 'super',
+    permissions: [] as string[],
     password: ''
   });
 
@@ -32,11 +31,21 @@ const PWAAdminManagement: React.FC<PWAAdminManagementProps> = ({ currentUser }) 
   const loadAdmins = async () => {
     try {
       setLoading(true);
-      // In a real implementation, this would call the API
-      // const response = await AdminAPI.getAll();
-      // setAdmins(response.data);
+      setError(null);
       
-      // Mock data for demonstration
+      const response = await AdminAuthAPI.getProfile();
+      if (!response.success || !response.data) {
+        throw new Error('Failed to authenticate');
+      }
+      
+      // Check if current user is a super admin
+      const currentAdmin = response.data;
+      if (currentAdmin.adminLevel !== 'super') {
+        throw new Error('Only super admins can manage other admins');
+      }
+      
+      // In a real implementation, this would call an API to get all admins
+      // For now, we'll use a mock implementation but with real authentication
       const mockAdmins: AdminUser[] = [
         {
           id: '1',
@@ -68,8 +77,8 @@ const PWAAdminManagement: React.FC<PWAAdminManagementProps> = ({ currentUser }) 
       ];
       
       setAdmins(mockAdmins);
-    } catch (err) {
-      setError('Failed to load admins');
+    } catch (err: any) {
+      setError(err.message || 'Failed to load admins');
       console.error('Error loading admins:', err);
     } finally {
       setLoading(false);
@@ -81,8 +90,10 @@ const PWAAdminManagement: React.FC<PWAAdminManagementProps> = ({ currentUser }) 
     
     try {
       // In a real implementation, this would call the API
-      // const response = await AdminAPI.create(formData);
-      // setAdmins([...admins, response.data]);
+      // For now, we'll use a mock implementation but with real form validation
+      if (!formData.name || !formData.email || !formData.password) {
+        throw new Error('Name, email, and password are required');
+      }
       
       // Mock implementation
       const newAdmin: AdminUser = {
@@ -98,26 +109,23 @@ const PWAAdminManagement: React.FC<PWAAdminManagementProps> = ({ currentUser }) 
       setAdmins([...admins, newAdmin]);
       setShowCreateForm(false);
       resetForm();
-    } catch (err) {
-      setError('Failed to create admin');
+    } catch (err: any) {
+      setError(err.message || 'Failed to create admin');
       console.error('Error creating admin:', err);
     }
   };
 
-  const handleUpdateAdmin = async (id: string, updates: Partial<AdminUserData>) => {
+  const handleUpdateAdmin = async (id: string, updates: Partial<AdminUser>) => {
     try {
       // In a real implementation, this would call the API
-      // const response = await AdminAPI.update(id, updates);
-      // setAdmins(admins.map(admin => admin.id === id ? response.data : admin));
-      
       // Mock implementation
       setAdmins(admins.map(admin => 
         admin.id === id ? { ...admin, ...updates } as AdminUser : admin
       ));
       
       setSelectedAdmin(null);
-    } catch (err) {
-      setError('Failed to update admin');
+    } catch (err: any) {
+      setError(err.message || 'Failed to update admin');
       console.error('Error updating admin:', err);
     }
   };
@@ -129,13 +137,10 @@ const PWAAdminManagement: React.FC<PWAAdminManagementProps> = ({ currentUser }) 
     
     try {
       // In a real implementation, this would call the API
-      // await AdminAPI.delete(id);
-      // setAdmins(admins.filter(admin => admin.id !== id));
-      
       // Mock implementation
       setAdmins(admins.filter(admin => admin.id !== id));
-    } catch (err) {
-      setError('Failed to delete admin');
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete admin');
       console.error('Error deleting admin:', err);
     }
   };
@@ -375,7 +380,7 @@ const PWAAdminManagement: React.FC<PWAAdminManagementProps> = ({ currentUser }) 
                   <input
                     type="password"
                     name="password"
-                    value={formData.password || ''}
+                    value={formData.password}
                     onChange={handleInputChange}
                     required
                     className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
@@ -456,7 +461,9 @@ const PWAAdminManagement: React.FC<PWAAdminManagementProps> = ({ currentUser }) 
             </div>
             <form onSubmit={(e) => {
               e.preventDefault();
-              handleUpdateAdmin(selectedAdmin.id, formData);
+              if (selectedAdmin) {
+                handleUpdateAdmin(selectedAdmin.id, formData);
+              }
             }}>
               <div className="p-6 space-y-4">
                 <div>

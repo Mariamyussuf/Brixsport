@@ -1,44 +1,87 @@
 import { NextResponse } from 'next/server';
-import { verifyAdminToken } from '@/lib/adminAuth';
+import { verifyAdminToken, hasAdminPermission } from '@/lib/adminAuth';
 import { cookies } from 'next/headers';
+import { jwtVerify, SignJWT } from 'jose';
 
-// Mock data for demonstration
-let mockAdmins = [
+// Secret key for JWT verification - in production, use environment variables
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET || 'admin_secret_key_for_development'
+);
+
+// In-memory storage for admins (in production, this would be a database)
+let admins = [
   {
     id: '1',
     name: 'John Admin',
     email: 'john.admin@example.com',
+    password: '$2a$10$abcdefghijklmnopqrstuvwx hashed password', // In production, use proper password hashing
     role: 'admin',
     managedLoggers: ['logger1', 'logger2'],
     adminLevel: 'basic',
-    permissions: ['manage_loggers', 'view_reports']
+    permissions: ['manage_loggers', 'view_reports'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   },
   {
     id: '2',
     name: 'Sarah SuperAdmin',
     email: 'sarah.super@example.com',
+    password: '$2a$10$abcdefghijklmnopqrstuvwx hashed password', // In production, use proper password hashing
     role: 'super-admin',
     managedLoggers: [],
     adminLevel: 'super',
-    permissions: ['*']
+    permissions: ['*'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   }
 ];
+
+// Helper function to hash passwords (in production, use bcrypt or similar)
+function hashPassword(password: string): string {
+  // This is a placeholder - in production, use proper password hashing
+  return `hashed_${password}`;
+}
+
+// Helper function to verify passwords (in production, use bcrypt or similar)
+function verifyPassword(password: string, hash: string): boolean {
+  // This is a placeholder - in production, use proper password verification
+  return hash === `hashed_${password}`;
+}
 
 // GET /api/admin - Get all admins
 export async function GET(request: Request) {
   try {
-    // In a real implementation, you would verify the admin token
-    // const token = cookies().get('token')?.value;
-    // const adminUser = await verifyAdminToken(token);
-    // 
-    // if (!adminUser) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    // }
+    // Verify admin token
+    const token = cookies().get('admin_token')?.value;
+    if (!token) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      }, { status: 401 });
+    }
+
+    const adminUser = await verifyAdminToken(token);
+    if (!adminUser) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      }, { status: 401 });
+    }
+
+    // Only super admins can see all admins
+    if (adminUser.adminLevel !== 'super') {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Forbidden' 
+      }, { status: 403 });
+    }
+
+    // Return admins without passwords
+    const adminsWithoutPasswords = admins.map(({ password, ...admin }) => admin);
     
-    // Return mock data
     return NextResponse.json({ 
       success: true, 
-      data: mockAdmins 
+      data: adminsWithoutPasswords 
     });
   } catch (error) {
     console.error('Error fetching admins:', error);
@@ -52,14 +95,31 @@ export async function GET(request: Request) {
 // POST /api/admin - Create a new admin
 export async function POST(request: Request) {
   try {
-    // In a real implementation, you would verify the admin token
-    // const token = cookies().get('token')?.value;
-    // const adminUser = await verifyAdminToken(token);
-    // 
-    // if (!adminUser || adminUser.adminLevel !== 'super') {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    // }
-    
+    // Verify admin token
+    const token = cookies().get('admin_token')?.value;
+    if (!token) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      }, { status: 401 });
+    }
+
+    const adminUser = await verifyAdminToken(token);
+    if (!adminUser) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      }, { status: 401 });
+    }
+
+    // Only super admins can create new admins
+    if (adminUser.adminLevel !== 'super') {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Forbidden' 
+      }, { status: 403 });
+    }
+
     const body = await request.json();
     
     // Validate required fields
@@ -71,7 +131,7 @@ export async function POST(request: Request) {
     }
     
     // Check if admin already exists
-    const existingAdmin = mockAdmins.find(admin => admin.email === body.email);
+    const existingAdmin = admins.find(admin => admin.email === body.email);
     if (existingAdmin) {
       return NextResponse.json({ 
         success: false, 
@@ -81,20 +141,26 @@ export async function POST(request: Request) {
     
     // Create new admin
     const newAdmin = {
-      id: `${mockAdmins.length + 1}`,
+      id: `${admins.length + 1}`,
       name: body.name,
       email: body.email,
+      password: hashPassword(body.password),
       role: body.role || 'admin',
       managedLoggers: body.managedLoggers || [],
       adminLevel: body.adminLevel || 'basic',
-      permissions: body.permissions || []
+      permissions: body.permissions || [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
     
-    mockAdmins.push(newAdmin);
+    admins.push(newAdmin);
+    
+    // Return admin without password
+    const { password, ...adminWithoutPassword } = newAdmin;
     
     return NextResponse.json({ 
       success: true, 
-      data: newAdmin 
+      data: adminWithoutPassword 
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating admin:', error);
@@ -108,19 +174,28 @@ export async function POST(request: Request) {
 // PUT /api/admin/:id - Update an admin
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // In a real implementation, you would verify the admin token
-    // const token = cookies().get('token')?.value;
-    // const adminUser = await verifyAdminToken(token);
-    // 
-    // if (!adminUser) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    // }
-    
+    // Verify admin token
+    const token = cookies().get('admin_token')?.value;
+    if (!token) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      }, { status: 401 });
+    }
+
+    const adminUser = await verifyAdminToken(token);
+    if (!adminUser) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id } = await params;
     
     // Find admin to update
-    const adminIndex = mockAdmins.findIndex(admin => admin.id === id);
+    const adminIndex = admins.findIndex(admin => admin.id === id);
     if (adminIndex === -1) {
       return NextResponse.json({ 
         success: false, 
@@ -128,15 +203,35 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       }, { status: 404 });
     }
     
+    // Check permissions - super admins can update anyone, regular admins can only update themselves
+    if (adminUser.adminLevel !== 'super' && adminUser.id !== id) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Forbidden' 
+      }, { status: 403 });
+    }
+    
+    // Prevent non-super admins from changing admin levels or permissions
+    if (adminUser.adminLevel !== 'super') {
+      delete body.adminLevel;
+      delete body.permissions;
+      delete body.role;
+    }
+    
     // Update admin
-    mockAdmins[adminIndex] = {
-      ...mockAdmins[adminIndex],
-      ...body
+    admins[adminIndex] = {
+      ...admins[adminIndex],
+      ...body,
+      password: body.password ? hashPassword(body.password) : admins[adminIndex].password,
+      updatedAt: new Date().toISOString()
     };
+    
+    // Return admin without password
+    const { password, ...adminWithoutPassword } = admins[adminIndex];
     
     return NextResponse.json({ 
       success: true, 
-      data: mockAdmins[adminIndex] 
+      data: adminWithoutPassword 
     });
   } catch (error) {
     console.error('Error updating admin:', error);
@@ -150,18 +245,43 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 // DELETE /api/admin/:id - Delete an admin
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // In a real implementation, you would verify the admin token
-    // const token = cookies().get('token')?.value;
-    // const adminUser = await verifyAdminToken(token);
-    // 
-    // if (!adminUser || adminUser.adminLevel !== 'super') {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    // }
+    // Verify admin token
+    const token = cookies().get('admin_token')?.value;
+    if (!token) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      }, { status: 401 });
+    }
+
+    const adminUser = await verifyAdminToken(token);
+    if (!adminUser) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      }, { status: 401 });
+    }
+
+    // Only super admins can delete admins
+    if (adminUser.adminLevel !== 'super') {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Forbidden' 
+      }, { status: 403 });
+    }
     
     const { id } = await params;
     
+    // Prevent admins from deleting themselves
+    if (adminUser.id === id) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Cannot delete yourself' 
+      }, { status: 400 });
+    }
+    
     // Find admin to delete
-    const adminIndex = mockAdmins.findIndex(admin => admin.id === id);
+    const adminIndex = admins.findIndex(admin => admin.id === id);
     if (adminIndex === -1) {
       return NextResponse.json({ 
         success: false, 
@@ -170,7 +290,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     }
     
     // Remove admin
-    mockAdmins.splice(adminIndex, 1);
+    admins.splice(adminIndex, 1);
     
     return NextResponse.json({ 
       success: true, 

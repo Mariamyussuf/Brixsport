@@ -1,6 +1,5 @@
 "use client";
-// Admin Context
-// Context for managing admin-specific state and data
+
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { adminService } from '@/lib/adminService';

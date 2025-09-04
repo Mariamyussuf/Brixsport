@@ -18,6 +18,8 @@ export interface AdminUser extends User {
   managedLoggers: string[];
   adminLevel: 'basic' | 'super';
   permissions: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**
@@ -55,7 +57,7 @@ export async function verifyAdminToken(token: string): Promise<AdminUser | null>
     
     // Check if this is an admin user
     const role = payload.role as string;
-    if (!role || role !== 'admin') {
+    if (!role || (role !== 'admin' && role !== 'super-admin')) {
       return null;
     }
     
@@ -64,9 +66,9 @@ export async function verifyAdminToken(token: string): Promise<AdminUser | null>
       name: payload.name as string,
       email: payload.email as string,
       role: role as AdminRole,
-      managedLoggers: payload.managedLoggers as string[],
+      managedLoggers: (payload.managedLoggers as string[]) || [],
       adminLevel: payload.adminLevel as 'basic' | 'super',
-      permissions: payload.permissions as string[]
+      permissions: (payload.permissions as string[]) || []
     };
     
     return user;
@@ -85,6 +87,11 @@ export async function verifyAdminToken(token: string): Promise<AdminUser | null>
 export function hasAdminPermission(user: AdminUser, permission: string): boolean {
   // Super admins have all permissions
   if (user.adminLevel === 'super') {
+    return true;
+  }
+  
+  // Check for wildcard permission
+  if (user.permissions.includes('*')) {
     return true;
   }
   
@@ -125,10 +132,115 @@ export const DEFAULT_ADMIN_RATE_LIMIT: AdminRateLimitConfig = {
   lockoutDurationMs: 30 * 60 * 1000 // 30 minute lockout
 };
 
+// Admin API functions
+export const AdminAuthAPI = {
+  /**
+   * Login as an admin
+   * @param email - Admin email
+   * @param password - Admin password
+   * @returns Promise with login result
+   */
+  login: async (email: string, password: string): Promise<{ success: boolean; data?: AdminUser; token?: string; error?: string }> => {
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Admin login error:', error);
+      return { 
+        success: false, 
+        error: 'Login failed' 
+      };
+    }
+  },
+  
+  /**
+   * Logout as an admin
+   * @returns Promise with logout result
+   */
+  logout: async (): Promise<{ success: boolean; message?: string; error?: string }> => {
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Admin logout error:', error);
+      return { 
+        success: false, 
+        error: 'Logout failed' 
+      };
+    }
+  },
+  
+  /**
+   * Get current admin profile
+   * @returns Promise with admin profile
+   */
+  getProfile: async (): Promise<{ success: boolean; data?: AdminUser; error?: string }> => {
+    try {
+      const response = await fetch('/api/admin/profile', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Get admin profile error:', error);
+      return { 
+        success: false, 
+        error: 'Failed to fetch profile' 
+      };
+    }
+  },
+  
+  /**
+   * Update admin profile
+   * @param updates - Profile updates
+   * @returns Promise with updated profile
+   */
+  updateProfile: async (updates: Partial<AdminUser>): Promise<{ success: boolean; data?: AdminUser; error?: string }> => {
+    try {
+      const response = await fetch('/api/admin/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+      
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Update admin profile error:', error);
+      return { 
+        success: false, 
+        error: 'Failed to update profile' 
+      };
+    }
+  }
+};
+
 export default {
   generateAdminToken,
   verifyAdminToken,
   hasAdminPermission,
   canManageLogger,
-  DEFAULT_ADMIN_RATE_LIMIT
+  DEFAULT_ADMIN_RATE_LIMIT,
+  AdminAuthAPI
 };
