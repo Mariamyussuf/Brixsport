@@ -1,3 +1,4 @@
+"use client";
 // Admin Context
 // Context for managing admin-specific state and data
 

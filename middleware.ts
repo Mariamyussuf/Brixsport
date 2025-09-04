@@ -21,12 +21,25 @@ export function middleware(request: NextRequest) {
     }
     
     return NextResponse.next();
+  } else if (host === 'admin.brixsports.com') {
+    // Route admin subdomain requests
+    console.log(`[Middleware] Routing admin request: ${pathname}`);
+    
+    // If the request is not for the admin section, redirect to admin
+    if (!pathname.startsWith('/admin')) {
+      // But allow API routes and static assets
+      if (!pathname.startsWith('/api') && !pathname.startsWith('/_next') && pathname !== '/favicon.ico') {
+        return NextResponse.redirect(new URL(`/admin${pathname === '/' ? '' : pathname}`, request.url));
+      }
+    }
+    
+    return NextResponse.next();
   } else if (host === 'brixsports.com' || host === 'www.brixsports.com' || host?.endsWith('vercel.app')) {
     // Route main domain requests
     console.log(`[Middleware] Routing main site request: ${pathname}`);
     
-    // Prevent access to logger routes from main domain
-    if (pathname.startsWith('/logger')) {
+    // Prevent access to logger and admin routes from main domain
+    if (pathname.startsWith('/logger') || pathname.startsWith('/admin')) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     
