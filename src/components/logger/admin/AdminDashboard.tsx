@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { useLoggerAuth, useAuth } from '@/hooks/useAuth';
 import LoggerNotifications from '@/components/logger/notifications/LoggerNotifications';
 import LoggerManagement from './LoggerManagement';
 import ActivityLogs from './ActivityLogs';
@@ -12,15 +11,9 @@ import SystemSettings from './SystemSettings';
 import PWAAdminManagement from './PWAAdminManagement';
 
 const AdminDashboard = () => {
-  const { user, hasLoggerPermissions } = useLoggerAuth();
-  const { logout } = useAuth();
-  const { adminUser } = useAdmin();
+  const { adminUser, logout } = useAdmin();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  // Check if user is admin
-  const isAdmin = user?.role === 'admin';
-  const canManageLoggers = isAdmin; // Admins can manage loggers
 
   // Set up PWA manifest
   useEffect(() => {
@@ -80,7 +73,7 @@ const AdminDashboard = () => {
               <div className="flex items-center space-x-2">
                 <div className="bg-gray-200 border-2 border-dashed rounded-xl w-8 h-8" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{adminUser?.name || user?.name || 'Admin'}</p>
+                  <p className="text-sm font-medium text-white truncate">{adminUser?.name || 'Admin'}</p>
                   <p className="text-xs text-gray-400 truncate">Administrator</p>
                 </div>
               </div>
@@ -199,7 +192,7 @@ const AdminDashboard = () => {
                   <h2 className="text-2xl font-bold text-white mb-2">PWA Administration</h2>
                   <p className="text-gray-400">Manage progressive web app settings</p>
                 </div>
-                <PWAAdminManagement currentUser={user} />
+                <PWAAdminManagement currentUser={adminUser} />
               </div>
             )}
             

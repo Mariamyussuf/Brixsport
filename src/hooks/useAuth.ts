@@ -14,7 +14,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'user' | 'logger' | 'senior-logger' | 'logger-admin' | 'admin';
+  role: 'user' | 'logger' | 'senior-logger' | 'logger-admin' | 'admin' | 'super-admin';
   image?: string;
   assignedCompetitions?: string[]; // Logger-specific field
   permissions?: string[]; // Logger-specific field

@@ -85,6 +85,7 @@ interface AdminContextType extends AdminState {
   clearError: () => void;
   reset: () => void;
   setAdminUser: (user: AdminUser | null) => void;
+  logout: () => void;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -98,7 +99,7 @@ interface AdminProviderProps {
 // Admin provider component
 export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentAdmin = null }) => {
   const [state, dispatch] = useReducer(adminReducer, initialState);
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   
   // Set auth token in admin service
   useEffect(() => {
@@ -344,7 +345,8 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     activateLogger,
     clearError,
     reset,
-    setAdminUser: (admin: AdminUser | null) => dispatch({ type: 'SET_ADMIN_USER', payload: admin })
+    setAdminUser: (admin: AdminUser | null) => dispatch({ type: 'SET_ADMIN_USER', payload: admin }),
+    logout
   };
   
   return (
