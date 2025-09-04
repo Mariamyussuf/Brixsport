@@ -106,7 +106,7 @@ export async function POST(request: Request) {
 }
 
 // PUT /api/admin/:id - Update an admin
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // In a real implementation, you would verify the admin token
     // const token = cookies().get('token')?.value;
@@ -117,7 +117,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     // }
     
     const body = await request.json();
-    const { id } = params;
+    const { id } = await params;
     
     // Find admin to update
     const adminIndex = mockAdmins.findIndex(admin => admin.id === id);
@@ -148,7 +148,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 }
 
 // DELETE /api/admin/:id - Delete an admin
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // In a real implementation, you would verify the admin token
     // const token = cookies().get('token')?.value;
@@ -158,7 +158,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     // }
     
-    const { id } = params;
+    const { id } = await params;
     
     // Find admin to delete
     const adminIndex = mockAdmins.findIndex(admin => admin.id === id);
