@@ -1,5 +1,5 @@
 import React from 'react';
-import '../../globals.css';
+import '../globals.css';
 import LoggerPWARegister from "../../components/shared/LoggerPWARegister";
 import NoFlashThemeScript from "@/components/shared/NoFlashThemeScript";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
