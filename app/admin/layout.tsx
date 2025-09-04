@@ -30,17 +30,24 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Server-side auth guard for admin area
-  const cookieStore = await cookies();
-  const token = cookieStore.get('admin_token')?.value;
+  const { headers } = require('next/headers');
+  const pathname = headers().get('next-url') || '';
 
-  if (!token) {
-    redirect('/admin/login');
-  }
+  let user = null;
 
-  const user = await verifyAdminToken(token);
-  if (!user) {
-    redirect('/admin/login');
+  // Only perform auth check for pages other than login
+  if (pathname !== '/admin/login') {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('admin_token')?.value;
+
+    if (!token) {
+      return redirect('/admin/login');
+    }
+
+    user = await verifyAdminToken(token);
+    if (!user) {
+      return redirect('/admin/login');
+    }
   }
 
   return (
