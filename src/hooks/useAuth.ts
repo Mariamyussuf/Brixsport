@@ -536,12 +536,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const urlParams = new URLSearchParams(window.location.search);
       const isDemoAdmin = urlParams.get('admin') === 'true';
       const isDemoLogger = urlParams.get('logger') === 'true' || !isDemoAdmin;
-    
+      
+      // Allow role override from URL params for more flexible testing
+      const roleFromParams = urlParams.get('role') as User['role'] | null;
+      const demoRole = roleFromParams || (isDemoAdmin ? 'admin' : (isDemoLogger ? 'logger' : 'user'));
+
       const demoUser: User = {
-        id: isDemoAdmin ? 'demo-admin-id' : (isDemoLogger ? 'demo-logger-id' : 'demo-user-id'),
-        name: isDemoAdmin ? 'Demo Admin' : (isDemoLogger ? 'Demo Logger' : 'Demo User'),
-        email: isDemoAdmin ? 'admin@demo.com' : (isDemoLogger ? 'logger@demo.com' : 'demo@example.com'),
-        role: isDemoAdmin ? 'admin' : (isDemoLogger ? 'logger' : 'user'), // Set role based on URL param
+        id: `demo-${demoRole}-id`,
+        name: `Demo ${demoRole.charAt(0).toUpperCase() + demoRole.slice(1)}`,
+        email: `${demoRole}@demo.com`,
+        role: demoRole, // Set role based on URL param
         image: isDemoAdmin 
           ? 'https://i.pravatar.cc/300?u=admin@demo.com' 
           : (isDemoLogger ? 'https://i.pravatar.cc/300?u=logger@demo.com' : 'https://i.pravatar.cc/300?u=demo@example.com'),
@@ -554,10 +558,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Create a mock token (in a real app, this would come from the server)
       const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
       const payload = btoa(JSON.stringify({ 
-        sub: isDemoAdmin ? 'demo-admin-id' : (isDemoLogger ? 'demo-logger-id' : 'demo-user-id'),
-        name: isDemoAdmin ? 'Demo Admin' : (isDemoLogger ? 'Demo Logger' : 'Demo User'),
-        email: isDemoAdmin ? 'admin@demo.com' : (isDemoLogger ? 'logger@demo.com' : 'demo@example.com'),
-        role: isDemoAdmin ? 'admin' : (isDemoLogger ? 'logger' : 'user'), // Set role based on URL param
+        sub: demoUser.id,
+        name: demoUser.name,
+        email: demoUser.email,
+        role: demoUser.role,
         managedLoggers: isDemoAdmin ? ['demo-logger-1', 'demo-logger-2'] : undefined,
         adminLevel: isDemoAdmin ? 'basic' : undefined,
         assignedCompetitions: isDemoLogger ? ['demo-competition-1', 'demo-competition-2'] : undefined,
