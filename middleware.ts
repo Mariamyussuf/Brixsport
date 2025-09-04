@@ -8,7 +8,7 @@ export function middleware(request: NextRequest) {
   console.log(`[Middleware] Running for path: ${pathname} on host: ${host}`);
 
   // Handle domain-based routing
-  if (host === 'logger.brixsports.com') {
+  if (host === 'logger.brixsports.com' || host === 'logger.brixsport.vercel.app') {
     // Route logger subdomain requests
     console.log(`[Middleware] Routing logger request: ${pathname}`);
     
@@ -21,7 +21,7 @@ export function middleware(request: NextRequest) {
     }
     
     return NextResponse.next();
-  } else if (host === 'admin.brixsports.com') {
+  } else if (host === 'admin.brixsports.com' || host === 'admin.brixsport.vercel.app') {
     // Route admin subdomain requests
     console.log(`[Middleware] Routing admin request: ${pathname}`);
     
@@ -34,13 +34,13 @@ export function middleware(request: NextRequest) {
     }
     
     return NextResponse.next();
-  } else if (host === 'brixsports.com' || host === 'www.brixsports.com' || host?.endsWith('vercel.app')) {
+  } else if (host === 'brixsports.com' || host === 'www.brixsports.com' || host?.endsWith('vercel.app') || host === 'brixsport.vercel.app') {
     // Route main domain requests
     console.log(`[Middleware] Routing main site request: ${pathname}`);
     
-    // Prevent access to logger and admin routes from main domain
+    // Allow logger and admin routes on vercel.app domains for testing
     if (pathname.startsWith('/logger') || pathname.startsWith('/admin')) {
-      return NextResponse.redirect(new URL('/', request.url));
+      return NextResponse.next();
     }
     
     // Handle /auth route
