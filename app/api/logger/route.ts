@@ -6,7 +6,8 @@ export async function GET(request: NextRequest) {
   const host = request.headers.get('host');
   
   // Only allow access from logger domain
-  if (host !== 'logger.brixsports.com' && !host?.includes('localhost:3000')) {
+  const allowedHosts = ['logger.brixsports.com', 'logger.brixsport.vercel.app', 'brixsport.vercel.app'];
+  if (!allowedHosts.includes(host || '') && !host?.includes('localhost')) {
     return NextResponse.json(
       { error: 'Unauthorized access' },
       { status: 403 }
@@ -43,7 +44,8 @@ export async function POST(request: NextRequest) {
   const host = request.headers.get('host');
   
   // Only allow access from logger domain
-  if (host !== 'logger.brixsports.com' && !host?.includes('localhost:3000')) {
+  const allowedHosts = ['logger.brixsports.com', 'logger.brixsport.vercel.app', 'brixsport.vercel.app'];
+  if (!allowedHosts.includes(host || '') && !host?.includes('localhost')) {
     return NextResponse.json(
       { error: 'Unauthorized access' },
       { status: 403 }

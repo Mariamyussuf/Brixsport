@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { SignJWT } from 'jose';
+import { cookies } from 'next/headers';
 
 // Secret key for JWT verification - in production, use environment variables
 const JWT_SECRET = new TextEncoder().encode(
@@ -94,21 +95,24 @@ export async function POST(request: Request) {
       .setExpirationTime(exp)
       .sign(JWT_SECRET);
     
-    // Prepare response and set cookie with token
-    const { password, ...adminWithoutPassword } = admin;
-    const res = NextResponse.json({
-      success: true,
-      data: adminWithoutPassword,
-      token,
-    });
-    res.cookies.set('admin_token', token, {
+    // Set cookie with token
+    (await cookies()).set('admin_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 60 * 60, // 1 hour
       path: '/',
-      sameSite: 'strict',
+      sameSite: 'lax', // Use 'lax' for better flexibility with subdomains/paths
+      domain: process.env.NODE_ENV === 'production' ? '.brixsport.vercel.app' : undefined,
     });
-    return res;
+    
+    // Return admin without password
+    const { password, ...adminWithoutPassword } = admin;
+    
+    return NextResponse.json({ 
+      success: true, 
+      data: adminWithoutPassword,
+      token
+    });
   } catch (error) {
     console.error('Admin login error:', error);
     return NextResponse.json({ 
