@@ -1,26 +1,12 @@
 {
-  "name": "BrixSports",
-  "short_name": "BrixSports",
-  "description": "Sports analytics and tracking application for football events",
-  "start_url": "/?source=pwa",
-  "scope": "/",
+  "name": "BrixSports Admin",
+  "short_name": "Admin",
+  "description": "Administrative platform for managing sports events and loggers",
+  "start_url": "/admin",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#000000",
-  "theme_color": "#000000",
-  "lang": "en",
-  "dir": "auto",
-  "categories": ["sports", "productivity"],
-  "prefer_related_applications": false,
-  "orientation": "portrait",
-  "gcm_sender_id": "103953800507"
-,
+  "theme_color": "#dc2626",
   "icons": [
-    {
-      "src": "/icon-96x96.png",
-      "sizes": "96x96",
-      "type": "image/png"
-    },
     {
       "src": "/icon-192x192.png",
       "sizes": "192x192",
@@ -42,11 +28,38 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/admin",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
-      "src": "/apple-touch-icon.png",
-      "sizes": "180x180",
-      "type": "image/png"
+      "name": "Matches",
+      "url": "/admin#matches",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Loggers",
+      "url": "/admin#reporters",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ],
   "screenshots": [
@@ -55,14 +68,14 @@
       "sizes": "1080x1920",
       "type": "image/jpeg",
       "form_factor": "narrow",
-      "label": "BrixSports Home Screen"
+      "label": "Admin Dashboard"
     },
     {
       "src": "/screenshot1.jpg",
       "sizes": "1920x1080",
       "type": "image/jpeg",
       "form_factor": "wide",
-      "label": "BrixSports Home Screen on Desktop"
+      "label": "Admin Dashboard on Desktop"
     }
   ]
 }

@@ -27,6 +27,7 @@ An offline-first Next.js 14 PWA for managing campus sports activities. Built wit
 - **Progressive Web App**: Installable on mobile and desktop devices
 - **IndexedDB Storage**: Client-side event storage for offline access
 - **Service Worker**: Custom implementation for caching and background sync
+- **Notification System**: Real-time updates for matches, teams, and players with personalized alerts
 
 ## Getting Started
 

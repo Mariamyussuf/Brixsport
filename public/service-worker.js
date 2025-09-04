@@ -13,6 +13,7 @@ self.addEventListener('install', (event) => {
       '/',
       '/onboarding',
       '/auth',
+      '/admin',
       OFFLINE_URL,
       '/onboarding-bg-1.jpg',
       '/manifest.json',
@@ -225,3 +226,70 @@ async function syncOfflineEvents() {
     throw err;
   }
 }
+
+// ----- Push Notification Handling -----
+self.addEventListener('push', (event) => {
+  console.log('[ServiceWorker] Push received:', event);
+  
+  let title = 'BrixSports Update';
+  let options = {
+    body: 'You have a new notification',
+    icon: '/icon-192x192.png',
+    badge: '/icon-192x192.png',
+    vibrate: [100, 50, 100],
+    data: {
+      dateOfArrival: Date.now(),
+      primaryKey: '1'
+    },
+    actions: [
+      {
+        action: 'explore',
+        title: 'View',
+        icon: '/icon-192x192.png'
+      },
+      {
+        action: 'close',
+        title: 'Close',
+        icon: '/icon-192x192.png'
+      }
+    ]
+  };
+  
+  // If we have payload data, use it
+  if (event.data) {
+    const data = event.data.json();
+    title = data.title || title;
+    options.body = data.message || options.body;
+    options.data = data;
+    
+    // Add image if provided
+    if (data.imageUrl) {
+      options.image = data.imageUrl;
+    }
+  }
+  
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  console.log('[ServiceWorker] Notification click received.');
+  
+  event.notification.close();
+  
+  // Handle action clicks
+  if (event.action === 'explore') {
+    event.waitUntil(
+      clients.openWindow('/notifications')
+    );
+  } else if (event.action === 'close') {
+    // Just close the notification
+    return;
+  } else {
+    // Default action - open notifications page
+    event.waitUntil(
+      clients.openWindow('/notifications')
+    );
+  }
+});

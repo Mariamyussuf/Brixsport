@@ -19,7 +19,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": [
-        "src/*"
+        "src/*",
+        "*"  // Add this to resolve from root
       ]
     },
     "plugins": [
