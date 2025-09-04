@@ -15,7 +15,7 @@ const getHeaders = () => {
 };
 
 // Generic request function
-const fetchAPI = async (endpoint: string, op   }) => {
+const fetchAPI = async (endpoint: string, options: any = {}) => {
   try {
     // Extract params if provided
     const { params, ...fetchOptions } = options;

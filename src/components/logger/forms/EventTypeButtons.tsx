@@ -1,6 +1,6 @@
 import React from 'react';
-import { CampusEventType, SportType, EventScope } from '../../types/campus';
-import { campusDesign } from '../../styles/campusDesign';
+import { CampusEventType, SportType, EventScope } from '../../../types/campus';
+import { campusDesign } from '../../../styles/campusDesign';
 
 export interface EventTypeButtonsProps {
   eventTypes: CampusEventType[];

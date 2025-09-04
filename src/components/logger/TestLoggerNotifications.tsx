@@ -6,6 +6,36 @@ import { useLoggerNotifications } from '@/hooks/useLoggerNotifications';
 import { Button } from '@/components/ui/button';
 
 const TestLoggerNotifications: React.FC = () => {
+  // Only render on client side
+  const [isClient, setIsClient] = React.useState(false);
+  
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  // Don't render on server
+  if (!isClient) {
+    return <div>Loading...</div>;
+  }
+  
+  // Try to get logger notifications hook, but handle case where context is not available
+  let loggerNotifications;
+  try {
+    loggerNotifications = useLoggerNotifications();
+  } catch (error) {
+    // If we can't access the logger context (e.g., during prerendering), provide mock functions
+    loggerNotifications = {
+      sendMatchStartNotification: () => {},
+      sendMatchFinishNotification: () => {},
+      sendEventAddedNotification: () => {},
+      sendSyncSuccessNotification: () => {},
+      sendSyncErrorNotification: () => {},
+      sendOfflineStatusNotification: () => {},
+      sendOnlineStatusNotification: () => {},
+      sendCompetitionAssignedNotification: () => {}
+    };
+  }
+
   const {
     sendMatchStartNotification,
     sendMatchFinishNotification,
@@ -15,7 +45,7 @@ const TestLoggerNotifications: React.FC = () => {
     sendOfflineStatusNotification,
     sendOnlineStatusNotification,
     sendCompetitionAssignedNotification
-  } = useLoggerNotifications();
+  } = loggerNotifications;
 
   // Mock data for testing
   const mockMatch = {

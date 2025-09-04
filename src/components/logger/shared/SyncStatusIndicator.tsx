@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { campusDesign } from '../../styles/campusDesign';
+import { campusDesign } from '../../../styles/campusDesign';
 
 export interface SyncStatusIndicatorProps {
   status: 'online' | 'offline' | 'syncing' | 'error';

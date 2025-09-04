@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Player } from '../../types/campus';
-import { campusDesign } from '../../styles/campusDesign';
+import { Player } from '../../../types/campus';
+import { campusDesign } from '../../../styles/campusDesign';
 import { FixedSizeList as List, FixedSizeGrid as Grid } from 'react-window';
 
 export interface PlayerSelectorProps {

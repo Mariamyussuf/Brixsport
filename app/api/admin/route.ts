@@ -52,7 +52,7 @@ function verifyPassword(password: string, hash: string): boolean {
 export async function GET(request: Request) {
   try {
     // Verify admin token
-    const token = cookies().get('admin_token')?.value;
+    const token = (await cookies()).get('admin_token')?.value;
     if (!token) {
       return NextResponse.json({ 
         success: false, 
@@ -96,7 +96,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     // Verify admin token
-    const token = cookies().get('admin_token')?.value;
+    const token = (await cookies()).get('admin_token')?.value;
     if (!token) {
       return NextResponse.json({ 
         success: false, 
@@ -175,7 +175,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Verify admin token
-    const token = cookies().get('admin_token')?.value;
+    const token = (await cookies()).get('admin_token')?.value;
     if (!token) {
       return NextResponse.json({ 
         success: false, 
@@ -246,7 +246,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Verify admin token
-    const token = cookies().get('admin_token')?.value;
+    const token = (await cookies()).get('admin_token')?.value;
     if (!token) {
       return NextResponse.json({ 
         success: false, 

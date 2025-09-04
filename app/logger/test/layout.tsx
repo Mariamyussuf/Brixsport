@@ -13,6 +13,16 @@ import NotificationsGate from "@/components/shared/NotificationsGate";
 import DataSaverGate from "@/components/shared/DataSaverGate";
 import { LoggerProvider } from "@/contexts/LoggerContext";
 
+// Client-only LoggerProvider wrapper to prevent SSR issues
+const ClientLoggerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Only render LoggerProvider on the client side
+  if (typeof window === 'undefined') {
+    return <>{children}</>;
+  }
+
+  return <LoggerProvider>{children}</LoggerProvider>;
+};
+
 export default function TestLayout({
   children,
 }: {
@@ -28,7 +38,7 @@ export default function TestLayout({
           <SettingsProvider>
             <I18nProvider>
               <AuthProvider>
-                <LoggerProvider>
+                <ClientLoggerProvider>
                   <NotificationsProvider>
                     <LoggerPWARegister />
                     <OfflineWrapper />
@@ -36,7 +46,7 @@ export default function TestLayout({
                     <DataSaverGate />
                     {children}
                   </NotificationsProvider>
-                </LoggerProvider>
+                </ClientLoggerProvider>
               </AuthProvider>
             </I18nProvider>
           </SettingsProvider>

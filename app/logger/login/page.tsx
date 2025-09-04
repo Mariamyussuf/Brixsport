@@ -4,6 +4,11 @@ import React from 'react';
 import LoggerLoginForm from '@/components/logger/shared/LoggerLoginForm';
 
 export default function LoggerLoginPage() {
+  // Prevent server-side rendering
+  if (typeof window === 'undefined') {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">

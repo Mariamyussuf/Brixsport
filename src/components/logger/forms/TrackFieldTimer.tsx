@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { campusDesign } from '../../styles/campusDesign';
+import { campusDesign } from '../../../styles/campusDesign';
 
 // Proper SpeechRecognition interface declaration
 interface SpeechRecognitionResult {
