@@ -72,10 +72,10 @@ export default function PWARegister() {
         setUpdateAvailable(true);
       }
 
-      // Periodic update checks (every 30 minutes for better iOS compatibility)
+      // Periodic update checks (every hour instead of 30 minutes)
       setInterval(() => {
         registration.update();
-      }, 30 * 60 * 1000);
+      }, 60 * 60 * 1000);
 
     } catch (error) {
       console.error('[PWA] ServiceWorker registration failed:', error);
@@ -115,6 +115,16 @@ export default function PWARegister() {
   // Handle installation prompts
   useEffect(() => {
     if (typeof window === "undefined" || isStandalone) return;
+    
+    // Check if we're in admin or logger sections
+    const isAdminPath = window.location.pathname.startsWith('/admin');
+    const isLoggerPath = window.location.pathname.startsWith('/logger');
+    
+    // Only show install prompt for main app (not admin or logger sections)
+    if (isAdminPath || isLoggerPath) {
+      console.log('[PWA] In admin or logger path, skipping main PWA install prompt');
+      return;
+    }
     
     if (isIOS) {
       // iOS: Show manual install instructions

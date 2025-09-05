@@ -73,10 +73,10 @@ const LoggerPWARegister = () => {
         clearInterval(updateCheckInterval.current);
       }
       
-      // Periodic update checks (every hour instead of 30 minutes for less frequent checks)
+      // Periodic update checks (every hour instead of 30 minutes)
       updateCheckInterval.current = setInterval(() => {
         registration.update();
-      }, 60 * 60 * 1000); // 1 hour instead of 30 minutes
+      }, 60 * 60 * 1000);
 
     } catch (error) {
       console.error('[Logger PWA] ServiceWorker registration failed:', error);
@@ -118,6 +118,15 @@ const LoggerPWARegister = () => {
   // Handle installation prompts
   useEffect(() => {
     if (typeof window === "undefined" || isStandalone) return;
+    
+    // Check if we're in logger section
+    const isLoggerPath = window.location.pathname.startsWith('/logger');
+    
+    // Only show install prompt for logger app
+    if (!isLoggerPath) {
+      console.log('[Logger PWA] Not in logger path, skipping logger PWA install prompt');
+      return;
+    }
     
     if (isIOS) {
       // iOS: Show manual install instructions
@@ -262,7 +271,7 @@ const LoggerPWARegister = () => {
     localStorage.setItem('logger-pwa-last-prompt-shown-at', Date.now().toString());
   }, []);
 
-  // Function to show update notification (kept from original implementation)
+  // Function to show update notification
   useEffect(() => {
     // Only run in logger paths
     if (typeof window === "undefined" || !window.location.pathname.startsWith('/logger')) return;

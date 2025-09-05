@@ -41,6 +41,9 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
+  
+  // Claim clients to ensure the service worker takes control immediately
+  return self.clients.claim();
 });
 
 // Fetch event - serve cached content when offline
@@ -85,9 +88,8 @@ self.addEventListener('fetch', (event) => {
 
 // Message event - handle communication from the app
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.command === 'update') {
-    console.log('[Admin SW] Checking for updates');
-    // Force update check
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('[Admin SW] Skipping waiting to activate new service worker');
     self.skipWaiting();
   }
 });

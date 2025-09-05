@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -20,6 +20,8 @@ const AdminPWARegister = () => {
   const [showIOSInstallTip, setShowIOSInstallTip] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const updateCheckInterval = useRef<NodeJS.Timeout | null>(null);
+  const messageListenerRef = useRef<((event: MessageEvent) => void) | null>(null);
 
   // Register service worker with enhanced error handling
   const registerServiceWorker = useCallback(async () => {
@@ -66,10 +68,15 @@ const AdminPWARegister = () => {
         setUpdateAvailable(true);
       }
 
-      // Periodic update checks (every 30 minutes for better iOS compatibility)
-      setInterval(() => {
+      // Clear any existing interval
+      if (updateCheckInterval.current) {
+        clearInterval(updateCheckInterval.current);
+      }
+      
+      // Periodic update checks (every hour instead of 30 minutes)
+      updateCheckInterval.current = setInterval(() => {
         registration.update();
-      }, 30 * 60 * 1000);
+      }, 60 * 60 * 1000);
 
     } catch (error) {
       console.error('[Admin PWA] ServiceWorker registration failed:', error);
@@ -99,11 +106,27 @@ const AdminPWARegister = () => {
     
     // Register service worker
     registerServiceWorker();
+    
+    // Cleanup interval on unmount
+    return () => {
+      if (updateCheckInterval.current) {
+        clearInterval(updateCheckInterval.current);
+      }
+    };
   }, [registerServiceWorker]);
 
   // Handle installation prompts
   useEffect(() => {
     if (typeof window === "undefined" || isStandalone) return;
+    
+    // Check if we're in admin section
+    const isAdminPath = window.location.pathname.startsWith('/admin');
+    
+    // Only show install prompt for admin app
+    if (!isAdminPath) {
+      console.log('[Admin PWA] Not in admin path, skipping admin PWA install prompt');
+      return;
+    }
     
     if (isIOS) {
       // iOS: Show manual install instructions
@@ -248,20 +271,34 @@ const AdminPWARegister = () => {
     localStorage.setItem('admin-pwa-last-prompt-shown-at', Date.now().toString());
   }, []);
 
-  // Function to show update notification (kept from original implementation)
+  // Function to show update notification
   useEffect(() => {
     // Only run in admin paths
     if (typeof window === "undefined" || !window.location.pathname.startsWith('/admin')) return;
     
-    // Listen for messages from service worker
-    navigator.serviceWorker.addEventListener('message', event => {
+    // Remove existing listener if it exists
+    if (messageListenerRef.current) {
+      navigator.serviceWorker.removeEventListener('message', messageListenerRef.current);
+    }
+    
+    // Create new listener
+    const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'UPDATE_AVAILABLE') {
         setUpdateAvailable(true);
       }
-    });
+    };
+    
+    // Store reference to listener for cleanup
+    messageListenerRef.current = handleMessage;
+    
+    // Add listener
+    navigator.serviceWorker.addEventListener('message', handleMessage);
     
     return () => {
-      navigator.serviceWorker.removeEventListener('message', () => {});
+      if (messageListenerRef.current) {
+        navigator.serviceWorker.removeEventListener('message', messageListenerRef.current);
+        messageListenerRef.current = null;
+      }
     };
   }, []);
 
