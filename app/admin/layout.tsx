@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import { AdminProvider } from "@/contexts/AdminContext";
 import { cookies } from 'next/headers';
 import { verifyAdminToken } from '@/lib/adminAuth';
+import type { AdminUser } from '@/lib/adminAuth';
 
 export const viewport = {
   width: 'device-width',
@@ -32,27 +33,19 @@ export default async function AdminLayout({
   // For all admin pages, perform authentication
   const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
+  let user: AdminUser | null = null;
 
-  // Always render the layout - authentication will be handled by client components
-  // This prevents server-side redirect loops
+  // Always render the layout with AdminProvider
+  // Authentication checks will happen in client components
   if (token) {
-    const user = await verifyAdminToken(token);
-    if (user) {
-      return (
-        <ThemeProvider>
-          <AdminProvider currentAdmin={user}>
-            {children}
-          </AdminProvider>
-        </ThemeProvider>
-      );
-    }
+    user = await verifyAdminToken(token);
   }
 
-  // If no valid token, still render the layout but without AdminProvider
-  // Authentication checks will happen in client components
   return (
     <ThemeProvider>
-      {children}
+      <AdminProvider currentAdmin={user}>
+        {children}
+      </AdminProvider>
     </ThemeProvider>
   );
 }

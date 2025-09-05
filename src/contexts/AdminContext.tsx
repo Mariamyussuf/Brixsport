@@ -1,13 +1,12 @@
 "use client";
 
-import { useRouter } from 'next/navigation';
-
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { adminService } from '@/lib/adminService';
 import { Logger } from '@/lib/adminService';
 import { useAuth } from '@/hooks/useAuth';
 import type { AdminUser } from '@/lib/adminAuth';
 import { AdminAuthAPI } from '@/lib/adminAuth';
+import { useRouter } from 'next/navigation';
 
 // Admin context state
 interface AdminState {
@@ -344,7 +343,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
       if (result.success) {
         // Clear admin state
         dispatch({ type: 'RESET' });
-        // Redirect to admin login
+        // Redirect to login page
         router.push('/admin/login');
       }
     } catch (error) {

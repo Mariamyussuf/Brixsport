@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/navigation';
 import LoggerNotifications from '@/components/logger/notifications/LoggerNotifications';
 import LoggerManagement from './LoggerManagement';
 import ActivityLogs from './ActivityLogs';
@@ -12,8 +13,16 @@ import PWAAdminManagement from './PWAAdminManagement';
 
 const AdminDashboard = () => {
   const { adminUser, logout } = useAdmin();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Redirect to login if no admin user
+  useEffect(() => {
+    if (!adminUser) {
+      router.push('/admin/login');
+    }
+  }, [adminUser, router]);
 
   // Set up PWA manifest
   useEffect(() => {
@@ -24,7 +33,10 @@ const AdminDashboard = () => {
     }
   }, []);
 
-  // Client-side guard removed; server-side guard in app/admin/layout.tsx enforces access
+  // Don't render anything if no admin user
+  if (!adminUser) {
+    return null;
+  }
 
   return (
     <>
