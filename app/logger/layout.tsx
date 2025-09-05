@@ -48,7 +48,7 @@ export default function LoggerLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/logger-manifest.json" />
-        <meta name="theme-color" content="#000000" />
+        <meta name="theme-color" content="#2563eb" />
         <meta name="application-name" content="BrixSports Logger" />
         
         {/* iOS PWA meta tags */}

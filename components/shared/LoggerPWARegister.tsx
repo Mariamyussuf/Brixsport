@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -20,6 +20,8 @@ const LoggerPWARegister = () => {
   const [showIOSInstallTip, setShowIOSInstallTip] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const updateCheckInterval = useRef<NodeJS.Timeout | null>(null);
+  const messageListenerRef = useRef<((event: MessageEvent) => void) | null>(null);
 
   // Register service worker with enhanced error handling
   const registerServiceWorker = useCallback(async () => {
@@ -66,10 +68,15 @@ const LoggerPWARegister = () => {
         setUpdateAvailable(true);
       }
 
-      // Periodic update checks (every 30 minutes for better iOS compatibility)
-      setInterval(() => {
+      // Clear any existing interval
+      if (updateCheckInterval.current) {
+        clearInterval(updateCheckInterval.current);
+      }
+      
+      // Periodic update checks (every hour instead of 30 minutes for less frequent checks)
+      updateCheckInterval.current = setInterval(() => {
         registration.update();
-      }, 30 * 60 * 1000);
+      }, 60 * 60 * 1000); // 1 hour instead of 30 minutes
 
     } catch (error) {
       console.error('[Logger PWA] ServiceWorker registration failed:', error);
@@ -99,6 +106,13 @@ const LoggerPWARegister = () => {
     
     // Register service worker
     registerServiceWorker();
+    
+    // Cleanup interval on unmount
+    return () => {
+      if (updateCheckInterval.current) {
+        clearInterval(updateCheckInterval.current);
+      }
+    };
   }, [registerServiceWorker]);
 
   // Handle installation prompts
@@ -253,15 +267,29 @@ const LoggerPWARegister = () => {
     // Only run in logger paths
     if (typeof window === "undefined" || !window.location.pathname.startsWith('/logger')) return;
     
-    // Listen for messages from service worker
-    navigator.serviceWorker.addEventListener('message', event => {
+    // Remove existing listener if it exists
+    if (messageListenerRef.current) {
+      navigator.serviceWorker.removeEventListener('message', messageListenerRef.current);
+    }
+    
+    // Create new listener
+    const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'UPDATE_AVAILABLE') {
         setUpdateAvailable(true);
       }
-    });
+    };
+    
+    // Store reference to listener for cleanup
+    messageListenerRef.current = handleMessage;
+    
+    // Add listener
+    navigator.serviceWorker.addEventListener('message', handleMessage);
     
     return () => {
-      navigator.serviceWorker.removeEventListener('message', () => {});
+      if (messageListenerRef.current) {
+        navigator.serviceWorker.removeEventListener('message', messageListenerRef.current);
+        messageListenerRef.current = null;
+      }
     };
   }, []);
 
@@ -269,7 +297,7 @@ const LoggerPWARegister = () => {
     <>
       {/* App Update Notification - Highest Priority */}
       {updateAvailable && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-600 text-white rounded-lg shadow-lg p-4 z-50 max-w-sm mx-4">
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white rounded-lg shadow-lg p-4 z-50 max-w-sm mx-4">
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0">
               <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
@@ -284,7 +312,7 @@ const LoggerPWARegister = () => {
             </div>
             <button 
               onClick={handleUpdate}
-              className="bg-white text-red-600 px-4 py-2 rounded-md font-medium text-sm hover:bg-red-50 transition-colors"
+              className="bg-white text-blue-600 px-4 py-2 rounded-md font-medium text-sm hover:bg-blue-50 transition-colors"
             >
               Update
             </button>
@@ -297,7 +325,7 @@ const LoggerPWARegister = () => {
         <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 z-50 max-w-sm border border-gray-200 dark:border-gray-700">
           <div className="flex items-start space-x-3">
             <div className="flex-shrink-0">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
@@ -313,7 +341,7 @@ const LoggerPWARegister = () => {
               <div className="flex space-x-2">
                 <button
                   onClick={handleInstallClick}
-                  className="flex-1 bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-red-700 transition-colors"
+                  className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors"
                 >
                   Install
                 </button>
