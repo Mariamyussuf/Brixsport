@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { AdminAuthAPI } from '@/lib/adminAuth';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 // Types
 interface FormData {
@@ -16,6 +17,7 @@ interface ValidationErrors {
 }
 
 const AdminLoginForm: React.FC = () => {
+  const router = useRouter();
   // Form state
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState<FormData>({
@@ -99,7 +101,7 @@ const AdminLoginForm: React.FC = () => {
       }
 
       // Redirect to admin dashboard
-      window.location.href = '/admin/dashboard';
+      router.push('/admin/dashboard');
     } catch (error: any) {
       if (error.message === 'INVALID_TWO_FACTOR') {
         setSubmitError('Invalid two-factor code. Please try again.');
@@ -135,7 +137,7 @@ const AdminLoginForm: React.FC = () => {
           }
 
           // Redirect to admin dashboard
-          window.location.href = '/admin/dashboard';
+          router.push('/admin/dashboard');
         } catch (error: any) {
           setSubmitError('Demo login failed. Please try again.');
           console.error('Demo login error:', error);
