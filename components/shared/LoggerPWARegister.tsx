@@ -195,6 +195,9 @@ const LoggerPWARegister = () => {
     
     console.log('[Logger PWA] Updating app...');
     
+    // Reset the update available state immediately
+    setUpdateAvailable(false);
+    
     navigator.serviceWorker.getRegistrations().then((regs) => {
       for (let reg of regs) {
         if (reg.waiting) {

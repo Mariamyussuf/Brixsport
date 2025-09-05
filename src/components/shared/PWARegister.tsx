@@ -220,6 +220,9 @@ export default function PWARegister() {
     
     console.log('[PWA] Updating app...');
     
+    // Reset the update available state immediately
+    setUpdateAvailable(false);
+    
     navigator.serviceWorker.getRegistrations().then((regs) => {
       for (let reg of regs) {
         if (reg.waiting) {
