@@ -12,7 +12,8 @@ import SystemSettings from './SystemSettings';
 import PWAAdminManagement from './PWAAdminManagement';
 
 const AdminDashboard = () => {
-  const { adminUser, logout } = useAdmin();
+  const adminContext = useAdmin();
+  const { adminUser, logout } = adminContext;
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);

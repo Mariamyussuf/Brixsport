@@ -88,8 +88,8 @@ self.addEventListener('fetch', (event) => {
     event.respondWith((async () => {
       try {
         const networkResp = await fetch(request);
-        // Only cache successful responses
-        if (networkResp && networkResp.status === 200) {
+        // Only cache successful responses and only for GET requests
+        if (networkResp && networkResp.status === 200 && request.method === 'GET') {
           const cache = await caches.open(STATIC_CACHE);
           cache.put(request, networkResp.clone());
         }
@@ -110,8 +110,8 @@ self.addEventListener('fetch', (event) => {
       const cached = await cache.match(request);
       const networkPromise = fetch(request)
         .then((resp) => {
-          // Only cache successful API responses
-          if (resp && resp.status === 200) {
+          // Only cache successful API responses and only for GET requests
+          if (resp && resp.status === 200 && request.method === 'GET') {
             cache.put(request, resp.clone());
           }
           return resp;
@@ -129,8 +129,8 @@ self.addEventListener('fetch', (event) => {
       try {
         // Try network first
         const networkResponse = await fetch(request);
-        // If successful, cache it and return it
-        if (networkResponse && networkResponse.status === 200) {
+        // If successful, cache it and return it (only for GET requests)
+        if (networkResponse && networkResponse.status === 200 && request.method === 'GET') {
           cache.put(request, networkResponse.clone());
           await trimCache(IMAGE_CACHE, MAX_IMAGE_ENTRIES);
         }
@@ -148,11 +148,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Default: try cache, then network
-  event.respondWith((async () => {
-    const cached = await caches.match(request);
-    return cached || fetch(request);
-  })());
+  // Default: try cache, then network (only for GET requests)
+  if (request.method === 'GET') {
+    event.respondWith((async () => {
+      const cached = await caches.match(request);
+      return cached || fetch(request);
+    })());
+  }
 });
 
 // ----- Background Sync for offline events -----

@@ -99,8 +99,8 @@ interface AdminProviderProps {
 
 // Admin provider component
 export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentAdmin = null }) => {
-  const [state, dispatch] = useReducer(adminReducer, initialState);
-  const { user, isAuthenticated, logout } = useAuth();
+  const [state, dispatch] = useReducer(adminReducer, { ...initialState, adminUser: currentAdmin });
+  const { user, isAuthenticated, logout: authLogout } = useAuth();
   const router = useRouter();
   
   // Set auth token in admin service
@@ -113,20 +113,15 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     }
   }, [user]);
 
-  // Initialize verified admin user provided by server layout
-  useEffect(() => {
-    dispatch({ type: 'SET_ADMIN_USER', payload: currentAdmin });
-  }, [currentAdmin]);
-  
   // Load loggers when admin is authenticated
   useEffect(() => {
-    if (isAuthenticated && user && user.role === 'admin') {
+    if (state.adminUser) {
       loadLoggers();
     } else {
       // Reset state when user logs out or is not admin
       dispatch({ type: 'RESET' });
     }
-  }, [isAuthenticated, user]);
+  }, [state.adminUser]);
   
   // Load loggers
   const loadLoggers = async (): Promise<void> => {
