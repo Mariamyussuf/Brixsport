@@ -1,16 +1,21 @@
 // Logger Service Worker
-// Specialized service worker for the logger PWA
+// Specialized service worker for the logger PWA (includes admin functionality)
+// Works for both development (/logger path) and production (logger.brixsport.com)
 
 const CACHE_NAME = 'logger-v1.0.0';
 const urlsToCache = [
-  '/logger',
-  '/logger/login',
-  '/logger/admin',
+  '/',
+  '/login',
+  '/admin',
+  '/admin/login',
+  '/admin/dashboard',
   '/logger-manifest.json',
   '/logger-apple-touch-icon.png',
   '/logger-apple-touch-icon-152x152.png',
   '/logger-apple-touch-icon-180x180.png',
-  '/logger-apple-touch-icon-167x167.png'
+  '/logger-apple-touch-icon-167x167.png',
+  '/logger-splash-640x1136.png',
+  '/logger-splash-1536x2048.png'
 ];
 
 // Install event - cache essential resources
@@ -46,8 +51,16 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - serve cached content when offline
 self.addEventListener('fetch', (event) => {
-  // Only handle requests for the logger paths
-  if (event.request.url.includes('/logger')) {
+  // Handle requests for both development and production environments
+  const url = new URL(event.request.url);
+  
+  // Check if request is for logger domain or logger path
+  const isLoggerRequest = 
+    url.pathname.startsWith('/logger') || 
+    url.hostname === 'logger.brixsport.com' ||
+    url.hostname === self.location.hostname;
+  
+  if (isLoggerRequest) {
     event.respondWith(
       caches.match(event.request)
         .then((response) => {
@@ -78,7 +91,7 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           // If both fetch and cache fail, show offline page if available
-          return caches.match('/logger');
+          return caches.match('/');
         })
     );
   }
@@ -122,6 +135,6 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
   event.waitUntil(
-    clients.openWindow('/logger')
+    clients.openWindow('/')
   );
 });

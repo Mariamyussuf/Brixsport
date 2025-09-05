@@ -1,83 +1,356 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<{ outcome: 'accepted' | 'dismissed' }>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+declare global {
+  interface WindowEventMap {
+    beforeinstallprompt: BeforeInstallPromptEvent;
+  }
+}
 
 const LoggerPWARegister = () => {
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function () {
-        navigator.serviceWorker.register('/logger-sw.js').then(
-          function (registration) {
-            console.log('Logger Service Worker registered with scope: ', registration.scope);
-            
-            // Add update found listener
-            registration.addEventListener('updatefound', () => {
-              const newWorker = registration.installing;
-              if (newWorker) {
-                newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    // New update available
-                    console.log('New content is available; please refresh.');
-                    // Show update notification to user
-                    showUpdateNotification();
-                  }
-                });
-              }
-            });
-          },
-          function (err) {
-            console.log('Logger Service Worker registration failed: ', err);
-          }
-        );
-      });
-      
-      // Check for service worker updates periodically
-      setInterval(() => {
-        if (navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({ command: 'update' });
-        }
-      }, 1000 * 60 * 30); // Check every 30 minutes
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showInstallTip, setShowInstallTip] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showIOSInstallTip, setShowIOSInstallTip] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+
+  // Register service worker with enhanced error handling
+  const registerServiceWorker = useCallback(async () => {
+    if (!('serviceWorker' in navigator)) {
+      console.log('[Logger PWA] Service Worker not supported');
+      return;
     }
-    
-    // Listen for messages from service worker
-    navigator.serviceWorker.addEventListener('message', event => {
-      if (event.data && event.data.type === 'UPDATE_AVAILABLE') {
-        showUpdateNotification();
+
+    try {
+      // Register service worker with root scope for logger.brixsport.com
+      const registration = await navigator.serviceWorker.register('/logger-sw.js', { scope: '/' });
+      
+      console.log('[Logger PWA] ServiceWorker registered successfully:', registration.scope);
+      
+      // Enhanced update detection
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        if (newWorker) {
+          console.log('[Logger PWA] New service worker found, installing...');
+          
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed') {
+              if (navigator.serviceWorker.controller) {
+                console.log('[Logger PWA] New content available, will show update prompt');
+                setUpdateAvailable(true);
+              } else {
+                console.log('[Logger PWA] Content cached for offline use');
+              }
+            }
+          });
+        }
+      });
+
+      // Check for updates immediately
+      if (registration.waiting && navigator.serviceWorker.controller) {
+        console.log('[Logger PWA] Update available immediately');
+        setUpdateAvailable(true);
       }
-    });
-    
-    // Function to show update notification
-    function showUpdateNotification() {
-      // Create a simple notification element
-      const notification = document.createElement('div');
-      notification.innerHTML = `
-        <div style="position: fixed; bottom: 20px; right: 20px; background: #4f46e5; color: white; padding: 16px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); z-index: 1000; max-width: 300px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <strong>New Update Available</strong>
-            <button id="close-notification" style="background: none; border: none; color: white; cursor: pointer;">×</button>
-          </div>
-          <p style="margin: 0 0 12px 0; font-size: 14px;">A new version of the app is available.</p>
-          <button id="refresh-button" style="background: white; color: #4f46e5; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: 500;">Refresh</button>
-        </div>
-      `;
-      
-      document.body.appendChild(notification);
-      
-      // Add event listeners
-      const closeBtn = notification.querySelector('#close-notification');
-      const refreshBtn = notification.querySelector('#refresh-button');
-      
-      closeBtn?.addEventListener('click', () => {
-        document.body.removeChild(notification);
-      });
-      
-      refreshBtn?.addEventListener('click', () => {
-        window.location.reload();
-      });
+
+      // Periodic update checks (every 30 minutes for better iOS compatibility)
+      setInterval(() => {
+        registration.update();
+      }, 30 * 60 * 1000);
+
+    } catch (error) {
+      console.error('[Logger PWA] ServiceWorker registration failed:', error);
     }
   }, []);
 
-  return null;
+  // Check platform and PWA status
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    // Check if running as PWA
+    const isInStandaloneMode = 
+      window.matchMedia('(display-mode: standalone)').matches || 
+      (window.navigator as any).standalone === true ||
+      document.referrer.includes('android-app://');
+      
+    setIsStandalone(isInStandaloneMode);
+    
+    // Check if iOS device
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(iOS);
+    
+    console.log('[Logger PWA] Platform detection:', { 
+      isStandalone: isInStandaloneMode, 
+      isIOS: iOS
+    });
+    
+    // Register service worker
+    registerServiceWorker();
+  }, [registerServiceWorker]);
+
+  // Handle installation prompts
+  useEffect(() => {
+    if (typeof window === "undefined" || isStandalone) return;
+    
+    if (isIOS) {
+      // iOS: Show manual install instructions
+      const hasShownIOSTip = localStorage.getItem('logger-pwa-ios-install-tip-shown');
+      
+      if (!hasShownIOSTip) {
+        setTimeout(() => {
+          setShowIOSInstallTip(true);
+        }, 3000);
+      }
+      return;
+    }
+    
+    // Android/Desktop: Handle beforeinstallprompt
+    const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
+      e.preventDefault();
+      console.log('[Logger PWA] Install prompt intercepted');
+      
+      setInstallPrompt(e);
+      
+      const hasBeenInstalled = localStorage.getItem('logger-pwa-installed');
+      if (hasBeenInstalled) {
+        console.log('[Logger PWA] App already installed, hiding prompt.');
+        return;
+      }
+
+      const hasShownTip = localStorage.getItem('logger-pwa-install-tip-shown');
+      const installDismissedAt = localStorage.getItem('logger-pwa-install-dismissed-at');
+      const lastPromptShownAt = localStorage.getItem('logger-pwa-last-prompt-shown-at');
+      
+      const now = Date.now();
+      const shownRecently = lastPromptShownAt && (now - parseInt(lastPromptShownAt) < 24 * 60 * 60 * 1000);
+      const dismissedRecently = installDismissedAt && (now - parseInt(installDismissedAt) < 7 * 24 * 60 * 60 * 1000);
+      
+      if (!hasShownTip && !dismissedRecently && !shownRecently) {
+        setTimeout(() => {
+          setShowInstallTip(true);
+          // Record when we show the prompt
+          localStorage.setItem('logger-pwa-last-prompt-shown-at', now.toString());
+        }, 2000);
+      }
+    };
+
+    const handleAppInstalled = () => {
+      console.log('[Logger PWA] App successfully installed');
+      setShowInstallTip(false);
+      setInstallPrompt(null);
+      localStorage.setItem('logger-pwa-install-tip-shown', 'true');
+      localStorage.setItem('logger-pwa-installed', 'true');
+    };
+    
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as any);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, [isStandalone, isIOS]);
+
+  // Handle PWA installation
+  const handleInstallClick = useCallback(async () => {
+    if (!installPrompt) return;
+    
+    try {
+      console.log('[Logger PWA] Showing install prompt');
+      await installPrompt.prompt();
+      
+      const { outcome } = await installPrompt.userChoice;
+      console.log('[Logger PWA] Install prompt result:', outcome);
+      
+      setInstallPrompt(null);
+      setShowInstallTip(false);
+      
+      // Mark as shown regardless of outcome to prevent repeated prompts
+      localStorage.setItem('logger-pwa-install-tip-shown', 'true');
+      
+      if (outcome === 'accepted') {
+        localStorage.setItem('logger-pwa-installed', 'true');
+      } else {
+        // User dismissed the prompt
+        localStorage.setItem('logger-pwa-install-dismissed-at', Date.now().toString());
+      }
+      
+    } catch (error) {
+      console.error('[Logger PWA] Install prompt error:', error);
+      // Even on error, mark as shown to prevent repeated prompts
+      localStorage.setItem('logger-pwa-install-tip-shown', 'true');
+      setShowInstallTip(false);
+    }
+  }, [installPrompt]);
+
+  // Handle app updates
+  const handleUpdate = useCallback(() => {
+    if (!navigator.serviceWorker) return;
+    
+    console.log('[Logger PWA] Updating app...');
+    
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      for (let reg of regs) {
+        if (reg.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      }
+      
+      // For iOS PWA, force a more thorough refresh
+      if (isIOS && isStandalone) {
+        // Clear all caches first
+        if ('caches' in window) {
+          caches.keys().then((names) => {
+            names.forEach((name) => {
+              caches.delete(name);
+            });
+          });
+        }
+        // Then reload
+        window.location.reload();
+      } else {
+        // Standard reload for other platforms
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
+      }
+    });
+  }, [isIOS, isStandalone]);
+
+  // Dismiss functions
+  const dismissInstallTip = useCallback(() => {
+    setShowInstallTip(false);
+    setInstallPrompt(null);
+    localStorage.setItem('logger-pwa-install-dismissed-at', Date.now().toString());
+    localStorage.setItem('logger-pwa-install-tip-shown', 'true');
+    localStorage.setItem('logger-pwa-last-prompt-shown-at', Date.now().toString());
+  }, []);
+  
+  const dismissIOSInstallTip = useCallback(() => {
+    setShowIOSInstallTip(false);
+    localStorage.setItem('logger-pwa-ios-install-tip-shown', 'true');
+    localStorage.setItem('logger-pwa-last-prompt-shown-at', Date.now().toString());
+  }, []);
+
+  // Function to show update notification (kept from original implementation)
+  useEffect(() => {
+    // Listen for messages from service worker
+    navigator.serviceWorker.addEventListener('message', event => {
+      if (event.data && event.data.type === 'UPDATE_AVAILABLE') {
+        setUpdateAvailable(true);
+      }
+    });
+    
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', () => {});
+    };
+  }, []);
+
+  return (
+    <>
+      {/* App Update Notification - Highest Priority */}
+      {updateAvailable && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-600 text-white rounded-lg shadow-lg p-4 z-50 max-w-sm mx-4">
+          <div className="flex items-center space-x-3">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 1.414L10.586 9.5 9.293 8.207a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4a1 1 0 00-1.414-1.414L11 9.586z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold">Update Available!</p>
+              <p className="text-xs opacity-90">New features and improvements</p>
+            </div>
+            <button 
+              onClick={handleUpdate}
+              className="bg-white text-red-600 px-4 py-2 rounded-md font-medium text-sm hover:bg-red-50 transition-colors"
+            >
+              Update
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Android/Desktop Install Prompt */}
+      {showInstallTip && installPrompt && !updateAvailable && (
+        <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 z-50 max-w-sm border border-gray-200 dark:border-gray-700">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0">
+              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                Install Logger App
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                Get faster access, offline support, and push notifications
+              </p>
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleInstallClick}
+                  className="flex-1 bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-red-700 transition-colors"
+                >
+                  Install
+                </button>
+                <button
+                  onClick={dismissInstallTip}
+                  className="px-3 py-2 text-gray-500 dark:text-gray-400 text-xs font-medium hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                >
+                  Later
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* iOS Install Instructions */}
+      {showIOSInstallTip && isIOS && !updateAvailable && (
+        <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 z-50 max-w-sm border border-gray-200 dark:border-gray-700">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0">
+              <div className="w-10 h-10 bg-gradient-to-br from-gray-500 to-gray-700 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.09997 22C7.78997 22.05 6.79997 20.68 5.95997 19.47C4.24997 17 2.93997 12.45 4.69997 9.39C5.56997 7.87 7.13997 6.91 8.85997 6.88C10.15 6.86 11.36 7.75 12.11 7.75C12.86 7.75 14.28 6.68 15.87 6.84C16.51 6.87 18.27 7.15 19.35 8.29C19.27 8.35 17.94 9.35 17.96 11.08C17.98 13.19 19.93 14.04 20 14.06C19.97 14.15 19.69 15.13 19.18 16.12C18.74 16.97 18.27 17.81 17.53 17.83C16.8 17.85 16.61 17.35 15.8 17.35C15 17.35 14.8 17.81 14.12 17.83C13.4 17.85 12.92 16.94 12.5 16.1C11.69 14.46 11.14 12.25 11.71 10.74C12.08 9.84 12.82 9.19 13.64 9.14C14.27 9.1 14.85 9.54 15.27 9.54C15.7 9.54 16.46 9.04 17.24 9.11C17.79 9.15 19.05 9.34 19.75 10.34C18.75 11.17 18.75 12.72 18.71 19.5Z"/>
+                </svg>
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                Install Logger App
+              </h3>
+              <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1 mb-3">
+                <p>To install on your iPhone:</p>
+                <ol className="list-decimal list-inside space-y-1 ml-2">
+                  <li>Tap the <span className="font-medium">Share</span> button below</li>
+                  <li>Select <span className="font-medium">"Add to Home Screen"</span></li>
+                  <li>Tap <span className="font-medium">"Add"</span> to confirm</li>
+                </ol>
+              </div>
+              <button
+                onClick={dismissIOSInstallTip}
+                className="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 };
 
 export default LoggerPWARegister;

@@ -19,7 +19,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "generate-pwa-assets": "npm install canvas && node generate-pwa-icons.js && node generate-ios-splash-screens.js"
+    "generate-pwa-assets": "npm install canvas && node generate-pwa-icons.js && node generate-ios-splash-screens.js",
+    "generate-logger-assets": "node generate-all-logger-assets.js"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.12",

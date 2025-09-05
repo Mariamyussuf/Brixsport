@@ -45,21 +45,48 @@ export default function LoggerLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ThemeProvider>
-      <SettingsProvider>
-        <I18nProvider>
-          {/* Removed the duplicate AuthProvider here since it's provided by the root layout */}
-          <ClientLoggerProvider>
-            <NotificationsProvider>
-              <LoggerPWARegister />
-              <OfflineWrapper />
-              <NotificationsGate />
-              <DataSaverGate />
-              {children}
-            </NotificationsProvider>
-          </ClientLoggerProvider>
-        </I18nProvider>
-      </SettingsProvider>
-    </ThemeProvider>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="manifest" href="/logger-manifest.json" />
+        <meta name="theme-color" content="#000000" />
+        <meta name="application-name" content="BrixSports Logger" />
+        
+        {/* iOS PWA meta tags */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="BrixSports Logger" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <link rel="apple-touch-icon" href="/logger-apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/logger-apple-touch-icon-152x152.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/logger-apple-touch-icon-180x180.png" />
+        <link rel="apple-touch-icon" sizes="167x167" href="/logger-apple-touch-icon-167x167.png" />
+        
+        {/* iOS splash screens */}
+        <link rel="apple-touch-startup-image" href="/logger-splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" />
+        <link rel="apple-touch-startup-image" href="/logger-splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" />
+        <link rel="apple-touch-startup-image" href="/logger-splash-1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)" />
+        <link rel="apple-touch-startup-image" href="/logger-splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" />
+        <link rel="apple-touch-startup-image" href="/logger-splash-1536x2048.png" media="(min-device-width: 768px) and (max-device-width: 1024px) and (-webkit-min-device-pixel-ratio: 2)" />
+        <NoFlashThemeScript />
+      </head>
+      <body>
+        <ThemeProvider>
+          <SettingsProvider>
+            <I18nProvider>
+              {/* Removed the duplicate AuthProvider here since it's provided by the root layout */}
+              <ClientLoggerProvider>
+                <NotificationsProvider>
+                  <LoggerPWARegister />
+                  <OfflineWrapper />
+                  <NotificationsGate />
+                  <DataSaverGate />
+                  {children}
+                </NotificationsProvider>
+              </ClientLoggerProvider>
+            </I18nProvider>
+          </SettingsProvider>
+        </ThemeProvider>
+      </body>
+    </html>
   );
 }

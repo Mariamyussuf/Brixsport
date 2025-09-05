@@ -2,7 +2,8 @@
   "name": "BrixSports Logger",
   "short_name": "Logger",
   "description": "Match logging platform for sports events",
-  "start_url": "/logger",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
@@ -35,7 +36,7 @@
   "shortcuts": [
     {
       "name": "Dashboard",
-      "url": "/logger",
+      "url": "/",
       "icons": [
         {
           "src": "/logger-apple-touch-icon.png",
@@ -45,7 +46,7 @@
     },
     {
       "name": "Login",
-      "url": "/logger/login",
+      "url": "/login",
       "icons": [
         {
           "src": "/logger-apple-touch-icon.png",
@@ -55,7 +56,7 @@
     },
     {
       "name": "Admin",
-      "url": "/logger/admin",
+      "url": "/admin",
       "icons": [
         {
           "src": "/logger-apple-touch-icon.png",

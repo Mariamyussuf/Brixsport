@@ -11,7 +11,11 @@ const LoggerPage = () => {
 
   // If user is authenticated and has logger permissions, show dashboard
   if (isAuthenticated && hasLoggerPermissions) {
-    return <LoggerDashboard />;
+    return (
+      <>
+        <LoggerDashboard />
+      </>
+    );
   }
 
   // If user is authenticated but doesn't have logger permissions, show access denied
@@ -40,7 +44,10 @@ const LoggerPage = () => {
     return null;
   }
 
-  return null;
+  return (
+    <>
+    </>
+  );
 };
 
 export default LoggerPage;
