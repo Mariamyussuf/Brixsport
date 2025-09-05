@@ -22,6 +22,7 @@ const LoggerPWARegister = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const updateCheckInterval = useRef<NodeJS.Timeout | null>(null);
   const messageListenerRef = useRef<((event: MessageEvent) => void) | null>(null);
+  const installPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
 
   // Register service worker with enhanced error handling
   const registerServiceWorker = useCallback(async () => {
@@ -33,8 +34,11 @@ const LoggerPWARegister = () => {
     try {
       // Check if we're in the logger section before registering
       const isLoggerPath = window.location.pathname.startsWith('/logger');
-      if (!isLoggerPath) {
-        console.log('[Logger PWA] Not in logger path, skipping registration');
+      const isAdminPath = window.location.pathname.startsWith('/admin');
+      
+      // Only register if we're in logger section and not in admin section
+      if (!isLoggerPath || isAdminPath) {
+        console.log('[Logger PWA] Not in logger path or in admin path, skipping registration');
         return;
       }
       
@@ -119,12 +123,13 @@ const LoggerPWARegister = () => {
   useEffect(() => {
     if (typeof window === "undefined" || isStandalone) return;
     
-    // Check if we're in logger section
+    // Check if we're in logger section and not in admin section
     const isLoggerPath = window.location.pathname.startsWith('/logger');
+    const isAdminPath = window.location.pathname.startsWith('/admin');
     
     // Only show install prompt for logger app
-    if (!isLoggerPath) {
-      console.log('[Logger PWA] Not in logger path, skipping logger PWA install prompt');
+    if (!isLoggerPath || isAdminPath) {
+      console.log('[Logger PWA] Not in logger path or in admin path, skipping logger PWA install prompt');
       return;
     }
     
@@ -142,9 +147,19 @@ const LoggerPWARegister = () => {
     
     // Android/Desktop: Handle beforeinstallprompt
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
+      // Only handle this event if we're in the logger paths and not in admin
+      const isLoggerPath = window.location.pathname.startsWith('/logger');
+      const isAdminPath = window.location.pathname.startsWith('/admin');
+      
+      if (!isLoggerPath || isAdminPath) {
+        console.log('[Logger PWA] Not in logger path or in admin path, not handling install prompt');
+        return;
+      }
+      
       e.preventDefault();
       console.log('[Logger PWA] Install prompt intercepted');
       
+      installPromptRef.current = e;
       setInstallPrompt(e);
       
       const hasBeenInstalled = localStorage.getItem('logger-pwa-installed');
@@ -171,9 +186,19 @@ const LoggerPWARegister = () => {
     };
 
     const handleAppInstalled = () => {
+      // Only handle this event if we're in the logger paths and not in admin
+      const isLoggerPath = window.location.pathname.startsWith('/logger');
+      const isAdminPath = window.location.pathname.startsWith('/admin');
+      
+      if (!isLoggerPath || isAdminPath) {
+        console.log('[Logger PWA] Not in logger path or in admin path, not handling app installed');
+        return;
+      }
+      
       console.log('[Logger PWA] App successfully installed');
       setShowInstallTip(false);
       setInstallPrompt(null);
+      installPromptRef.current = null;
       localStorage.setItem('logger-pwa-install-tip-shown', 'true');
       localStorage.setItem('logger-pwa-installed', 'true');
     };
@@ -189,16 +214,17 @@ const LoggerPWARegister = () => {
 
   // Handle PWA installation
   const handleInstallClick = useCallback(async () => {
-    if (!installPrompt) return;
+    if (!installPromptRef.current) return;
     
     try {
       console.log('[Logger PWA] Showing install prompt');
-      const result = await installPrompt.prompt();
+      const result = await installPromptRef.current.prompt();
       
-      const { outcome } = await installPrompt.userChoice;
+      const { outcome } = await installPromptRef.current.userChoice;
       console.log('[Logger PWA] Install prompt result:', outcome);
       
       setInstallPrompt(null);
+      installPromptRef.current = null;
       setShowInstallTip(false);
       
       // Mark as shown regardless of outcome to prevent repeated prompts
@@ -217,8 +243,9 @@ const LoggerPWARegister = () => {
       localStorage.setItem('logger-pwa-install-tip-shown', 'true');
       setShowInstallTip(false);
       setInstallPrompt(null);
+      installPromptRef.current = null;
     }
-  }, [installPrompt]);
+  }, []);
 
   // Handle app updates
   const handleUpdate = useCallback(() => {

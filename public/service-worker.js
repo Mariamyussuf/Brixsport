@@ -13,8 +13,7 @@ self.addEventListener('install', (event) => {
       '/',
       '/onboarding',
       '/auth',
-      '/admin',
-      OFFLINE_URL,
+      '/offline.html',
       '/onboarding-bg-1.jpg',
       '/manifest.json',
       '/icon-192x192.png',
@@ -65,6 +64,11 @@ self.addEventListener('fetch', (event) => {
   // Only handle same-origin requests
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // Skip handling for admin and logger paths
+  if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/logger')) {
+    return;
+  }
 
   // Frontend-only mock: intercept bulk events endpoint to always succeed
   if (url.pathname === '/api/events/bulk' && request.method === 'POST') {

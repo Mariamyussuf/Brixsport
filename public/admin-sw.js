@@ -5,6 +5,7 @@ const CACHE_NAME = 'admin-v1.0.0';
 const urlsToCache = [
   '/admin',
   '/admin/login',
+  '/admin/dashboard',
   '/admin-manifest.json',
   '/icon-192x192.png',
   '/icon-256x256.png',
@@ -49,8 +50,15 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - serve cached content when offline
 self.addEventListener('fetch', (event) => {
-  // Only handle requests for the admin paths
-  if (event.request.url.includes('/admin')) {
+  // Handle requests for both development and production environments
+  const url = new URL(event.request.url);
+  
+  // Check if request is for admin domain or admin path
+  const isAdminRequest = 
+    url.pathname.startsWith('/admin') || 
+    url.hostname === 'admin.brixsport.com';
+  
+  if (isAdminRequest) {
     // Only cache GET requests
     if (event.request.method !== 'GET') {
       return;

@@ -5,10 +5,10 @@
 const CACHE_NAME = 'logger-v1.0.0';
 const urlsToCache = [
   '/',
-  '/login',
-  '/admin',
-  '/admin/login',
-  '/admin/dashboard',
+  '/logger',
+  '/logger/login',
+  '/logger/test',
+  '/logger/dashboard',
   '/logger-manifest.json',
   '/logger-apple-touch-icon.png',
   '/logger-apple-touch-icon-152x152.png',
@@ -61,8 +61,7 @@ self.addEventListener('fetch', (event) => {
   // Check if request is for logger domain or logger path
   const isLoggerRequest = 
     url.pathname.startsWith('/logger') || 
-    url.hostname === 'logger.brixsport.com' ||
-    url.hostname === self.location.hostname;
+    url.hostname === 'logger.brixsport.com';
   
   if (isLoggerRequest) {
     // Only cache GET requests
@@ -100,7 +99,7 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           // If both fetch and cache fail, show offline page if available
-          return caches.match('/');
+          return caches.match('/logger');
         })
     );
   }
@@ -143,6 +142,6 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
   event.waitUntil(
-    clients.openWindow('/')
+    clients.openWindow('/logger')
   );
 });

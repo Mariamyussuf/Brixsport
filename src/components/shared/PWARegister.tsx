@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -22,6 +22,7 @@ export default function PWARegister() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [pushNotificationSupported, setPushNotificationSupported] = useState(false);
   const [showPushPrompt, setShowPushPrompt] = useState(false);
+  const installPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
 
   // Register service worker with enhanced error handling
   const registerServiceWorker = useCallback(async () => {
@@ -31,10 +32,11 @@ export default function PWARegister() {
     }
 
     try {
-      // Check if we're in admin or logger sections before registering
+      // Only register main PWA service worker for non-admin and non-logger paths
       const isAdminPath = window.location.pathname.startsWith('/admin');
       const isLoggerPath = window.location.pathname.startsWith('/logger');
       
+      // Only register if we're not in admin or logger sections
       if (isAdminPath || isLoggerPath) {
         console.log('[PWA] In admin or logger path, skipping main PWA registration');
         return;
@@ -116,11 +118,10 @@ export default function PWARegister() {
   useEffect(() => {
     if (typeof window === "undefined" || isStandalone) return;
     
-    // Check if we're in admin or logger sections
+    // Only show install prompt for main app (not admin or logger sections)
     const isAdminPath = window.location.pathname.startsWith('/admin');
     const isLoggerPath = window.location.pathname.startsWith('/logger');
     
-    // Only show install prompt for main app (not admin or logger sections)
     if (isAdminPath || isLoggerPath) {
       console.log('[PWA] In admin or logger path, skipping main PWA install prompt');
       return;
@@ -142,9 +143,19 @@ export default function PWARegister() {
     
     // Android/Desktop: Handle beforeinstallprompt
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
+      // Only handle this event if we're in the main app paths
+      const isAdminPath = window.location.pathname.startsWith('/admin');
+      const isLoggerPath = window.location.pathname.startsWith('/logger');
+      
+      if (isAdminPath || isLoggerPath) {
+        console.log('[PWA] In admin or logger path, not handling install prompt in main PWA');
+        return;
+      }
+      
       e.preventDefault();
       console.log('[PWA] Install prompt intercepted');
       
+      installPromptRef.current = e;
       setInstallPrompt(e);
       
       const hasBeenInstalled = localStorage.getItem('pwa-installed');
@@ -172,9 +183,19 @@ export default function PWARegister() {
     };
 
     const handleAppInstalled = () => {
+      // Only handle this event if we're in the main app paths
+      const isAdminPath = window.location.pathname.startsWith('/admin');
+      const isLoggerPath = window.location.pathname.startsWith('/logger');
+      
+      if (isAdminPath || isLoggerPath) {
+        console.log('[PWA] In admin or logger path, not handling app installed in main PWA');
+        return;
+      }
+      
       console.log('[PWA] App successfully installed');
       setShowInstallTip(false);
       setInstallPrompt(null);
+      installPromptRef.current = null;
       localStorage.setItem('pwa-install-tip-shown', 'true');
       localStorage.setItem('pwa-installed', 'true'); // Remember that the app has been installed
       
@@ -197,16 +218,17 @@ export default function PWARegister() {
 
   // Handle PWA installation
   const handleInstallClick = useCallback(async () => {
-    if (!installPrompt) return;
+    if (!installPromptRef.current) return;
     
     try {
       console.log('[PWA] Showing install prompt');
-      const result = await installPrompt.prompt();
+      const result = await installPromptRef.current.prompt();
       
-      const { outcome } = await installPrompt.userChoice;
+      const { outcome } = await installPromptRef.current.userChoice;
       console.log('[PWA] Install prompt result:', outcome);
       
       setInstallPrompt(null);
+      installPromptRef.current = null;
       setShowInstallTip(false);
       
       // Mark as shown regardless of outcome to prevent repeated prompts
@@ -231,8 +253,9 @@ export default function PWARegister() {
       localStorage.setItem('pwa-install-tip-shown', 'true');
       setShowInstallTip(false);
       setInstallPrompt(null);
+      installPromptRef.current = null;
     }
-  }, [installPrompt, pushNotificationSupported, isIOS]);
+  }, [pushNotificationSupported, isIOS]);
 
   // Handle app updates with iOS fix
   const handleUpdate = useCallback(() => {
