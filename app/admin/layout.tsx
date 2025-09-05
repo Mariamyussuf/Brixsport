@@ -38,14 +38,26 @@ export default async function AdminLayout({
   // Always render the layout with AdminProvider
   // Authentication checks will happen in client components
   if (token) {
-    user = await verifyAdminToken(token);
+    try {
+      user = await verifyAdminToken(token);
+    } catch (error) {
+      console.error('Token verification failed:', error);
+      // If token verification fails, user remains null
+    }
   }
 
   return (
-    <ThemeProvider>
-      <AdminProvider currentAdmin={user}>
-        {children}
-      </AdminProvider>
-    </ThemeProvider>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <NoFlashThemeScript />
+      </head>
+      <body>
+        <ThemeProvider>
+          <AdminProvider currentAdmin={user}>
+            {children}
+          </AdminProvider>
+        </ThemeProvider>
+      </body>
+    </html>
   );
 }
