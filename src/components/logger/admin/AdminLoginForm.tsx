@@ -112,6 +112,44 @@ const AdminLoginForm: React.FC = () => {
     }
   };
 
+  // Handle demo login
+  const handleDemoLogin = async () => {
+    setIsLoading(true);
+    setSubmitError('');
+    
+    try {
+      // Set demo credentials
+      setForm({
+        email: 'john.admin@example.com',
+        password: 'admin_password_123'
+      });
+      
+      // Small delay to allow state to update
+      setTimeout(async () => {
+        try {
+          // Submit the form with demo credentials
+          const result = await AdminAuthAPI.login('john.admin@example.com', 'admin_password_123');
+          
+          if (!result.success) {
+            throw new Error(result.error || 'Login failed');
+          }
+
+          // Redirect to admin dashboard
+          window.location.href = '/admin/dashboard';
+        } catch (error: any) {
+          setSubmitError('Demo login failed. Please try again.');
+          console.error('Demo login error:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      }, 100);
+    } catch (error) {
+      setSubmitError('Demo login failed. Please try again.');
+      console.error('Demo login error:', error);
+      setIsLoading(false);
+    }
+  };
+
   return (
     <form
       className="flex flex-col gap-6"
@@ -302,13 +340,7 @@ const AdminLoginForm: React.FC = () => {
       {/* Demo Login Button */}
       <button
         type="button"
-        onClick={() => {
-          // Set demo credentials
-          setForm({
-            email: 'john.admin@example.com',
-            password: 'admin_password_123'
-          });
-        }}
+        onClick={handleDemoLogin}
         className="w-full py-3 px-4 rounded-lg font-medium text-gray-300 border border-gray-600 hover:border-gray-500 hover:text-white transition-all duration-200 flex items-center justify-center gap-2 bg-gray-800/50 hover:bg-gray-700/50"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

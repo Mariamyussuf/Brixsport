@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useLoggerAuth } from '@/hooks/useAuth';
 import LoggerDashboard from '@/components/logger/dashboard/LoggerDashboard';
+import { useRouter } from 'next/navigation';
 
 const LoggerPage = () => {
   const { user, isAuthenticated, hasLoggerPermissions } = useLoggerAuth();
+  const router = useRouter();
 
   // If user is authenticated and has logger permissions, show dashboard
   if (isAuthenticated && hasLoggerPermissions) {
@@ -22,7 +24,7 @@ const LoggerPage = () => {
             You need to be logged in with logger permissions to access this platform.
           </p>
           <button
-            onClick={() => window.location.href = '/logger/login'}
+            onClick={() => router.push('/logger/login')}
             className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200"
           >
             Logger Login
@@ -34,7 +36,8 @@ const LoggerPage = () => {
 
   // If user is not authenticated, redirect to logger login
   if (typeof window !== 'undefined') {
-    window.location.href = '/logger/login';
+    router.push('/logger/login');
+    return null;
   }
 
   return null;

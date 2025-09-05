@@ -25,8 +25,15 @@ export function middleware(request: NextRequest) {
     // Route admin subdomain requests
     console.log(`[Middleware] Routing admin request: ${pathname}`);
     
-    // If the request is not for the admin section, redirect to admin
-    if (!pathname.startsWith('/admin')) {
+    // Specific handling for admin routes
+    if (pathname === '/admin/login') {
+      // Don't redirect /admin/login - this is the login page
+      return NextResponse.next();
+    } else if (pathname === '/admin') {
+      // Redirect /admin to /admin/login
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    } else if (!pathname.startsWith('/admin')) {
+      // If the request is not for the admin section, redirect to admin
       // But allow API routes and static assets
       if (!pathname.startsWith('/api') && !pathname.startsWith('/_next') && pathname !== '/favicon.ico') {
         return NextResponse.redirect(new URL(`/admin${pathname === '/' ? '' : pathname}`, request.url));
@@ -34,11 +41,11 @@ export function middleware(request: NextRequest) {
     }
     
     return NextResponse.next();
-  } else if (host === 'brixsports.com' || host === 'www.brixsports.com' || host?.endsWith('vercel.app') || host === 'brixsport.vercel.app') {
-    // Route main domain requests
+  } else if (host === 'brixsports.com' || host === 'www.brixsports.com' || host?.endsWith('vercel.app') || host === 'brixsport.vercel.app' || host?.startsWith('localhost')) {
+    // Route main domain requests (including localhost for development)
     console.log(`[Middleware] Routing main site request: ${pathname}`);
     
-    // Allow logger and admin routes on vercel.app domains for testing
+    // Allow logger and admin routes on vercel.app domains and localhost for testing
     if (pathname.startsWith('/logger') || pathname.startsWith('/admin')) {
       return NextResponse.next();
     }

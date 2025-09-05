@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 // Types
 interface FormData {
@@ -17,6 +18,7 @@ interface ValidationErrors {
 
 const LoggerLoginForm: React.FC = () => {
   const { login, demoLogin } = useAuth();
+  const router = useRouter();
   // Form state
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState<FormData>({
@@ -98,7 +100,7 @@ const LoggerLoginForm: React.FC = () => {
       });
 
       // Redirect to logger dashboard
-      window.location.href = '/logger';
+      router.push('/logger');
     } catch (error: any) {
       if (error.message === 'INVALID_ACCESS_CODE') {
         setSubmitError('Invalid access code. Please try again.');
@@ -111,15 +113,21 @@ const LoggerLoginForm: React.FC = () => {
     }
   };
 
-  // Handle demo login
+  // Handle demo login - specifically for logger
   const handleDemoLogin = async () => {
     setIsLoading(true);
     setSubmitError('');
     
     try {
+      // Set URL params to indicate this is a logger demo
+      const url = new URL(window.location.href);
+      url.searchParams.set('logger', 'true');
+      url.searchParams.set('role', 'logger');
+      window.history.replaceState({}, '', url.toString());
+      
       await demoLogin();
       // Redirect to logger dashboard for demo users
-      window.location.href = '/logger';
+      router.push('/logger');
     } catch (error) {
       setSubmitError('Demo login failed. Please try again.');
       console.error('Demo login error:', error);
