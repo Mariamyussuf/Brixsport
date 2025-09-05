@@ -193,7 +193,7 @@ const LoggerPWARegister = () => {
     
     try {
       console.log('[Logger PWA] Showing install prompt');
-      await installPrompt.prompt();
+      const result = await installPrompt.prompt();
       
       const { outcome } = await installPrompt.userChoice;
       console.log('[Logger PWA] Install prompt result:', outcome);
@@ -216,6 +216,7 @@ const LoggerPWARegister = () => {
       // Even on error, mark as shown to prevent repeated prompts
       localStorage.setItem('logger-pwa-install-tip-shown', 'true');
       setShowInstallTip(false);
+      setInstallPrompt(null);
     }
   }, [installPrompt]);
 

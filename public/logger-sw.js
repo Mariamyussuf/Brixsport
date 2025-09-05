@@ -39,7 +39,8 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
+          // Only delete caches that start with 'logger' but are not the current cache
+          if (cacheName.startsWith('logger') && cacheName !== CACHE_NAME) {
             console.log('[Logger SW] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
@@ -64,6 +65,11 @@ self.addEventListener('fetch', (event) => {
     url.hostname === self.location.hostname;
   
   if (isLoggerRequest) {
+    // Only cache GET requests
+    if (event.request.method !== 'GET') {
+      return;
+    }
+    
     event.respondWith(
       caches.match(event.request)
         .then((response) => {

@@ -201,7 +201,7 @@ export default function PWARegister() {
     
     try {
       console.log('[PWA] Showing install prompt');
-      await installPrompt.prompt();
+      const result = await installPrompt.prompt();
       
       const { outcome } = await installPrompt.userChoice;
       console.log('[PWA] Install prompt result:', outcome);
@@ -230,6 +230,7 @@ export default function PWARegister() {
       // Even on error, mark as shown to prevent repeated prompts
       localStorage.setItem('pwa-install-tip-shown', 'true');
       setShowInstallTip(false);
+      setInstallPrompt(null);
     }
   }, [installPrompt, pushNotificationSupported, isIOS]);
 

@@ -33,7 +33,8 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
+          // Only delete caches that start with 'admin' but are not the current cache
+          if (cacheName.startsWith('admin') && cacheName !== CACHE_NAME) {
             console.log('[Admin SW] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
@@ -50,6 +51,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // Only handle requests for the admin paths
   if (event.request.url.includes('/admin')) {
+    // Only cache GET requests
+    if (event.request.method !== 'GET') {
+      return;
+    }
+    
     event.respondWith(
       caches.match(event.request)
         .then((response) => {
