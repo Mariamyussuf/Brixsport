@@ -4,7 +4,6 @@ import NoFlashThemeScript from "@/components/shared/NoFlashThemeScript";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import { AdminProvider } from "@/contexts/AdminContext";
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { verifyAdminToken } from '@/lib/adminAuth';
 
 export const viewport = {
@@ -34,20 +33,26 @@ export default async function AdminLayout({
   const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
 
-  if (!token) {
-    redirect('/admin/login');
+  // Always render the layout - authentication will be handled by client components
+  // This prevents server-side redirect loops
+  if (token) {
+    const user = await verifyAdminToken(token);
+    if (user) {
+      return (
+        <ThemeProvider>
+          <AdminProvider currentAdmin={user}>
+            {children}
+          </AdminProvider>
+        </ThemeProvider>
+      );
+    }
   }
 
-  const user = await verifyAdminToken(token);
-  if (!user) {
-    redirect('/admin/login');
-  }
-
+  // If no valid token, still render the layout but without AdminProvider
+  // Authentication checks will happen in client components
   return (
     <ThemeProvider>
-      <AdminProvider currentAdmin={user}>
-        {children}
-      </AdminProvider>
+      {children}
     </ThemeProvider>
   );
 }

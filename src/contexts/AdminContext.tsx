@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from 'next/navigation';
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { adminService } from '@/lib/adminService';
@@ -101,6 +102,7 @@ interface AdminProviderProps {
 export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentAdmin = null }) => {
   const [state, dispatch] = useReducer(adminReducer, initialState);
   const { user, isAuthenticated, logout } = useAuth();
+  const router = useRouter();
   
   // Set auth token in admin service
   useEffect(() => {
@@ -343,7 +345,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
         // Clear admin state
         dispatch({ type: 'RESET' });
         // Redirect to admin login
-        window.location.href = '/admin/login';
+        router.push('/admin/login');
       }
     } catch (error) {
       console.error('Admin logout error:', error);
