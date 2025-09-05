@@ -1,5 +1,6 @@
 import React from 'react';
 import '../globals.css';
+import AdminPWARegister from '@/components/shared/AdminPWARegister';
 import NoFlashThemeScript from "@/components/shared/NoFlashThemeScript";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import { AdminProvider } from "@/contexts/AdminContext";
@@ -54,6 +55,7 @@ export default async function AdminLayout({
       <body>
         <ThemeProvider>
           <AdminProvider currentAdmin={user}>
+            <AdminPWARegister />
             {children}
           </AdminProvider>
         </ThemeProvider>

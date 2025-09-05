@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from 'react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -13,53 +13,47 @@ declare global {
   }
 }
 
-export default function PWARegister() {
+const AdminPWARegister = () => {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallTip, setShowInstallTip] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSInstallTip, setShowIOSInstallTip] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [pushNotificationSupported, setPushNotificationSupported] = useState(false);
-  const [showPushPrompt, setShowPushPrompt] = useState(false);
 
   // Register service worker with enhanced error handling
   const registerServiceWorker = useCallback(async () => {
     if (!('serviceWorker' in navigator)) {
-      console.log('[PWA] Service Worker not supported');
+      console.log('[Admin PWA] Service Worker not supported');
       return;
     }
 
     try {
-      // Check if we're in admin or logger sections before registering
+      // Check if we're in the admin section before registering
       const isAdminPath = window.location.pathname.startsWith('/admin');
-      const isLoggerPath = window.location.pathname.startsWith('/logger');
-      
-      if (isAdminPath || isLoggerPath) {
-        console.log('[PWA] In admin or logger path, skipping main PWA registration');
+      if (!isAdminPath) {
+        console.log('[Admin PWA] Not in admin path, skipping registration');
         return;
       }
       
-      const registration = await navigator.serviceWorker.register('/service-worker.js', {
-        updateViaCache: 'none',
-        scope: '/'
-      });
+      // Register service worker with root scope for admin.brixsport.com
+      const registration = await navigator.serviceWorker.register('/admin-sw.js', { scope: '/' });
       
-      console.log('[PWA] ServiceWorker registered successfully:', registration.scope);
+      console.log('[Admin PWA] ServiceWorker registered successfully:', registration.scope);
       
       // Enhanced update detection
       registration.addEventListener('updatefound', () => {
         const newWorker = registration.installing;
         if (newWorker) {
-          console.log('[PWA] New service worker found, installing...');
+          console.log('[Admin PWA] New service worker found, installing...');
           
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed') {
               if (navigator.serviceWorker.controller) {
-                console.log('[PWA] New content available, will show update prompt');
+                console.log('[Admin PWA] New content available, will show update prompt');
                 setUpdateAvailable(true);
               } else {
-                console.log('[PWA] Content cached for offline use');
+                console.log('[Admin PWA] Content cached for offline use');
               }
             }
           });
@@ -68,7 +62,7 @@ export default function PWARegister() {
 
       // Check for updates immediately
       if (registration.waiting && navigator.serviceWorker.controller) {
-        console.log('[PWA] Update available immediately');
+        console.log('[Admin PWA] Update available immediately');
         setUpdateAvailable(true);
       }
 
@@ -78,7 +72,7 @@ export default function PWARegister() {
       }, 30 * 60 * 1000);
 
     } catch (error) {
-      console.error('[PWA] ServiceWorker registration failed:', error);
+      console.error('[Admin PWA] ServiceWorker registration failed:', error);
     }
   }, []);
 
@@ -98,14 +92,9 @@ export default function PWARegister() {
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(iOS);
     
-    // Check push notification support
-    const pushSupported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-    setPushNotificationSupported(pushSupported);
-    
-    console.log('[PWA] Platform detection:', { 
+    console.log('[Admin PWA] Platform detection:', { 
       isStandalone: isInStandaloneMode, 
-      isIOS: iOS, 
-      pushSupported 
+      isIOS: iOS
     });
     
     // Register service worker
@@ -118,11 +107,9 @@ export default function PWARegister() {
     
     if (isIOS) {
       // iOS: Show manual install instructions
-      const hasShownIOSTip = localStorage.getItem('pwa-ios-install-tip-shown');
-      const hasShownIOSEducation = localStorage.getItem('pwa-ios-education-shown');
+      const hasShownIOSTip = localStorage.getItem('admin-pwa-ios-install-tip-shown');
       
-      if (!hasShownIOSTip && !hasShownIOSEducation) {
-        // Show educational prompt first
+      if (!hasShownIOSTip) {
         setTimeout(() => {
           setShowIOSInstallTip(true);
         }, 3000);
@@ -133,21 +120,20 @@ export default function PWARegister() {
     // Android/Desktop: Handle beforeinstallprompt
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
       e.preventDefault();
-      console.log('[PWA] Install prompt intercepted');
+      console.log('[Admin PWA] Install prompt intercepted');
       
       setInstallPrompt(e);
       
-      const hasBeenInstalled = localStorage.getItem('pwa-installed');
+      const hasBeenInstalled = localStorage.getItem('admin-pwa-installed');
       if (hasBeenInstalled) {
-        console.log('[PWA] App already installed, hiding prompt.');
+        console.log('[Admin PWA] App already installed, hiding prompt.');
         return;
       }
 
-      const hasShownTip = localStorage.getItem('pwa-install-tip-shown');
-      const installDismissedAt = localStorage.getItem('pwa-install-dismissed-at');
-      const lastPromptShownAt = localStorage.getItem('pwa-last-prompt-shown-at');
+      const hasShownTip = localStorage.getItem('admin-pwa-install-tip-shown');
+      const installDismissedAt = localStorage.getItem('admin-pwa-install-dismissed-at');
+      const lastPromptShownAt = localStorage.getItem('admin-pwa-last-prompt-shown-at');
       
-    
       const now = Date.now();
       const shownRecently = lastPromptShownAt && (now - parseInt(lastPromptShownAt) < 24 * 60 * 60 * 1000);
       const dismissedRecently = installDismissedAt && (now - parseInt(installDismissedAt) < 7 * 24 * 60 * 60 * 1000);
@@ -156,24 +142,17 @@ export default function PWARegister() {
         setTimeout(() => {
           setShowInstallTip(true);
           // Record when we show the prompt
-          localStorage.setItem('pwa-last-prompt-shown-at', now.toString());
+          localStorage.setItem('admin-pwa-last-prompt-shown-at', now.toString());
         }, 2000);
       }
     };
 
     const handleAppInstalled = () => {
-      console.log('[PWA] App successfully installed');
+      console.log('[Admin PWA] App successfully installed');
       setShowInstallTip(false);
       setInstallPrompt(null);
-      localStorage.setItem('pwa-install-tip-shown', 'true');
-      localStorage.setItem('pwa-installed', 'true'); // Remember that the app has been installed
-      
-      // Show push notification prompt after installation (for supported platforms)
-      if (pushNotificationSupported && !isIOS) {
-        setTimeout(() => {
-          setShowPushPrompt(true);
-        }, 2000);
-      }
+      localStorage.setItem('admin-pwa-install-tip-shown', 'true');
+      localStorage.setItem('admin-pwa-installed', 'true');
     };
     
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -183,51 +162,45 @@ export default function PWARegister() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as any);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, [isStandalone, isIOS, pushNotificationSupported]);
+  }, [isStandalone, isIOS]);
 
   // Handle PWA installation
   const handleInstallClick = useCallback(async () => {
     if (!installPrompt) return;
     
     try {
-      console.log('[PWA] Showing install prompt');
+      console.log('[Admin PWA] Showing install prompt');
       await installPrompt.prompt();
       
       const { outcome } = await installPrompt.userChoice;
-      console.log('[PWA] Install prompt result:', outcome);
+      console.log('[Admin PWA] Install prompt result:', outcome);
       
       setInstallPrompt(null);
       setShowInstallTip(false);
       
       // Mark as shown regardless of outcome to prevent repeated prompts
-      localStorage.setItem('pwa-install-tip-shown', 'true');
+      localStorage.setItem('admin-pwa-install-tip-shown', 'true');
       
       if (outcome === 'accepted') {
-        localStorage.setItem('pwa-installed', 'true');
-        // Show push notification prompt after installation
-        if (pushNotificationSupported && !isIOS) {
-          setTimeout(() => {
-            setShowPushPrompt(true);
-          }, 2000);
-        }
+        localStorage.setItem('admin-pwa-installed', 'true');
       } else {
         // User dismissed the prompt
-        localStorage.setItem('pwa-install-dismissed-at', Date.now().toString());
+        localStorage.setItem('admin-pwa-install-dismissed-at', Date.now().toString());
       }
       
     } catch (error) {
-      console.error('[PWA] Install prompt error:', error);
+      console.error('[Admin PWA] Install prompt error:', error);
       // Even on error, mark as shown to prevent repeated prompts
-      localStorage.setItem('pwa-install-tip-shown', 'true');
+      localStorage.setItem('admin-pwa-install-tip-shown', 'true');
       setShowInstallTip(false);
     }
-  }, [installPrompt, pushNotificationSupported, isIOS]);
+  }, [installPrompt]);
 
-  // Handle app updates with iOS fix
+  // Handle app updates
   const handleUpdate = useCallback(() => {
     if (!navigator.serviceWorker) return;
     
-    console.log('[PWA] Updating app...');
+    console.log('[Admin PWA] Updating app...');
     
     // Reset the update available state immediately
     setUpdateAvailable(false);
@@ -260,56 +233,43 @@ export default function PWARegister() {
     });
   }, [isIOS, isStandalone]);
 
-  // Handle push notification permission
-  const handleEnablePushNotifications = useCallback(async () => {
-    if (!pushNotificationSupported) return;
-    
-    try {
-      const permission = await Notification.requestPermission();
-      console.log('[PWA] Push notification permission:', permission);
-      
-      if (permission === 'granted') {
-        // Here you would typically subscribe to push notifications
-        console.log('[PWA] Push notifications enabled');
-      }
-      
-      setShowPushPrompt(false);
-      localStorage.setItem('pwa-push-prompted', 'true');
-      
-    } catch (error) {
-      console.error('[PWA] Push notification error:', error);
-      setShowPushPrompt(false);
-    }
-  }, [pushNotificationSupported]);
-
   // Dismiss functions
   const dismissInstallTip = useCallback(() => {
     setShowInstallTip(false);
-    setInstallPrompt(null); // Clear the prompt reference
-    localStorage.setItem('pwa-install-dismissed-at', Date.now().toString());
-    // Also mark as shown so it doesn't reappear immediately
-    localStorage.setItem('pwa-install-tip-shown', 'true');
-    // Record when it was dismissed
-    localStorage.setItem('pwa-last-prompt-shown-at', Date.now().toString());
+    setInstallPrompt(null);
+    localStorage.setItem('admin-pwa-install-dismissed-at', Date.now().toString());
+    localStorage.setItem('admin-pwa-install-tip-shown', 'true');
+    localStorage.setItem('admin-pwa-last-prompt-shown-at', Date.now().toString());
   }, []);
   
   const dismissIOSInstallTip = useCallback(() => {
     setShowIOSInstallTip(false);
-    localStorage.setItem('pwa-ios-install-tip-shown', 'true');
-    // Record when it was dismissed
-    localStorage.setItem('pwa-last-prompt-shown-at', Date.now().toString());
+    localStorage.setItem('admin-pwa-ios-install-tip-shown', 'true');
+    localStorage.setItem('admin-pwa-last-prompt-shown-at', Date.now().toString());
   }, []);
 
-  const dismissPushPrompt = useCallback(() => {
-    setShowPushPrompt(false);
-    localStorage.setItem('pwa-push-prompted', 'true');
+  // Function to show update notification (kept from original implementation)
+  useEffect(() => {
+    // Only run in admin paths
+    if (typeof window === "undefined" || !window.location.pathname.startsWith('/admin')) return;
+    
+    // Listen for messages from service worker
+    navigator.serviceWorker.addEventListener('message', event => {
+      if (event.data && event.data.type === 'UPDATE_AVAILABLE') {
+        setUpdateAvailable(true);
+      }
+    });
+    
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', () => {});
+    };
   }, []);
 
   return (
     <>
       {/* App Update Notification - Highest Priority */}
       {updateAvailable && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white rounded-lg shadow-lg p-4 z-50 max-w-sm mx-4">
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-600 text-white rounded-lg shadow-lg p-4 z-50 max-w-sm mx-4">
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0">
               <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
@@ -324,7 +284,7 @@ export default function PWARegister() {
             </div>
             <button 
               onClick={handleUpdate}
-              className="bg-white text-blue-600 px-4 py-2 rounded-md font-medium text-sm hover:bg-blue-50 transition-colors"
+              className="bg-white text-red-600 px-4 py-2 rounded-md font-medium text-sm hover:bg-red-50 transition-colors"
             >
               Update
             </button>
@@ -337,7 +297,7 @@ export default function PWARegister() {
         <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 z-50 max-w-sm border border-gray-200 dark:border-gray-700">
           <div className="flex items-start space-x-3">
             <div className="flex-shrink-0">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
@@ -345,7 +305,7 @@ export default function PWARegister() {
             </div>
             <div className="flex-1">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-                Install BrixSports App
+                Install Admin App
               </h3>
               <p className="text-xs text-gray-600 dark:text-gray-300 mb-3">
                 Get faster access, offline support, and push notifications
@@ -353,7 +313,7 @@ export default function PWARegister() {
               <div className="flex space-x-2">
                 <button
                   onClick={handleInstallClick}
-                  className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors"
+                  className="flex-1 bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-red-700 transition-colors"
                 >
                   Install
                 </button>
@@ -382,7 +342,7 @@ export default function PWARegister() {
             </div>
             <div className="flex-1">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-                Install BrixSports
+                Install Admin App
               </h3>
               <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1 mb-3">
                 <p>To install on your iPhone:</p>
@@ -402,43 +362,8 @@ export default function PWARegister() {
           </div>
         </div>
       )}
-
-      {/* Push Notification Prompt (Android only, after install) */}
-      {showPushPrompt && !isIOS && isStandalone && (
-        <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 z-50 max-w-sm border border-gray-200 dark:border-gray-700">
-          <div className="flex items-start space-x-3">
-            <div className="flex-shrink-0">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5-5-5h5V3h5v14z" />
-                </svg>
-              </div>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-                Stay Updated
-              </h3>
-              <p className="text-xs text-gray-600 dark:text-gray-300 mb-3">
-                Enable notifications to get live scores and match updates
-              </p>
-              <div className="flex space-x-2">
-                <button
-                  onClick={handleEnablePushNotifications}
-                  className="flex-1 bg-green-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-green-700 transition-colors"
-                >
-                  Enable
-                </button>
-                <button
-                  onClick={dismissPushPrompt}
-                  className="px-3 py-2 text-gray-500 dark:text-gray-400 text-xs font-medium hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-                >
-                  Skip
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
-}
+};
+
+export default AdminPWARegister;

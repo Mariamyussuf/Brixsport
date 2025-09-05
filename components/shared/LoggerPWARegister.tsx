@@ -29,6 +29,13 @@ const LoggerPWARegister = () => {
     }
 
     try {
+      // Check if we're in the logger section before registering
+      const isLoggerPath = window.location.pathname.startsWith('/logger');
+      if (!isLoggerPath) {
+        console.log('[Logger PWA] Not in logger path, skipping registration');
+        return;
+      }
+      
       // Register service worker with root scope for logger.brixsport.com
       const registration = await navigator.serviceWorker.register('/logger-sw.js', { scope: '/' });
       
@@ -243,6 +250,9 @@ const LoggerPWARegister = () => {
 
   // Function to show update notification (kept from original implementation)
   useEffect(() => {
+    // Only run in logger paths
+    if (typeof window === "undefined" || !window.location.pathname.startsWith('/logger')) return;
+    
     // Listen for messages from service worker
     navigator.serviceWorker.addEventListener('message', event => {
       if (event.data && event.data.type === 'UPDATE_AVAILABLE') {
