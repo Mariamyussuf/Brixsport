@@ -290,7 +290,7 @@ const FootballFormation: React.FC = () => {
       onClick={onClick}
     >
       <div
-        className={`relative w-8 h-8 sm:w-11 sm:h-11 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center text-white font-bold text-[8px] sm:text-xs transition-all duration-300 hover:scale-110 shadow-lg ${
+        className={`relative w-6 h-6 sm:w-11 sm:h-11 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center text-white font-bold text-[6px] sm:text-xs transition-all duration-300 hover:scale-110 shadow-lg ${
           selectedPlayer?.id === player.id && selectedPlayer.name === player.name ? 'ring-2 sm:ring-3 ring-yellow-300 ring-offset-1 sm:ring-offset-2 dark:ring-offset-gray-800' : ''
         }`}
         style={{ backgroundColor: team.color }}
@@ -298,27 +298,27 @@ const FootballFormation: React.FC = () => {
         {player.id}
         
         {player.isBooked && !player.isRed && (
-          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-3 bg-yellow-400 rounded-sm border border-yellow-600 dark:border-yellow-300"></div>
+          <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 sm:w-2.5 sm:h-3 bg-yellow-400 rounded-sm border border-yellow-600 dark:border-yellow-300"></div>
         )}
         {player.isRed && (
-          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-3 bg-red-500 rounded-sm border border-red-700 dark:border-red-300"></div>
+          <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 sm:w-2.5 sm:h-3 bg-red-500 rounded-sm border border-red-700 dark:border-red-300"></div>
         )}
         {player.isCaptain && (
-          <div className="absolute -top-1 -left-1 sm:-top-1.5 sm:-left-1.5 w-3 h-1.5 sm:w-4 sm:h-2 bg-red-600 rounded-sm text-[6px] sm:text-[8px] flex items-center justify-center text-white font-bold">C</div>
+          <div className="absolute -top-1 -left-1 sm:-top-1.5 sm:-left-1.5 w-2.5 h-1.5 sm:w-4 sm:h-2 bg-red-600 rounded-sm text-[5px] sm:text-[8px] flex items-center justify-center text-white font-bold">C</div>
         )}
       </div>
       
       {/* Player name always visible */}
-      <div className="absolute top-9 sm:top-12 left-1/2 transform -translate-x-1/2 text-white text-[8px] sm:text-[10px] font-medium text-center whitespace-nowrap bg-black/60 dark:bg-black/80 px-1 py-0.5 rounded">
+      <div className="absolute top-7 sm:top-12 left-1/2 transform -translate-x-1/2 text-white text-[6px] sm:text-[10px] font-medium text-center whitespace-nowrap bg-black/60 dark:bg-black/80 px-1 py-0.5 rounded">
         {player.name.split(' ').pop()}
       </div>
     </div>
   );
 
   return (
-    <div className="w-full bg-white dark:bg-gray-800 shadow-2xl rounded-2xl overflow-hidden">
+    <div className="w-full bg-white dark:bg-gray-800 shadow-2xl rounded-none sm:rounded-2xl overflow-hidden">
       {/* Formation Selectors */}
-      <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4">
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b dark:border-gray-700 px-2 sm:px-6 py-3 sm:py-4">
         <div className="text-center text-base sm:text-lg font-bold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4">Formation Builder & Team Manager</div>
         
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6">
@@ -371,7 +371,7 @@ const FootballFormation: React.FC = () => {
       </div>
 
       {/* Team Headers */}
-      <div className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600 px-4 sm:px-6 py-3 sm:py-4">
+      <div className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600 px-2 sm:px-6 py-3 sm:py-4">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
           <div className="flex items-center gap-3 sm:gap-4">
             <div 
@@ -404,17 +404,17 @@ const FootballFormation: React.FC = () => {
       </div>
 
       {/* Field */}
-      <div className="relative bg-green-500 dark:bg-green-600 p-2 sm:p-4" style={{ aspectRatio: '5/6' }}>
-        <div className="absolute inset-2 sm:inset-4 bg-gradient-to-b from-green-400 via-green-500 to-green-600 dark:from-green-500 dark:via-green-600 dark:to-green-700 rounded-lg"></div>
+      <div className="relative bg-green-500 dark:bg-green-600 p-1 sm:p-4" style={{ aspectRatio: '5/6' }}>
+        <div className="absolute inset-1 sm:inset-4 bg-gradient-to-b from-green-400 via-green-500 to-green-600 dark:from-green-500 dark:via-green-600 dark:to-green-700 rounded-lg"></div>
         <div 
-          className="absolute inset-2 sm:inset-4 opacity-20 rounded-lg"
+          className="absolute inset-1 sm:inset-4 opacity-20 rounded-lg"
           style={{
             backgroundImage: `repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.3) 40px, rgba(255,255,255,0.3) 41px)`,
           }}
         ></div>
 
         {/* Field markings */}
-        <svg className="absolute inset-2 sm:inset-4 w-full h-full" viewBox="0 0 400 480" preserveAspectRatio="none">
+        <svg className="absolute inset-1 sm:inset-4 w-full h-full" viewBox="0 0 400 480" preserveAspectRatio="none">
           <rect x="10" y="10" width="380" height="460" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="2" rx="6"/>
           <line x1="10" y1="240" x2="390" y2="240" stroke="rgba(255,255,255,0.9)" strokeWidth="2"/>
           <circle cx="200" cy="240" r="60" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="2"/>
@@ -428,10 +428,10 @@ const FootballFormation: React.FC = () => {
         </svg>
 
         {/* Team labels */}
-        <div className="absolute top-4 sm:top-8 left-4 sm:left-8 bg-black/50 dark:bg-black/70 text-white text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2 rounded-lg font-bold backdrop-blur-sm">
+        <div className="absolute top-2 sm:top-8 left-2 sm:left-8 bg-black/50 dark:bg-black/70 text-white text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2 rounded-lg font-bold backdrop-blur-sm">
           {team1.shortName} - {team1.formation}
         </div>
-        <div className="absolute bottom-4 sm:bottom-8 right-4 sm:right-8 bg-black/50 dark:bg-black/70 text-white text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2 rounded-lg font-bold backdrop-blur-sm">
+        <div className="absolute bottom-2 sm:bottom-8 right-2 sm:right-8 bg-black/50 dark:bg-black/70 text-white text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2 rounded-lg font-bold backdrop-blur-sm">
           {team2.shortName} - {team2.formation}
         </div>
 
@@ -459,7 +459,7 @@ const FootballFormation: React.FC = () => {
 
       {/* Substitutes Panel */}
       {showSubstitutes && (
-        <div className="bg-gray-50 dark:bg-gray-700 border-t dark:border-gray-600 px-4 sm:px-6 py-3 sm:py-4">
+        <div className="bg-gray-50 dark:bg-gray-700 border-t dark:border-gray-600 px-2 sm:px-6 py-3 sm:py-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <h3 className="font-bold text-sm text-gray-800 dark:text-gray-100 mb-2 sm:mb-3">🔄 {team1.name} Substitutes</h3>
@@ -488,7 +488,7 @@ const FootballFormation: React.FC = () => {
       )}
 
       {/* Legend */}
-      <div className="bg-gray-50 dark:bg-gray-700 border-t dark:border-gray-600 px-4 sm:px-6 py-2 sm:py-3">
+      <div className="bg-gray-50 dark:bg-gray-700 border-t dark:border-gray-600 px-2 sm:px-6 py-2 sm:py-3">
         <div className="flex flex-wrap justify-center items-center gap-3 sm:gap-6 text-[10px] sm:text-sm text-gray-600 dark:text-gray-300">
           <div className="flex items-center gap-1 sm:gap-2">
             <div className="w-2 h-2 sm:w-2.5 sm:h-3 bg-yellow-400 rounded-sm border border-yellow-600 dark:border-yellow-300"></div>
@@ -508,7 +508,7 @@ const FootballFormation: React.FC = () => {
 
       {/* Selected player info */}
       {selectedPlayer && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border-t border-blue-200 dark:border-blue-700 px-4 sm:px-6 py-3 sm:py-4">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border-t border-blue-200 dark:border-blue-700 px-2 sm:px-6 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
               <div className="text-base sm:text-lg font-bold text-blue-900 dark:text-blue-100">{selectedPlayer.name}</div>
