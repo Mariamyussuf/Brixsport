@@ -48,6 +48,14 @@ export default function SettingsSheet({ open, onClose }: SettingsSheetProps) {
     });
   };
 
+  // Get default theme from environment variables
+  const defaultTheme = process.env.NEXT_PUBLIC_DEFAULT_THEME || 'system';
+
+  // Get available themes from environment variables
+  const availableThemes = (process.env.NEXT_PUBLIC_THEMES?.split(',') || ['light', 'dark', 'system']) as Array<"light" | "dark" | "system">;
+
+ 
+
   return (
     <div className="fixed inset-0 z-[1100]">
       {/* Backdrop */}
@@ -58,8 +66,8 @@ export default function SettingsSheet({ open, onClose }: SettingsSheetProps) {
       />
 
       {/* Sheet */}
-      <div className="absolute inset-x-0 bottom-0 max-h-[90vh] overflow-y-auto rounded-t-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xl border-t border-gray-200 dark:border-white/10">
-        <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+      <div className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xl border-t border-gray-200 dark:border-white/10">
+        <div className="px-5 pt-4 pb-2 flex items-center justify-between sticky top-0 bg-white dark:bg-slate-900 z-10 border-b border-gray-100 dark:border-white/10">
           <div className="flex items-center gap-2">
             <Settings className="w-5 h-5" />
             <h2 className="text-base font-semibold">Settings</h2>
@@ -78,42 +86,23 @@ export default function SettingsSheet({ open, onClose }: SettingsSheetProps) {
           {/* Debug line to verify state updates in production */}
           <div className="mb-2 text-[11px] text-gray-500 dark:text-gray-400">Theme: <strong>{theme}</strong> • Resolved: <strong>{resolvedTheme}</strong></div>
           <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => setTheme("light")}
-              className={`flex flex-col items-center gap-2 rounded-xl border p-3 transition-colors hover:bg-gray-50 dark:hover:bg-white/10 ${
-                theme === "light" ? "border-blue-500" : "border-gray-200 dark:border-white/10"
-              }`}
-              data-theme="light"
-              role="radio"
-              aria-checked={theme === "light"}
-            >
-              <Sun className="w-5 h-5" />
-              <span className="text-xs">Light</span>
-            </button>
-            <button
-              onClick={() => setTheme("dark")}
-              className={`flex flex-col items-center gap-2 rounded-xl border p-3 transition-colors hover:bg-gray-50 dark:hover:bg-white/10 ${
-                theme === "dark" ? "border-blue-500" : "border-gray-200 dark:border-white/10"
-              }`}
-              data-theme="dark"
-              role="radio"
-              aria-checked={theme === "dark"}
-            >
-              <Moon className="w-5 h-5" />
-              <span className="text-xs">Dark</span>
-            </button>
-            <button
-              onClick={() => setTheme("system")}
-              className={`flex flex-col items-center gap-2 rounded-xl border p-3 transition-colors hover:bg-gray-50 dark:hover:bg-white/10 ${
-                theme === "system" ? "border-blue-500" : "border-gray-200 dark:border-white/10"
-              }`}
-              data-theme="system"
-              role="radio"
-              aria-checked={theme === "system"}
-            >
-              <Monitor className="w-5 h-5" />
-              <span className="text-xs">System</span>
-            </button>
+            {availableThemes.map((themeOption) => (
+              <button
+                key={themeOption}
+                onClick={() => setTheme(themeOption)}
+                className={`flex flex-col items-center gap-2 rounded-xl border p-3 transition-colors hover:bg-gray-50 dark:hover:bg-white/10 ${
+                  theme === themeOption ? "border-blue-500" : "border-gray-200 dark:border-white/10"
+                }`}
+                data-theme={themeOption}
+                role="radio"
+                aria-checked={theme === themeOption}
+              >
+                {themeOption === 'light' && <Sun className="w-5 h-5" />}
+                {themeOption === 'dark' && <Moon className="w-5 h-5" />}
+                {themeOption === 'system' && <Monitor className="w-5 h-5" />}
+                <span className="text-xs">{themeOption.charAt(0).toUpperCase() + themeOption.slice(1)}</span>
+              </button>
+            ))}
           </div>
         </div>
 
