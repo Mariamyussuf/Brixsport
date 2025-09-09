@@ -204,7 +204,7 @@ const MatchDetailsScreen = () => {
     // Only football has formations
     if (match.sportType === 'football') {
       return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 w-full">
+        <div className="w-full">
           <FootballFormation />
         </div>
       );
@@ -227,7 +227,7 @@ const MatchDetailsScreen = () => {
       
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 w-full">
         {/* Header */}
-        <div className="bg-slate-800 dark:bg-slate-900 w-full px-6 py-4">
+        <div className="bg-slate-800 dark:bg-slate-900 w-full px-0 sm:px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
               <button onClick={() => router.back()} className="text-white">
@@ -255,7 +255,7 @@ const MatchDetailsScreen = () => {
           </div>
 
           {/* Match Info */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4 w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-none sm:rounded-lg p-4 mb-4 w-full">
             <div className="flex items-center justify-between">
               <div className="flex flex-col items-center">
                 <TeamFlag flagColors={match.homeFlagColors} />
@@ -285,10 +285,10 @@ const MatchDetailsScreen = () => {
         </div>
 
         {/* Tab Content */}
-        <div className="p-4 w-full">
+        <div className="w-full">
           {/* Only show tabs for football, basketball uses its own navigation */}
           {match.sportType === 'football' && (
-            <div className="mb-4 px-1">
+            <div className="mb-4 px-0 sm:px-1">
               <div className="flex w-full border-b border-slate-200 dark:border-gray-700 overflow-x-auto no-scrollbar">
                 <button
                   onClick={() => setActiveTab('summary')}
@@ -339,10 +339,22 @@ const MatchDetailsScreen = () => {
             renderSummaryScreen()
           ) : (
             <>
-              {activeTab === 'summary' && renderSummaryScreen()}
-              {activeTab === 'lineup' && renderLineupTab()}
+              {activeTab === 'summary' && (
+                <div className="px-0 sm:px-4 w-full">
+                  {renderSummaryScreen()}
+                </div>
+              )}
+              {activeTab === 'lineup' && (
+                <div className="px-0 sm:px-4 w-full">
+                  {renderLineupTab()}
+                </div>
+              )}
               {activeTab === 'formation' && renderFormationTab()}
-              {activeTab === 'stats' && renderStatsScreen()}
+              {activeTab === 'stats' && (
+                <div className="px-0 sm:px-4 w-full">
+                  {renderStatsScreen()}
+                </div>
+              )}
             </>
           )}
         </div>
