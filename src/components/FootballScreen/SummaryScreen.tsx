@@ -124,12 +124,6 @@ const SummaryScreen: React.FC<MatchSummaryProps> = ({
   return (
     <div className="w-full">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 w-full">
-        <div className="p-3 sm:p-4 border-b dark:border-gray-700 bg-slate-50 dark:bg-gray-700 rounded-t-lg">
-          <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center text-sm sm:text-base">
-            <Clock size={16} className="sm:size-18 mr-2 text-blue-600 dark:text-blue-400" />
-            Match Events
-          </h3>
-        </div>
         <div className="p-3 sm:p-6">
           {displayEvents.length === 0 ? (
             <div className="text-center py-8 sm:py-12 text-slate-500 dark:text-slate-400">
