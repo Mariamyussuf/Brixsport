@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface Player {
   id: number;
@@ -10,6 +11,7 @@ interface Player {
 }
 
 const MatchLineupTab: React.FC = () => {
+  const router = useRouter();
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
   // Mock data for team lineups
@@ -67,6 +69,11 @@ const MatchLineupTab: React.FC = () => {
     ] as Player[]
   };
 
+  const handlePlayerClick = (player: Player) => {
+    // Navigate to player profile page
+    router.push(`/player/${player.id}`);
+  };
+
   const renderPlayer = (player: Player) => (
     <div 
       key={player.id}
@@ -75,7 +82,7 @@ const MatchLineupTab: React.FC = () => {
           ? 'bg-blue-100 dark:bg-blue-900/50 border-blue-500 dark:border-blue-400' 
           : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
       }`}
-      onClick={() => setSelectedPlayer(player)}
+      onClick={() => handlePlayerClick(player)}
     >
       <div className="flex justify-between items-start">
         <div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
 import SmartImage from '../shared/SmartImage';
 
 interface PlayerStats {
@@ -59,7 +59,6 @@ const PlayerProfile: React.FC<PlayerProfileProps> = ({
                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M30 30c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20zm0 0c0 11.046 8.954 20 20 20s20-8.954 20-20-8.954-20-20-20-20 8.954-20 20z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
              }}>
         </div>
-        <ArrowLeft className="text-white w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 z-10 cursor-pointer hover:opacity-80 transition-opacity active:scale-95" />
         <Star className="text-white w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 z-10 cursor-pointer hover:opacity-80 transition-opacity active:scale-95" />
       </div>
 
