@@ -316,7 +316,7 @@ const FootballFormation: React.FC = () => {
   );
 
   return (
-    <div className="w-full bg-white dark:bg-gray-800 shadow-2xl rounded-none sm:rounded-2xl overflow-hidden">
+    <div className="w-full bg-white dark:bg-gray-800 shadow-none sm:shadow-2xl rounded-none sm:rounded-2xl overflow-hidden">
       {/* Formation Selectors */}
       <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b dark:border-gray-700 px-2 sm:px-6 py-3 sm:py-4">
         <div className="text-center text-base sm:text-lg font-bold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4">Formation Builder & Team Manager</div>

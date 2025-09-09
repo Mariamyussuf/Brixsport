@@ -227,17 +227,17 @@ const MatchDetailsScreen = () => {
       
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 w-full">
         {/* Header */}
-        <div className="bg-slate-800 dark:bg-slate-900 w-full px-0 sm:px-6 py-4">
+        <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-white/10 w-full px-0 sm:px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
-              <button onClick={() => router.back()} className="text-white">
+              <button onClick={() => router.back()} className="text-slate-900 dark:text-white">
                 <ArrowLeft className="w-6 h-6" />
               </button>
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
                   <div className="w-4 h-4 border-2 border-white rounded-full"></div>
                 </div>
-                <h1 className="text-xl font-normal text-white">BrixSports</h1>
+                <h1 className="text-xl font-normal text-slate-900 dark:text-white">BrixSports</h1>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -246,16 +246,16 @@ const MatchDetailsScreen = () => {
                   className={`w-6 h-6 ${
                     isFavorited
                       ? 'text-yellow-400 fill-yellow-400'
-                      : 'text-white'
+                      : 'text-slate-900 dark:text-white'
                   }`}
                 />
               </button>
-              <Bell className="w-6 h-6 text-white" />
+              <Bell className="w-6 h-6 text-slate-900 dark:text-white" />
             </div>
           </div>
 
           {/* Match Info */}
-          <div className="bg-white dark:bg-gray-800 rounded-none sm:rounded-lg p-4 mb-4 w-full">
+          <div className="bg-white dark:bg-slate-800 rounded-none sm:rounded-lg p-4 mb-4 w-full border-b border-gray-200 dark:border-white/10">
             <div className="flex items-center justify-between">
               <div className="flex flex-col items-center">
                 <TeamFlag flagColors={match.homeFlagColors} />
@@ -289,7 +289,7 @@ const MatchDetailsScreen = () => {
           {/* Only show tabs for football, basketball uses its own navigation */}
           {match.sportType === 'football' && (
             <div className="mb-4 px-0 sm:px-1">
-              <div className="flex w-full border-b border-slate-200 dark:border-gray-700 overflow-x-auto no-scrollbar">
+              <div className="flex w-full border-b border-gray-200 dark:border-white/10 overflow-x-auto no-scrollbar">
                 <button
                   onClick={() => setActiveTab('summary')}
                   className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
