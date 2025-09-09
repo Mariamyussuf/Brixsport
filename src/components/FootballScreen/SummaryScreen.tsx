@@ -176,8 +176,6 @@ const SummaryScreen: React.FC<MatchSummaryProps> = ({
   matchVenue,
   events
 }) => {
-  const [activeTab, setActiveTab] = useState<'facts' | 'commentary' | 'lineup' | 'table' | 'stats'>('facts');
-  
   // Sample events if none provided
   const displayEvents = events && events.length > 0 ? [...events].sort((a, b) => a.time - b.time) : [
     { time: 21, team: 'home', player: 'Calafiori', eventType: 'yellow' },
@@ -191,32 +189,8 @@ const SummaryScreen: React.FC<MatchSummaryProps> = ({
     { time: 90, team: 'away', player: '', eventType: 'full-time' }
   ];
 
-  // Tab navigation component
-  const TabNavigation = () => (
-    <div className="flex border-b border-gray-200 dark:border-gray-700">
-      {(['facts', 'commentary', 'lineup', 'table', 'stats'] as const).map((tab) => (
-        <button
-          key={tab}
-          className={`px-4 py-3 text-sm font-medium capitalize relative ${
-            activeTab === tab
-              ? 'text-green-600 dark:text-green-400'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-          }`}
-          onClick={() => setActiveTab(tab)}
-        >
-          {tab}
-          {activeTab === tab && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600 dark:bg-green-400"></div>
-          )}
-        </button>
-      ))}
-    </div>
-  );
-
   return (
     <div className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700">
-      <TabNavigation />
-      
       <div className="p-4">
         {displayEvents.length === 0 ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
