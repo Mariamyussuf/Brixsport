@@ -225,9 +225,9 @@ const MatchDetailsScreen = () => {
     <>
       <LoginPrompt isOpen={isLoginPromptOpen} onClose={() => setIsLoginPromptOpen(false)} />
       
-      <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 w-full">
-        {/* Fixed Header */}
-        <div className="fixed top-0 left-0 right-0 z-10 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-white/10 w-full px-0 sm:px-6 py-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 w-full">
+        {/* Header */}
+        <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-white/10 w-full px-0 sm:px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
               <button onClick={() => router.back()} className="text-slate-900 dark:text-white">
@@ -284,71 +284,78 @@ const MatchDetailsScreen = () => {
           </div>
         </div>
 
-        {/* Tab Navigation - Fixed below header */}
-        {match.sportType === 'football' && (
-          <div className="fixed top-[calc(4rem+140px)] left-0 right-0 z-10 bg-white dark:bg-slate-800 px-0 sm:px-1 border-b border-gray-200 dark:border-white/10">
-            <div className="flex w-full overflow-x-auto no-scrollbar">
-              <button
-                onClick={() => setActiveTab('summary')}
-                className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
-                  activeTab === 'summary'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                Summary
-              </button>
-              <button
-                onClick={() => setActiveTab('lineup')}
-                className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
-                  activeTab === 'lineup'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                Lineup
-              </button>
-              <button
-                onClick={() => setActiveTab('formation')}
-                className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
-                  activeTab === 'formation'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                Formation
-              </button>
-              <button
-                onClick={() => setActiveTab('stats')}
-                className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
-                  activeTab === 'stats'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                Stats
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Scrollable Content Area */}
-        <div className="flex-grow pt-[calc(4rem+180px)] mt-4">
+        {/* Tab Content */}
+        <div className="w-full">
           {/* Only show tabs for football, basketball uses its own navigation */}
           {match.sportType === 'football' && (
-            <div className="pt-12 px-0 sm:px-4 w-full">
-              {activeTab === 'summary' && renderSummaryScreen()}
-              {activeTab === 'lineup' && renderLineupTab()}
-              {activeTab === 'formation' && renderFormationTab()}
-              {activeTab === 'stats' && renderStatsScreen()}
+            <div className="mb-4 px-0 sm:px-1">
+              <div className="flex w-full border-b border-gray-200 dark:border-white/10 overflow-x-auto no-scrollbar">
+                <button
+                  onClick={() => setActiveTab('summary')}
+                  className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
+                    activeTab === 'summary'
+                      ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Summary
+                </button>
+                <button
+                  onClick={() => setActiveTab('lineup')}
+                  className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
+                    activeTab === 'lineup'
+                      ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Lineup
+                </button>
+                <button
+                  onClick={() => setActiveTab('formation')}
+                  className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
+                    activeTab === 'formation'
+                      ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Formation
+                </button>
+                <button
+                  onClick={() => setActiveTab('stats')}
+                  className={`pb-2 px-4 text-base font-medium whitespace-nowrap ${
+                    activeTab === 'stats'
+                      ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Stats
+                </button>
+              </div>
             </div>
           )}
           
           {/* For basketball, render the new component directly */}
-          {match.sportType === 'basketball' && (
-            <div className="pt-4 px-0 sm:px-4 w-full">
-              {renderSummaryScreen()}
-            </div>
+          {match.sportType === 'basketball' ? (
+            renderSummaryScreen()
+          ) : (
+            <>
+              {activeTab === 'summary' && (
+                <div className="px-0 sm:px-4 w-full">
+                  {renderSummaryScreen()}
+                </div>
+              )}
+              {activeTab === 'lineup' && (
+                <div className="px-0 sm:px-4 w-full">
+                  {renderLineupTab()}
+                </div>
+              )}
+              {activeTab === 'formation' && renderFormationTab()}
+              {activeTab === 'stats' && (
+                <div className="px-0 sm:px-4 w-full">
+                  {renderStatsScreen()}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
