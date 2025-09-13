@@ -36,6 +36,38 @@
   .gradient-fade-right {
     background: linear-gradient(to left, currentColor, transparent);
   }
+  
+  /* Intelligent Header Transitions */
+  .header-transition {
+    transition: all 300ms ease-in-out;
+  }
+  
+  .header-collapse {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border-width: 0 !important;
+  }
+  
+  .header-expand {
+    max-height: 200px !important;
+    opacity: 1 !important;
+  }
+  
+  .mini-header-show {
+    opacity: 1 !important;
+    height: auto !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  
+  .mini-header-hide {
+    opacity: 0 !important;
+    height: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
 }
 
 @media (prefers-color-scheme: dark) { 
