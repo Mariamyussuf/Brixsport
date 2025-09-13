@@ -1,29 +1,21 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { withApiRoleCheck } from './src/lib/roleCheck';
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const host = request.headers.get('host');
-  
-  console.log(`[Middleware] Running for path: ${pathname} on host: ${host}`);
 
-  // Handle domain-based routing
-  if (host === 'logger.brixsports.com' || host === 'logger.brixsport.vercel.app') {
-    // Route logger subdomain requests
-    console.log(`[Middleware] Routing logger request: ${pathname}`);
-    
-    // If the request is not for the logger section, redirect to logger
-    if (!pathname.startsWith('/logger')) {
-      // But allow API routes and static assets
-      if (!pathname.startsWith('/api') && !pathname.startsWith('/_next') && pathname !== '/favicon.ico') {
-        return NextResponse.redirect(new URL(`/logger${pathname === '/' ? '' : pathname}`, request.url));
-      }
-    }
-    
-    return NextResponse.next();
-  } else if (host === 'admin.brixsports.com' || host === 'admin.brixsport.vercel.app') {
-    // Route admin subdomain requests
-    console.log(`[Middleware] Routing admin request: ${pathname}`);
+  // API role-based access control
+  if (pathname.startsWith('/api')) {
+    return withApiRoleCheck(request);
+  }
+
+  // Handle admin/logger subdomain routing
+  if (host === 'admin.brixsports.com' || host === 'admin.brixsport.vercel.app' || 
+      (host?.startsWith('localhost') && pathname.startsWith('/admin'))) {
+    // Route admin/logger subdomain requests
+    console.log(`[Middleware] Routing admin/logger request: ${pathname}`);
     
     // Specific handling for admin routes
     if (pathname === '/admin/login') {
@@ -45,9 +37,9 @@ export function middleware(request: NextRequest) {
     // Route main domain requests (including localhost for development)
     console.log(`[Middleware] Routing main site request: ${pathname}`);
     
-    // Allow logger and admin routes on vercel.app domains and localhost for testing
-    if (pathname.startsWith('/logger') || pathname.startsWith('/admin')) {
-      return NextResponse.next();
+    // Prevent admin/logger routes on main domain
+    if (pathname.startsWith('/admin') || pathname.startsWith('/logger')) {
+      return NextResponse.redirect(new URL('/', request.url));
     }
     
     // Handle /auth route
