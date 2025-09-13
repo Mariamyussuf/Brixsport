@@ -30,6 +30,7 @@ const FootballFormation: React.FC = () => {
   const [team1Formation, setTeam1Formation] = useState('4-2-3-1');
   const [team2Formation, setTeam2Formation] = useState('4-3-3');
   const [showSubstitutes, setShowSubstitutes] = useState(false);
+  const [showFormationBuilder, setShowFormationBuilder] = useState(false);
 
   // Formation templates with position names
   const formations: Record<string, FormationTemplate> = {
@@ -141,7 +142,7 @@ const FootballFormation: React.FC = () => {
     { name: "André", pos: "CDM" },
     { name: "Martinelli", pos: "CDM" },
     { name: "Jhon Arias", pos: "CAM" },
-    { name: "Paulo Henrique Ganso", pos: "CAM" },
+    { name: "Paulo H. Ganso", pos: "CAM" },
     { name: "Marquinhos", pos: "RW" },
     { name: "Germán Cano", pos: "ST" }
   ];
@@ -159,27 +160,27 @@ const FootballFormation: React.FC = () => {
   ];
 
   const chelseaPlayers = [
-    { name: "Robert Sanchez", pos: "GK" },
+    { name: "R. Sanchez", pos: "GK" },
     { name: "Reece James", pos: "RB", captain: true },
     { name: "Thiago Silva", pos: "CB" },
-    { name: "Levi Colwill", pos: "CB" },
+    { name: "L. Colwill", pos: "CB" },
     { name: "Ben Chilwell", pos: "LB" },
-    { name: "Enzo Fernandez", pos: "CM" },
-    { name: "Moisés Caicedo", pos: "CM" },
-    { name: "Conor Gallagher", pos: "CM" },
+    { name: "E. Fernandez", pos: "CM" },
+    { name: "M. Caicedo", pos: "CM" },
+    { name: "C. Gallagher", pos: "CM" },
     { name: "Cole Palmer", pos: "RW" },
-    { name: "Nicolas Jackson", pos: "ST" },
-    { name: "Raheem Sterling", pos: "LW" }
+    { name: "N. Jackson", pos: "ST" },
+    { name: "R. Sterling", pos: "LW" }
   ];
 
   const chelseaSubstitutes = [
-    { name: "Đorđe Petrović", pos: "GK" },
+    { name: "Đ. Petrović", pos: "GK" },
     { name: "Malo Gusto", pos: "RB" },
     { name: "Axel Disasi", pos: "CB" },
     { name: "Romeo Lavia", pos: "CM" },
-    { name: "Carney Chukwuemeka", pos: "CM" },
-    { name: "Christopher Nkunku", pos: "CAM" },
-    { name: "Mykhaylo Mudryk", pos: "LW" },
+    { name: "C. Chukwuemeka", pos: "CM" },
+    { name: "C. Nkunku", pos: "CAM" },
+    { name: "M. Mudryk", pos: "LW" },
     { name: "Armando Broja", pos: "ST" },
     { name: "Ian Maatsen", pos: "LB" }
   ];
@@ -290,7 +291,7 @@ const FootballFormation: React.FC = () => {
       onClick={onClick}
     >
       <div
-        className={`relative w-6 h-6 sm:w-11 sm:h-11 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center text-white font-bold text-[6px] sm:text-xs transition-all duration-300 hover:scale-110 shadow-lg ${
+        className={`relative w-8 h-8 sm:w-11 sm:h-11 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center text-white font-bold text-[8px] sm:text-xs transition-all duration-300 hover:scale-110 shadow-lg ${
           selectedPlayer?.id === player.id && selectedPlayer.name === player.name ? 'ring-2 sm:ring-3 ring-yellow-300 ring-offset-1 sm:ring-offset-2 dark:ring-offset-gray-800' : ''
         }`}
         style={{ backgroundColor: team.color }}
@@ -309,7 +310,7 @@ const FootballFormation: React.FC = () => {
       </div>
       
       {/* Player name always visible */}
-      <div className="absolute top-7 sm:top-12 left-1/2 transform -translate-x-1/2 text-white text-[6px] sm:text-[10px] font-medium text-center whitespace-nowrap bg-black/60 dark:bg-black/80 px-1 py-0.5 rounded">
+      <div className="absolute top-9 sm:top-12 left-1/2 transform -translate-x-1/2 text-white text-[8px] sm:text-[10px] font-medium text-center whitespace-nowrap bg-black/60 dark:bg-black/80 px-1 py-0.5 rounded">
         {player.name.split(' ').pop()}
       </div>
     </div>
@@ -317,14 +318,65 @@ const FootballFormation: React.FC = () => {
 
   return (
     <div className="w-full bg-white dark:bg-gray-800 shadow-none sm:shadow-2xl rounded-none sm:rounded-2xl overflow-hidden">
-      {/* Formation Selectors */}
-      <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b dark:border-gray-700 px-2 sm:px-6 py-3 sm:py-4">
-        <div className="text-center text-base sm:text-lg font-bold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4">Formation Builder & Team Manager</div>
+      {/* Mobile: Compact Formation Builder */}
+      <div className="block sm:hidden bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b dark:border-gray-700">
+        <div className="px-3 py-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 text-sm">
+              <span className="font-semibold text-gray-800 dark:text-gray-100">
+                {team1.shortName} {team1.formation} vs {team2.shortName} {team2.formation}
+              </span>
+            </div>
+            <button
+              onClick={() => setShowFormationBuilder(!showFormationBuilder)}
+              className="text-xs bg-blue-500 text-white px-2 py-1 rounded-md"
+            >
+              {showFormationBuilder ? '✕' : 'Edit'}
+            </button>
+          </div>
+          
+          {/* Collapsible formation builder */}
+          {showFormationBuilder && (
+            <div className="mt-3 space-y-3">
+              <div className="flex gap-3">
+                <select 
+                  value={team1Formation}
+                  onChange={(e) => setTeam1Formation(e.target.value)}
+                  className="flex-1 text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  {Object.keys(formations).map(formation => (
+                    <option key={formation} value={formation}>{formation}</option>
+                  ))}
+                </select>
+                <select 
+                  value={team2Formation}
+                  onChange={(e) => setTeam2Formation(e.target.value)}
+                  className="flex-1 text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  {Object.keys(formations).map(formation => (
+                    <option key={formation} value={formation}>{formation}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={() => setShowSubstitutes(!showSubstitutes)}
+                className="text-xs bg-green-500 text-white px-3 py-1 rounded-full"
+              >
+                {showSubstitutes ? 'Hide Bench' : 'Show Bench'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop: Full Formation Builder */}
+      <div className="hidden sm:block bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b dark:border-gray-700 px-6 py-4">
+        <div className="text-center text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Formation Builder & Team Manager</div>
         
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6">
-          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+        <div className="flex justify-between items-center gap-6">
+          <div className="flex items-center gap-3">
             <div 
-              className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold shadow-md"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md"
               style={{ backgroundColor: team1.color }}
             >
               {team1.shortName[0]}
@@ -332,7 +384,7 @@ const FootballFormation: React.FC = () => {
             <select 
               value={team1Formation}
               onChange={(e) => setTeam1Formation(e.target.value)}
-              className="w-full text-xs sm:text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 bg-white dark:bg-gray-700 focus:border-blue-500 focus:outline-none text-gray-900 dark:text-gray-100"
+              className="text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 focus:border-blue-500 focus:outline-none text-gray-900 dark:text-gray-100"
             >
               {Object.keys(formations).map(formation => (
                 <option key={formation} value={formation} className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">{formation}</option>
@@ -341,27 +393,27 @@ const FootballFormation: React.FC = () => {
           </div>
 
           <div className="flex flex-col items-center gap-2">
-            <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium">TACTICAL SETUP</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">TACTICAL SETUP</div>
             <button
               onClick={() => setShowSubstitutes(!showSubstitutes)}
-              className="text-[10px] sm:text-xs bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-2 py-1 sm:px-3 sm:py-1 rounded-full transition-colors"
+              className="text-xs bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-3 py-1 rounded-full transition-colors"
             >
               {showSubstitutes ? 'Hide Bench' : 'Show Bench'}
             </button>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-3">
             <select 
               value={team2Formation}
               onChange={(e) => setTeam2Formation(e.target.value)}
-              className="w-full text-xs sm:text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 bg-white dark:bg-gray-700 focus:border-blue-500 focus:outline-none text-gray-900 dark:text-gray-100"
+              className="text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 focus:border-blue-500 focus:outline-none text-gray-900 dark:text-gray-100"
             >
               {Object.keys(formations).map(formation => (
                 <option key={formation} value={formation} className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">{formation}</option>
               ))}
             </select>
             <div 
-              className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold shadow-md"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md"
               style={{ backgroundColor: team2.color }}
             >
               {team2.shortName[0]}
@@ -370,31 +422,38 @@ const FootballFormation: React.FC = () => {
         </div>
       </div>
 
-      {/* Team Headers */}
-      <div className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600 px-2 sm:px-6 py-3 sm:py-4">
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
-          <div className="flex items-center gap-3 sm:gap-4">
+      {/* Compact Team Headers - Mobile only */}
+      <div className="block sm:hidden bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600 px-3 py-2">
+        <div className="text-center text-sm font-medium text-gray-800 dark:text-gray-100">
+          {team1.name} vs {team2.name}
+        </div>
+      </div>
+
+      {/* Desktop Team Headers */}
+      <div className="hidden sm:block bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600 px-6 py-4">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
             <div 
-              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold shadow-lg"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg"
               style={{ backgroundColor: team1.color }}
             >
               {team1.shortName}
             </div>
-            <div className="text-center sm:text-left">
-              <div className="font-bold text-base sm:text-lg text-gray-900 dark:text-gray-100">{team1.name}</div>
-              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">{team1.formation} Formation</div>
+            <div>
+              <div className="font-bold text-lg text-gray-900 dark:text-gray-100">{team1.name}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-300">{team1.formation} Formation</div>
             </div>
           </div>
 
-          <div className="text-xs sm:text-sm text-gray-400 dark:text-gray-400 font-medium bg-gray-200 dark:bg-gray-600 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full">STARTING LINEUPS</div>
+          <div className="text-sm text-gray-400 dark:text-gray-400 font-medium bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-full">STARTING LINEUPS</div>
 
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="text-center sm:text-right">
-              <div className="font-bold text-base sm:text-lg text-gray-900 dark:text-gray-100">{team2.name}</div>
-              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">{team2.formation} Formation</div>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <div className="font-bold text-lg text-gray-900 dark:text-gray-100">{team2.name}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-300">{team2.formation} Formation</div>
             </div>
             <div 
-              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold shadow-lg"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg"
               style={{ backgroundColor: team2.color }}
             >
               {team2.shortName}
@@ -403,8 +462,8 @@ const FootballFormation: React.FC = () => {
         </div>
       </div>
 
-      {/* Field */}
-      <div className="relative bg-green-500 dark:bg-green-600 p-1 sm:p-4" style={{ aspectRatio: '5/6' }}>
+      {/* Field - Mobile optimized aspect ratio */}
+      <div className="relative bg-green-500 dark:bg-green-600 p-1 sm:p-4" style={{ aspectRatio: '4/5' }}>
         <div className="absolute inset-1 sm:inset-4 bg-gradient-to-b from-green-400 via-green-500 to-green-600 dark:from-green-500 dark:via-green-600 dark:to-green-700 rounded-lg"></div>
         <div 
           className="absolute inset-1 sm:inset-4 opacity-20 rounded-lg"
@@ -487,7 +546,7 @@ const FootballFormation: React.FC = () => {
         </div>
       )}
 
-      {/* Legend */}
+      {/* Collapsible Legend */}
       <div className="bg-gray-50 dark:bg-gray-700 border-t dark:border-gray-600 px-2 sm:px-6 py-2 sm:py-3">
         <div className="flex flex-wrap justify-center items-center gap-3 sm:gap-6 text-[10px] sm:text-sm text-gray-600 dark:text-gray-300">
           <div className="flex items-center gap-1 sm:gap-2">
