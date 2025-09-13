@@ -17,5 +17,9 @@ export default function Home() {
     }
   }, [isAuthenticated, router]);
 
-  return <Homescreen />;
+  return (
+    <div>
+      <Homescreen />
+    </div>
+  );
 }

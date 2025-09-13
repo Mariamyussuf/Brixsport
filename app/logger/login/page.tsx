@@ -2,8 +2,36 @@
 
 import React from 'react';
 import LoggerLoginForm from '@/components/logger/shared/LoggerLoginForm';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 export default function LoggerLoginPage() {
+  const { login, demoLogin } = useAuth();
+  const router = useRouter();
+
+  const handleLogin = async (credentials: { email: string; password: string }) => {
+    try {
+      await login(credentials);
+      router.push('/logger');
+    } catch (error) {
+      console.error('Login failed:', error);
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    try {
+      // Set URL params to indicate the logger role for demo login
+      const url = new URL(window.location.href);
+      url.searchParams.set('role', 'logger');
+      window.history.replaceState({}, '', url.toString());
+      
+      await demoLogin();
+      router.push('/logger');
+    } catch (error) {
+      console.error('Demo login failed:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -14,10 +42,10 @@ export default function LoggerLoginPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-white">Logger Access</h1>
-            <p className="text-gray-400 mt-2">Secure logging platform</p>
+            <h1 className="text-2xl font-bold text-white">{process.env.NEXT_PUBLIC_LOGGER_APP_NAME || 'Logger Access'}</h1>
+            <p className="text-gray-400 mt-2">{process.env.NEXT_PUBLIC_LOGGER_APP_DESCRIPTION || 'Secure logging platform'}</p>
           </div>
-          <LoggerLoginForm />
+          <LoggerLoginForm onLogin={handleLogin} onDemoLogin={handleDemoLogin} />
         </div>
       </div>
     </div>

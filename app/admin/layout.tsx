@@ -16,13 +16,13 @@ export const viewport = {
 };
 
 export const metadata = {
-  title: 'BrixSports Admin',
-  description: 'Administrative platform for managing sports events and loggers',
+  title: process.env.NEXT_PUBLIC_ADMIN_APP_NAME || 'BrixSports Admin',
+  description: process.env.NEXT_PUBLIC_ADMIN_APP_DESCRIPTION || 'Administrative platform for managing sports events and loggers',
   manifest: '/admin-manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'BrixSports Admin',
+    title: process.env.NEXT_PUBLIC_ADMIN_APP_NAME || 'BrixSports Admin',
   }
 };
 

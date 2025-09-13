@@ -1,6 +1,6 @@
 import React from 'react';
 import '../globals.css';
-import LoggerPWARegister from "../../components/shared/LoggerPWARegister";
+import LoggerPWARegister from "@/components/shared/LoggerPWARegister";
 import NoFlashThemeScript from "@/components/shared/NoFlashThemeScript";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import OfflineWrapper from "@/components/shared/OfflineWrapper";
@@ -29,21 +29,22 @@ export const viewport = {
 };
 
 export const metadata = {
-  title: 'BrixSports Logger',
-  description: 'Match logging platform for sports events',
+  title: process.env.NEXT_PUBLIC_LOGGER_APP_NAME || 'BrixSports Logger',
+  description: process.env.NEXT_PUBLIC_LOGGER_APP_DESCRIPTION || 'Match logging platform for sports events',
   manifest: '/logger-manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'BrixSports Logger',
+    title: process.env.NEXT_PUBLIC_LOGGER_APP_NAME || 'BrixSports Logger',
   }
 };
 
-export default function LoggerLayout({
+export default async function LoggerLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Render layout for logger section within admin subdomain
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -73,7 +74,6 @@ export default function LoggerLayout({
         <ThemeProvider>
           <SettingsProvider>
             <I18nProvider>
-              {/* Removed the duplicate AuthProvider here since it's provided by the root layout */}
               <ClientLoggerProvider>
                 <NotificationsProvider>
                   <LoggerPWARegister />

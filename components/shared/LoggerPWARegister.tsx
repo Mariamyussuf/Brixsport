@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -14,6 +15,7 @@ declare global {
 }
 
 const LoggerPWARegister = () => {
+  const { user } = useAuth();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallTip, setShowInstallTip] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -32,17 +34,27 @@ const LoggerPWARegister = () => {
     }
 
     try {
-      // Check if we're in the logger section before registering
-      const isLoggerPath = window.location.pathname.startsWith('/logger');
-      const isAdminPath = window.location.pathname.startsWith('/admin');
+      // Check if user has logger role before registering
+      const isLogger = user?.role?.startsWith('logger') || user?.role === 'admin' || user?.role === 'super-admin';
       
-      // Only register if we're in logger section and not in admin section
-      if (!isLoggerPath || isAdminPath) {
-        console.log('[Logger PWA] Not in logger path or in admin path, skipping registration');
+      // Only register if user has logger role
+      if (!isLogger) {
+        console.log('[Logger PWA] User does not have logger role, skipping registration');
         return;
       }
       
-      // Register service worker with root scope for logger.brixsport.com
+      // Check if we're on the correct domain for logger PWA (admin domain since they share it now)
+      const isOnAdminDomain = typeof window !== 'undefined' && 
+        (window.location.hostname === 'admin.brixsports.com' || 
+         window.location.hostname === 'admin.brixsport.vercel.app' ||
+         (window.location.hostname === 'localhost' && window.location.pathname.startsWith('/admin')));
+         
+      if (!isOnAdminDomain) {
+        console.log('[Logger PWA] Not on admin domain, skipping registration');
+        return;
+      }
+      
+      // Register service worker with root scope for logger functionality
       const registration = await navigator.serviceWorker.register('/logger-sw.js', { scope: '/' });
       
       console.log('[Logger PWA] ServiceWorker registered successfully:', registration.scope);
@@ -85,7 +97,7 @@ const LoggerPWARegister = () => {
     } catch (error) {
       console.error('[Logger PWA] ServiceWorker registration failed:', error);
     }
-  }, []);
+  }, [user]);
 
   // Check platform and PWA status
   useEffect(() => {
@@ -123,13 +135,18 @@ const LoggerPWARegister = () => {
   useEffect(() => {
     if (typeof window === "undefined" || isStandalone) return;
     
-    // Check if we're in logger section and not in admin section
-    const isLoggerPath = window.location.pathname.startsWith('/logger');
-    const isAdminPath = window.location.pathname.startsWith('/admin');
+    // Only show install prompt for logger users
+    const isLogger = user?.role?.startsWith('logger') || user?.role === 'admin' || user?.role === 'super-admin';
     
-    // Only show install prompt for logger app
-    if (!isLoggerPath || isAdminPath) {
-      console.log('[Logger PWA] Not in logger path or in admin path, skipping logger PWA install prompt');
+    // Check if we're on the correct domain for logger PWA (admin domain since they share it now)
+    const isOnAdminDomain = typeof window !== 'undefined' && 
+      (window.location.hostname === 'admin.brixsports.com' || 
+       window.location.hostname === 'admin.brixsport.vercel.app' ||
+       (window.location.hostname === 'localhost' && window.location.pathname.startsWith('/admin')));
+       
+    // Only show install prompt for logger app on admin domain
+    if (!isLogger || !isOnAdminDomain) {
+      console.log('[Logger PWA] User does not have logger role or not on admin domain, skipping logger PWA install prompt');
       return;
     }
     
@@ -147,12 +164,11 @@ const LoggerPWARegister = () => {
     
     // Android/Desktop: Handle beforeinstallprompt
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
-      // Only handle this event if we're in the logger paths and not in admin
-      const isLoggerPath = window.location.pathname.startsWith('/logger');
-      const isAdminPath = window.location.pathname.startsWith('/admin');
+      // Only handle this event if user has logger role
+      const isLogger = user?.role?.startsWith('logger') || user?.role === 'admin' || user?.role === 'super-admin';
       
-      if (!isLoggerPath || isAdminPath) {
-        console.log('[Logger PWA] Not in logger path or in admin path, not handling install prompt');
+      if (!isLogger) {
+        console.log('[Logger PWA] User does not have logger role, not handling install prompt');
         return;
       }
       
@@ -186,12 +202,11 @@ const LoggerPWARegister = () => {
     };
 
     const handleAppInstalled = () => {
-      // Only handle this event if we're in the logger paths and not in admin
-      const isLoggerPath = window.location.pathname.startsWith('/logger');
-      const isAdminPath = window.location.pathname.startsWith('/admin');
+      // Only handle this event if user has logger role
+      const isLogger = user?.role?.startsWith('logger') || user?.role === 'admin' || user?.role === 'super-admin';
       
-      if (!isLoggerPath || isAdminPath) {
-        console.log('[Logger PWA] Not in logger path or in admin path, not handling app installed');
+      if (!isLogger) {
+        console.log('[Logger PWA] User does not have logger role, not handling app installed');
         return;
       }
       
@@ -210,7 +225,7 @@ const LoggerPWARegister = () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as any);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, [isStandalone, isIOS]);
+  }, [isStandalone, isIOS, user]);
 
   // Handle PWA installation
   const handleInstallClick = useCallback(async () => {
@@ -301,8 +316,9 @@ const LoggerPWARegister = () => {
 
   // Function to show update notification
   useEffect(() => {
-    // Only run in logger paths
-    if (typeof window === "undefined" || !window.location.pathname.startsWith('/logger')) return;
+    // Only run for logger users
+    const isLogger = user?.role?.startsWith('logger') || user?.role === 'admin' || user?.role === 'super-admin';
+    if (typeof window === "undefined" || !isLogger) return;
     
     // Remove existing listener if it exists
     if (messageListenerRef.current) {
@@ -328,7 +344,7 @@ const LoggerPWARegister = () => {
         messageListenerRef.current = null;
       }
     };
-  }, []);
+  }, [user]);
 
   return (
     <>

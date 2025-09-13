@@ -11,9 +11,9 @@ const JWT_SECRET = new TextEncoder().encode(
 let admins = [
   {
     id: '1',
-    name: 'John Admin',
-    email: 'john.admin@example.com',
-    password: 'hashed_admin_password_123', // In production, use proper password hashing
+    name: process.env.NEXT_PUBLIC_ADMIN_DEFAULT_NAME || 'John Admin',
+    email: process.env.NEXT_PUBLIC_ADMIN_DEFAULT_EMAIL || 'john.admin@example.com',
+    password: process.env.NEXT_PUBLIC_ADMIN_DEFAULT_HASHED_PASSWORD || 'hashed_admin_password_123', // In production, use proper password hashing
     role: 'admin',
     managedLoggers: ['logger1', 'logger2'],
     adminLevel: 'basic',
@@ -23,9 +23,9 @@ let admins = [
   },
   {
     id: '2',
-    name: 'Sarah SuperAdmin',
-    email: 'sarah.super@example.com',
-    password: 'hashed_superadmin_password_123', // In production, use proper password hashing
+    name: process.env.NEXT_PUBLIC_ADMIN_SUPER_NAME || 'Sarah SuperAdmin',
+    email: process.env.NEXT_PUBLIC_ADMIN_SUPER_EMAIL || 'sarah.super@example.com',
+    password: process.env.NEXT_PUBLIC_ADMIN_SUPER_HASHED_PASSWORD || 'hashed_superadmin_password_123', // In production, use proper password hashing
     role: 'super-admin',
     managedLoggers: [],
     adminLevel: 'super',
@@ -72,7 +72,9 @@ export async function POST(request: Request) {
     // Special case for demo credentials - the password in the database is hashed
     // but the demo form sends the plain text password
     let passwordValid = false;
-    if (body.email === 'john.admin@example.com' && body.password === 'admin_password_123') {
+    const demoEmail = process.env.NEXT_PUBLIC_ADMIN_DEMO_EMAIL || 'john.admin@example.com';
+    const demoPassword = process.env.NEXT_PUBLIC_ADMIN_DEMO_PASSWORD || 'admin_password_123';
+    if (body.email === demoEmail && body.password === demoPassword) {
       // Demo credentials - accept them directly
       passwordValid = true;
     } else {
