@@ -1,35 +1,34 @@
 "use client";
 
 import React, { useState, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 // Types
 interface FormData {
   email: string;
   password: string;
-  accessCode: string;
 }
 
 interface ValidationErrors {
   [key: string]: string;
 }
 
-const LoggerLoginForm: React.FC = () => {
-  const { login, demoLogin } = useAuth();
-  const router = useRouter();
+interface LoggerLoginFormProps {
+  onLogin: (credentials: { email: string; password: string }) => Promise<void>;
+  onDemoLogin: () => Promise<void>;
+}
+
+const LoggerLoginForm: React.FC<LoggerLoginFormProps> = ({ onLogin, onDemoLogin }) => {
   // Form state
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState<FormData>({
     email: '',
     password: '',
-    accessCode: '',
   });
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [submitError, setSubmitError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showAccessCode, setShowAccessCode] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   // Handle input changes with debounced validation
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,13 +64,8 @@ const LoggerLoginForm: React.FC = () => {
       errs.password = 'Password must be at least 8 characters';
     }
     
-    // Access code validation (only if showing)
-    if (showAccessCode && !form.accessCode) {
-      errs.accessCode = 'Access code is required';
-    }
-    
     return errs;
-  }, [form, showAccessCode]);
+  }, [form]);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -87,47 +81,25 @@ const LoggerLoginForm: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // For logger login, we might want to add additional verification
-      // This could include checking for a special access code or specific domain
-      if (showAccessCode && form.accessCode !== 'LOGGER_ACCESS_2023') {
-        throw new Error('INVALID_ACCESS_CODE');
-      }
-
-      // Pass the form credentials to the login function
-      await login({
+      await onLogin({
         email: form.email,
         password: form.password
       });
-
-      // Redirect to logger dashboard
-      router.push('/logger');
     } catch (error: any) {
-      if (error.message === 'INVALID_ACCESS_CODE') {
-        setSubmitError('Invalid access code. Please try again.');
-      } else {
-        setSubmitError('Login failed. Please check your credentials and try again.');
-      }
+      setSubmitError('Login failed. Please check your credentials and try again.');
       console.error('Logger login error:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle demo login - specifically for logger
-  const handleDemoLogin = async () => {
+  // Handle demo login
+  const handleDemoLoginClick = async () => {
     setIsLoading(true);
     setSubmitError('');
     
     try {
-      // Set URL params to indicate this is a logger demo
-      const url = new URL(window.location.href);
-      url.searchParams.set('logger', 'true');
-      url.searchParams.set('role', 'logger');
-      window.history.replaceState({}, '', url.toString());
-      
-      await demoLogin();
-      // Redirect to logger dashboard for demo users
-      router.push('/logger');
+      await onDemoLogin();
     } catch (error) {
       setSubmitError('Demo login failed. Please try again.');
       console.error('Demo login error:', error);
@@ -158,7 +130,7 @@ const LoggerLoginForm: React.FC = () => {
                 ? 'border-red-500 focus:ring-red-500' 
                 : 'border-gray-600 hover:border-gray-500'
             }`}
-            placeholder="logger@brixsports.com"
+            placeholder={process.env.NEXT_PUBLIC_LOGGER_DEFAULT_EMAIL || "logger@brixsports.com"}
             value={form.email}
             onChange={handleChange}
             disabled={isLoading}
@@ -231,54 +203,20 @@ const LoggerLoginForm: React.FC = () => {
         )}
       </div>
 
-      {/* Access Code Field (Hidden by default for additional security) */}
-      {showAccessCode && (
-        <div className="space-y-2">
-          <label htmlFor="accessCode" className="block text-sm font-medium text-gray-300">
-            Access Code
-          </label>
-          <div className="relative">
-            <input
-              id="accessCode"
-              name="accessCode"
-              type="password"
-              className={`w-full bg-gray-700 border-2 rounded-lg px-4 py-3 text-white placeholder-gray-500 backdrop-blur-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.accessCode 
-                  ? 'border-red-500 focus:ring-red-500' 
-                  : 'border-gray-600 hover:border-gray-500'
-              }`}
-              placeholder="Enter access code"
-              value={form.accessCode}
-              onChange={handleChange}
-              disabled={isLoading}
-              aria-invalid={!!errors.accessCode}
-              aria-describedby={errors.accessCode ? 'accessCode-error' : undefined}
-            />
-          </div>
-          {errors.accessCode && (
-            <p id="accessCode-error" className="text-red-400 text-sm flex items-center gap-1">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              {errors.accessCode}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Show Access Code Button */}
-      {!showAccessCode && (
-        <button
-          type="button"
-          onClick={() => setShowAccessCode(true)}
-          className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-          Need access code?
-        </button>
-      )}
+      {/* Remember Me */}
+      <div className="flex items-center">
+        <input
+          id="remember-me"
+          name="remember-me"
+          type="checkbox"
+          checked={rememberMe}
+          onChange={(e) => setRememberMe(e.target.checked)}
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 rounded bg-gray-700"
+        />
+        <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-300">
+          Remember me
+        </label>
+      </div>
 
       {/* Submit Error */}
       {submitError && (
@@ -323,7 +261,7 @@ const LoggerLoginForm: React.FC = () => {
 
       <button
         type="button"
-        onClick={handleDemoLogin}
+        onClick={handleDemoLoginClick}
         disabled={isLoading}
         className="w-full py-3 px-4 rounded-lg bg-gray-700 border border-gray-600 text-white font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 flex items-center justify-center gap-2"
       >

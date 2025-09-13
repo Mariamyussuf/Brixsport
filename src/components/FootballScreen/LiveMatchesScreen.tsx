@@ -1,22 +1,70 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/components/shared/I18nProvider';
 import { UI_MatchCardProps, UI_TrackEventCardProps, UI_TeamLogoProps } from '@/types/campus';
+import { getLiveMatches } from '@/lib/userMatchService';
 
 interface LiveMatchesScreenProps {
-  liveMatches: any[]; // We'll improve the typing later
-  trackEvents: any[]; // We'll improve the typing later
   onBack: () => void;
 }
 
 const LiveMatchesScreen: React.FC<LiveMatchesScreenProps> = ({ 
-  liveMatches, 
-  trackEvents, 
   onBack 
 }) => {
   const { t } = useI18n();
   const router = useRouter();
+  const [liveMatches, setLiveMatches] = useState<any[]>([]);
+  const [trackEvents, setTrackEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchLiveMatches = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch live matches from API
+        const matches = await getLiveMatches();
+        
+        // Ensure matches is an array before trying to map over it
+        const matchesArray = Array.isArray(matches) ? matches : [];
+        
+        // Transform matches to the format expected by the UI
+        const transformedMatches = matchesArray.map(match => ({
+          id: match.id,
+          team1: match.homeTeam,
+          team2: match.awayTeam,
+          score1: match.homeScore,
+          score2: match.awayScore,
+          time: match.date,
+          status: match.status === 'live' ? 'Live' : match.status,
+          sportType: 'football', // This would come from the match data in a real implementation
+          team1Color: 'bg-blue-500', // This would come from team data in a real implementation
+          team2Color: 'bg-red-500'   // This would come from team data in a real implementation
+        }));
+        
+        setLiveMatches(transformedMatches);
+        
+        // Track events would come from a separate API in a real implementation
+        // For now, we'll keep them as empty array
+        setTrackEvents([]);
+      } catch (err: any) {
+        console.error('Error fetching live matches:', err);
+        setError(err.message || 'Failed to load live matches');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLiveMatches();
+    
+    // Set up polling to refresh live matches every 30 seconds
+    const interval = setInterval(fetchLiveMatches, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Enhanced responsive components
   const TeamLogo: React.FC<UI_TeamLogoProps> = ({ color }) => (
@@ -90,7 +138,8 @@ const LiveMatchesScreen: React.FC<LiveMatchesScreenProps> = ({
       </div>
       
       <div className="space-y-1.5 sm:space-y-2">
-        {event.results.map((result, index) => (
+        {/* Ensure results is an array before mapping */}
+        {Array.isArray(event.results) && event.results.map((result, index) => (
           <div key={index} className="flex items-center space-x-2 sm:space-x-3">
             <span className="text-gray-600 dark:text-gray-300 font-medium w-8 sm:w-10 text-xs sm:text-sm">{result.position}</span>
             <span className="text-gray-800 dark:text-gray-100 text-xs sm:text-sm">{result.team}</span>
@@ -104,6 +153,89 @@ const LiveMatchesScreen: React.FC<LiveMatchesScreenProps> = ({
   const footballMatches = liveMatches.filter(match => match.sportType === 'football');
   const basketballMatches = liveMatches.filter(match => match.sportType === 'basketball');
   const liveTrackEvents = trackEvents.filter(event => event.status === 'Live');
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-neutral-900 dark:text-neutral-100 pb-24 sm:pb-28">
+        {/* Header */}
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-slate-900 dark:text-white sticky top-0 z-30">
+          <div className="px-3 sm:px-4 py-3 sm:py-4">
+            <div className="flex items-center justify-between w-full">
+              {/* Left side - Back button and Title */}
+              <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                <button
+                  onClick={onBack}
+                  aria-label="Back"
+                  className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
+                  type="button"
+                >
+                  <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 dark:text-white" />
+                </button>
+                <div className="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
+                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
+                    {t('live_events')}
+                  </h1>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4 max-w-7xl mx-auto">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-pulse text-gray-500 dark:text-gray-400">
+              {t('loading')}...
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-neutral-900 dark:text-neutral-100 pb-24 sm:pb-28">
+        {/* Header */}
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-slate-900 dark:text-white sticky top-0 z-30">
+          <div className="px-3 sm:px-4 py-3 sm:py-4">
+            <div className="flex items-center justify-between w-full">
+              {/* Left side - Back button and Title */}
+              <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                <button
+                  onClick={onBack}
+                  aria-label="Back"
+                  className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
+                  type="button"
+                >
+                  <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 dark:text-white" />
+                </button>
+                <div className="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
+                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
+                    {t('live_events')}
+                  </h1>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4 max-w-7xl mx-auto">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-4 sm:p-6 md:p-8 text-center border border-gray-100 dark:border-gray-700">
+            <div className="text-red-500 dark:text-red-400 mb-4">
+              <h3 className="text-lg font-medium">{t('error')}</h3>
+              <p className="text-sm mt-2">{error}</p>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              {t('retry')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-neutral-900 dark:text-neutral-100 pb-24 sm:pb-28">

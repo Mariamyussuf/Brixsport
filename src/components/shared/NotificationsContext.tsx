@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Team, Player, Competition } from '@/lib/api';
+import { Team, Player, Competition } from '@/types/favorites';
 
 export interface Notification {
   id: string;
@@ -9,7 +9,7 @@ export interface Notification {
   message: string;
   timestamp: number;
   isRead: boolean;
-  type: 'match' | 'event' | 'system' | 'update' | 'goal' | 'player' | 'kickoff' | 'half-time' | 'full-time' | 'substitution' | 'card' | 'lineup' | 'preview' | 'result' | 'highlight' | 'standing' | 'qualification' | 'fixture' | 'news' | 'transfer' | 'injury';
+  type: 'match' | 'event' | 'system' | 'update' | 'goal' | 'assist' | 'player' | 'kickoff' | 'half-time' | 'full-time' | 'substitution' | 'card' | 'lineup' | 'preview' | 'result' | 'highlight' | 'standing' | 'qualification' | 'fixture' | 'news' | 'transfer' | 'injury';
   actionId?: string;
   sound?: 'default' | 'success' | 'error' | 'silent';
   priority?: 'high' | 'normal' | 'low';

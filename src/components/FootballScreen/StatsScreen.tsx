@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Activity, Target, CornerDownLeft, AlertTriangle } from 'lucide-react';
+import { Match, getMatchById } from '@/lib/userMatchService';
+import { TeamStats } from '@/types/matchEvents';
 
 interface StatRowProps {
   label: string;
@@ -70,26 +72,110 @@ const StatRow: React.FC<StatRowProps> = ({
 };
 
 const StatsScreen: React.FC<{
+  matchId: string;
   homeTeam?: string;
   awayTeam?: string;
 }> = ({ 
-  homeTeam = "Pirates FC",
-  awayTeam = "Joga FC"
+  matchId,
+  homeTeam = "Home Team",
+  awayTeam = "Away Team"
 }) => {
-  // Sample stats data
-  const stats = {
-    possession: [32, 68] as [number, number],
-    shots: [8, 14] as [number, number],
-    shotsOnTarget: [2, 8] as [number, number],
-    corners: [3, 6] as [number, number],
-    fouls: [9, 2] as [number, number],
-    passes: [348, 578] as [number, number],
-    passAccuracy: [82, 89] as [number, number],
-    offsides: [4, 7] as [number, number],
-    throwIns: [9, 2] as [number, number],
-    yellowCards: [1, 1] as [number, number],
-    redCards: [0, 0] as [number, number]
-  };
+  const [stats, setStats] = useState<{
+    possession: [number, number];
+    shots: [number, number];
+    shotsOnTarget: [number, number];
+    corners: [number, number];
+    fouls: [number, number];
+    passes: [number, number];
+    passAccuracy: [number, number];
+    offsides: [number, number];
+    throwIns: [number, number];
+    yellowCards: [number, number];
+    redCards: [number, number];
+  } | null>(null);
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!matchId) {
+        setError('No match ID provided');
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch match data from userMatchService
+        const match = await getMatchById(matchId);
+        
+        if (!match) {
+          throw new Error('Failed to fetch match data');
+        }
+        
+        // For now, we'll use mock stats since there's no specific stats endpoint
+        // In a real implementation, you would fetch actual stats from an endpoint
+        setStats({
+          possession: [45, 55],
+          shots: [8, 12],
+          shotsOnTarget: [3, 7],
+          corners: [5, 6],
+          fouls: [12, 8],
+          passes: [320, 410],
+          passAccuracy: [78, 85],
+          offsides: [2, 3],
+          throwIns: [12, 15],
+          yellowCards: [2, 1],
+          redCards: [0, 1]
+        });
+      } catch (err: any) {
+        console.error('Error fetching match stats:', err);
+        setError(err.message || 'Failed to load match statistics');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [matchId]);
+
+  if (loading) {
+    return (
+      <div className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-8 text-center">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mx-auto mb-4"></div>
+          <div className="space-y-4">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-8 text-center">
+        <div className="text-red-500 dark:text-red-400">
+          <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
+          <h3 className="text-lg font-medium mb-2">Error Loading Statistics</h3>
+          <p className="text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-8 text-center">
+        <p className="text-gray-500 dark:text-gray-400">No statistics available for this match</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">

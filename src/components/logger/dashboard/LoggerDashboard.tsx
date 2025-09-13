@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLoggerAuth } from '@/hooks/useAuth';
 import LoggerNotifications from '@/components/logger/notifications/LoggerNotifications';
+import { MatchTrackerPage } from '@/components/logger/matches';
 
 const LoggerDashboard = () => {
   const { user, isLogger, hasLoggerPermissions } = useLoggerAuth();
@@ -25,9 +26,9 @@ const LoggerDashboard = () => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Logger Dashboard</h1>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{process.env.NEXT_PUBLIC_LOGGER_APP_NAME || 'Logger Dashboard'}</h1>
             <p className="text-gray-600 dark:text-gray-300">
-              Welcome, {user?.name || 'Logger'}! You are logged in to the BrixSports Logger platform.
+              Welcome, {user?.name || 'Logger'}! You are logged in to the {process.env.NEXT_PUBLIC_LOGGER_APP_NAME || 'BrixSports Logger'} platform.
             </p>
           </div>
           <div className="mt-4 md:mt-0 flex items-center space-x-4">
@@ -115,18 +116,10 @@ const LoggerDashboard = () => {
           </div>
         )}
         
-        {/* Match Logging Content */}
+        {/* Match Logging Content - Using our enhanced MatchTrackerPage */}
         {activeTab === 'matches' && (
           <div className="mt-6">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Match Logging</h2>
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6">
-              <p className="text-gray-600 dark:text-gray-300">
-                Select a competition to start logging matches.
-              </p>
-              <button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
-                Select Competition
-              </button>
-            </div>
+            <MatchTrackerPage />
           </div>
         )}
         

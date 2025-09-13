@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from 'react';
-import { AdminAuthAPI } from '@/lib/adminAuth';
+import AdminService from '@/services/AdminService';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -89,12 +89,13 @@ const AdminLoginForm: React.FC = () => {
     try {
       // For admin login, we might want to add additional verification
       // This could include checking for admin-specific credentials or 2FA
-      if (showTwoFactor && form.twoFactorCode !== '123456') {
+      const expectedTwoFactorCode = process.env.NEXT_PUBLIC_ADMIN_TWO_FACTOR_CODE || '123456';
+      if (showTwoFactor && form.twoFactorCode !== expectedTwoFactorCode) {
         throw new Error('INVALID_TWO_FACTOR');
       }
 
       // Pass the form credentials to the login function
-      const result = await AdminAuthAPI.login(form.email, form.password);
+      const result = await AdminService.login(form.email, form.password);
       
       if (!result.success) {
         throw new Error(result.error || 'Login failed');
@@ -120,17 +121,20 @@ const AdminLoginForm: React.FC = () => {
     setSubmitError('');
     
     try {
-      // Set demo credentials
+      // Set demo credentials from environment variables
+      const demoEmail = process.env.NEXT_PUBLIC_ADMIN_DEMO_EMAIL || 'john.admin@example.com';
+      const demoPassword = process.env.NEXT_PUBLIC_ADMIN_DEMO_PASSWORD || 'admin_password_123';
+      
       setForm({
-        email: 'john.admin@example.com',
-        password: 'admin_password_123'
+        email: demoEmail,
+        password: demoPassword
       });
       
       // Small delay to allow state to update
       setTimeout(async () => {
         try {
           // Submit the form with demo credentials
-          const result = await AdminAuthAPI.login('john.admin@example.com', 'admin_password_123');
+          const result = await AdminService.login(demoEmail, demoPassword);
           
           if (!result.success) {
             throw new Error(result.error || 'Login failed');
@@ -179,7 +183,7 @@ const AdminLoginForm: React.FC = () => {
                 ? 'border-red-500 focus:ring-red-500' 
                 : 'hover:border-gray-500'
             }`}
-            placeholder="admin@brixsports.com"
+            placeholder={process.env.NEXT_PUBLIC_ADMIN_DEFAULT_EMAIL || "admin@brixsports.com"}
             value={form.email}
             onChange={handleChange}
             disabled={isLoading}

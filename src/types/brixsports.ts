@@ -1,8 +1,8 @@
 export interface BrixSportsHomeData {
   liveFootball: Match[];
-  liveBasket: Match[];
-  liveTrack: TrackEvent[];
-  upcomingMatches: Match[];
+  liveBasketball: Match[];
+  trackEvents: TrackEvent[];
+  upcomingFootball: Match[];
   featuredContent: any; // Can be defined better
   userStats: any; // Can be defined better
 }

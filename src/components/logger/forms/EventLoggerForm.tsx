@@ -6,6 +6,11 @@ import { EventTypeButtons } from './EventTypeButtons';
 import { FixedSizeList as List } from 'react-window';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useLoggerNotifications } from '@/hooks/useLoggerNotifications';
+import { validateEvent, ValidationResult } from '@/lib/validationUtils';
+import { ErrorHandler } from '@/lib/errorHandler';
+import { ValidationErrorDisplay } from '../shared/ValidationErrorDisplay';
+import { useEventValidation } from '@/hooks/useFormValidation';
+import { LoggerMatch } from '@/lib/loggerService';
 
 export interface EventLoggerFormProps {
   currentMatch: Match;
@@ -54,7 +59,8 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
   const eventRefs = React.useRef<(HTMLLIElement | null)[]>([]);
   const { sendEventAddedNotification } = useLoggerNotifications();
 
-
+  const { validationResult, validate, clearValidation } = useEventValidation();
+  
   const eventTypes: CampusEventType[] = React.useMemo(() => {
     switch (sportType) {
       case 'football':
@@ -87,7 +93,8 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
 
   // Get selected player object
   const selectedPlayer = selectedTeam?.players.find((p) => p.id === selectedPlayerId) || null;
-  function validateEvent({ eventType, selectedTeam, selectedPlayerId, eventValue }: {
+
+  function validateEventLocal({ eventType, selectedTeam, selectedPlayerId, eventValue }: {
     eventType: CampusEventType | null,
     selectedTeam: Team | null,
     selectedPlayerId: string | null,
@@ -121,11 +128,22 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const validationError = validateEvent({ eventType, selectedTeam, selectedPlayerId, eventValue });
-    if (validationError) {
-      setError(validationError);
+    clearValidation();
+    
+    // Use enhanced validation
+    const validation: ValidationResult = validate(
+      eventType,
+      selectedTeam,
+      selectedPlayerId,
+      eventValue,
+      sportType,
+      eventQueue
+    );
+    
+    if (!validation.isValid) {
       return;
     }
+    
     const newEvent: EventLog = {
       id: editingEvent ? editingEvent.id : `${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
       matchId: currentMatch.id,
@@ -138,37 +156,61 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
       eventScope,
       semester,
     };
-    onEventSubmit(newEvent);
-    setEventQueue((q) => {
-      if (editingEvent) {
-        // Replace the edited event
-        return q.map(ev => ev.id === editingEvent.id ? newEvent : ev);
-      }
-      return [newEvent, ...q];
-    });
     
-    // Send notification for the new event
-    // Note: This is a simplified version - in a real implementation, you would have more detailed match/event data
-    const mockMatch = {
-      id: currentMatch.id,
-      homeTeamId: currentMatch.teams[0]?.name || 'Home Team',
-      awayTeamId: currentMatch.teams[1]?.name || 'Away Team',
-      homeScore: 0,
-      awayScore: 0,
-      status: 'in-progress' as const
-    };
-    
-    const mockEvent = {
-      type: eventType as any,
-      minute: Math.floor((Date.now() - currentMatch.startTime) / 60000)
-    };
-    
-    sendEventAddedNotification(mockEvent as any, mockMatch as any);
-    
-    setEditingEvent(null);
-    setEventType(null);
-    setSelectedPlayerId(null);
-    setEventValue('');
+    try {
+      onEventSubmit(newEvent);
+      setEventQueue((q) => {
+        if (editingEvent) {
+          // Replace the edited event
+          return q.map(ev => ev.id === editingEvent.id ? newEvent : ev);
+        }
+        return [newEvent, ...q];
+      });
+      
+      // Send notification for the new event with real match/event data
+      sendEventAddedNotification(
+        {
+          type: eventType as any,
+          minute: Math.floor((Date.now() - currentMatch.startTime) / 60000),
+          description: '',
+          id: '',
+          matchId: '',
+          timestamp: '',
+          second: 0,
+          millisecond: 0,
+          metadata: {
+            goalType: 'header',
+            cardType: 'red',
+            foulType: 'tackle',
+            injurySeverity: 'minor',
+            notes: '',
+            penaltyType: '',
+            VARDecision: ''
+          }
+        },
+        {
+          id: currentMatch.id,
+          homeTeamId: currentMatch.teams[0]?.name || 'Home Team',
+          awayTeamId: currentMatch.teams[1]?.name || 'Away Team',
+          homeScore: currentMatch.teams[0]?.score || 0,
+          awayScore: currentMatch.teams[1]?.score || 0,
+          status: convertMatchStatus(currentMatch.status),
+          competitionId: '',
+          startTime: new Date().toISOString(),
+          events: [],
+          loggerId: '',
+          lastUpdated: new Date().toISOString()
+        } as LoggerMatch
+      );
+      
+      setEditingEvent(null);
+      setEventType(null);
+      setSelectedPlayerId(null);
+      setEventValue('');
+    } catch (error) {
+      const handledError = ErrorHandler.handle(error);
+      setError(handledError.message);
+    }
   };
 
   const handleUndo = () => {
@@ -363,6 +405,14 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
       onSubmit={handleSubmit}
       aria-label="Event Logger Form"
     >
+      {/* Validation Errors Display */}
+      {validationResult && !validationResult.isValid && (
+        <ValidationErrorDisplay 
+          errors={validationResult.errors.map(err => err.message)} 
+          type="error"
+        />
+      )}
+      
       {/* Semester selector if options provided */}
       {semesterOptions && (
         <div>
@@ -463,7 +513,13 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
       )}
 
       {/* Error message */}
-      {error && <div className="text-red-600 font-semibold">{error}</div>}
+      {error && (
+        <ValidationErrorDisplay 
+          errors={[error]} 
+          type="error"
+          title="Submission Error"
+        />
+      )}
 
       {/* Submit button */}
       <button
@@ -710,4 +766,43 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
       )}
     </form>
   );
-}; 
+};
+
+
+/**
+ * Converts Match status from campus.ts format to matchEvents.ts format
+ */
+const convertMatchStatus = (
+  status: 'upcoming' | 'live' | 'paused' | 'finished'
+): import('@/types/matchEvents').MatchStatus => {
+  switch (status) {
+    case 'upcoming':
+      return 'scheduled';
+    case 'live':
+      return 'live';
+    case 'paused':
+      return 'half-time';
+    case 'finished':
+      return 'full-time';
+    default:
+      return 'scheduled';
+  }
+};
+
+/**
+ * Converts Match status from matchEvents.ts format to campus.ts format
+ */
+const convertMatchStatusFromEvents = (
+  status: import('@/types/matchTracker').MatchStatus
+): 'upcoming' | 'live' | 'paused' | 'finished' => {
+  switch (status) {
+    case 'scheduled':
+      return 'upcoming';
+    case 'live':
+      return 'live';
+    case 'completed':
+      return 'finished';
+    default:
+      return 'upcoming';
+  }
+};

@@ -1,73 +1,91 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getMatchById } from '@/lib/userMatchService';
+import { getTeamById } from '@/lib/userTeamService';
 
 interface Player {
-  id: number;
+  id: string;
   name: string;
   position: string;
+  jerseyNumber: number;
   isCaptain?: boolean;
   isBooked?: boolean;
   isSubstitute?: boolean;
+  status?: 'on-field' | 'substituted' | 'injured';
 }
 
-const MatchLineupTab: React.FC = () => {
+interface TeamData {
+  id: string;
+  name: string;
+  color: string;
+  players: Player[];
+  substitutes: Player[];
+}
+
+const MatchLineupTab: React.FC<{ matchId: string }> = ({ matchId }) => {
   const router = useRouter();
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [homeTeam, setHomeTeam] = useState<TeamData | null>(null);
+  const [awayTeam, setAwayTeam] = useState<TeamData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data for team lineups
-  const homeTeam = {
-    name: 'Pirates FC',
-    color: 'bg-blue-600',
-    players: [
-      { id: 1, name: 'Davidson', position: 'GK' },
-      { id: 2, name: 'Johnson', position: 'LB', isBooked: true },
-      { id: 3, name: 'Thiago Silva', position: 'CB', isCaptain: true },
-      { id: 4, name: 'Thiago Santos', position: 'CB' },
-      { id: 5, name: 'Diogo Barbosa', position: 'RB' },
-      { id: 6, name: 'André', position: 'CDM' },
-      { id: 7, name: 'Martinelli', position: 'CDM' },
-      { id: 8, name: 'Jhon Arias', position: 'CAM' },
-      { id: 9, name: 'Paulo Henrique Ganso', position: 'CAM' },
-      { id: 10, name: 'Marquinhos', position: 'RW' },
-      { id: 11, name: 'Germán Cano', position: 'ST' }
-    ] as Player[],
-    substitutes: [
-      { id: 12, name: 'Vitor Eudes', position: 'GK', isSubstitute: true },
-      { id: 13, name: 'Guga', position: 'RB', isSubstitute: true },
-      { id: 14, name: 'Ignácio', position: 'CB', isSubstitute: true },
-      { id: 15, name: 'Facundo Bernal', position: 'CM', isSubstitute: true },
-      { id: 16, name: 'Nonato', position: 'CM', isSubstitute: true },
-      { id: 17, name: 'Lima', position: 'LW', isSubstitute: true },
-      { id: 18, name: 'Keno', position: 'LW', isSubstitute: true }
-    ] as Player[]
-  };
+  useEffect(() => {
+    const fetchLineupData = async () => {
+      if (!matchId) {
+        setError('No match ID provided');
+        setLoading(false);
+        return;
+      }
 
-  const awayTeam = {
-    name: 'Joga FC',
-    color: 'bg-red-600',
-    players: [
-      { id: 1, name: 'Robert Sanchez', position: 'GK' },
-      { id: 2, name: 'Reece James', position: 'RB', isCaptain: true },
-      { id: 3, name: 'Thiago Silva', position: 'CB' },
-      { id: 4, name: 'Levi Colwill', position: 'CB' },
-      { id: 5, name: 'Ben Chilwell', position: 'LB' },
-      { id: 6, name: 'Enzo Fernandez', position: 'CM' },
-      { id: 7, name: 'Moisés Caicedo', position: 'CM' },
-      { id: 8, name: 'Conor Gallagher', position: 'CM' },
-      { id: 9, name: 'Cole Palmer', position: 'RW' },
-      { id: 10, name: 'Nicolas Jackson', position: 'ST' },
-      { id: 11, name: 'Raheem Sterling', position: 'LW' }
-    ] as Player[],
-    substitutes: [
-      { id: 12, name: 'Đorđe Petrović', position: 'GK', isSubstitute: true },
-      { id: 13, name: 'Malo Gusto', position: 'RB', isSubstitute: true },
-      { id: 14, name: 'Axel Disasi', position: 'CB', isSubstitute: true },
-      { id: 15, name: 'Romeo Lavia', position: 'CM', isSubstitute: true },
-      { id: 16, name: 'Carney Chukwuemeka', position: 'CM', isSubstitute: true },
-      { id: 17, name: 'Christopher Nkunku', position: 'CAM', isSubstitute: true },
-      { id: 18, name: 'Mykhaylo Mudryk', position: 'LW', isSubstitute: true }
-    ] as Player[]
-  };
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch match data
+        const match = await getMatchById(matchId);
+        
+        if (!match) {
+          throw new Error('Match not found');
+        }
+
+        // Fetch team data for both teams
+        const [homeTeamData, awayTeamData] = await Promise.all([
+          getTeamById(match.homeTeam),
+          getTeamById(match.awayTeam)
+        ]);
+
+        // Process home team data
+        if (homeTeamData) {
+          setHomeTeam({
+            id: homeTeamData.id,
+            name: homeTeamData.name,
+            color: 'bg-blue-600', // This would typically come from the team data
+            players: homeTeamData.players.filter(p => p.status !== 'substituted' && p.status !== 'injured'),
+            substitutes: homeTeamData.players.filter(p => p.status === 'substituted')
+          });
+        }
+
+        // Process away team data
+        if (awayTeamData) {
+          setAwayTeam({
+            id: awayTeamData.id,
+            name: awayTeamData.name,
+            color: 'bg-red-600', // This would typically come from the team data
+            players: awayTeamData.players.filter(p => p.status !== 'substituted' && p.status !== 'injured'),
+            substitutes: awayTeamData.players.filter(p => p.status === 'substituted')
+          });
+        }
+      } catch (err: any) {
+        console.error('Error fetching lineup data:', err);
+        setError(err.message || 'Failed to load lineup data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLineupData();
+  }, [matchId]);
 
   const handlePlayerClick = (player: Player) => {
     // Navigate to player profile page
@@ -87,7 +105,7 @@ const MatchLineupTab: React.FC = () => {
       <div className="flex justify-between items-start">
         <div>
           <div className="font-medium text-gray-900 dark:text-gray-100">{player.name}</div>
-          <div className="text-sm text-gray-500 dark:text-gray-400">{player.position}</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">#{player.jerseyNumber} • {player.position}</div>
         </div>
         <div className="flex space-x-1">
           {player.isCaptain && (
@@ -100,6 +118,40 @@ const MatchLineupTab: React.FC = () => {
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <div className="w-full bg-white dark:bg-gray-800 rounded-lg p-4 text-center">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mx-auto mb-4"></div>
+          <div className="space-y-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full bg-white dark:bg-gray-800 rounded-lg p-4 text-center">
+        <div className="text-red-500 dark:text-red-400">
+          <h3 className="text-lg font-medium mb-2">Error Loading Lineup</h3>
+          <p className="text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!homeTeam || !awayTeam) {
+    return (
+      <div className="w-full bg-white dark:bg-gray-800 rounded-lg p-4 text-center">
+        <p className="text-gray-500 dark:text-gray-400">Lineup data not available</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-white dark:bg-gray-800 rounded-lg p-4">
@@ -156,7 +208,7 @@ const MatchLineupTab: React.FC = () => {
             <div>
               <div className="text-lg font-bold text-blue-900 dark:text-blue-100">{selectedPlayer.name}</div>
               <div className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                #{selectedPlayer.id} • {selectedPlayer.position}
+                #{selectedPlayer.jerseyNumber} • {selectedPlayer.position}
                 {selectedPlayer.isBooked && " • ⚠️ Booked"}
                 {selectedPlayer.isCaptain && " • 👑 Captain"}
                 {selectedPlayer.isSubstitute && " • 🔄 Substitute"}

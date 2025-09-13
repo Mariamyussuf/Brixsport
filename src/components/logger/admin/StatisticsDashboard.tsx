@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { adminService } from '@/lib/adminService';
 
 interface StatCard {
   title: string;
@@ -15,64 +16,32 @@ interface ChartDataPoint {
 
 const StatisticsDashboard = () => {
   const [timeRange, setTimeRange] = useState<'day' | 'week' | 'month' | 'year'>('week');
+  const [statCards, setStatCards] = useState<StatCard[]>([]);
+  const [matchesChartData, setMatchesChartData] = useState<ChartDataPoint[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data for demonstration
-  const statCards: StatCard[] = [
-    {
-      title: 'Total Matches',
-      value: 128,
-      change: '+12%',
-      changeType: 'positive',
-      icon: '⚽'
-    },
-    {
-      title: 'Active Loggers',
-      value: 24,
-      change: '+3',
-      changeType: 'positive',
-      icon: '📝'
-    },
-    {
-      title: 'Events Logged',
-      value: '1.2K',
-      change: '+18%',
-      changeType: 'positive',
-      icon: '📊'
-    },
-    {
-      title: 'System Uptime',
-      value: '99.8%',
-      change: '+0.2%',
-      changeType: 'positive',
-      icon: '⏱️'
-    }
-  ];
+  // Fetch data from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+       
+        const statsResponse = await adminService.getStatistics();
+        if (statsResponse.success && statsResponse.data) {
+          setStatCards(statsResponse.data.statCards || []);
+          setMatchesChartData(statsResponse.data.matchesChartData || []);
+        }
+      } catch (err) {
+        setError('Failed to load statistics data');
+        console.error('Error fetching statistics:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Mock chart data
-  const matchesChartData: ChartDataPoint[] = [
-    { name: 'Mon', value: 12 },
-    { name: 'Tue', value: 19 },
-    { name: 'Wed', value: 15 },
-    { name: 'Thu', value: 18 },
-    { name: 'Fri', value: 22 },
-    { name: 'Sat', value: 30 },
-    { name: 'Sun', value: 25 }
-  ];
-
-  const eventsChartData: ChartDataPoint[] = [
-    { name: 'Goals', value: 45 },
-    { name: 'Cards', value: 22 },
-    { name: 'Subs', value: 18 },
-    { name: 'Injuries', value: 5 }
-  ];
-
-  const loggersChartData: ChartDataPoint[] = [
-    { name: 'John S.', value: 32 },
-    { name: 'Sarah J.', value: 28 },
-    { name: 'Mike W.', value: 24 },
-    { name: 'Emma D.', value: 19 },
-    { name: 'Alex T.', value: 15 }
-  ];
+    fetchData();
+  }, [timeRange]);
 
   // Simple bar chart component
   const BarChart = ({ data, color = 'bg-red-500' }: { data: ChartDataPoint[]; color?: string }) => {
@@ -98,40 +67,40 @@ const StatisticsDashboard = () => {
     );
   };
 
-  // Simple pie chart component (simplified representation)
-  const PieChart = ({ data }: { data: ChartDataPoint[] }) => {
-    const total = data.reduce((sum, item) => sum + item.value, 0);
-    let startAngle = 0;
-    
+  if (loading) {
     return (
-      <div className="relative w-40 h-40 mx-auto">
-        <div className="absolute inset-0 rounded-full border-4 border-gray-200 dark:border-gray-700"></div>
-        {data.map((item, index) => {
-          const percentage = (item.value / total) * 100;
-          const angle = (percentage / 100) * 360;
-          const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500'];
-          
-          // This is a simplified representation - in a real app, you'd use SVG for proper pie charts
-          const segmentStyle = {
-            clipPath: `conic-gradient(from ${startAngle}deg, var(--color) 0deg ${angle}deg, transparent ${angle}deg 360deg)`,
-            '--color': getComputedStyle(document.documentElement)
-              .getPropertyValue(`--color-${index}`) || '#ef4444'
-          } as React.CSSProperties;
-          
-          startAngle += angle;
-          
-          return (
-            <div 
-              key={index}
-              className={`absolute inset-0 rounded-full ${colors[index % colors.length]}`}
-              style={segmentStyle}
-            ></div>
-          );
-        })}
-        <div className="absolute inset-4 bg-white dark:bg-gray-800 rounded-full"></div>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+        </div>
       </div>
     );
-  };
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="text-center text-red-600 dark:text-red-400">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  const eventsChartData: ChartDataPoint[] = [
+    { name: 'Goals', value: 45 },
+    { name: 'Cards', value: 22 },
+    { name: 'Subs', value: 18 },
+    { name: 'Injuries', value: 5 }
+  ];
+
+  const loggersChartData: ChartDataPoint[] = [
+    { name: 'John S.', value: 32 },
+    { name: 'Sarah J.', value: 28 },
+    { name: 'Mike W.', value: 24 },
+    { name: 'Emma D.', value: 19 },
+    { name: 'Alex T.', value: 15 }
+  ];
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow">

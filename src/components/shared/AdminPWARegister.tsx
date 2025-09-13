@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -14,6 +15,7 @@ declare global {
 }
 
 const AdminPWARegister = () => {
+  const { user } = useAuth();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallTip, setShowInstallTip] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -32,17 +34,27 @@ const AdminPWARegister = () => {
     }
 
     try {
-      // Check if we're in the admin section before registering
-      const isAdminPath = window.location.pathname.startsWith('/admin');
-      const isLoggerPath = window.location.pathname.startsWith('/logger');
+      // Check if user has admin role before registering
+      const isAdmin = user?.role === 'admin' || user?.role === 'super-admin';
       
-      // Only register if we're in admin section and not in logger section
-      if (!isAdminPath || isLoggerPath) {
-        console.log('[Admin PWA] Not in admin path or in logger path, skipping registration');
+      // Only register if user has admin role
+      if (!isAdmin) {
+        console.log('[Admin PWA] User does not have admin role, skipping registration');
         return;
       }
       
-      // Register service worker with root scope for admin.brixsport.com
+      // Check if we're on the correct domain for admin PWA
+      const isOnAdminDomain = typeof window !== 'undefined' && 
+        (window.location.hostname === 'admin.brixsports.com' || 
+         window.location.hostname === 'admin.brixsport.vercel.app' ||
+         (window.location.hostname === 'localhost' && window.location.pathname.startsWith('/admin')));
+         
+      if (!isOnAdminDomain) {
+        console.log('[Admin PWA] Not on admin domain, skipping registration');
+        return;
+      }
+      
+      // Register service worker with root scope for admin functionality
       const registration = await navigator.serviceWorker.register('/admin-sw.js', { scope: '/' });
       
       console.log('[Admin PWA] ServiceWorker registered successfully:', registration.scope);
@@ -85,7 +97,7 @@ const AdminPWARegister = () => {
     } catch (error) {
       console.error('[Admin PWA] ServiceWorker registration failed:', error);
     }
-  }, []);
+  }, [user]);
 
   // Check platform and PWA status
   useEffect(() => {
@@ -123,13 +135,18 @@ const AdminPWARegister = () => {
   useEffect(() => {
     if (typeof window === "undefined" || isStandalone) return;
     
-    // Check if we're in admin section and not in logger section
-    const isAdminPath = window.location.pathname.startsWith('/admin');
-    const isLoggerPath = window.location.pathname.startsWith('/logger');
+    // Only show install prompt for admin users
+    const isAdmin = user?.role === 'admin' || user?.role === 'super-admin';
     
-    // Only show install prompt for admin app
-    if (!isAdminPath || isLoggerPath) {
-      console.log('[Admin PWA] Not in admin path or in logger path, skipping admin PWA install prompt');
+    // Check if we're on the correct domain for admin PWA
+    const isOnAdminDomain = typeof window !== 'undefined' && 
+      (window.location.hostname === 'admin.brixsports.com' || 
+       window.location.hostname === 'admin.brixsport.vercel.app' ||
+       (window.location.hostname === 'localhost' && window.location.pathname.startsWith('/admin')));
+       
+    // Only show install prompt for admin app on admin domain
+    if (!isAdmin || !isOnAdminDomain) {
+      console.log('[Admin PWA] User does not have admin role or not on admin domain, skipping admin PWA install prompt');
       return;
     }
     
@@ -147,12 +164,11 @@ const AdminPWARegister = () => {
     
     // Android/Desktop: Handle beforeinstallprompt
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
-      // Only handle this event if we're in the admin paths and not in logger
-      const isAdminPath = window.location.pathname.startsWith('/admin');
-      const isLoggerPath = window.location.pathname.startsWith('/logger');
+      // Only handle this event if user has admin role
+      const isAdmin = user?.role === 'admin' || user?.role === 'super-admin';
       
-      if (!isAdminPath || isLoggerPath) {
-        console.log('[Admin PWA] Not in admin path or in logger path, not handling install prompt');
+      if (!isAdmin) {
+        console.log('[Admin PWA] User does not have admin role, not handling install prompt');
         return;
       }
       
@@ -186,12 +202,11 @@ const AdminPWARegister = () => {
     };
 
     const handleAppInstalled = () => {
-      // Only handle this event if we're in the admin paths and not in logger
-      const isAdminPath = window.location.pathname.startsWith('/admin');
-      const isLoggerPath = window.location.pathname.startsWith('/logger');
+      // Only handle this event if user has admin role
+      const isAdmin = user?.role === 'admin' || user?.role === 'super-admin';
       
-      if (!isAdminPath || isLoggerPath) {
-        console.log('[Admin PWA] Not in admin path or in logger path, not handling app installed');
+      if (!isAdmin) {
+        console.log('[Admin PWA] User does not have admin role, not handling app installed');
         return;
       }
       
@@ -210,7 +225,7 @@ const AdminPWARegister = () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as any);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, [isStandalone, isIOS]);
+  }, [isStandalone, isIOS, user]);
 
   // Handle PWA installation
   const handleInstallClick = useCallback(async () => {
@@ -301,8 +316,9 @@ const AdminPWARegister = () => {
 
   // Function to show update notification
   useEffect(() => {
-    // Only run in admin paths
-    if (typeof window === "undefined" || !window.location.pathname.startsWith('/admin')) return;
+    // Only run for admin users
+    const isAdmin = user?.role === 'admin' || user?.role === 'super-admin';
+    if (typeof window === "undefined" || !isAdmin) return;
     
     // Remove existing listener if it exists
     if (messageListenerRef.current) {
@@ -328,7 +344,7 @@ const AdminPWARegister = () => {
         messageListenerRef.current = null;
       }
     };
-  }, []);
+  }, [user]);
 
   return (
     <>

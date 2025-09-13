@@ -1,11 +1,11 @@
 "use client";
 
-
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { loggerService } from '@/lib/loggerService';
 import { LoggerCompetition, LoggerMatch } from '@/lib/loggerService';
 import { useLoggerAuth } from '@/hooks/useAuth';
-import { useLoggerNotifications } from '@/hooks/useLoggerNotifications';
+import { useNotifications } from '@/components/shared/NotificationsContext';
+import { hasPermission } from '@/lib/loggerPermissions';
 
 // Logger context state
 interface LoggerState {
@@ -89,6 +89,30 @@ interface LoggerContextType extends LoggerState {
   selectMatch: (match: LoggerMatch | null) => void;
   clearError: () => void;
   reset: () => void;
+  // Permission checking methods
+  canLogMatches: boolean;
+  canEditMatches: boolean;
+  canDeleteMatches: boolean;
+  canViewAllMatches: boolean;
+  canLogEvents: boolean;
+  canEditEvents: boolean;
+  canDeleteEvents: boolean;
+  canViewAllEvents: boolean;
+  canManagePlayers: boolean;
+  canEditPlayers: boolean;
+  canViewPlayers: boolean;
+  canManageCompetitions: boolean;
+  canAssignCompetitions: boolean;
+  canViewCompetitions: boolean;
+  canManageTeams: boolean;
+  canEditTeams: boolean;
+  canViewTeams: boolean;
+  canViewReports: boolean;
+  canExportReports: boolean;
+  canGenerateReports: boolean;
+  canViewSystemLogs: boolean;
+  canManageSettings: boolean;
+  canViewAuditTrail: boolean;
 }
 
 const LoggerContext = createContext<LoggerContextType | undefined>(undefined);
@@ -102,16 +126,30 @@ interface LoggerProviderProps {
 export const LoggerProvider: React.FC<LoggerProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(loggerReducer, initialState);
   const { user, isAuthenticated } = useLoggerAuth();
-  const {
-    sendMatchStartNotification,
-    sendMatchFinishNotification,
-    sendEventAddedNotification,
-    sendSyncSuccessNotification,
-    sendSyncErrorNotification,
-    sendOfflineStatusNotification,
-    sendOnlineStatusNotification,
-    sendCompetitionAssignedNotification
-  } = useLoggerNotifications();
+  const { addNotification } = useNotifications();
+  const canLogMatches = user ? hasPermission(user.role, 'log_matches') : false;
+  const canEditMatches = user ? hasPermission(user.role, 'edit_matches') : false;
+  const canDeleteMatches = user ? hasPermission(user.role, 'delete_matches') : false;
+  const canViewAllMatches = user ? hasPermission(user.role, 'view_all_matches') : false;
+  const canLogEvents = user ? hasPermission(user.role, 'log_events') : false;
+  const canEditEvents = user ? hasPermission(user.role, 'edit_events') : false;
+  const canDeleteEvents = user ? hasPermission(user.role, 'delete_events') : false;
+  const canViewAllEvents = user ? hasPermission(user.role, 'view_all_events') : false;
+  const canManagePlayers = user ? hasPermission(user.role, 'manage_players') : false;
+  const canEditPlayers = user ? hasPermission(user.role, 'edit_players') : false;
+  const canViewPlayers = user ? hasPermission(user.role, 'view_players') : false;
+  const canManageCompetitions = user ? hasPermission(user.role, 'manage_competitions') : false;
+  const canAssignCompetitions = user ? hasPermission(user.role, 'assign_competitions') : false;
+  const canViewCompetitions = user ? hasPermission(user.role, 'view_competitions') : false;
+  const canManageTeams = user ? hasPermission(user.role, 'manage_teams') : false;
+  const canEditTeams = user ? hasPermission(user.role, 'edit_teams') : false;
+  const canViewTeams = user ? hasPermission(user.role, 'view_teams') : false;
+  const canViewReports = user ? hasPermission(user.role, 'view_reports') : false;
+  const canExportReports = user ? hasPermission(user.role, 'export_reports') : false;
+  const canGenerateReports = user ? hasPermission(user.role, 'generate_reports') : false;
+  const canViewSystemLogs = user ? hasPermission(user.role, 'view_system_logs') : false;
+  const canManageSettings = user ? hasPermission(user.role, 'manage_settings') : false;
+  const canViewAuditTrail = user ? hasPermission(user.role, 'view_audit_trail') : false;
   
   // Load competitions when user is authenticated
   useEffect(() => {
@@ -139,48 +177,38 @@ export const LoggerProvider: React.FC<LoggerProviderProps> = ({ children }) => {
     dispatch({ type: 'CLEAR_ERROR' });
     
     try {
-      // In a real app, this would call the loggerService
-      // const response = await loggerService.getCompetitions();
-      // if (response.success && response.data) {
-      //   dispatch({ type: 'SET_COMPETITIONS', payload: response.data });
-      // } else {
-      //   throw new Error(response.error || 'Failed to load competitions');
-      // }
-      
-      // Mock data for now
-      const mockCompetitions: LoggerCompetition[] = [
-        {
-          id: '1',
-          name: 'Premier League 2023',
-          sport: 'Football',
-          startDate: '2023-08-01',
-          endDate: '2024-05-31',
-          status: 'active',
-          assignedLoggers: ['logger-1', 'logger-2']
-        },
-        {
-          id: '2',
-          name: 'NBA Season 2023',
-          sport: 'Basketball',
-          startDate: '2023-10-01',
-          endDate: '2024-06-30',
-          status: 'active',
-          assignedLoggers: ['logger-1']
-        }
-      ];
-      
-      dispatch({ type: 'SET_COMPETITIONS', payload: mockCompetitions });
-      
-      // Send notification for assigned competitions
-      mockCompetitions.forEach(competition => {
-        if (competition.assignedLoggers.includes('logger-1')) {
-          sendCompetitionAssignedNotification(competition.name);
-        }
-      });
+      // Always call the loggerService to fetch real data
+      const response = await loggerService.getCompetitions();
+      if (response.success && response.data) {
+        dispatch({ type: 'SET_COMPETITIONS', payload: response.data });
+        
+        // Send notification for assigned competitions
+        response.data.forEach(competition => {
+          if (competition.assignedLoggers.includes(user?.id || '')) {
+            addNotification({
+              title: 'New Competition Assigned',
+              message: `You have been assigned to log events for ${competition.name}`,
+              type: 'system',
+              category: 'match',
+              priority: 'normal',
+              sound: 'default'
+            });
+          }
+        });
+      } else {
+        throw new Error(response.error || 'Failed to load competitions');
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load competitions';
       dispatch({ type: 'SET_ERROR', payload: message });
-      sendSyncErrorNotification(message);
+      addNotification({
+        title: 'Sync Failed',
+        message: `Failed to load competitions: ${message}.`,
+        type: 'system',
+        category: 'match',
+        priority: 'high',
+        sound: 'error'
+      });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: { key: 'competitions', value: false } });
     }
@@ -192,30 +220,13 @@ export const LoggerProvider: React.FC<LoggerProviderProps> = ({ children }) => {
     dispatch({ type: 'CLEAR_ERROR' });
     
     try {
-      // In a real app, this would call the loggerService
-      // const response = await loggerService.getMatches(competitionId);
-      // if (response.success && response.data) {
-      //   dispatch({ type: 'SET_MATCHES', payload: response.data });
-      // } else {
-      //   throw new Error(response.error || 'Failed to load matches');
-      // }
-      
-      // Mock data for now
-      const mockMatches: LoggerMatch[] = [
-        {
-          id: '1',
-          competitionId: '1',
-          homeTeamId: 'team-1',
-          awayTeamId: 'team-2',
-          startTime: '2023-10-15T15:00:00Z',
-          status: 'scheduled',
-          events: [],
-          loggerId: 'logger-1',
-          lastUpdated: new Date().toISOString()
-        }
-      ];
-      
-      dispatch({ type: 'SET_MATCHES', payload: mockMatches });
+      // Always call the loggerService to fetch real data
+      const response = await loggerService.getMatches(competitionId);
+      if (response.success && response.data) {
+        dispatch({ type: 'SET_MATCHES', payload: response.data });
+      } else {
+        throw new Error(response.error || 'Failed to load matches');
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load matches';
       dispatch({ type: 'SET_ERROR', payload: message });
@@ -260,7 +271,31 @@ export const LoggerProvider: React.FC<LoggerProviderProps> = ({ children }) => {
     selectCompetition,
     selectMatch,
     clearError,
-    reset
+    reset,
+    // Permission checking methods
+    canLogMatches,
+    canEditMatches,
+    canDeleteMatches,
+    canViewAllMatches,
+    canLogEvents,
+    canEditEvents,
+    canDeleteEvents,
+    canViewAllEvents,
+    canManagePlayers,
+    canEditPlayers,
+    canViewPlayers,
+    canManageCompetitions,
+    canAssignCompetitions,
+    canViewCompetitions,
+    canManageTeams,
+    canEditTeams,
+    canViewTeams,
+    canViewReports,
+    canExportReports,
+    canGenerateReports,
+    canViewSystemLogs,
+    canManageSettings,
+    canViewAuditTrail
   };
   
   return (

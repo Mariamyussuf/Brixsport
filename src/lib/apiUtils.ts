@@ -1,7 +1,36 @@
 // API Utilities
 // Helper functions for working with the API
 
-import { Competition, Match, Team, Player } from './api';
+import { Competition, Team, Player } from '@/lib/api';
+import { ApiError, MatchEvent } from '@/types/matchTracker';
+
+export const isValidationError = (error: any): error is ApiError & { errors: Record<string, string[]> } => {
+  return error && 'errors' in error && typeof error.errors === 'object';
+};
+
+export const handleApiError = (error: any): void => {
+  // Create a standardized error object consistent with ApiError type
+  const apiError: ApiError = {
+    message: error?.message || 'An unexpected error occurred',
+    code: error?.code || 'UNKNOWN_ERROR'
+  };
+
+  // If it's already an API error with validation errors, include them
+  if (isValidationError(error)) {
+    (apiError as any).errors = error.errors;
+  }
+
+  // Log error to console
+  console.error('API Error:', apiError);
+
+  // Re-throw the standardized error
+  throw apiError;
+};
+
+// Type guard to check if an error is an ApiError
+export const isApiError = (error: any): error is ApiError => {
+  return error && typeof error === 'object' && 'message' in error;
+};
 
 /**
  * Filter competitions by type (sport)
@@ -74,24 +103,160 @@ export const groupCompetitionsByType = (
 };
 
 /**
- * Format competition date range for display
+ * Format competition date range in different formats
  * @param competition Competition object
- * @returns Formatted date range string or 'TBD' if dates not available
+ * @param formatType Format type: 'short', 'long', or 'relative'
+ * @returns Formatted date range string
  */
-export const formatCompetitionDateRange = (competition: Competition): string => {
+export const formatCompetitionDateRange = (
+  competition: Competition,
+  formatType: 'short' | 'long' | 'relative' = 'short'
+): string => {
   if (!competition.start_date) {
     return 'TBD';
   }
   
   const startDate = new Date(competition.start_date);
-  const formattedStart = startDate.toLocaleDateString();
+  let formattedStart = '';
+  
+  switch(formatType) {
+    case 'short':
+      formattedStart = startDate.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+      });
+      break;
+    case 'long':
+      formattedStart = startDate.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      break;
+    case 'relative':
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - startDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays < 1) {
+        return 'Today';
+      } else if (diffDays < 2) {
+        return 'Tomorrow';
+      } else if (diffDays <= 7) {
+        return `In ${diffDays} day${diffDays > 1 ? 's' : ''}`;
+      } else {
+        return startDate.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric'
+        });
+      }
+    default:
+      formattedStart = startDate.toLocaleDateString();
+  }
   
   if (!competition.end_date) {
     return `Starts ${formattedStart}`;
   }
   
   const endDate = new Date(competition.end_date);
-  const formattedEnd = endDate.toLocaleDateString();
+  let formattedEnd = '';
+  
+  switch(formatType) {
+    case 'short':
+      formattedEnd = endDate.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+      });
+      break;
+    case 'long':
+      formattedEnd = endDate.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      break;
+    default:
+      formattedEnd = endDate.toLocaleDateString();
+  }
   
   return `${formattedStart} - ${formattedEnd}`;
+};
+
+/**
+ * Filter competitions by search term
+ * @param competitions Array of competitions
+ * @param searchTerm Search term to filter by
+ * @returns Filtered competitions
+ */
+export const filterCompetitionsBySearch = (
+  competitions: Competition[],
+  searchTerm: string
+): Competition[] => {
+  if (!searchTerm) return competitions;
+  
+  const term = searchTerm.toLowerCase();
+  return competitions.filter(comp => 
+    comp.name.toLowerCase().includes(term) ||
+    comp.type.toLowerCase().includes(term) ||
+    (comp.category && comp.category.toLowerCase().includes(term))
+  );
+};
+
+/**
+ * Sort competitions by name (A-Z or Z-A)
+ * @param competitions Array of competitions
+ * @param order Sort order: 'asc' for ascending, 'desc' for descending
+ * @returns Sorted competitions
+ */
+export const sortCompetitionsByName = (
+  competitions: Competition[],
+  order: 'asc' | 'desc' = 'asc'
+): Competition[] => {
+  return [...competitions].sort((a, b) => {
+    const nameA = a.name.toUpperCase();
+    const nameB = b.name.toUpperCase();
+    
+    if (order === 'asc') {
+      return nameA < nameB ? -1 : nameA > nameB ? 1 : 0;
+    } else {
+      return nameA > nameB ? -1 : nameA < nameB ? 1 : 0;
+    }
+  });
+};
+
+/**
+ * Get active competitions (not completed)
+ * @param competitions Array of competitions
+ * @returns Active competitions
+ */
+export const getActiveCompetitions = (
+  competitions: Competition[]
+): Competition[] => {
+  const now = new Date();
+  return competitions.filter(comp => {
+    if (comp.status.toLowerCase() === 'completed') return false;
+    
+    // If no end date, consider it active
+    if (!comp.end_date) return true;
+    
+    // If end date is in the future, it's active
+    return new Date(comp.end_date) > now;
+  });
+};
+
+/**
+ * Get completed competitions
+ * @param competitions Array of competitions
+ * @returns Completed competitions
+ */
+export const getCompletedCompetitions = (
+  competitions: Competition[]
+): Competition[] => {
+  const now = new Date();
+  return competitions.filter(comp => {
+    if (comp.status.toLowerCase() === 'completed') return true;
+    
+    // If has end date and it's in the past
+    return !!(comp.end_date && new Date(comp.end_date) < now);
+  });
 };

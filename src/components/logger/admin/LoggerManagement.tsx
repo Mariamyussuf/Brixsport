@@ -1,70 +1,146 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
+import { Logger } from '@/lib/adminService';
 
 const LoggerManagement = () => {
   const { loggers, loading, error, clearError, createLogger, updateLogger, deleteLogger, suspendLogger, activateLogger } = useAdmin();
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingLogger, setEditingLogger] = useState<any>(null);
+  const [editingLogger, setEditingLogger] = useState<Logger | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     role: 'logger'
   });
 
-  const handleCreate = async (e: React.FormEvent) => {
+  // Get logger statuses from environment variables
+  const loggerStatuses = process.env.NEXT_PUBLIC_LOGGER_STATUSES?.split(',') || ['active', 'inactive', 'suspended'];
+
+  // Create a map of status labels
+  const statusLabels: Record<string, string> = {};
+  loggerStatuses.forEach(status => {
+    statusLabels[status] = status.charAt(0).toUpperCase() + status.slice(1);
+  });
+
+  // Get status colors from environment variables
+  const statusColors: Record<string, string> = {};
+  loggerStatuses.forEach(status => {
+    switch(status) {
+      case 'active':
+        statusColors[status] = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+        break;
+      case 'inactive':
+        statusColors[status] = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+        break;
+      case 'suspended':
+        statusColors[status] = 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+        break;
+      default:
+        statusColors[status] = 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    }
+  });
+
+  // Handle form submission for creating a logger
+  const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await createLogger({
-      name: formData.name,
-      email: formData.email,
-      role: formData.role,
-      status: 'active',
-      assignedCompetitions: []
-    });
-    setFormData({ name: '', email: '', role: 'logger' });
-    setShowCreateForm(false);
+    
+    try {
+      await createLogger({
+        name: formData.name,
+        email: formData.email,
+        role: formData.role,
+        status: 'active',
+        assignedCompetitions: []
+      });
+      
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        role: 'logger'
+      });
+      setShowCreateForm(false);
+    } catch (err) {
+      console.error('Failed to create logger:', err);
+    }
   };
 
-  const handleUpdate = async (e: React.FormEvent) => {
+  // Handle form submission for updating a logger
+  const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (editingLogger) {
+    
+    if (!editingLogger) return;
+    
+    try {
       await updateLogger(editingLogger.id, {
         name: formData.name,
         email: formData.email,
         role: formData.role
       });
+      
+      // Reset form and editing state
+      setFormData({
+        name: '',
+        email: '',
+        role: 'logger'
+      });
       setEditingLogger(null);
-      setFormData({ name: '', email: '', role: 'logger' });
+      setShowCreateForm(false);
+    } catch (err) {
+      console.error('Failed to update logger:', err);
     }
   };
 
-  const handleDelete = async (loggerId: string) => {
-    if (window.confirm('Are you sure you want to delete this logger?')) {
-      await deleteLogger(loggerId);
-    }
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingLogger(null);
+    setFormData({
+      name: '',
+      email: '',
+      role: 'logger'
+    });
+    setShowCreateForm(false);
   };
 
-  const handleSuspend = async (loggerId: string) => {
-    if (window.confirm('Are you sure you want to suspend this logger?')) {
-      await suspendLogger(loggerId);
-    }
-  };
-
-  const handleActivate = async (loggerId: string) => {
-    await activateLogger(loggerId);
-  };
-
-  const startEditing = (logger: any) => {
+  // Start editing a logger
+  const startEditing = (logger: Logger) => {
     setEditingLogger(logger);
     setFormData({
       name: logger.name,
       email: logger.email,
       role: logger.role
     });
+    setShowCreateForm(true);
   };
 
-  const cancelEditing = () => {
-    setEditingLogger(null);
-    setFormData({ name: '', email: '', role: 'logger' });
+  // Handle suspending a logger
+  const handleSuspend = async (id: string) => {
+    if (window.confirm('Are you sure you want to suspend this logger?')) {
+      try {
+        await suspendLogger(id);
+      } catch (err) {
+        console.error('Failed to suspend logger:', err);
+      }
+    }
+  };
+
+  // Handle activating a logger
+  const handleActivate = async (id: string) => {
+    try {
+      await activateLogger(id);
+    } catch (err) {
+      console.error('Failed to activate logger:', err);
+    }
+  };
+
+  // Handle deleting a logger
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this logger? This action cannot be undone.')) {
+      try {
+        await deleteLogger(id);
+      } catch (err) {
+        console.error('Failed to delete logger:', err);
+      }
+    }
   };
 
   return (
@@ -199,48 +275,46 @@ const LoggerManagement = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                   {logger.email}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                  {logger.role}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    {logger.role}
+                  </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    logger.status === 'active' 
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                      : logger.status === 'inactive'
-                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                  }`}>
-                    {logger.status.charAt(0).toUpperCase() + logger.status.slice(1)}
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[logger.status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'}`}>
+                    {statusLabels[logger.status] || logger.status}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button 
-                    onClick={() => startEditing(logger)}
-                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
-                  >
-                    Edit
-                  </button>
-                  {logger.status === 'active' ? (
-                    <button 
-                      onClick={() => handleSuspend(logger.id)}
-                      className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 mr-3"
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => startEditing(logger)}
+                      className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                     >
-                      Suspend
+                      Edit
                     </button>
-                  ) : (
-                    <button 
-                      onClick={() => handleActivate(logger.id)}
-                      className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 mr-3"
+                    {logger.status === 'active' ? (
+                      <button
+                        onClick={() => handleSuspend(logger.id)}
+                        className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
+                      >
+                        Suspend
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleActivate(logger.id)}
+                        className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                      >
+                        Activate
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleDelete(logger.id)}
+                      className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                     >
-                      Activate
+                      Delete
                     </button>
-                  )}
-                  <button 
-                    onClick={() => handleDelete(logger.id)}
-                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                  >
-                    Remove
-                  </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -249,19 +323,22 @@ const LoggerManagement = () => {
       </div>
 
       {loading.loggers && (
-        <div className="flex justify-center items-center py-6">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+        <div className="flex justify-center py-6">
+          <svg className="animate-spin h-8 w-8 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
         </div>
       )}
 
-      {loggers.length === 0 && !loading.loggers && (
+      {!loading.loggers && loggers.length === 0 && (
         <div className="text-center py-8">
           <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No loggers</h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Get started by adding a new logger.
+            Get started by creating a new logger.
           </p>
         </div>
       )}

@@ -18,6 +18,7 @@ const ActivityLogs = () => {
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [filteredActivities, setFilteredActivities] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedLogger, setSelectedLogger] = useState<string>('all');
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
     start: '',
@@ -25,62 +26,84 @@ const ActivityLogs = () => {
   });
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data for demonstration - in a real app, this would come from an API
+  // Fetch real activity logs
   useEffect(() => {
-    const mockActivities: ActivityLog[] = [
-      {
-        id: '1',
-        loggerId: '1',
-        loggerName: 'John Smith',
-        action: 'create_match',
-        resourceId: 'match-123',
-        resourceName: 'Man Utd vs Liverpool',
-        timestamp: '2023-10-15T14:30:00Z',
-        details: 'Created new match between Man Utd and Liverpool'
-      },
-      {
-        id: '2',
-        loggerId: '2',
-        loggerName: 'Sarah Johnson',
-        action: 'add_event',
-        resourceId: 'match-123',
-        resourceName: 'Man Utd vs Liverpool',
-        timestamp: '2023-10-15T15:45:00Z',
-        details: 'Added goal event for Man Utd in 45th minute'
-      },
-      {
-        id: '3',
-        loggerId: '1',
-        loggerName: 'John Smith',
-        action: 'update_match',
-        resourceId: 'match-123',
-        resourceName: 'Man Utd vs Liverpool',
-        timestamp: '2023-10-15T16:20:00Z',
-        details: 'Updated match score to 1-0'
-      },
-      {
-        id: '4',
-        loggerId: '3',
-        loggerName: 'Mike Wilson',
-        action: 'generate_report',
-        resourceId: 'match-123',
-        resourceName: 'Man Utd vs Liverpool',
-        timestamp: '2023-10-15T18:30:00Z',
-        details: 'Generated match report for completed game'
-      },
-      {
-        id: '5',
-        loggerId: '2',
-        loggerName: 'Sarah Johnson',
-        action: 'login',
-        timestamp: '2023-10-16T09:15:00Z',
-        details: 'Logger logged into the system'
-      }
-    ];
+    const fetchActivities = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch real activity logs from the API
+        const response = await loggerService.getActivityLogs();
+        if (response.success && response.data) {
+          setActivities(response.data);
+          setFilteredActivities(response.data);
+        } else {
+          throw new Error(response.error || 'Failed to load activity logs');
+        }
+      } catch (err: any) {
+        setError(err.message || 'Failed to load activity logs');
+        console.error('Error loading activities:', err);
+        // Fallback to mock data if API fails
+        const mockActivities: ActivityLog[] = [
+          {
+            id: '1',
+            loggerId: '1',
+            loggerName: 'John Smith',
+            action: 'create_match',
+            resourceId: 'match-123',
+            resourceName: 'Man Utd vs Liverpool',
+            timestamp: '2023-10-15T14:30:00Z',
+            details: 'Created new match between Man Utd and Liverpool'
+          },
+          {
+            id: '2',
+            loggerId: '2',
+            loggerName: 'Sarah Johnson',
+            action: 'add_event',
+            resourceId: 'match-123',
+            resourceName: 'Man Utd vs Liverpool',
+            timestamp: '2023-10-15T15:45:00Z',
+            details: 'Added goal event for Man Utd in 45th minute'
+          },
+          {
+            id: '3',
+            loggerId: '1',
+            loggerName: 'John Smith',
+            action: 'update_match',
+            resourceId: 'match-123',
+            resourceName: 'Man Utd vs Liverpool',
+            timestamp: '2023-10-15T16:20:00Z',
+            details: 'Updated match score to 1-0'
+          },
+          {
+            id: '4',
+            loggerId: '3',
+            loggerName: 'Mike Wilson',
+            action: 'generate_report',
+            resourceId: 'match-123',
+            resourceName: 'Man Utd vs Liverpool',
+            timestamp: '2023-10-15T18:30:00Z',
+            details: 'Generated match report for completed game'
+          },
+          {
+            id: '5',
+            loggerId: '2',
+            loggerName: 'Sarah Johnson',
+            action: 'login',
+            timestamp: '2023-10-16T09:15:00Z',
+            details: 'Logger logged into the system'
+          }
+        ];
 
-    setActivities(mockActivities);
-    setFilteredActivities(mockActivities);
-    setLoading(false);
+        setActivities(mockActivities);
+        setFilteredActivities(mockActivities);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActivities();
   }, []);
 
   // Filter activities based on selected criteria
@@ -162,6 +185,28 @@ const ActivityLogs = () => {
     return (
       <div className="flex justify-center items-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="text-center py-12">
+          <div className="text-red-500 dark:text-red-400 mb-4">
+            <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Error Loading Activities</h3>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition duration-200"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }

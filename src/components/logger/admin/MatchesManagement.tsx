@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { loggerService, LoggerMatch, MatchEvent } from '@/lib/loggerService';
+import { loggerService, LoggerMatch, MatchEvent, LoggerCompetition } from '@/lib/loggerService';
+import { getCompetitions } from '@/lib/competitionService';
 
 interface MatchData extends LoggerMatch {
   competitionName?: string;
@@ -8,95 +9,53 @@ interface MatchData extends LoggerMatch {
 
 const MatchesManagement = () => {
   const [matches, setMatches] = useState<MatchData[]>([]);
+  const [competitions, setCompetitions] = useState<LoggerCompetition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMatch, setSelectedMatch] = useState<MatchData | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    competitionId: '',
+    homeTeamId: '',
+    awayTeamId: '',
+    startTime: '',
+    venue: '',
+    loggerId: ''
+  });
 
-  // Mock data for demonstration
+  // Fetch matches and competitions from API
   useEffect(() => {
-    const mockMatches: MatchData[] = [
-      {
-        id: '1',
-        competitionId: '1',
-        competitionName: 'Premier League 2023',
-        homeTeamId: 'team-1',
-        awayTeamId: 'team-2',
-        startTime: '2023-10-20T19:45:00Z',
-        status: 'scheduled',
-        events: [],
-        loggerId: 'logger-1',
-        loggerName: 'John Smith',
-        lastUpdated: '2023-10-15T14:30:00Z'
-      },
-      {
-        id: '2',
-        competitionId: '2',
-        competitionName: 'NBA Season 2023',
-        homeTeamId: 'team-3',
-        awayTeamId: 'team-4',
-        startTime: '2023-10-18T20:30:00Z',
-        status: 'in-progress',
-        homeScore: 85,
-        awayScore: 78,
-        period: '3rd Quarter',
-        timeRemaining: '5:42',
-        events: [
-          {
-            id: 'e1',
-            matchId: '2',
-            type: 'goal',
-            teamId: 'team-3',
-            playerId: 'player-1',
-            minute: 25,
-            description: 'Three-pointer by Player 1',
-            timestamp: '2023-10-18T20:25:00Z'
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // First fetch competitions
+        const competitionsResponse = await loggerService.getCompetitions();
+        if (competitionsResponse.success && competitionsResponse.data) {
+          setCompetitions(competitionsResponse.data);
+        }
+        
+        // If we have competitions, fetch matches for the first one
+        if (competitionsResponse.success && competitionsResponse.data && competitionsResponse.data.length > 0) {
+          const response = await loggerService.getMatches(competitionsResponse.data[0].id);
+          if (response.success && response.data) {
+            setMatches(response.data as MatchData[]);
+          } else {
+            throw new Error(response.error || 'Failed to load matches');
           }
-        ],
-        loggerId: 'logger-2',
-        loggerName: 'Sarah Johnson',
-        lastUpdated: '2023-10-18T20:25:00Z'
-      },
-      {
-        id: '3',
-        competitionId: '1',
-        competitionName: 'Premier League 2023',
-        homeTeamId: 'team-5',
-        awayTeamId: 'team-6',
-        startTime: '2023-10-15T15:00:00Z',
-        status: 'completed',
-        homeScore: 2,
-        awayScore: 1,
-        events: [
-          {
-            id: 'e2',
-            matchId: '3',
-            type: 'goal',
-            teamId: 'team-5',
-            playerId: 'player-2',
-            minute: 32,
-            description: 'Goal by Player 2',
-            timestamp: '2023-10-15T15:32:00Z'
-          },
-          {
-            id: 'e3',
-            matchId: '3',
-            type: 'yellow-card',
-            teamId: 'team-6',
-            playerId: 'player-3',
-            minute: 75,
-            description: 'Yellow card for Player 3',
-            timestamp: '2023-10-15T16:15:00Z'
-          }
-        ],
-        loggerId: 'logger-1',
-        loggerName: 'John Smith',
-        lastUpdated: '2023-10-15T17:00:00Z'
+        } else {
+          setMatches([]);
+        }
+      } catch (err) {
+        setError('Failed to load data');
+        console.error('Error fetching data:', err);
+      } finally {
+        setLoading(false);
       }
-    ];
+    };
 
-    setMatches(mockMatches);
-    setLoading(false);
+    fetchData();
   }, []);
 
   const formatDate = (dateString: string) => {
@@ -107,14 +66,14 @@ const MatchesManagement = () => {
     switch (status) {
       case 'scheduled':
         return <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">Scheduled</span>;
-      case 'in-progress':
+      case 'live':
         return <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">Live</span>;
-      case 'completed':
-        return <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Completed</span>;
+      case 'half-time':
+        return <span className="px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-800">Half Time</span>;
+      case 'full-time':
+        return <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Full Time</span>;
       case 'postponed':
         return <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Postponed</span>;
-      case 'cancelled':
-        return <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Cancelled</span>;
       default:
         return <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">{status}</span>;
     }
@@ -130,6 +89,30 @@ const MatchesManagement = () => {
 
   const handleCloseDetails = () => {
     setSelectedMatch(null);
+  };
+  
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  const handleCreateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // In a real implementation, you would submit the form data to create a match
+    console.log('Creating match with data:', formData);
+    setShowCreateForm(false);
+    // Reset form
+    setFormData({
+      competitionId: '',
+      homeTeamId: '',
+      awayTeamId: '',
+      startTime: '',
+      venue: '',
+      loggerId: ''
+    });
   };
 
   if (loading) {
@@ -236,10 +219,12 @@ const MatchesManagement = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">{match.competitionName}</div>
+                    <div className="text-sm text-gray-900 dark:text-white">
+                      {competitions.find(c => c.id === match.competitionId)?.name || 'N/A'}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">{match.loggerName}</div>
+                    <div className="text-sm text-gray-900 dark:text-white">{match.loggerName || 'N/A'}</div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">ID: {match.loggerId}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -318,11 +303,13 @@ const MatchesManagement = () => {
                   <dl className="grid grid-cols-1 gap-2">
                     <div className="flex justify-between">
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Competition</dt>
-                      <dd className="text-sm text-gray-900 dark:text-white">{selectedMatch.competitionName}</dd>
+                      <dd className="text-sm text-gray-900 dark:text-white">
+                        {competitions.find(c => c.id === selectedMatch.competitionId)?.name || 'N/A'}
+                      </dd>
                     </div>
                     <div className="flex justify-between">
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Logger</dt>
-                      <dd className="text-sm text-gray-900 dark:text-white">{selectedMatch.loggerName}</dd>
+                      <dd className="text-sm text-gray-900 dark:text-white">{selectedMatch.loggerName || 'N/A'}</dd>
                     </div>
                     <div className="flex justify-between">
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Logger ID</dt>
@@ -397,74 +384,115 @@ const MatchesManagement = () => {
                 </button>
               </div>
             </div>
-            <div className="p-6">
-              <form className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Competition
-                  </label>
-                  <select className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
-                    <option>Select Competition</option>
-                    <option>Premier League 2023</option>
-                    <option>NBA Season 2023</option>
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleCreateSubmit}>
+              <div className="p-6">
+                <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Home Team
+                      Competition
+                    </label>
+                    <select
+                      name="competitionId"
+                      value={formData.competitionId}
+                      onChange={handleFormChange}
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+                      <option value="">Select Competition</option>
+                      {competitions.map(competition => (
+                        <option key={competition.id} value={competition.id}>
+                          {competition.name} ({competition.sport})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Home Team
+                      </label>
+                      <input
+                        type="text"
+                        name="homeTeamId"
+                        value={formData.homeTeamId}
+                        onChange={handleFormChange}
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        placeholder="Home Team"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Away Team
+                      </label>
+                      <input
+                        type="text"
+                        name="awayTeamId"
+                        value={formData.awayTeamId}
+                        onChange={handleFormChange}
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        placeholder="Away Team"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Start Time
                     </label>
                     <input
-                      type="text"
+                      type="datetime-local"
+                      name="startTime"
+                      value={formData.startTime}
+                      onChange={handleFormChange}
                       className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                      placeholder="Home Team"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Away Team
+                      Venue
                     </label>
                     <input
                       type="text"
+                      name="venue"
+                      value={formData.venue}
+                      onChange={handleFormChange}
                       className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                      placeholder="Away Team"
+                      placeholder="Venue"
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Assign Logger
+                    </label>
+                    <select
+                      name="loggerId"
+                      value={formData.loggerId}
+                      onChange={handleFormChange}
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+                      <option value="">Select Logger</option>
+                      <option value="logger-1">John Smith</option>
+                      <option value="logger-2">Sarah Johnson</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Start Time
-                  </label>
-                  <input
-                    type="datetime-local"
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Assign Logger
-                  </label>
-                  <select className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
-                    <option>Select Logger</option>
-                    <option>John Smith</option>
-                    <option>Sarah Johnson</option>
-                  </select>
-                </div>
-              </form>
-            </div>
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowCreateForm(false)}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  Cancel
-                </button>
-                <button className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md">
-                  Create Match
-                </button>
               </div>
-            </div>
+              <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateForm(false)}
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md"
+                  >
+                    Create Match
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}

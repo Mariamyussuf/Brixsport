@@ -18,7 +18,7 @@ export interface Match {
   homeScore?: number;
   awayScore?: number;
   time?: string;
-  status: 'live' | 'scheduled' | 'ended' | 'Live' | 'Upcoming';
+  status: 'live' | 'scheduled' | 'ended' | 'Live' | 'Upcoming' | 'Finished' | 'finished' | 'paused' | 'completed';
   quarter?: string;
 }
 
@@ -60,7 +60,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
     >
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div className="flex items-center space-x-2">
-          {match.status === 'live' && (
+          {(match.status === 'live' || match.status === 'Live') && (
             <span className="bg-green-500 text-white px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium animate-pulse">
               {t('live')}
             </span>
@@ -81,7 +81,9 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
         </div>
         
         <div className="px-2 sm:px-4 min-w-[80px] sm:min-w-[100px] flex justify-center">
-          {(match.status === 'live' || match.status === 'Live') && 
+          {(match.status === 'live' || match.status === 'Live' || 
+            match.status === 'finished' || match.status === 'Finished' || 
+            match.status === 'ended' || match.status === 'completed') && 
            ((match.homeScore !== undefined && match.awayScore !== undefined) || 
             (match.score1 !== undefined && match.score2 !== undefined)) ? (
             <span className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">

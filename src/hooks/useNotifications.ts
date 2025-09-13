@@ -3,9 +3,10 @@
 
 import { useCallback } from 'react';
 import { useNotifications as useNotificationContext } from '@/components/shared/NotificationsContext';
-import * as notificationService from '@/lib/notificationService';
-import { Match, Player, Team, Competition } from '@/lib/api';
-import { LiveEvent } from '@/lib/api';
+import * as notificationService from '../lib/notificationService';
+// Update the import path to the correct relative location
+import { Player, Team, Competition, LiveEvent } from '../lib/api';
+import type { Match } from '@/lib/userMatchService';
 
 export const useSportsNotifications = () => {
   const { addNotification, scheduleNotification } = useNotificationContext();
@@ -18,22 +19,22 @@ export const useSportsNotifications = () => {
     const delay = kickoffTime - Date.now() - ((minutesBefore || 15) * 60 * 1000);
     
     if (delay > 0) {
-      scheduleNotification(notification, delay);
+      scheduleNotification(notification as any, delay);
     } else {
-      addNotification(notification);
+      addNotification(notification as any);
     }
   }, [addNotification, scheduleNotification]);
 
   // Send a goal notification
   const sendGoalNotification = useCallback((event: LiveEvent, match: Match, player?: Player) => {
     const notification = notificationService.createGoalNotification(event, match, player);
-    addNotification(notification);
+  addNotification(notification as any);
   }, [addNotification]);
 
   // Send a card notification
   const sendCardNotification = useCallback((event: LiveEvent, match: Match, player?: Player) => {
     const notification = notificationService.createCardNotification(event, match, player);
-    addNotification(notification);
+  addNotification(notification as any);
   }, [addNotification]);
 
   // Send a substitution notification
@@ -44,37 +45,37 @@ export const useSportsNotifications = () => {
     playerIn?: Player
   ) => {
     const notification = notificationService.createSubstitutionNotification(event, match, playerOut, playerIn);
-    addNotification(notification);
+  addNotification(notification as any);
   }, [addNotification]);
 
   // Send a half-time notification
   const sendHalfTimeNotification = useCallback((match: Match) => {
     const notification = notificationService.createHalfTimeNotification(match);
-    addNotification(notification);
+  addNotification(notification as any);
   }, [addNotification]);
 
   // Send a full-time notification
   const sendFullTimeNotification = useCallback((match: Match) => {
     const notification = notificationService.createFullTimeNotification(match);
-    addNotification(notification);
+  addNotification(notification as any);
   }, [addNotification]);
 
   // Send a lineup notification
   const sendLineupNotification = useCallback((match: Match) => {
     const notification = notificationService.createLineupNotification(match);
-    addNotification(notification);
+  addNotification(notification as any);
   }, [addNotification]);
 
   // Send a preview notification
   const sendPreviewNotification = useCallback((match: Match) => {
     const notification = notificationService.createPreviewNotification(match);
-    addNotification(notification);
+  addNotification(notification as any);
   }, [addNotification]);
 
   // Send a result notification
   const sendResultNotification = useCallback((match: Match) => {
     const notification = notificationService.createResultNotification(match);
-    addNotification(notification);
+  addNotification(notification as any);
   }, [addNotification]);
 
   // Send a player notification
@@ -85,31 +86,31 @@ export const useSportsNotifications = () => {
     additionalInfo?: string
   ) => {
     const notification = notificationService.createPlayerNotification(eventType, player, match, additionalInfo);
-    addNotification(notification);
+  addNotification(notification as any);
   }, [addNotification]);
 
   // Send a standing notification
   const sendStandingNotification = useCallback((competition: Competition) => {
     const notification = notificationService.createStandingNotification(competition);
-    addNotification(notification);
+  addNotification(notification as any);
   }, [addNotification]);
 
   // Send a qualification notification
   const sendQualificationNotification = useCallback((team: Team, competition: Competition) => {
     const notification = notificationService.createQualificationNotification(team, competition);
-    addNotification(notification);
+  addNotification(notification as any);
   }, [addNotification]);
 
   // Send a fixture notification
   const sendFixtureNotification = useCallback((match: Match, competition: Competition) => {
     const notification = notificationService.createFixtureNotification(match, competition);
-    addNotification(notification);
+  addNotification(notification as any);
   }, [addNotification]);
 
   // Send a news notification
   const sendNewsNotification = useCallback((title: string, message: string) => {
     const notification = notificationService.createNewsNotification(title, message);
-    addNotification(notification);
+    addNotification(notification as any);
   }, [addNotification]);
 
   return {

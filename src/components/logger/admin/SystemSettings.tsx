@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface SettingSection {
   id: string;
@@ -107,7 +107,7 @@ const SystemSettings = () => {
           id: 'notification-email',
           label: 'Notification email address',
           type: 'text',
-          value: 'admin@brixsports.com',
+          value: process.env.NEXT_PUBLIC_ADMIN_DEFAULT_EMAIL || 'admin@brixsports.com',
           placeholder: 'Enter email address'
         }
       ]
@@ -143,6 +143,42 @@ const SystemSettings = () => {
 
   const [activeSection, setActiveSection] = useState('general');
   const [successMessage, setSuccessMessage] = useState('');
+
+  useEffect(() => {
+    // In a real app, this would fetch from an API
+    // For now, we'll use the environment variables
+    const timezoneOptions = process.env.NEXT_PUBLIC_TIMEZONES?.split(',') || ['UTC', 'GMT', 'EST', 'PST', 'CET'];
+    const languageOptions = process.env.NEXT_PUBLIC_LANGUAGES?.split(',') || ['en', 'es', 'fr', 'de'];
+    
+    setSettings(prev => prev.map(section => {
+      if (section.id === 'general') {
+        return {
+          ...section,
+          fields: section.fields.map(field => {
+            if (field.id === 'timezone') {
+              return {
+                ...field,
+                options: timezoneOptions.map(tz => ({ label: tz, value: tz })),
+                value: timezoneOptions[0] || 'UTC'
+              };
+            }
+            if (field.id === 'language') {
+              return {
+                ...field,
+                options: languageOptions.map(lang => ({
+                  label: lang.toUpperCase(),
+                  value: lang
+                })),
+                value: languageOptions[0] || 'en'
+              };
+            }
+            return field;
+          })
+        };
+      }
+      return section;
+    }));
+  }, []);
 
   const handleFieldChange = (sectionId: string, fieldId: string, value: string | number | boolean) => {
     setSettings(prev => prev.map(section => {

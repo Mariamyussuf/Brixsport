@@ -1,12 +1,14 @@
 "use client";
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { adminService } from '@/lib/adminService';
+import { adminService, ensureLoggerType } from '@/lib/adminService';
 import { Logger } from '@/lib/adminService';
 import { useAuth } from '@/hooks/useAuth';
-import type { AdminUser } from '@/lib/adminAuth';
-import { AdminAuthAPI } from '@/lib/adminAuth';
+import type { AdminUser } from '@/types/admin';
 import { useRouter } from 'next/navigation';
+
+// Import logger types for admin to perform logger functions
+import type { LoggerMatch, LoggerCompetition } from '@/lib/adminService';
 
 // Admin context state
 interface AdminState {
@@ -18,6 +20,11 @@ interface AdminState {
   };
   error: string | null;
   adminUser: AdminUser | null;
+  // Logger functionality for admins
+  competitions: LoggerCompetition[];
+  matches: LoggerMatch[];
+  selectedCompetition: LoggerCompetition | null;
+  selectedMatch: LoggerMatch | null;
 }
 
 // Admin context actions
@@ -28,7 +35,12 @@ type AdminAction =
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'CLEAR_ERROR' }
   | { type: 'SET_ADMIN_USER'; payload: AdminUser | null }
-  | { type: 'RESET' };
+  | { type: 'RESET' }
+  // Logger actions for admins
+  | { type: 'SET_COMPETITIONS'; payload: LoggerCompetition[] }
+  | { type: 'SET_MATCHES'; payload: LoggerMatch[] }
+  | { type: 'SET_SELECTED_COMPETITION'; payload: LoggerCompetition | null }
+  | { type: 'SET_SELECTED_MATCH'; payload: LoggerMatch | null };
 
 // Initial state
 const initialState: AdminState = {
@@ -39,7 +51,12 @@ const initialState: AdminState = {
     logger: false
   },
   error: null,
-  adminUser: null
+  adminUser: null,
+  // Logger functionality for admins
+  competitions: [],
+  matches: [],
+  selectedCompetition: null,
+  selectedMatch: null
 };
 
 // Admin reducer
@@ -69,6 +86,19 @@ function adminReducer(state: AdminState, action: AdminAction): AdminState {
     case 'RESET':
       return initialState;
     
+    // Logger actions for admins
+    case 'SET_COMPETITIONS':
+      return { ...state, competitions: action.payload };
+    
+    case 'SET_MATCHES':
+      return { ...state, matches: action.payload };
+    
+    case 'SET_SELECTED_COMPETITION':
+      return { ...state, selectedCompetition: action.payload };
+    
+    case 'SET_SELECTED_MATCH':
+      return { ...state, selectedMatch: action.payload };
+    
     default:
       return state;
   }
@@ -87,6 +117,15 @@ interface AdminContextType extends AdminState {
   reset: () => void;
   setAdminUser: (user: AdminUser | null) => void;
   logout: () => void;
+  // Logger functionality for admins
+  loadLoggerCompetitions: () => Promise<void>;
+  loadLoggerMatches: () => Promise<void>;
+  createLoggerMatch: (matchData: Omit<LoggerMatch, 'id' | 'events' | 'loggerId' | 'lastUpdated'>) => Promise<void>;
+  updateLoggerMatch: (matchId: string, updates: Partial<LoggerMatch>) => Promise<void>;
+  addLoggerEvent: (matchId: string, event: any) => Promise<void>;
+  generateLoggerReport: (matchId: string) => Promise<void>;
+  selectCompetition: (competition: LoggerCompetition | null) => void;
+  selectMatch: (match: LoggerMatch | null) => void;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -129,49 +168,15 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     dispatch({ type: 'CLEAR_ERROR' });
     
     try {
-      // In a real app, this would call the adminService
-      // const response = await adminService.getLoggers();
-      // if (response.success && response.data) {
-      //   dispatch({ type: 'SET_LOGGERS', payload: response.data });
-      // } else {
-      //   throw new Error(response.error || 'Failed to load loggers');
-      // }
-      
-      // Mock data for now
-      const mockLoggers: Logger[] = [
-        {
-          id: '1',
-          name: 'John Smith',
-          email: 'john.smith@example.com',
-          role: 'senior-logger',
-          status: 'active',
-          assignedCompetitions: ['1', '2'],
-          createdAt: '2023-01-15T10:30:00Z',
-          lastActive: '2023-10-15T14:22:00Z'
-        },
-        {
-          id: '2',
-          name: 'Sarah Johnson',
-          email: 'sarah.j@example.com',
-          role: 'logger',
-          status: 'active',
-          assignedCompetitions: ['3'],
-          createdAt: '2023-03-22T09:15:00Z',
-          lastActive: '2023-10-15T12:45:00Z'
-        },
-        {
-          id: '3',
-          name: 'Mike Wilson',
-          email: 'mike.w@example.com',
-          role: 'logger',
-          status: 'inactive',
-          assignedCompetitions: [],
-          createdAt: '2023-05-10T11:20:00Z',
-          lastActive: '2023-09-28T16:30:00Z'
-        }
-      ];
-      
-      dispatch({ type: 'SET_LOGGERS', payload: mockLoggers });
+      // Call the adminService to fetch real data
+      const response = await adminService.getLoggers();
+      if (response.success && response.data) {
+        // Ensure all logger data is properly typed
+        const typedLoggers = response.data.map(ensureLoggerType);
+        dispatch({ type: 'SET_LOGGERS', payload: typedLoggers });
+      } else {
+        throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to load loggers');
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load loggers';
       dispatch({ type: 'SET_ERROR', payload: message });
@@ -191,17 +196,14 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     dispatch({ type: 'CLEAR_ERROR' });
     
     try {
-      // In a real app, this would call the adminService
-      // const response = await adminService.createLogger(loggerData);
-      // if (response.success && response.data) {
-      //   // Add new logger to the list
-      //   dispatch({ type: 'SET_LOGGERS', payload: [...state.loggers, response.data] });
-      // } else {
-      //   throw new Error(response.error || 'Failed to create logger');
-      // }
-      
-      // Mock implementation
-      console.log('Creating logger:', loggerData);
+      // Call the adminService to create a logger
+      const response = await adminService.createLogger(loggerData);
+      if (response.success && response.data) {
+        // Add new logger to the list
+        dispatch({ type: 'SET_LOGGERS', payload: [...state.loggers, response.data] });
+      } else {
+        throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to create logger');
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create logger';
       dispatch({ type: 'SET_ERROR', payload: message });
@@ -216,20 +218,17 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     dispatch({ type: 'CLEAR_ERROR' });
     
     try {
-      // In a real app, this would call the adminService
-      // const response = await adminService.updateLogger(loggerId, updates);
-      // if (response.success && response.data) {
-      //   // Update logger in the list
-      //   const updatedLoggers = state.loggers.map(logger => 
-      //     logger.id === loggerId ? { ...logger, ...response.data } : logger
-      //   );
-      //   dispatch({ type: 'SET_LOGGERS', payload: updatedLoggers });
-      // } else {
-      //   throw new Error(response.error || 'Failed to update logger');
-      // }
-      
-      // Mock implementation
-      console.log('Updating logger:', loggerId, updates);
+      // Call the adminService to update a logger
+      const response = await adminService.updateLogger(loggerId, updates);
+      if (response.success && response.data) {
+        // Update logger in the list
+        const updatedLoggers = state.loggers.map(logger => 
+          logger.id === loggerId ? { ...logger, ...response.data } : logger
+        );
+        dispatch({ type: 'SET_LOGGERS', payload: updatedLoggers });
+      } else {
+        throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to update logger');
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update logger';
       dispatch({ type: 'SET_ERROR', payload: message });
@@ -244,18 +243,15 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     dispatch({ type: 'CLEAR_ERROR' });
     
     try {
-      // In a real app, this would call the adminService
-      // const response = await adminService.deleteLogger(loggerId);
-      // if (response.success) {
-      //   // Remove logger from the list
-      //   const updatedLoggers = state.loggers.filter(logger => logger.id !== loggerId);
-      //   dispatch({ type: 'SET_LOGGERS', payload: updatedLoggers });
-      // } else {
-      //   throw new Error(response.error || 'Failed to delete logger');
-      // }
-      
-      // Mock implementation
-      console.log('Deleting logger:', loggerId);
+      // Call the adminService to delete a logger
+      const response = await adminService.deleteLogger(loggerId);
+      if (response.success) {
+        // Remove logger from the list
+        const updatedLoggers = state.loggers.filter(logger => logger.id !== loggerId);
+        dispatch({ type: 'SET_LOGGERS', payload: updatedLoggers });
+      } else {
+        throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to delete logger');
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to delete logger';
       dispatch({ type: 'SET_ERROR', payload: message });
@@ -270,20 +266,17 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     dispatch({ type: 'CLEAR_ERROR' });
     
     try {
-      // In a real app, this would call the adminService
-      // const response = await adminService.suspendLogger(loggerId);
-      // if (response.success && response.data) {
-      //   // Update logger status in the list
-      //   const updatedLoggers = state.loggers.map(logger => 
-      //     logger.id === loggerId ? { ...logger, status: 'suspended' } : logger
-      //   );
-      //   dispatch({ type: 'SET_LOGGERS', payload: updatedLoggers });
-      // } else {
-      //   throw new Error(response.error || 'Failed to suspend logger');
-      // }
-      
-      // Mock implementation
-      console.log('Suspending logger:', loggerId);
+      // Call the adminService to suspend a logger
+      const response = await adminService.suspendLogger(loggerId);
+      if (response.success && response.data) {
+        // Update logger status in the list
+        const updatedLoggers = state.loggers.map(logger => 
+          logger.id === loggerId ? { ...logger, status: 'suspended' as const } : logger
+        );
+        dispatch({ type: 'SET_LOGGERS', payload: updatedLoggers });
+      } else {
+        throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to suspend logger');
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to suspend logger';
       dispatch({ type: 'SET_ERROR', payload: message });
@@ -298,26 +291,171 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     dispatch({ type: 'CLEAR_ERROR' });
     
     try {
-      // In a real app, this would call the adminService
-      // const response = await adminService.activateLogger(loggerId);
-      // if (response.success && response.data) {
-      //   // Update logger status in the list
-      //   const updatedLoggers = state.loggers.map(logger => 
-      //     logger.id === loggerId ? { ...logger, status: 'active' } : logger
-      //   );
-      //   dispatch({ type: 'SET_LOGGERS', payload: updatedLoggers });
-      // } else {
-      //   throw new Error(response.error || 'Failed to activate logger');
-      // }
-      
-      // Mock implementation
-      console.log('Activating logger:', loggerId);
+      // Call the adminService to activate a logger
+      const response = await adminService.activateLogger(loggerId);
+      if (response.success && response.data) {
+        // Update logger status in the list
+        const updatedLoggers = state.loggers.map(logger => 
+          logger.id === loggerId ? { ...logger, status: 'active' as const } : logger
+        );
+        dispatch({ type: 'SET_LOGGERS', payload: updatedLoggers });
+      } else {
+        throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to activate logger');
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to activate logger';
       dispatch({ type: 'SET_ERROR', payload: message });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: false } });
     }
+  };
+  
+  // Logger functionality for admins
+  
+  // Load competitions
+  const loadLoggerCompetitions = async (): Promise<void> => {
+    dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: true } });
+    dispatch({ type: 'CLEAR_ERROR' });
+    
+    try {
+      // Call the adminService to fetch competitions
+      const response = await adminService.getLoggerCompetitions();
+      if (response.success && response.data) {
+        dispatch({ type: 'SET_COMPETITIONS', payload: response.data });
+      } else {
+        throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to load competitions');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load competitions';
+      dispatch({ type: 'SET_ERROR', payload: message });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: false } });
+    }
+  };
+  
+  // Load matches
+  const loadLoggerMatches = async (): Promise<void> => {
+    dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: true } });
+    dispatch({ type: 'CLEAR_ERROR' });
+    
+    try {
+      // Call the adminService to fetch matches
+      const response = await adminService.getLoggerMatches();
+      if (response.success && response.data) {
+        dispatch({ type: 'SET_MATCHES', payload: response.data });
+      } else {
+        throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to load matches');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load matches';
+      dispatch({ type: 'SET_ERROR', payload: message });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: false } });
+    }
+  };
+  
+  // Create match
+  const createLoggerMatch = async (matchData: Omit<LoggerMatch, 'id' | 'events' | 'loggerId' | 'lastUpdated'>): Promise<void> => {
+    dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: true } });
+    dispatch({ type: 'CLEAR_ERROR' });
+    
+    try {
+      // Call the adminService to create a match
+      const response = await adminService.createLoggerMatch(matchData);
+      if (response.success && response.data) {
+        // Add new match to the list
+        dispatch({ type: 'SET_MATCHES', payload: [...state.matches, response.data] });
+      } else {
+        throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to create match');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create match';
+      dispatch({ type: 'SET_ERROR', payload: message });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: false } });
+    }
+  };
+  
+  // Update match
+  const updateLoggerMatch = async (matchId: string, updates: Partial<LoggerMatch>): Promise<void> => {
+    dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: true } });
+    dispatch({ type: 'CLEAR_ERROR' });
+    
+    try {
+      // Call the adminService to update a match
+      const response = await adminService.updateLoggerMatch(matchId, updates);
+      if (response.success && response.data) {
+        // Update match in the list
+        const updatedMatches = state.matches.map(match => 
+          match.id === matchId ? { ...match, ...response.data } : match
+        );
+        dispatch({ type: 'SET_MATCHES', payload: updatedMatches });
+      } else {
+        throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to update match');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update match';
+      dispatch({ type: 'SET_ERROR', payload: message });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: false } });
+    }
+  };
+  
+  // Add event to match
+  const addLoggerEvent = async (matchId: string, event: any): Promise<void> => {
+    dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: true } });
+    dispatch({ type: 'CLEAR_ERROR' });
+    
+    try {
+      // Call the adminService to add an event
+      const response = await adminService.addLoggerEvent(matchId, event);
+      if (response.success && response.data) {
+        // Update match in the list
+        const updatedMatches = state.matches.map(match => 
+          match.id === matchId ? response.data : match
+        );
+        dispatch({ type: 'SET_MATCHES', payload: updatedMatches });
+      } else {
+        throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to add event');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to add event';
+      dispatch({ type: 'SET_ERROR', payload: message });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: false } });
+    }
+  };
+  
+  // Generate report
+  const generateLoggerReport = async (matchId: string): Promise<void> => {
+    dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: true } });
+    dispatch({ type: 'CLEAR_ERROR' });
+    
+    try {
+      // Call the adminService to generate a report
+      const response = await adminService.generateLoggerReport(matchId);
+      if (response.success && response.data) {
+        // Report generated successfully
+        // You might want to do something with the report data here
+      } else {
+        throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to generate report');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to generate report';
+      dispatch({ type: 'SET_ERROR', payload: message });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: false } });
+    }
+  };
+  
+  // Select competition
+  const selectCompetition = (competition: LoggerCompetition | null): void => {
+    dispatch({ type: 'SET_SELECTED_COMPETITION', payload: competition });
+  };
+  
+  // Select match
+  const selectMatch = (match: LoggerMatch | null): void => {
+    dispatch({ type: 'SET_SELECTED_MATCH', payload: match });
   };
   
   // Clear error
@@ -330,22 +468,6 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     dispatch({ type: 'RESET' });
   };
   
-  // Admin logout function
-  const adminLogout = async (): Promise<void> => {
-    try {
-      // Call admin logout API
-      const result = await AdminAuthAPI.logout();
-      if (result.success) {
-        // Clear admin state
-        dispatch({ type: 'RESET' });
-        // Redirect to login page
-        router.push('/admin/login');
-      }
-    } catch (error) {
-      console.error('Admin logout error:', error);
-    }
-  };
-
   // Context value
   const value: AdminContextType = {
     ...state,
@@ -358,8 +480,21 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     activateLogger,
     clearError,
     reset,
-    setAdminUser: (admin: AdminUser | null) => dispatch({ type: 'SET_ADMIN_USER', payload: admin }),
-    logout: adminLogout
+    setAdminUser: (user: AdminUser | null) => dispatch({ type: 'SET_ADMIN_USER', payload: user }),
+    logout: () => {
+      authLogout();
+      dispatch({ type: 'RESET' });
+      router.push('/admin/login');
+    },
+    // Logger functionality for admins
+    loadLoggerCompetitions,
+    loadLoggerMatches,
+    createLoggerMatch,
+    updateLoggerMatch,
+    addLoggerEvent,
+    generateLoggerReport,
+    selectCompetition,
+    selectMatch
   };
   
   return (

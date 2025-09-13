@@ -2,7 +2,14 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Dialog } from '@/components/ui/dialog';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button'; // Assuming a Button component exists
 
 interface LoginPromptProps {
@@ -19,16 +26,23 @@ export const LoginPrompt: React.FC<LoginPromptProps> = ({ isOpen, onClose }) => 
   };
 
   return (
-    <Dialog isOpen={isOpen} onClose={onClose} title="Authentication Required">
-      <p>To save your favorite teams, players, and competitions, you need to be logged in.</p>
-      <div className="flex justify-end gap-4 mt-6">
-        <Button variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button onClick={handleLogin}>
-          Log In / Sign Up
-        </Button>
-      </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Authentication Required</DialogTitle>
+          <DialogDescription>
+            To save your favorite teams, players, and competitions, you need to be logged in.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="flex justify-end gap-4">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleLogin}>
+            Log In / Sign Up
+          </Button>
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
   );
 };

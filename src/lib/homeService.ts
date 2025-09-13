@@ -1,25 +1,16 @@
 // Home Service
 // Provides integration with the Home API endpoints
 
-import { HomeAPI, HomeData, Match } from './api';
+import BrixSportsService from '@/services/BrixSportsService';
+import { APIResponse } from '@/types/api';
+import { BrixSportsHomeData, Match } from '@/types/brixsports';
 
 /**
  * Gets the home screen data including featured matches, upcoming matches, and recent results
  * @returns Promise resolving to HomeData object
  */
-export const getHomeData = async (): Promise<HomeData> => {
-  try {
-    return await HomeAPI.getHomeData();
-  } catch (error) {
-    console.error('Failed to fetch home data:', error);
-    
-    // Return empty data structure on error
-    return {
-      featuredMatches: [],
-      upcomingMatches: [],
-      recentResults: []
-    };
-  }
+export const getHomeData = async (options?: { signal?: AbortSignal; authToken?: string }): Promise<APIResponse<BrixSportsHomeData>> => {
+  return BrixSportsService.getHomeData(options);
 };
 
 /**
@@ -27,11 +18,6 @@ export const getHomeData = async (): Promise<HomeData> => {
  * @param sport Sport type to filter by
  * @returns Promise resolving to array of matches
  */
-export const getMatchesBySport = async (sport: string): Promise<Match[]> => {
-  try {
-    return await HomeAPI.getMatchesBySport(sport);
-  } catch (error) {
-    console.error(`Failed to fetch matches for sport ${sport}:`, error);
-    return [];
-  }
+export const getMatchesBySport = async (sport: string, status?: string, options?: { signal?: AbortSignal; authToken?: string }): Promise<APIResponse<Match[]>> => {
+  return BrixSportsService.getMatchesBySport(sport, status, options);
 };

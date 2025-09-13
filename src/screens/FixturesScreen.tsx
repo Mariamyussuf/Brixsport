@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Search, Bell, Clock, Play } from 'lucide-react';
 import { useI18n } from '@/components/shared/I18nProvider';
 import { useRouter } from 'next/navigation';
-import MatchCard, { Match } from '@/components/shared/MatchCard';
-import TrackEventCard, { TrackEvent } from '@/components/shared/TrackEventCard';
+import MatchCard from '@/components/shared/MatchCard';
+import TrackEventCard from '@/components/shared/TrackEventCard';
+import { useHomeData, useSportMatches } from '@/hooks/useHomeData';
+import { UI_Match } from '@/types/campus';
 
 // No need to redefine the interfaces, we're using the exported ones
 
@@ -12,122 +14,154 @@ const FixturesScreen = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'all' | 'football' | 'basketball' | 'track'>('all');
   const [currentView, setCurrentView] = useState<'dashboard' | 'track'>('dashboard');
+  
+  // Data hooks
+  const { homeData, loading: homeLoading, error: homeError } = useHomeData();
+  const { matches: sportMatches, loading: matchesLoading, error: matchesError } = 
+    useSportMatches(activeTab === 'all' ? '' : activeTab, 'all');
 
-  // Using shared components instead of local implementations
-
-  const footballMatches: Match[] = [
-    {
-      id: '1',
-      homeTeam: 'Pirates FC',
-      awayTeam: 'Joja FC',
-      homeScore: 0,
-      awayScore: 1,
-      time: "71'",
-      status: 'live'
-    },
-    {
-      id: '2',
-      homeTeam: 'Los Blancos',
-      awayTeam: 'La Masia',
-      time: '2:30',
-      status: 'scheduled'
-    },
-    {
-      id: '3',
-      homeTeam: 'Spartans',
-      awayTeam: 'Kings FC',
-      time: '4:00',
-      status: 'scheduled'
+  // Enhanced conversion functions
+  const convertMatchToUI = (match: any): UI_Match => {
+    // Handle API data structure
+    if (match.home_team_id !== undefined) {
+      return {
+        id: match.id.toString(),
+        status: match.status === 'live' || match.status === 'Live' ? 'Live' : 
+                match.status === 'finished' || match.status === 'ended' || match.status === 'completed' ? 'Finished' : 
+                'Upcoming',
+        time: new Date(match.match_date).toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit',
+          hour12: false 
+        }),
+        team1: `Team ${match.home_team_id}`,
+        team2: `Team ${match.away_team_id}`,
+        score1: match.status === 'live' || match.status === 'Live' || 
+                match.status === 'finished' || match.status === 'ended' || 
+                match.status === 'completed' ? match.home_score : undefined,
+        score2: match.status === 'live' || match.status === 'Live' || 
+                match.status === 'finished' || match.status === 'ended' || 
+                match.status === 'completed' ? match.away_score : undefined,
+        team1Color: `bg-blue-600`,
+        team2Color: `bg-red-600`,
+        sportType: match.sportType || 'football'
+      };
     }
-  ];
+    
+    // Handle fallback data structure
+    const team1 = match.teams[0];
+    const team2 = match.teams[1];
+    
+    const team1Score = match.events
+      .filter((e: any) => e.teamId === team1.id && ['goal', 'field_goal', 'three_pointer'].includes(e.eventType))
+      .reduce((sum: number, e: any) => sum + (typeof e.value === 'number' ? e.value : 1), 0);
+    
+    const team2Score = match.events
+      .filter((e: any) => e.teamId === team2.id && ['goal', 'field_goal', 'three_pointer'].includes(e.eventType))
+      .reduce((sum: number, e: any) => sum + (typeof e.value === 'number' ? e.value : 1), 0);
 
-  const basketballMatches: Match[] = [
-    {
-      id: '4',
-      homeTeam: 'Pheonix',
-      awayTeam: 'Blazers',
-      homeScore: 18,
-      awayScore: 38,
-      quarter: '2nd Quarter',
-      status: 'live'
-    },
-    {
-      id: '5',
-      homeTeam: 'Pheonix',
-      awayTeam: 'Blazers',
-      time: '1:30',
-      status: 'scheduled'
-    },
-    {
-      id: '6',
-      homeTeam: 'Pheonix',
-      awayTeam: 'Blazers',
-      time: '2:30',
-      status: 'scheduled'
+    let timeDisplay = '';
+    if (match.status === 'live' || match.status === 'Live') {
+      const elapsedMinutes = Math.floor((Date.now() - match.startTime) / 60000);
+      if (match.sportType === 'football') {
+        timeDisplay = `${elapsedMinutes}'`;
+      } else if (match.sportType === 'basketball') {
+        const quarter = Math.floor(elapsedMinutes / 12) + 1;
+        timeDisplay = `${quarter}${quarter === 1 ? 'st' : quarter === 2 ? 'nd' : quarter === 3 ? 'rd' : 'th'} Quarter`;
+      }
+    } else {
+      const startTime = new Date(match.startTime);
+      timeDisplay = startTime.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: false 
+      });
     }
-  ];
 
-  const trackEvents: TrackEvent[] = [
-    {
-      id: '1',
-      name: 'Sprint Relay - Male',
-      time: '4:30pm',
-      status: 'scheduled'
-    },
-    {
-      id: '2',
-      name: 'Sprint Relay - Female',
-      time: '4:40pm',
-      status: 'scheduled'
-    },
-    {
-      id: '3',
-      name: '100m Sprint - Male',
-      time: '4:50pm',
-      status: 'scheduled'
-    },
-    {
-      id: '4',
-      name: '100m Sprint - Female',
-      time: '5:00pm',
-      status: 'scheduled'
-    },
-    {
-      id: '5',
-      name: '400m Sprint - Male',
-      time: '5:30pm',
-      status: 'scheduled'
-    },
-    {
-      id: '6',
-      name: '400m Sprint - Female',
-      time: '5:50pm',
-      status: 'scheduled'
-    },
-    {
-      id: '7',
-      name: '1500m Sprint - Male',
-      time: '6:00pm',
-      status: 'scheduled'
-    },
-    {
-      id: '8',
-      name: '1500m Sprint - Female',
-      time: '6:30pm',
-      status: 'scheduled'
-    }
-  ];
-
-  const endedTrackEvent: TrackEvent = {
-    id: '9',
-    name: 'Sprint Relay - Male',
-    time: 'Ended',
-    status: 'ended',
-    results: [
-      { position: '1st', team: 'Team B' },
-      { position: '2nd', team: 'Team C' }
-    ]
+    return {
+      id: match.id,
+      status: match.status === 'live' || match.status === 'Live' ? 'Live' : 'Upcoming',
+      time: timeDisplay,
+      team1: team1.name,
+      team2: team2.name,
+      score1: match.status === 'live' || match.status === 'Live' ? team1Score : undefined,
+      score2: match.status === 'live' || match.status === 'Live' ? team2Score : undefined,
+      team1Color: `bg-blue-600`,
+      team2Color: `bg-red-600`,
+      sportType: match.sportType
+    };
   };
+
+  const convertTrackEventToUI = (trackEvent: any): any => {
+    // Handle API data structure and convert to TrackEvent format expected by TrackEventCard
+    let status: 'live' | 'scheduled' | 'ended' | 'Live' | 'Ended';
+    switch (trackEvent.status) {
+      case 'live':
+        status = 'live';
+        break;
+      case 'completed':
+      case 'finished':
+      case 'ended':
+        status = 'ended';
+        break;
+      default:
+        status = 'scheduled';
+        break;
+    }
+    
+    return {
+      status: status,
+      event: trackEvent.name || `Track Event ${trackEvent.id}`,
+      results: Array.isArray(trackEvent.results) ? trackEvent.results.map((result: any) => ({
+        position: `${result.position}.`,
+        team: result.team_name || `Team ${result.team_id}`
+      })) : []
+    };
+  };
+
+  // Get data with fallback logic
+  const getFilteredMatches = (sportType: 'football' | 'basketball'): UI_Match[] => {
+    let matches: UI_Match[] = [];
+    
+    // Try to use API data first
+    if (homeData?.liveFootball || homeData?.upcomingFootball) {
+      if (sportType === 'football') {
+        matches = [
+          ...(homeData?.liveFootball?.map(convertMatchToUI) || []),
+          ...(homeData?.upcomingFootball?.map(convertMatchToUI) || [])
+        ];
+      } else if (sportMatches && sportMatches.length > 0) {
+        matches = sportMatches.map(convertMatchToUI);
+      }
+    }
+    
+    return matches;
+  };
+
+  const getTrackEvents = (): any[] => {
+    // Try API data first
+    if (homeData?.trackEvents && homeData.trackEvents.length > 0) {
+      return homeData.trackEvents.map(convertTrackEventToUI);
+    }
+    
+    return [];
+  };
+
+  const footballMatches = getFilteredMatches('football');
+  const basketballMatches = getFilteredMatches('basketball');
+  const trackEvents = getTrackEvents();
+
+  // Loading state
+  if (homeLoading || matchesLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading matches...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (currentView === 'track') {
     return (
@@ -175,14 +209,13 @@ const FixturesScreen = () => {
           <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6">{t('current_competition_fixtures')}</h2>
           
           <div className="text-center text-gray-600 dark:text-gray-400 font-medium mb-6">
-            18th OCT
+            {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
           </div>
 
           <div className="space-y-4">
-            {trackEvents.map((event) => (
-              <TrackEventCard key={event.id} event={event} />
+            {trackEvents.map((event: any, index: number) => (
+              <TrackEventCard key={`track-${index}`} event={event} />
             ))}
-            <TrackEventCard event={endedTrackEvent} />
           </div>
         </div>
       </div>
@@ -240,8 +273,8 @@ const FixturesScreen = () => {
           <div>
             <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6">{t('football_section')}</h2>
             <div className="space-y-4">
-              {footballMatches.map((match) => (
-                <MatchCard key={match.id} match={match} />
+              {footballMatches.map((match, index) => (
+                <MatchCard key={`football-${index}`} match={match} />
               ))}
             </div>
           </div>
@@ -252,18 +285,20 @@ const FixturesScreen = () => {
           <div>
             <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6">{t('basketball_section')}</h2>
             <div className="space-y-4">
-              {basketballMatches.map((match) => (
-                <MatchCard key={match.id} match={match} isBasketball={true} />
+              {basketballMatches.map((match, index) => (
+                <MatchCard key={`basketball-${index}`} match={match} isBasketball={true} />
               ))}
             </div>
           </div>
         )}
 
         {/* Track Events Preview */}
-        {activeTab === 'all' && (
+        {activeTab === 'all' && trackEvents.length > 0 && (
           <div>
             <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6">{t('track_events')}</h2>
-            <TrackEventCard event={endedTrackEvent} />
+            {trackEvents.slice(0, 2).map((event: any, index: number) => (
+              <TrackEventCard key={`track-preview-${index}`} event={event} />
+            ))}
             <button
               onClick={() => setCurrentView('track')}
               className="mt-4 text-blue-600 dark:text-blue-500 hover:text-blue-800 dark:hover:text-blue-400 font-medium"

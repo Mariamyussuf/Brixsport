@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ArrowLeft, Bell, Search, Filter, MoreVertical } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import SmartImage from '@/components/shared/SmartImage';
@@ -36,60 +36,7 @@ interface SportsFilterInterfaceProps {
 }
 
 const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
-  items = [
-    {
-      id: '1',
-      name: 'Yanko',
-      team: 'Joga FC',
-      sport: 'Football',
-      avatar: '/api/placeholder/40/40',
-      type: 'player'
-    },
-    {
-      id: '2',
-      name: 'Marcus Johnson',
-      team: 'Thunder FC',
-      sport: 'Football',
-      avatar: '/api/placeholder/40/40',
-      type: 'player'
-    },
-    {
-      id: '3',
-      name: 'Sarah Williams',
-      team: 'Lightning United',
-      sport: 'Football',
-      avatar: '/api/placeholder/40/40',
-      type: 'player'
-    },
-    {
-      id: '4',
-      name: 'Play Ball Africa',
-      league: 'School competition',
-      logo: '/api/placeholder/40/40',
-      type: 'competition'
-    },
-    {
-      id: '5',
-      name: 'Premier Youth League',
-      league: 'Regional competition',
-      logo: '/api/placeholder/40/40',
-      type: 'competition'
-    },
-    {
-      id: '6',
-      name: 'Champions Cup',
-      league: 'National tournament',
-      logo: '/api/placeholder/40/40',
-      type: 'competition'
-    },
-    {
-      id: '7',
-      name: 'Spartans FC',
-      league: 'Busa League',
-      logo: '/api/placeholder/40/40',
-      type: 'competition'
-    }
-  ],
+  items = [],
   onItemRemove,
   onFilterChange
 }) => {
@@ -98,6 +45,39 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
   const [selectedItems, setSelectedItems] = useState<FilterableItem[]>(items);
   const [query, setQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch search results when query changes
+  useEffect(() => {
+    const fetchSearchResults = async () => {
+      if (!query.trim()) {
+        setSelectedItems([]);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&type=${activeFilter}`);
+        if (!response.ok) {
+          throw new Error('Search failed');
+        }
+
+        const data = await response.json();
+        setSelectedItems(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Search failed');
+        setSelectedItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const debounce = setTimeout(fetchSearchResults, 300);
+    return () => clearTimeout(debounce);
+  }, [query, activeFilter]);
 
   const filterOptions: FilterOption[] = [
     { id: 'all', active: activeFilter === 'all' },

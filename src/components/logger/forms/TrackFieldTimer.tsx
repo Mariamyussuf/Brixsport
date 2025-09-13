@@ -80,9 +80,9 @@ const PRESETS = {
 
 // Sound effects
 const SOUNDS = {
-  start: new Audio('data:audio/wav;base64,...'), // Base64 encoded short beep
-  lap: new Audio('data:audio/wav;base64,...'),   // Base64 encoded click
-  finish: new Audio('data:audio/wav;base64,...'), // Base64 encoded success tone
+  start: typeof window !== 'undefined' ? new Audio('data:audio/wav;base64,...') : null, // Base64 encoded short beep
+  lap: typeof window !== 'undefined' ? new Audio('data:audio/wav;base64,...') : null,   // Base64 encoded click
+  finish: typeof window !== 'undefined' ? new Audio('data:audio/wav;base64,...') : null, // Base64 encoded success tone
 };
 
 function usePersistentTimer(disabled: boolean) {
@@ -250,8 +250,8 @@ export const TrackFieldTimer: React.FC<TrackFieldTimerProps> = ({
 
   // Play sound and vibrate
   const playFeedback = (type: 'start' | 'lap' | 'finish') => {
-    if (soundEnabled) {
-      SOUNDS[type].play().catch(() => {});
+    if (soundEnabled && SOUNDS[type]) {
+      SOUNDS[type]?.play().catch(() => {});
     }
     if (vibrationEnabled && navigator.vibrate) {
       switch (type) {

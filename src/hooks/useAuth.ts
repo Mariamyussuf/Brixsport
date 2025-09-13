@@ -447,50 +447,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
 
     try {
-      // In a real app, this would call an API
-      // For now, we'll simulate a login with mock data
+            // Call the authentication API
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Authentication failed');
+      }
+
+      const { user, token, refreshToken } = await response.json();
       
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Check if this is a logger login
-      const isLoggerLogin = credentials.email.includes('logger');
-      const isAdminLogin = credentials.email.includes('admin');
-      
-      // Mock user data
-      const mockUser: User = {
-        id: isAdminLogin ? 'admin-123' : (isLoggerLogin ? 'logger-123' : 'user-123'),
-        name: isAdminLogin ? 'Admin User' : (isLoggerLogin ? 'Logger User' : 'Regular User'),
-        email: credentials.email,
-        role: isAdminLogin ? 'admin' : (isLoggerLogin ? 'logger' : 'user'),
-        image: 'https://i.pravatar.cc/150?u=' + credentials.email,
-        managedLoggers: isAdminLogin ? ['logger-1', 'logger-2'] : undefined,
-        adminLevel: isAdminLogin ? 'basic' : undefined,
-        assignedCompetitions: isLoggerLogin ? ['competition-1', 'competition-2'] : undefined,
-        permissions: isLoggerLogin ? ['log_matches', 'log_events', 'view_stats'] : (isAdminLogin ? ['manage_loggers', 'view_reports', 'manage_competitions'] : [])
-      };
-      
-      // Create a mock token
-      const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-      const payload = btoa(JSON.stringify({ 
-        sub: mockUser.id,
-        name: mockUser.name,
-        email: mockUser.email,
-        role: mockUser.role,
-        managedLoggers: mockUser.managedLoggers,
-        adminLevel: mockUser.adminLevel,
-        assignedCompetitions: mockUser.assignedCompetitions,
-        permissions: mockUser.permissions,
-        exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
-        iat: Math.floor(Date.now() / 1000)
-      }));
-      const signature = 'mock-signature';
-      const mockToken = `${header}.${payload}.${signature}`;
-      
-      const mockRefreshToken = 'mock-refresh-token';
-      
-      TokenManager.setTokens(mockToken, mockRefreshToken);
-      setUser(mockUser);
+      // Store tokens and user data
+      TokenManager.setTokens(token, refreshToken);
+      setUser(user);
     } catch (err) {
       let errorType: AuthError['type'] = 'UNKNOWN';
       let errorMessage = 'An unexpected error occurred.';
@@ -547,8 +522,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email: `${demoRole}@demo.com`,
         role: demoRole, // Set role based on URL param
         image: isDemoAdmin 
-          ? 'https://i.pravatar.cc/300?u=admin@demo.com' 
-          : (isDemoLogger ? 'https://i.pravatar.cc/300?u=logger@demo.com' : 'https://i.pravatar.cc/300?u=demo@example.com'),
+          ? `https://i.pravatar.cc/300?u=${process.env.NEXT_PUBLIC_ADMIN_DEFAULT_EMAIL || 'admin@demo.com'}` 
+          : (isDemoLogger ? `https://i.pravatar.cc/300?u=${process.env.NEXT_PUBLIC_LOGGER_DEFAULT_EMAIL || 'logger@demo.com'}` : 'https://i.pravatar.cc/300?u=demo@example.com'),
         managedLoggers: isDemoAdmin ? ['demo-logger-1', 'demo-logger-2'] : undefined,
         adminLevel: isDemoAdmin ? 'basic' : undefined,
         assignedCompetitions: isDemoLogger ? ['demo-competition-1', 'demo-competition-2'] : undefined,

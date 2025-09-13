@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -14,6 +15,7 @@ declare global {
 }
 
 export default function PWARegister() {
+  const { user } = useAuth();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallTip, setShowInstallTip] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -32,16 +34,7 @@ export default function PWARegister() {
     }
 
     try {
-      // Only register main PWA service worker for non-admin and non-logger paths
-      const isAdminPath = window.location.pathname.startsWith('/admin');
-      const isLoggerPath = window.location.pathname.startsWith('/logger');
-      
-      // Only register if we're not in admin or logger sections
-      if (isAdminPath || isLoggerPath) {
-        console.log('[PWA] In admin or logger path, skipping main PWA registration');
-        return;
-      }
-      
+      // Register main PWA service worker for all paths in unified app
       const registration = await navigator.serviceWorker.register('/service-worker.js', {
         updateViaCache: 'none',
         scope: '/'
@@ -118,12 +111,15 @@ export default function PWARegister() {
   useEffect(() => {
     if (typeof window === "undefined" || isStandalone) return;
     
-    // Only show install prompt for main app (not admin or logger sections)
-    const isAdminPath = window.location.pathname.startsWith('/admin');
-    const isLoggerPath = window.location.pathname.startsWith('/logger');
-    
-    if (isAdminPath || isLoggerPath) {
-      console.log('[PWA] In admin or logger path, skipping main PWA install prompt');
+    // Don't show install prompt for admin or logger roles as they have dedicated PWAs
+    // Updated to check for the new domain structure where admin and logger share subdomain
+    const isOnAdminDomain = typeof window !== 'undefined' && 
+      (window.location.hostname === 'admin.brixsports.com' || 
+       window.location.hostname === 'admin.brixsport.vercel.app' ||
+       (window.location.hostname === 'localhost' && window.location.pathname.startsWith('/admin')));
+       
+    if (isOnAdminDomain && (user?.role === 'admin' || user?.role === 'super-admin' || user?.role?.startsWith('logger'))) {
+      console.log('[PWA] User is on admin domain with admin/logger role, skipping main PWA install prompt');
       return;
     }
     
@@ -143,15 +139,6 @@ export default function PWARegister() {
     
     // Android/Desktop: Handle beforeinstallprompt
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
-      // Only handle this event if we're in the main app paths
-      const isAdminPath = window.location.pathname.startsWith('/admin');
-      const isLoggerPath = window.location.pathname.startsWith('/logger');
-      
-      if (isAdminPath || isLoggerPath) {
-        console.log('[PWA] In admin or logger path, not handling install prompt in main PWA');
-        return;
-      }
-      
       e.preventDefault();
       console.log('[PWA] Install prompt intercepted');
       
@@ -168,7 +155,6 @@ export default function PWARegister() {
       const installDismissedAt = localStorage.getItem('pwa-install-dismissed-at');
       const lastPromptShownAt = localStorage.getItem('pwa-last-prompt-shown-at');
       
-    
       const now = Date.now();
       const shownRecently = lastPromptShownAt && (now - parseInt(lastPromptShownAt) < 24 * 60 * 60 * 1000);
       const dismissedRecently = installDismissedAt && (now - parseInt(installDismissedAt) < 7 * 24 * 60 * 60 * 1000);
@@ -183,15 +169,6 @@ export default function PWARegister() {
     };
 
     const handleAppInstalled = () => {
-      // Only handle this event if we're in the main app paths
-      const isAdminPath = window.location.pathname.startsWith('/admin');
-      const isLoggerPath = window.location.pathname.startsWith('/logger');
-      
-      if (isAdminPath || isLoggerPath) {
-        console.log('[PWA] In admin or logger path, not handling app installed in main PWA');
-        return;
-      }
-      
       console.log('[PWA] App successfully installed');
       setShowInstallTip(false);
       setInstallPrompt(null);
@@ -214,7 +191,7 @@ export default function PWARegister() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as any);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, [isStandalone, isIOS, pushNotificationSupported]);
+  }, [isStandalone, isIOS, pushNotificationSupported, user]);
 
   // Handle PWA installation
   const handleInstallClick = useCallback(async () => {

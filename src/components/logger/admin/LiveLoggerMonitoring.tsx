@@ -1,68 +1,71 @@
 import React, { useState, useEffect } from 'react';
+import { adminService, ensureLoggerType } from '@/lib/adminService';
+import { Logger } from '@/lib/adminService';
 
-interface LoggerStatus {
+// Define a union type that includes all possible logger statuses
+type LoggerStatus = 'active' | 'inactive' | 'suspended' | 'online' | 'busy' | 'offline';
+
+// Update LiveLogger to use the new type
+interface LiveLogger extends Logger {
   id: string;
-  name: string;
-  email: string;
-  status: 'online' | 'offline' | 'busy';
-  lastActive: string;
-  currentMatch?: string;
+  name?: string;
+  email?: string;
+  lastActive?: string;
   eventsLogged: number;
   connectionQuality: 'excellent' | 'good' | 'fair' | 'poor';
+  currentMatch?: string;
+  location?: string;
+  status: LoggerStatus;
 }
 
 const LiveLoggerMonitoring = () => {
-  const [loggers, setLoggers] = useState<LoggerStatus[]>([]);
+  const [loggers, setLoggers] = useState<LiveLogger[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'online' | 'offline' | 'busy'>('all');
+  const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | LoggerStatus>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data for demonstration
+  // Fetch loggers from API
   useEffect(() => {
-    const mockLoggers: LoggerStatus[] = [
-      {
-        id: '1',
-        name: 'John Smith',
-        email: 'john.smith@example.com',
-        status: 'online',
-        lastActive: '2023-10-18T20:30:00Z',
-        currentMatch: 'Man Utd vs Liverpool',
-        eventsLogged: 12,
-        connectionQuality: 'excellent'
-      },
-      {
-        id: '2',
-        name: 'Sarah Johnson',
-        email: 'sarah.j@example.com',
-        status: 'busy',
-        lastActive: '2023-10-18T20:25:00Z',
-        currentMatch: 'Lakers vs Celtics',
-        eventsLogged: 8,
-        connectionQuality: 'good'
-      },
-      {
-        id: '3',
-        name: 'Mike Wilson',
-        email: 'mike.w@example.com',
-        status: 'offline',
-        lastActive: '2023-10-18T18:45:00Z',
-        eventsLogged: 0,
-        connectionQuality: 'poor'
-      },
-      {
-        id: '4',
-        name: 'Emma Davis',
-        email: 'emma.d@example.com',
-        status: 'online',
-        lastActive: '2023-10-18T20:35:00Z',
-        eventsLogged: 5,
-        connectionQuality: 'fair'
+    const fetchLoggers = async () => {
+      try {
+        setLoading(true);
+        const response = await adminService.getLoggers();
+        if (response.success && response.data) {
+          // Transform the data to match our LiveLogger interface
+          const liveLoggers: LiveLogger[] = response.data.map(logger => ({
+            ...ensureLoggerType(logger),
+            status: mapLoggerStatusToLiveStatus(logger.status as any),
+            eventsLogged: 0, // This would need to come from the API or be calculated
+            connectionQuality: 'good', // This would need to come from the API
+            // Add other fields as needed
+          }));
+          setLoggers(liveLoggers);
+        } else {
+          throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to load loggers');
+        }
+      } catch (err) {
+        setError('Failed to load loggers');
+        console.error('Error fetching loggers:', err);
+      } finally {
+        setLoading(false);
       }
-    ];
+    };
 
-    setLoggers(mockLoggers);
-    setLoading(false);
+    fetchLoggers();
+    
+    // Set up polling to refresh data every 30 seconds
+    const interval = setInterval(fetchLoggers, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
+
+  // Map admin logger status to live logger status
+  const mapLoggerStatusToLiveStatus = (status: LoggerStatus): LoggerStatus => {
+    // In a real implementation, this would depend on actual logger activity
+    // For now, we're just returning the status as is since we've unified the type
+    return status;
+  };
 
   const filteredLoggers = loggers.filter(logger => {
     const matchesFilter = filter === 'all' || logger.status === filter;
@@ -72,7 +75,7 @@ const LiveLoggerMonitoring = () => {
     return matchesFilter && matchesSearch;
   });
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: LoggerStatus) => {
     switch (status) {
       case 'online': return 'bg-green-500';
       case 'busy': return 'bg-yellow-500';
@@ -120,6 +123,22 @@ const LiveLoggerMonitoring = () => {
     return (
       <div className="flex justify-center items-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+        <div className="flex items-center">
+          <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+          <h3 className="ml-2 text-lg font-medium text-red-800">Error</h3>
+        </div>
+        <div className="mt-2 text-red-700">
+          <p>{error}</p>
+        </div>
       </div>
     );
   }
@@ -233,53 +252,38 @@ const LiveLoggerMonitoring = () => {
                   {logger.status.charAt(0).toUpperCase() + logger.status.slice(1)}
                 </span>
               </div>
-
+              
               <div className="mt-4 space-y-2">
-                {logger.currentMatch ? (
-                  <div className="flex items-center text-sm">
-                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-                    </svg>
-                    <span className="text-gray-900 dark:text-white truncate">{logger.currentMatch}</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>No active match</span>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500 dark:text-gray-400">Last Active</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{formatLastActive(logger.lastActive)}</span>
+                </div>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500 dark:text-gray-400">Events Logged</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{logger.eventsLogged}</span>
+                </div>
+                
+                {logger.currentMatch && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">Current Match</span>
+                    <span className="font-medium text-gray-900 dark:text-white truncate max-w-[120px]">{logger.currentMatch}</span>
                   </div>
                 )}
-
-                <div className="flex items-center text-sm">
-                  <svg className="w-4 h-4 text-gray-500 dark:text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-gray-900 dark:text-white">{logger.eventsLogged} events logged</span>
-                </div>
-
-                <div className="flex items-center text-sm">
-                  <svg className="w-4 h-4 text-gray-500 dark:text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
-                  </svg>
-                  <span className={getConnectionQualityColor(logger.connectionQuality)}>
-                    Connection: {getConnectionQualityText(logger.connectionQuality)}
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500 dark:text-gray-400">Connection</span>
+                  <span className={`font-medium ${getConnectionQualityColor(logger.connectionQuality)}`}>
+                    {getConnectionQualityText(logger.connectionQuality)}
                   </span>
                 </div>
-
-                <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>Last active: {formatLastActive(logger.lastActive)}</span>
-                </div>
               </div>
-
+              
               <div className="mt-4 flex space-x-2">
-                <button className="flex-1 px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 text-white rounded-md transition duration-200">
+                <button className="flex-1 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">
                   Message
                 </button>
-                <button className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition duration-200">
+                <button className="flex-1 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md">
                   View Details
                 </button>
               </div>
@@ -287,44 +291,6 @@ const LiveLoggerMonitoring = () => {
           ))}
         </div>
       )}
-
-      {/* Summary Stats */}
-      <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              {loggers.length}
-            </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              Total Loggers
-            </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-green-600">
-              {loggers.filter(l => l.status === 'online').length}
-            </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              Online
-            </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-yellow-600">
-              {loggers.filter(l => l.status === 'busy').length}
-            </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              Busy
-            </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-gray-600">
-              {loggers.filter(l => l.status === 'offline').length}
-            </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              Offline
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

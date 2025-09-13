@@ -10,13 +10,22 @@ const JWT_SECRET = new TextEncoder().encode(
 );
 
 // Logger-specific user roles
-export type LoggerRole = 'logger' | 'senior-logger' | 'logger-admin' | 'admin';
+export type LoggerRole = 'logger' | 'senior-logger' | 'logger-admin' | 'admin' | 'super-admin';
 
 // Extended user interface for loggers
 export interface LoggerUser extends User {
   role: LoggerRole;
   assignedCompetitions?: string[];
   permissions: string[];
+  lastLogin?: string;
+  sessionTimeout?: number; // Session timeout in minutes
+}
+
+// Session management interface
+export interface SessionConfig {
+  timeout: number; // in minutes
+  warnBefore: number; // warn user before timeout in minutes
+  autoRefresh: boolean;
 }
 
 /**
@@ -34,7 +43,9 @@ export async function generateLoggerToken(user: LoggerUser): Promise<string> {
     email: user.email,
     role: user.role,
     assignedCompetitions: user.assignedCompetitions,
-    permissions: user.permissions
+    permissions: user.permissions,
+    lastLogin: user.lastLogin,
+    sessionTimeout: user.sessionTimeout
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt(iat)
@@ -53,7 +64,7 @@ export async function verifyLoggerToken(token: string): Promise<LoggerUser | nul
     
     // Check if this is a logger user or admin
     const role = payload.role as string;
-    if (!role || (!role.startsWith('logger') && role !== 'admin')) {
+    if (!role || (!role.startsWith('logger') && role !== 'admin' && role !== 'super-admin')) {
       return null;
     }
     
@@ -63,7 +74,9 @@ export async function verifyLoggerToken(token: string): Promise<LoggerUser | nul
       email: payload.email as string,
       role: role as LoggerRole,
       assignedCompetitions: payload.assignedCompetitions as string[] | undefined,
-      permissions: payload.permissions as string[]
+      permissions: payload.permissions as string[],
+      lastLogin: payload.lastLogin as string | undefined,
+      sessionTimeout: payload.sessionTimeout as number | undefined
     };
     
     return user;
@@ -90,8 +103,8 @@ export function hasLoggerPermission(user: LoggerUser, permission: string): boole
  * @returns boolean - Whether the logger can access the competition
  */
 export function canAccessCompetition(user: LoggerUser, competitionId: string): boolean {
-  // Admins can access all competitions
-  if (user.role === 'logger-admin') {
+  // Admins and super-admins can access all competitions
+  if (user.role === 'admin' || user.role === 'super-admin' || user.role === 'logger-admin') {
     return true;
   }
   
@@ -122,10 +135,70 @@ export const DEFAULT_LOGGER_RATE_LIMIT: LoggerRateLimitConfig = {
   lockoutDurationMs: 60 * 60 * 1000 // 1 hour lockout
 };
 
+/**
+ * Session management utilities
+ */
+export class LoggerSessionManager {
+  static readonly DEFAULT_SESSION_CONFIG: SessionConfig = {
+    timeout: 60, // 60 minutes
+    warnBefore: 5, // Warn 5 minutes before timeout
+    autoRefresh: true
+  };
+
+  /**
+   * Check if session is about to expire
+   * @param user - The logger user
+   * @param warnMinutes - Minutes before expiration to warn
+   * @returns boolean - Whether session is about to expire
+   */
+  static isSessionExpiring(user: LoggerUser, warnMinutes: number = 5): boolean {
+    if (!user.lastLogin) return false;
+    
+    const lastLoginTime = new Date(user.lastLogin).getTime();
+    const currentTime = Date.now();
+    const sessionTimeout = (user.sessionTimeout || this.DEFAULT_SESSION_CONFIG.timeout) * 60 * 1000;
+    const warnTime = warnMinutes * 60 * 1000;
+    
+    return (currentTime - lastLoginTime) > (sessionTimeout - warnTime);
+  }
+
+  /**
+   * Get remaining session time in minutes
+   * @param user - The logger user
+   * @returns number - Remaining session time in minutes
+   */
+  static getRemainingSessionTime(user: LoggerUser): number {
+    if (!user.lastLogin) return 0;
+    
+    const lastLoginTime = new Date(user.lastLogin).getTime();
+    const currentTime = Date.now();
+    const sessionTimeout = (user.sessionTimeout || this.DEFAULT_SESSION_CONFIG.timeout) * 60 * 1000;
+    const elapsed = currentTime - lastLoginTime;
+    
+    return Math.max(0, Math.floor((sessionTimeout - elapsed) / 60000));
+  }
+
+  /**
+   * Check if session has expired
+   * @param user - The logger user
+   * @returns boolean - Whether session has expired
+   */
+  static isSessionExpired(user: LoggerUser): boolean {
+    if (!user.lastLogin) return false;
+    
+    const lastLoginTime = new Date(user.lastLogin).getTime();
+    const currentTime = Date.now();
+    const sessionTimeout = (user.sessionTimeout || this.DEFAULT_SESSION_CONFIG.timeout) * 60 * 1000;
+    
+    return (currentTime - lastLoginTime) > sessionTimeout;
+  }
+}
+
 export default {
   generateLoggerToken,
   verifyLoggerToken,
   hasLoggerPermission,
   canAccessCompetition,
+  LoggerSessionManager,
   DEFAULT_LOGGER_RATE_LIMIT
 };

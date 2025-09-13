@@ -4,11 +4,9 @@
 import { useCallback } from 'react';
 import { useNotifications } from '@/components/shared/NotificationsContext';
 import { LoggerMatch, MatchEvent } from '@/lib/loggerService';
-import { useLogger } from '@/contexts/LoggerContext';
 
 export const useLoggerNotifications = () => {
-  const { addNotification, scheduleNotification } = useNotifications();
-  const { selectedMatch } = useLogger();
+  const { addNotification } = useNotifications();
 
   // Send a match start notification
   const sendMatchStartNotification = useCallback((match: LoggerMatch) => {
@@ -50,13 +48,9 @@ export const useLoggerNotifications = () => {
         title = 'Goal Logged!';
         message = `Goal logged in ${match.homeTeamId} vs ${match.awayTeamId} at ${event.minute}'`;
         break;
-      case 'yellow-card':
-        title = 'Yellow Card';
-        message = `Yellow card logged in ${match.homeTeamId} vs ${match.awayTeamId} at ${event.minute}'`;
-        break;
-      case 'red-card':
-        title = 'Red Card!';
-        message = `Red card logged in ${match.homeTeamId} vs ${match.awayTeamId} at ${event.minute}'`;
+      case 'card':
+        title = event.metadata.cardType === 'yellow' ? 'Yellow Card' : 'Red Card';
+        message = `${title} logged in ${match.homeTeamId} vs ${match.awayTeamId} at ${event.minute}'`;
         break;
       case 'substitution':
         title = 'Substitution';
