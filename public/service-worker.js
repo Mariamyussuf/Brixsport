@@ -70,23 +70,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Frontend-only mock: intercept bulk events endpoint to always succeed
-  if (url.pathname === '/api/events/bulk' && request.method === 'POST') {
-    event.respondWith((async () => {
-      try {
-        const body = await request.clone().text();
-        console.log('[ServiceWorker] Mock bulk received:', body.slice(0, 200));
-      } catch (_) {
-        // ignore body parse errors
-      }
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    })());
-    return;
-  }
-
   // HTML navigations: network-first with offline fallback (with iOS fix)
   if (request.mode === 'navigate') {
     event.respondWith((async () => {
@@ -210,23 +193,25 @@ async function clearEvents() {
 }
 
 async function sendEventsToServer(events) {
-  // Adjust endpoint to your API. This is a placeholder.
-  const endpoint = '/api/events/bulk';
+  // Adjust endpoint to your API
+  const endpoint = '/api/logger/events/bulk';
   const resp = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ events }),
   });
   if (!resp.ok) throw new Error('Failed to sync events');
+  return resp.json();
 }
 
 async function syncOfflineEvents() {
   try {
     const events = await getAllEvents();
     if (!events || events.length === 0) return;
-    await sendEventsToServer(events);
+    const result = await sendEventsToServer(events);
     await clearEvents();
     console.log('[ServiceWorker] Synced', events.length, 'offline events');
+    return result;
   } catch (err) {
     console.error('[ServiceWorker] Sync failed, will retry later', err);
     throw err;

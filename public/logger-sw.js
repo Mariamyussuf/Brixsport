@@ -7,15 +7,10 @@ const urlsToCache = [
   '/',
   '/logger',
   '/logger/login',
-  '/logger/test',
   '/logger/dashboard',
-  '/logger-manifest.json',
-  '/logger-apple-touch-icon.png',
-  '/logger-apple-touch-icon-152x152.png',
-  '/logger-apple-touch-icon-180x180.png',
-  '/logger-apple-touch-icon-167x167.png',
-  '/logger-splash-640x1136.png',
-  '/logger-splash-1536x2048.png'
+  '/logger-manifest.json'
+  // NOTE: Image assets removed to prevent caching errors
+  // Add them back one by one after verifying they exist
 ];
 
 // Install event - cache essential resources
@@ -26,7 +21,25 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('[Logger SW] Caching app shell');
-        return cache.addAll(urlsToCache);
+        // Use a more robust caching approach that handles failures
+        return cache.addAll(urlsToCache).catch((error) => {
+          console.warn('[Logger SW] Some URLs failed to cache:', error);
+          // Try to cache URLs individually to identify which ones fail
+          const cachePromises = urlsToCache.map(url => {
+            return fetch(url).then(response => {
+              if (response.ok) {
+                return cache.put(url, response);
+              } else {
+                throw new Error(`Failed to fetch ${url}: ${response.status}`);
+              }
+            }).catch(error => {
+              console.warn(`[Logger SW] Failed to cache ${url}:`, error);
+              // Don't fail the entire cache operation for individual failures
+              return Promise.resolve();
+            });
+          });
+          return Promise.all(cachePromises);
+        });
       })
   );
 });
