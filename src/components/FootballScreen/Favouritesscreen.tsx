@@ -1,10 +1,44 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Team, Player, Tournament, SportType } from '../../types/campus';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/components/shared/I18nProvider';
+import { useFavorites } from '@/hooks/useFavorites';
+
+// Define interfaces for the new API data structure
+interface ApiTeam {
+  id: string;
+  name: string;
+  logo_url: string;
+  founded_year: number;
+  stadium: string;
+  city: string;
+  color?: string;
+}
+
+interface ApiPlayer {
+  id: string;
+  name: string;
+  position: string;
+  team_id: string;
+  nationality: string;
+  age: number;
+  teamColor?: string;
+  number?: string;
+}
+
+interface ApiCompetition {
+  id: string;
+  name: string;
+  type: string;
+  country: string;
+  season: string;
+  color?: string;
+  description?: string;
+  sportType?: SportType;
+}
 
 interface FavouritesscreenProps {
   activeSport: SportType | 'all';
@@ -14,7 +48,10 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
   const router = useRouter();
   const { t } = useI18n();
   const isAuthed = typeof window !== 'undefined' && !!localStorage.getItem('token');
-
+  
+  // Use the new useFavorites hook
+  const { favorites, loading, error, refreshFavorites } = useFavorites();
+  
   const requireAuth = (next: string = '/?tab=Favourites'): boolean => {
     if (!isAuthed) {
       router.push(`/auth/login?next=${encodeURIComponent(next)}`);
@@ -22,97 +59,6 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
     }
     return false;
   };
-
-  // Sample user's favourite teams
-  const favouriteTeams: Team[] = [
-    {
-      id: 'team-1',
-      name: 'Los Blancos',
-      color: '#1e3a8a', // blue-800
-      players: []
-    },
-    {
-      id: 'team-2', 
-      name: 'Pirates FC',
-      color: '#dc2626', // red-600
-      players: []
-    },
-    {
-      id: 'team-3',
-      name: 'City Boys FC', 
-      color: '#f59e0b', // amber-500
-      players: []
-    },
-    {
-      id: 'team-4',
-      name: 'JOG',
-      color: '#2563eb', // blue-600
-      players: []
-    }
-  ];
-
-  // Sample user's favourite players
-  const favouritePlayers: Player[] = [
-    {
-      id: 'player-1',
-      name: 'Yanko',
-      teamId: 'team-1',
-      number: '10',
-      position: 'Forward',
-      team: 'Los Blancos',
-      teamColor: '#1e3a8a'
-    },
-    {
-      id: 'player-2', 
-      name: 'McKintory',
-      teamId: 'team-2',
-      number: '7',
-      position: 'Midfielder',
-      team: 'Pirates FC',
-      teamColor: '#dc2626'
-    },
-    {
-      id: 'player-3',
-      name: 'Animalshun',
-      teamId: 'team-3', 
-      number: '9',
-      position: 'Striker',
-      team: 'City Boys FC',
-      teamColor: '#f59e0b'
-    }
-  ];
-
-  // Sample user's favourite competitions
-  const favouriteCompetitions = [
-    {
-      id: 'comp-1',
-      name: 'BUSA League',
-      color: '#1e3a8a', // blue-800
-      sportType: 'football' as SportType,
-      description: 'University football championship'
-    },
-    {
-      id: 'comp-2',
-      name: 'Inter-College Cup', 
-      color: '#dc2626', // red-600
-      sportType: 'football' as SportType,
-      description: 'Inter-campus tournament'
-    },
-    {
-      id: 'comp-3',
-      name: 'Beta Friendlies',
-      color: '#2563eb', // blue-600
-      sportType: 'football' as SportType,
-      description: 'Friendly matches series'
-    },
-    {
-      id: 'comp-4',
-      name: 'Play Hard Africa',
-      color: '#f59e0b', // amber-500
-      sportType: 'basketball' as SportType,
-      description: 'Continental basketball league'
-    }
-  ];
 
   const handleAddTeam = (): void => {
     if (requireAuth()) return;
@@ -149,6 +95,62 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
     return colorMap[color] || 'text-gray-600';
   };
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 p-4 text-center">
+        <div className="text-red-500 mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">Error Loading Favorites</h3>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">{error}</p>
+        <button
+          onClick={refreshFavorites}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  // Transform API data to match existing component structure
+  const favouriteTeams = favorites?.teams.map(team => ({
+    id: team.id,
+    name: team.name,
+    color: team.color || '#1e3a8a',
+    players: []
+  })) || [];
+
+  const favouritePlayers = favorites?.players.map(player => ({
+    id: player.id,
+    name: player.name,
+    teamId: player.team_id,
+    number: player.number || '10',
+    position: player.position,
+    team: '', // Would need to fetch team name separately
+    teamColor: player.teamColor || '#1e3a8a'
+  })) || [];
+
+  const favouriteCompetitions = favorites?.competitions.map(competition => ({
+    id: competition.id,
+    name: competition.name,
+    color: competition.color || '#1e3a8a',
+    sportType: competition.sportType || 'football' as SportType,
+    description: competition.description || `${competition.type} - ${competition.country}`
+  })) || [];
+
   // Filter competitions by sport if needed
   const filteredCompetitions = activeSport === 'all' 
     ? favouriteCompetitions 
@@ -178,7 +180,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
           {favouriteTeams.map((team) => (
             <button
               key={team.id}
-              className={`${getColorClass(team.color)} text-white p-4 rounded-lg shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95`}
+              className={`${getColorClass(team.color || '#1e3a8a')} text-white p-4 rounded-lg shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95`}
             >
               <div className="flex flex-col items-center space-y-2">
                 <div className="w-8 h-8 bg-white bg-opacity-20 rounded-sm flex items-center justify-center">
@@ -251,7 +253,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
           {filteredCompetitions.map((competition) => (
             <button
               key={competition.id}
-              className={`${getColorClass(competition.color)} text-white p-4 rounded-lg shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95`}
+              className={`${getColorClass(competition.color || '#1e3a8a')} text-white p-4 rounded-lg shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95`}
             >
               <div className="flex flex-col items-center space-y-2">
                 <div className="w-8 h-8 bg-white bg-opacity-20 rounded-sm flex items-center justify-center">

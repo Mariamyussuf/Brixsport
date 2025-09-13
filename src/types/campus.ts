@@ -5,8 +5,8 @@ export type SportType =
   | 'volleyball'
   | 'track_events'
   | 'table_tennis'
-  | 'badminton';
-  'all';
+  | 'badminton'
+  | 'all';
 
 
 export type FootballEvent =
@@ -55,6 +55,7 @@ export interface Player {
 }
 
 export interface Team {
+  score: number;
   id: string;
   name: string;
   color: string; 
@@ -108,7 +109,7 @@ export interface User {
 }
 export interface UI_Match {
   id: string; 
-  status: 'Live' | 'Upcoming';
+  status: 'Live' | 'Upcoming' | 'Finished';
   time: string;
   team1: string;
   team2: string;

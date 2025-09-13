@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Bell, Clock, Star, Calendar, Trophy, ArrowLeft, Menu, X, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Favouritesscreen from './Favouritesscreen';
@@ -12,6 +12,8 @@ import { useAuth } from '@/hooks/useAuth';
 import MatchCard from '../shared/MatchCard';
 import TrackEventCard from '../shared/TrackEventCard';
 import NotificationsBadge from '../shared/NotificationsBadge';
+import { useHomeData, useSportMatches } from '@/hooks/useHomeData';
+import CompetitionScreen from './CompetitionScreen';
 
 import { 
   Match, 
@@ -26,204 +28,87 @@ import {
   UI_TrackResult
 } from '../../types/campus';
 
+// Enhanced match interface for LiveScore-like functionality
+interface EnhancedMatch extends UI_Match {
+  minute?: number;
+  period?: string;
+  venue?: string;
+  temperature?: string;
+  attendance?: number;
+  isBookmarked?: boolean;
+  liveEvents?: Array<{
+    type: 'goal' | 'card' | 'substitution' | 'corner' | 'offside';
+    time: string;
+    player: string;
+    team: 'home' | 'away';
+  }>;
+  odds?: {
+    home: number;
+    draw?: number;
+    away: number;
+  };
+}
+
 const Homescreen: React.FC = () => {
   const { t } = useI18n();
   const router = useRouter();
-  const { isAuthenticated } = useAuth(); // Using proper auth hook
+  const { isAuthenticated } = useAuth();
+  
+  // State management - keeping File A's simpler structure for UI
   const [activeTab, setActiveTab] = useState<TabType>('Fixtures');
   const [activeSport, setActiveSport] = useState<SportType | 'all'>('all');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLiveMatches, setShowLiveMatches] = useState(false);
   const [showFavoritesDialog, setShowFavoritesDialog] = useState(false);
-  const [showCompetitionsDialog, setShowCompetitionsDialog] = useState(false); // Added state for competitions dialog
-  // Removed the old isAuthed check since we're using the proper hook now
+  const [showCompetitionsDialog, setShowCompetitionsDialog] = useState(false);
+  
+  // Data hooks from File B
+  const { homeData, loading: homeLoading, error: homeError } = useHomeData();
+  const { matches: sportMatches, loading: matchesLoading, error: matchesError } = 
+    useSportMatches(activeSport === 'all' ? '' : activeSport, 'all');
 
-  const tabs: { name: TabType; icon: React.ReactNode }[] = [
-    { name: 'Fixtures', icon: <Calendar className="w-4 h-4 sm:w-5 sm:h-5" /> },
-    { name: 'Favourites', icon: <Star className="w-4 h-4 sm:w-5 sm:h-5" /> },
-    { name: 'Competition', icon: <Trophy className="w-4 h-4 sm:w-5 sm:h-5" /> },
-    { name: 'Profile', icon: <User className="w-4 h-4 sm:w-5 sm:h-5" /> }
-  ];
-
-  const sportTabs: (SportType | 'all')[] = ['all', 'football', 'basketball', 'track_events'];
-
-  const teams: Team[] = [
-    {
-      id: 'team-1',
-      name: 'Pirates FC',
-      color: '#2563eb',
-      players: []
-    },
-    {
-      id: 'team-2',
-      name: 'Joga FC',
-      color: '#dc2626',
-      players: []
-    },
-    {
-      id: 'team-3',
-      name: 'Los Blancos',
-      color: '#2563eb',
-      players: []
-    },
-    {
-      id: 'team-4',
-      name: 'La Masia',
-      color: '#dc2626',
-      players: []
-    },
-    {
-      id: 'team-5',
-      name: 'Spartans',
-      color: '#dc2626',
-      players: []
-    },
-    {
-      id: 'team-6',
-      name: 'Kings FC',
-      color: '#2563eb',
-      players: []
-    },
-    {
-      id: 'team-7',
-      name: 'Phoenix',
-      color: '#2563eb',
-      players: []
-    },
-    {
-      id: 'team-8',
-      name: 'Blazers',
-      color: '#dc2626',
-      players: []
+  // Enhanced conversion functions from File B
+  const convertMatchToUI = (match: any): UI_Match => {
+    // Handle API data structure
+    if (match.home_team_id !== undefined) {
+      return {
+        id: match.id.toString(),
+        status: match.status === 'live' || match.status === 'Live' ? 'Live' : 
+                match.status === 'finished' || match.status === 'ended' || match.status === 'completed' ? 'Finished' : 
+                'Upcoming',
+        time: new Date(match.match_date).toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit',
+          hour12: false 
+        }),
+        team1: `Team ${match.home_team_id}`,
+        team2: `Team ${match.away_team_id}`,
+        score1: match.status === 'live' || match.status === 'Live' || 
+                match.status === 'finished' || match.status === 'ended' || 
+                match.status === 'completed' ? match.home_score : undefined,
+        score2: match.status === 'live' || match.status === 'Live' || 
+                match.status === 'finished' || match.status === 'ended' || 
+                match.status === 'completed' ? match.away_score : undefined,
+        team1Color: `bg-blue-600`,
+        team2Color: `bg-red-600`,
+        sportType: match.sportType || 'football'
+      };
     }
-  ];
-
-  const matches: Match[] = [
-    {
-      id: 'match-1',
-      sportType: 'football',
-      teams: [
-        teams.find(t => t.id === 'team-1')!,
-        teams.find(t => t.id === 'team-2')!
-      ],
-      startTime: Date.now() - 4260000,
-      status: 'live',
-      events: [
-        {
-          id: 'event-1',
-          matchId: 'match-1',
-          teamId: 'team-2',
-          eventType: 'goal',
-          timestamp: Date.now() - 1800000,
-          value: 1
-        }
-      ]
-    },
-    {
-      id: 'match-2',
-      sportType: 'football',
-      teams: [
-        teams.find(t => t.id === 'team-3')!,
-        teams.find(t => t.id === 'team-4')!
-      ],
-      startTime: Date.now() + 9000000,
-      status: 'upcoming',
-      events: []
-    },
-    {
-      id: 'match-3',
-      sportType: 'football',
-      teams: [
-        teams.find(t => t.id === 'team-5')!,
-        teams.find(t => t.id === 'team-6')!
-      ],
-      startTime: Date.now() + 14400000,
-      status: 'upcoming',
-      events: []
-    },
-    {
-      id: 'match-4',
-      sportType: 'basketball',
-      teams: [
-        teams.find(t => t.id === 'team-7')!,
-        teams.find(t => t.id === 'team-8')!
-      ],
-      startTime: Date.now() - 1800000,
-      status: 'live',
-      events: [
-        {
-          id: 'event-2',
-          matchId: 'match-4',
-          teamId: 'team-7',
-          eventType: 'field_goal',
-          timestamp: Date.now() - 900000,
-          value: 18
-        },
-        {
-          id: 'event-3',
-          matchId: 'match-4',
-          teamId: 'team-8',
-          eventType: 'field_goal',
-          timestamp: Date.now() - 600000,
-          value: 38
-        }
-      ]
-    },
-    {
-      id: 'match-5',
-      sportType: 'basketball',
-      teams: [
-        teams.find(t => t.id === 'team-7')!,
-        teams.find(t => t.id === 'team-8')!
-      ],
-      startTime: Date.now() + 5400000,
-      status: 'upcoming',
-      events: []
-    },
-    {
-      id: 'match-6',
-      sportType: 'basketball',
-      teams: [
-        teams.find(t => t.id === 'team-7')!,
-        teams.find(t => t.id === 'team-8')!
-      ],
-      startTime: Date.now() + 9000000,
-      status: 'upcoming',
-      events: []
-    }
-  ];
-
-  const trackEvents: UI_TrackEvent[] = [
-    {
-      status: 'Ended',
-      event: 'Sprint Relay - Male',
-      results: [
-        { position: '1st.', team: 'Team B' },
-        { position: '2nd.', team: 'Team C' },
-        { position: '3rd.', team: 'Team A' }
-      ]
-    },
-    {
-      status: 'Live',
-      event: '100m Sprint - Male',
-      results: []
-    }
-  ];
-
-  const convertMatchToUI = (match: Match): UI_Match => {
+    
+    // Handle fallback data structure from File A
     const team1 = match.teams[0];
     const team2 = match.teams[1];
     
     const team1Score = match.events
-      .filter(e => e.teamId === team1.id && ['goal', 'field_goal', 'three_pointer'].includes(e.eventType))
-      .reduce((sum, e) => sum + (typeof e.value === 'number' ? e.value : 1), 0);
+      .filter((e: any) => e.teamId === team1.id && ['goal', 'field_goal', 'three_pointer'].includes(e.eventType))
+      .reduce((sum: number, e: any) => sum + (typeof e.value === 'number' ? e.value : 1), 0);
     
     const team2Score = match.events
-      .filter(e => e.teamId === team2.id && ['goal', 'field_goal', 'three_pointer'].includes(e.eventType))
-      .reduce((sum, e) => sum + (typeof e.value === 'number' ? e.value : 1), 0);
+      .filter((e: any) => e.teamId === team2.id && ['goal', 'field_goal', 'three_pointer'].includes(e.eventType))
+      .reduce((sum: number, e: any) => sum + (typeof e.value === 'number' ? e.value : 1), 0);
 
     let timeDisplay = '';
-    if (match.status === 'live') {
+    if (match.status === 'live' || match.status === 'Live') {
       const elapsedMinutes = Math.floor((Date.now() - match.startTime) / 60000);
       if (match.sportType === 'football') {
         timeDisplay = `${elapsedMinutes}'`;
@@ -241,24 +126,43 @@ const Homescreen: React.FC = () => {
     }
 
     return {
-      id: match.id, // Add the match ID
-      status: match.status === 'live' ? 'Live' : 'Upcoming',
+      id: match.id,
+      status: match.status === 'live' || match.status === 'Live' ? 'Live' : 'Upcoming',
       time: timeDisplay,
       team1: team1.name,
       team2: team2.name,
-      score1: match.status === 'live' ? team1Score : undefined,
-      score2: match.status === 'live' ? team2Score : undefined,
+      score1: match.status === 'live' || match.status === 'Live' ? team1Score : undefined,
+      score2: match.status === 'live' || match.status === 'Live' ? team2Score : undefined,
       team1Color: `bg-blue-600`,
       team2Color: `bg-red-600`,
       sportType: match.sportType
     };
   };
 
-  const convertUITrackEventToTrackEvent = (uiEvent: UI_TrackEvent): any => {
+  const convertTrackEventToUI = (trackEvent: any): any => {
+    // Handle API data structure and convert to TrackEvent format expected by TrackEventCard
+    let status: 'live' | 'scheduled' | 'ended' | 'Live' | 'Ended';
+    switch (trackEvent.status) {
+      case 'live':
+        status = 'live';
+        break;
+      case 'completed':
+      case 'finished':
+      case 'ended':
+        status = 'ended';
+        break;
+      default:
+        status = 'scheduled';
+        break;
+    }
+    
     return {
-      ...uiEvent,
-      status: uiEvent.status === 'Ended' ? 'ended' : 
-              uiEvent.status === 'Live' ? 'live' : 'scheduled'
+      status: status,
+      event: trackEvent.name || `Track Event ${trackEvent.id}`,
+      results: Array.isArray(trackEvent.results) ? trackEvent.results.map((result: any) => ({
+        position: `${result.position}.`,
+        team: result.team_name || `Team ${result.team_id}`
+      })) : []
     };
   };
 
@@ -272,22 +176,47 @@ const Homescreen: React.FC = () => {
     });
   };
 
+  // Get data with fallback logic
   const getFilteredMatches = (sportType: SportType): UI_Match[] => {
-    const filtered = matches
-      .filter(match => match.sportType === sportType)
-      .map(convertMatchToUI);
-    return sortMatches(filtered);
+    let matches: UI_Match[] = [];
+    
+    // Try to use API data first
+    if (homeData?.liveFootball || homeData?.upcomingFootball) {
+      if (sportType === 'football') {
+        matches = [
+          ...(homeData?.liveFootball?.map(convertMatchToUI) || []),
+          ...(homeData?.upcomingFootball?.map(convertMatchToUI) || [])
+        ];
+      } else if (sportMatches && sportMatches.length > 0) {
+        matches = sportMatches.map(convertMatchToUI);
+      }
+    }
+    
+    return sortMatches(matches);
   };
 
   const getAllLiveMatches = (): UI_Match[] => {
-    return matches
-      .filter(match => match.status === 'live')
-      .map(convertMatchToUI);
+    // Try API data first
+    if (homeData?.liveFootball && homeData.liveFootball.length > 0) {
+      return homeData.liveFootball.map(convertMatchToUI);
+    }
+    
+    return [];
+  };
+
+  const getTrackEvents = (): any[] => {
+    // Try API data first
+    if (homeData?.trackEvents && homeData.trackEvents.length > 0) {
+      return homeData.trackEvents.map(convertTrackEventToUI);
+    }
+    
+    return [];
   };
 
   const footballMatches = getFilteredMatches('football');
   const basketballMatches = getFilteredMatches('basketball');
   const liveMatches = getAllLiveMatches();
+  const trackEvents = getTrackEvents();
 
   const TeamLogo: React.FC<UI_TeamLogoProps> = ({ color }) => (
     <div className={`w-6 h-6 sm:w-8 sm:h-8 ${color} rounded-sm flex items-center justify-center flex-shrink-0`}>
@@ -295,16 +224,35 @@ const Homescreen: React.FC = () => {
     </div>
   );
 
-  // Event handlers
+  // Enhanced tabs with counters from File B
+  const tabs: { name: TabType; icon: React.ReactNode; badge?: number }[] = [
+    { 
+      name: 'Fixtures', 
+      icon: <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+    },
+    { 
+      name: 'Favourites', 
+      icon: <Star className="w-4 h-4 sm:w-5 sm:h-5" />
+    },
+    { 
+      name: 'Competition', 
+      icon: <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
+    },
+    { 
+      name: 'Profile', 
+      icon: <User className="w-4 h-4 sm:w-5 sm:h-5" />
+    }
+  ];
+
+  const sportTabs: (SportType | 'all')[] = ['all', 'football', 'basketball', 'track_events'];
+
   const handleTabClick = (tab: TabType): void => {
     if (tab === 'Favourites' && !isAuthenticated) {
-      // Show the favorites auth dialog instead of redirecting directly
       setShowFavoritesDialog(true);
       return;
     }
     
     if (tab === 'Competition' && !isAuthenticated) {
-      // Show the competitions auth dialog instead of redirecting directly
       setShowCompetitionsDialog(true);
       return;
     }
@@ -314,23 +262,16 @@ const Homescreen: React.FC = () => {
       return;
     }
 
-    if (tab === 'Fixtures') {
-      // Navigate to dedicated fixtures screen for more detailed view
-      router.push('/fixtures');
-      return;
-    }
-    
+    // Instead of redirecting to /fixtures, just set the active tab
     setActiveTab(tab);
     setMobileMenuOpen(false); 
   };
-
 
   const handleDemoAccount = () => {
     setShowFavoritesDialog(false);
     setActiveTab('Favourites');
   };
 
-  // Function to handle demo account selection for competitions
   const handleCompetitionsDemoAccount = () => {
     setShowCompetitionsDialog(false);
     setActiveTab('Competition');
@@ -372,10 +313,20 @@ const Homescreen: React.FC = () => {
   if (showLiveMatches) {
     return (
       <LiveMatchesScreen 
-        liveMatches={liveMatches} 
-        trackEvents={trackEvents} 
         onBack={handleBackFromLive} 
       />
+    );
+  }
+
+  // Loading state from File B
+  if (homeLoading || matchesLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading matches...</p>
+        </div>
+      </div>
     );
   }
 
@@ -395,7 +346,7 @@ const Homescreen: React.FC = () => {
         onDemoAccount={handleCompetitionsDemoAccount}
       />
       
-      {/* Enhanced Mobile Header */}
+      {/* Enhanced Mobile Header - keeping File A's structure but adding File B's features */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-slate-900 dark:text-white sticky top-0 z-30">
         <div className="px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between w-full">
@@ -424,7 +375,9 @@ const Homescreen: React.FC = () => {
                 onClick={handleLiveClick}
                 type="button"
               >
-                <span className="text-red-500 font-bold text-xs">LIVE</span>
+                <span className="text-red-500 font-bold text-xs">
+                  LIVE {homeData?.liveFootball?.length || liveMatches.length}
+                </span>
                 <div className="w-2 h-2 bg-red-500 rounded-full"></div>
               </button>
               <button 
@@ -464,6 +417,17 @@ const Homescreen: React.FC = () => {
           </div>
         </div>
 
+        {/* Show API error if exists but don't block UI */}
+        {homeError && (
+          <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                {homeError}
+              </p>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'Fixtures' && (
           <div className="space-y-6 sm:space-y-8">
             {(activeSport === 'all' || activeSport === 'football') && footballMatches.length > 0 && (
@@ -488,15 +452,34 @@ const Homescreen: React.FC = () => {
               </section>
             )}
 
-            {(activeSport === 'all' || activeSport === 'track_events') && (
+            {(activeSport === 'all' || activeSport === 'track_events') && trackEvents.length > 0 && (
               <section>
                 <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4 px-1">{t('track_events')}</h2>
                 <div className="space-y-2 sm:space-y-3">
                   {trackEvents.map((event, index) => (
-                    <TrackEventCard key={`track-fixture-${index}`} event={convertUITrackEventToTrackEvent(event)} />
+                    <TrackEventCard key={`track-fixture-${index}`} event={event} />
                   ))}
                 </div>
               </section>
+            )}
+
+            {/* Show empty state if no matches */}
+            {footballMatches.length === 0 && basketballMatches.length === 0 && trackEvents.length === 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
+                <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  No matches found
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                  No matches found for the selected sport.
+                </p>
+                <button
+                  onClick={() => setActiveSport('all')}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Show All Sports
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -509,24 +492,7 @@ const Homescreen: React.FC = () => {
 
         {activeTab === 'Competition' && (
           <section>
-            <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4 px-1">{t('competitions')}</h2>
-            <div className="space-y-2 sm:space-y-3">
-              {[
-                { title: t('football_section'), desc: 'University football championship' },
-                { title: t('basketball_section'), desc: 'University basketball championship' },
-                { title: t('track_events'), desc: 'Athletic competitions and relay events' },
-                { title: 'Volleyball Championship', desc: 'Inter-campus volleyball tournament' },
-                { title: 'Table Tennis League', desc: 'Singles and doubles competitions' }
-              ].map((comp, index) => (
-                <button 
-                  key={index}
-                  className="w-full bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 shadow-sm border border-gray-100 dark:border-gray-700 text-left hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100 dark:active:bg-gray-700 transition-colors touch-manipulation active:scale-[0.98]"
-                >
-                  <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2 text-sm sm:text-base">{comp.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">{comp.desc}</p>
-                </button>
-              ))}
-            </div>
+            <CompetitionScreen />
           </section>
         )}
 
@@ -551,8 +517,23 @@ const Homescreen: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Featured Content from File B - only show if API data is available */}
+        {homeData?.featuredContent && homeData.featuredContent.title && (
+          <section className="mt-8">
+            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Featured</h2>
+            <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+              <h3 className="text-2xl font-bold mb-2">{homeData.featuredContent.title}</h3>
+              <p className="mb-4 opacity-90">{homeData.featuredContent.description}</p>
+              <button className="bg-white text-blue-600 font-medium py-2 px-4 rounded-lg hover:bg-gray-100 transition-colors">
+                Learn More
+              </button>
+            </div>
+          </section>
+        )}
       </div>
 
+      {/* Enhanced Bottom Navigation - all badge counts removed as requested */}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 backdrop-blur supports-[backdrop-filter]:bg-white/90 dark:supports-[backdrop-filter]:bg-slate-900/90 border-t border-gray-200 dark:border-gray-700 px-2 sm:px-4 py-2 z-20">
         <div className="flex justify-around items-center w-full max-w-7xl mx-auto">
           {tabs.map((tab) => (

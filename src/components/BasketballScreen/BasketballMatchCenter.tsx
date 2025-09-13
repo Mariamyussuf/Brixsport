@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Trophy, Clock, Users, TrendingUp, BarChart3, Activity, 
   ArrowUp, ArrowDown, Timer, MapPin, Calendar, Shield,
   Star, ChevronRight, Award, Target, Zap, Eye, Info,
   AlertCircle, ChevronDown, ChevronUp, Flame, Wind
 } from 'lucide-react';
+import { getMatchById } from '@/lib/userMatchService';
 
 // Match Header Component
 const MatchHeader = ({ homeTeam, awayTeam, homeScore, awayScore, quarter, timeRemaining, date, venue, league }) => {
@@ -344,26 +345,59 @@ const PlayByPlay = ({ plays }) => {
 };
 
 // Main Basketball Match Center Component
-const BasketballMatchCenter = ({ match }: { match: any }) => {
+const BasketballMatchCenter = ({ matchId }: { matchId: string }) => {
   const [activeTab, setActiveTab] = useState('overview');
+  const [matchData, setMatchData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const fetchMatchData = async () => {
+      if (!matchId) {
+        setError('No match ID provided');
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch match data from API
+        const match = await getMatchById(matchId);
+        
+        if (!match) {
+          throw new Error('Match not found');
+        }
+        
+        // Transform match data to the format expected by the UI
+        setMatchData({
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+          homeScore: match.homeScore || 0,
+          awayScore: match.awayScore || 0,
+          quarter: match.status || 'Final',
+          timeRemaining: null,
+          date: match.date ? new Date(match.date).toLocaleDateString() : 'Unknown Date',
+          venue: match.venue || 'Unknown Venue',
+          league: match.competitionId || 'Basketball League'
+        });
+      } catch (err: any) {
+        console.error('Error fetching match data:', err);
+        setError(err.message || 'Failed to load match data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchMatchData();
+  }, [matchId]);
   
   // Sample data - would come from API in real app
-  const matchData = {
-    homeTeam: match.homeTeam || 'Home Team',
-    awayTeam: match.awayTeam || 'Away Team',
-    homeScore: match.homeScore || 0,
-    awayScore: match.awayScore || 0,
-    quarter: match.quarter || match.time || 'Final',
-    timeRemaining: null,
-    date: match.date || 'Today',
-    venue: match.venue || 'Unknown Venue',
-    league: match.competition || 'Basketball League'
-  };
-  
-  const quarters = [
+  const quarters = matchData ? [
     { name: matchData.homeTeam, q1: 28, q2: 32, q3: 30, q4: 28, ot: null, total: matchData.homeScore },
     { name: matchData.awayTeam, q1: 30, q2: 28, q3: 29, q4: 27, ot: null, total: matchData.awayScore }
-  ];
+  ] : [];
   
   const teamStats = {
     fgMade: { home: 45, away: 42 },
@@ -424,6 +458,49 @@ const BasketballMatchCenter = ({ match }: { match: any }) => {
     { id: 'players', label: 'Players', icon: <Users className="w-4 h-4" /> },
     { id: 'playbyplay', label: 'Play-by-Play', icon: <Activity className="w-4 h-4" /> }
   ];
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-100 dark:bg-gray-900 p-2 sm:p-3 md:p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-300">Loading match data...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="min-h-screen bg-slate-100 dark:bg-gray-900 p-2 sm:p-3 md:p-4 flex items-center justify-center">
+        <div className="text-center bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md">
+          <div className="text-red-500 dark:text-red-400 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-medium mb-2 text-slate-800 dark:text-slate-100">Error Loading Match</h3>
+          <p className="text-slate-600 dark:text-slate-300 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!matchData) {
+    return (
+      <div className="min-h-screen bg-slate-100 dark:bg-gray-900 p-2 sm:p-3 md:p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-slate-600 dark:text-slate-300">Match data not available</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-gray-900 p-2 sm:p-3 md:p-4">

@@ -1,6 +1,8 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Trophy, Clock, Play, CheckCircle, Users, Target, Medal } from "lucide-react";
+import { getTeamsByCompetition } from '@/lib/userTeamService';
+import { getMatchesByCompetition } from '@/lib/userMatchService';
 
 // Match states
 const MATCH_STATES = {
@@ -483,124 +485,126 @@ const calculateBracketLayout = (matches) => {
 };
 
 // Main Tournament Component
-export default function TournamentView() {
+export default function TournamentView({ competitionId }: { competitionId: string }) {
   const colors = useThemeColors();
   const containerRef = useRef(null);
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [currentPhase, setCurrentPhase] = useState(TOURNAMENT_PHASES.GROUP);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [groups, setGroups] = useState<any[]>([]);
+  const [knockoutMatches, setKnockoutMatches] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Sample tournament data
-  const tournamentData = useMemo(() => ({
-    groups: [
-      {
-        name: 'A',
-        matches: [
-          {
-            id: 'GA1',
-            name: 'Match 1',
-            participants: [
-              { id: 'QAT', name: '🇶🇦 Qatar', resultText: '0', isWinner: false, qualified: false },
-              { id: 'ECU', name: '🇪🇨 Ecuador', resultText: '2', isWinner: true, qualified: true }
-            ],
-            state: MATCH_STATES.DONE
-          },
-          {
-            id: 'GA2', 
-            name: 'Match 2',
-            participants: [
-              { id: 'NED', name: '🇳🇱 Netherlands', resultText: '2', isWinner: true, qualified: true },
-              { id: 'SEN', name: '🇸🇳 Senegal', resultText: '0', isWinner: false, qualified: false }
-            ],
-            state: MATCH_STATES.DONE
-          },
-          {
-            id: 'GA3',
-            name: 'Match 3', 
-            participants: [
-              { id: 'QAT', name: '🇶🇦 Qatar', resultText: '1', isWinner: false },
-              { id: 'SEN', name: '🇸🇳 Senegal', resultText: '3', isWinner: true }
-            ],
-            state: MATCH_STATES.DONE
-          }
-        ]
-      },
-      {
-        name: 'B',
-        matches: [
-          {
-            id: 'GB1',
-            name: 'Match 1',
-            participants: [
-              { id: 'ENG', name: '🇬🇧 England', resultText: '6', isWinner: true, qualified: true },
-              { id: 'IRN', name: '🇮🇷 Iran', resultText: '2', isWinner: false, qualified: false }
-            ],
-            state: MATCH_STATES.DONE
-          },
-          {
-            id: 'GB2',
-            name: 'Match 2', 
-            participants: [
-              { id: 'USA', name: '🇺🇸 USA', resultText: '1', isWinner: true, qualified: true },
-              { id: 'WAL', name: '🏴󠁧󠁢󠁷󠁬󠁳󠁿 Wales', resultText: '0', isWinner: false, qualified: false }
-            ],
-            state: MATCH_STATES.DONE
-          }
-        ]
+  // Fetch real tournament data
+  useEffect(() => {
+    const fetchTournamentData = async () => {
+      if (!competitionId) {
+        setError('No competition ID provided');
+        setLoading(false);
+        return;
       }
-    ],
-    knockoutMatches: [
-      {
-        id: 1,
-        name: "R16-1",
-        nextMatchId: 5,
-        tournamentRoundText: "Round of 16",
-        startTime: "2025-08-26",
-        state: MATCH_STATES.DONE,
-        participants: [
-          { id: "NED", name: "🇳🇱 Netherlands", resultText: "3", isWinner: true, status: "PLAYED" },
-          { id: "USA", name: "🇺🇸 USA", resultText: "1", isWinner: false, status: "PLAYED" },
-        ],
-      },
-      {
-        id: 2,
-        name: "R16-2",
-        nextMatchId: 5,
-        tournamentRoundText: "Round of 16", 
-        startTime: "2025-08-26",
-        state: MATCH_STATES.DONE,
-        participants: [
-          { id: "ECU", name: "🇪🇨 Ecuador", resultText: "0", isWinner: false, status: "PLAYED" },
-          { id: "ENG", name: "🇬🇧 England", resultText: "3", isWinner: true, status: "PLAYED" },
-        ],
-      },
-      {
-        id: 5,
-        name: "QF1",
-        nextMatchId: 7,
-        tournamentRoundText: "Quarter Final",
-        startTime: "2025-08-27",
-        state: MATCH_STATES.SCHEDULED,
-        participants: [
-          { id: "NED", name: "🇳🇱 Netherlands", resultText: null, isWinner: false, status: "QUALIFIED" },
-          { id: "ENG", name: "🇬🇧 England", resultText: null, isWinner: false, status: "QUALIFIED" },
-        ],
-      },
-      {
-        id: 7,
-        name: "Final",
-        nextMatchId: null,
-        tournamentRoundText: "Final",
-        startTime: "2025-08-28",
-        state: MATCH_STATES.SCHEDULED,
-        participants: [
-          { id: "W5", name: "Winner QF1", resultText: null, isWinner: false, status: "PENDING" },
-          { id: "W6", name: "Winner QF2", resultText: null, isWinner: false, status: "PENDING" },
-        ],
-      },
-    ]
-  }), []);
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch teams and matches for the competition
+        const [teams, matches] = await Promise.all([
+          getTeamsByCompetition(competitionId),
+          getMatchesByCompetition(competitionId)
+        ]);
+
+        // Group teams into groups (this is a simplified approach)
+        // In a real implementation, you would have group information in the data
+        const groupsData = [];
+        const teamsPerGroup = Math.ceil(teams.length / 4); // 4 groups max
+        
+        for (let i = 0; i < Math.min(4, Math.ceil(teams.length / teamsPerGroup)); i++) {
+          const groupTeams = teams.slice(i * teamsPerGroup, (i + 1) * teamsPerGroup);
+          groupsData.push({
+            name: String.fromCharCode(65 + i), // A, B, C, D
+            teams: groupTeams,
+            matches: matches.filter(match => 
+              groupTeams.some(team => team.id === match.homeTeam || team.id === match.awayTeam)
+            ).map(match => ({
+              id: match.id,
+              name: `Match ${match.id.slice(0, 8)}`,
+              participants: [
+                { 
+                  id: match.homeTeam, 
+                  name: teams.find(t => t.id === match.homeTeam)?.name || 'Home Team', 
+                  resultText: match.homeScore?.toString() || (match.status === 'full-time' ? '0' : undefined),
+                  isWinner: match.status === 'full-time' && match.homeScore !== undefined && match.awayScore !== undefined && match.homeScore > match.awayScore,
+                  qualified: false // This would be determined by standings
+                },
+                { 
+                  id: match.awayTeam, 
+                  name: teams.find(t => t.id === match.awayTeam)?.name || 'Away Team', 
+                  resultText: match.awayScore?.toString() || (match.status === 'full-time' ? '0' : undefined),
+                  isWinner: match.status === 'full-time' && match.homeScore !== undefined && match.awayScore !== undefined && match.awayScore > match.homeScore,
+                  qualified: false // This would be determined by standings
+                }
+              ],
+              state: match.status === 'scheduled' ? MATCH_STATES.SCHEDULED : 
+                     match.status === 'live' ? MATCH_STATES.RUNNING : 
+                     match.status === 'full-time' ? MATCH_STATES.DONE : MATCH_STATES.SCHEDULED
+            }))
+          });
+        }
+
+        setGroups(groupsData);
+
+        // For knockout matches, we'll use a subset of matches as an example
+        // In a real implementation, you would have specific knockout stage matches
+        const knockoutMatchesData = matches.slice(0, 4).map((match, index) => ({
+          id: match.id,
+          name: `Knockout ${index + 1}`,
+          nextMatchId: index < 3 ? matches[index + 1]?.id : null,
+          tournamentRoundText: index < 2 ? "Round of 16" : index < 3 ? "Quarter Final" : "Semi Final",
+          startTime: match.date,
+          state: match.status === 'scheduled' ? MATCH_STATES.SCHEDULED : 
+                 match.status === 'live' ? MATCH_STATES.RUNNING : 
+                 match.status === 'full-time' ? MATCH_STATES.DONE : MATCH_STATES.SCHEDULED,
+          participants: [
+            { 
+              id: match.homeTeam, 
+              name: teams.find(t => t.id === match.homeTeam)?.name || 'Home Team', 
+              resultText: match.homeScore?.toString() || (match.status === 'full-time' ? '0' : null),
+              isWinner: match.status === 'full-time' && match.homeScore !== undefined && match.awayScore !== undefined && match.homeScore > match.awayScore,
+              status: match.status === 'scheduled' ? "QUALIFIED" : 
+                     match.status === 'live' ? "PLAYING" : 
+                     match.status === 'full-time' ? "PLAYED" : "PENDING"
+            },
+            { 
+              id: match.awayTeam, 
+              name: teams.find(t => t.id === match.awayTeam)?.name || 'Away Team', 
+              resultText: match.awayScore?.toString() || (match.status === 'full-time' ? '0' : null),
+              isWinner: match.status === 'full-time' && match.homeScore !== undefined && match.awayScore !== undefined && match.awayScore > match.homeScore,
+              status: match.status === 'scheduled' ? "QUALIFIED" : 
+                     match.status === 'live' ? "PLAYING" : 
+                     match.status === 'full-time' ? "PLAYED" : "PENDING"
+            },
+          ],
+        }));
+
+        setKnockoutMatches(knockoutMatchesData);
+      } catch (err: any) {
+        console.error('Error fetching tournament data:', err);
+        setError(err.message || 'Failed to load tournament data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTournamentData();
+  }, [competitionId]);
+
+  const tournamentData = useMemo(() => ({
+    groups: groups,
+    knockoutMatches: knockoutMatches
+  }), [groups, knockoutMatches]);
 
   const knockoutLayout = useMemo(() => 
     calculateBracketLayout(tournamentData.knockoutMatches), 
@@ -631,6 +635,33 @@ export default function TournamentView() {
   const scrollRight = () => {
     containerRef.current?.scrollBy({ left: 300, behavior: 'smooth' });
   };
+
+  if (loading) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center" style={{ backgroundColor: colors.surface }}>
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p style={{ color: colors.text }}>Loading tournament data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center" style={{ backgroundColor: colors.surface }}>
+        <div className="text-center p-4">
+          <div className="text-red-500 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-medium mb-2" style={{ color: colors.text }}>Error Loading Tournament</h3>
+          <p style={{ color: colors.textSecondary }}>{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-screen flex flex-col" style={{ backgroundColor: colors.surface }}>
