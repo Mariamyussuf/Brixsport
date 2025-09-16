@@ -43,12 +43,12 @@ const CompetitionsScreen: React.FC = () => {
 
   // Convert API competitions to local format
   const competitions = apiCompetitions.map(comp => ({
-    id: comp.id,
+    id: comp.id.toString(),
     name: comp.name,
-    type: comp.location || 'botswana', // Use location as type, default to botswana
+    type: comp.type || 'botswana', // Use type directly, default to botswana
     category: comp.category || comp.type || 'SCHOOL COMPETITION',
     isActive: comp.status === 'active',
-    isFavorited: favorites.has(comp.id)
+    isFavorited: favorites.has(comp.id.toString())
   }));
 
   const toggleFavorite = (id: string): void => {
@@ -117,7 +117,7 @@ const CompetitionsScreen: React.FC = () => {
       try {
         // For now, we'll use the first competition as an example
         // In a real implementation, you might want to let the user select a competition
-        const competitionId = apiCompetitions[0]?.id || 'COMPETITION_ID_PLACEHOLDER';
+        const competitionId = apiCompetitions[0]?.id.toString() || 'COMPETITION_ID_PLACEHOLDER';
         
         // Fetch teams and matches for the competition using user-facing services
         const [teams, matches] = await Promise.all([
