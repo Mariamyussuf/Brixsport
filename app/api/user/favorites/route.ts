@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const response = await fetch(`${API_BASE_URL}/favorites`, {
       headers: {
         ...request.headers,
-        'host': new URL(API_BASE_URL).host
+        'host': API_BASE_URL.startsWith('http') ? new URL(API_BASE_URL).host : undefined
       }
     });
 

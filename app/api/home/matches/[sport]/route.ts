@@ -79,7 +79,7 @@ export async function GET(
         matches = await Promise.race([
           dbService.getMatchesBySport('football'),
           new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Database timeout')), 10000)
+            setTimeout(() => reject(new Error('Database timeout')), 15000)
           )
         ]);
         break;
@@ -88,7 +88,7 @@ export async function GET(
         matches = await Promise.race([
           dbService.getMatchesBySport('basketball'),
           new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Database timeout')), 10000)
+            setTimeout(() => reject(new Error('Database timeout')), 15000)
           )
         ]);
         break;
@@ -97,7 +97,7 @@ export async function GET(
         matches = await Promise.race([
           dbService.getMatchesBySport('track'),
           new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Database timeout')), 10000)
+            setTimeout(() => reject(new Error('Database timeout')), 15000)
           )
         ]);
         break;

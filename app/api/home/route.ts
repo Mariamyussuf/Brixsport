@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       const allLiveMatches = await Promise.race([
         dbService.getLiveMatches(),
         new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Database timeout')), 10000)
+          setTimeout(() => reject(new Error('Database timeout')), 15000)
         )
       ]);
       console.log('All live matches fetched:', allLiveMatches.length);
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       featuredContent = await Promise.race([
         dbService.getFeaturedContent(),
         new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Database timeout')), 10000)
+          setTimeout(() => reject(new Error('Database timeout')), 15000)
         )
       ]);
       console.log('Featured content fetched');
@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
           dbService.getUserStats(session.user.id)
         ]),
         new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Database timeout')), 10000)
+          setTimeout(() => reject(new Error('Database timeout')), 15000)
         )
       ]);
       [upcomingMatches, userStats] = results;
