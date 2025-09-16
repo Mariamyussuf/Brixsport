@@ -17,8 +17,9 @@ const FixturesScreen = () => {
   
   // Data hooks
   const { homeData, loading: homeLoading, error: homeError } = useHomeData();
+  // Only fetch sport matches when activeTab is not 'all'
   const { matches: sportMatches, loading: matchesLoading, error: matchesError } = 
-    useSportMatches(activeTab === 'all' ? '' : activeTab, 'all');
+    useSportMatches(activeTab !== 'all' ? activeTab : 'football', 'all');
 
   // Enhanced conversion functions
   const convertMatchToUI = (match: any): UI_Match => {
