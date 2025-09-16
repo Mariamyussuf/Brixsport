@@ -368,8 +368,8 @@ export class DatabaseService {
       const liveMatches = matches.filter(match => match.status === 'live');
       console.log(`Found ${liveMatches.length} live matches`);
       
-      // Add a small delay to simulate database operation (this should be very fast)
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // Removed artificial delay to improve performance
+      // await new Promise(resolve => setTimeout(resolve, 10));
       
       return liveMatches;
     } catch (error) {
@@ -387,8 +387,8 @@ export class DatabaseService {
         new Date(match.match_date).getTime() > Date.now()
       );
       
-      // Add a small delay to simulate database operation (this should be very fast)
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // Removed artificial delay to improve performance
+      // await new Promise(resolve => setTimeout(resolve, 10));
       
       // For unauthenticated users, limit the number of matches returned
       if (!userId) {
@@ -411,8 +411,8 @@ export class DatabaseService {
       const content = this.storage.getFeaturedContent();
       console.log('Featured content fetched successfully');
       
-      // Add a small delay to simulate database operation (this should be very fast)
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // Removed artificial delay to improve performance
+      // await new Promise(resolve => setTimeout(resolve, 10));
       
       return content;
     } catch (error) {
@@ -426,8 +426,8 @@ export class DatabaseService {
       console.log(`Fetching user stats for user ${userId || 'anonymous'}`);
       // Mock user stats - in a real implementation, this would query actual user data
       
-      // Add a small delay to simulate database operation (this should be very fast)
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // Removed artificial delay to improve performance
+      // await new Promise(resolve => setTimeout(resolve, 10));
       
       const stats = {
         favoriteTeams: userId ? 3 : 0,
@@ -473,8 +473,8 @@ export class DatabaseService {
         console.log(`Filtered to ${matches.length} matches with status: ${status}`);
       }
       
-      // Add a small delay to simulate database operation (this should be very fast)
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // Removed artificial delay to improve performance
+      // await new Promise(resolve => setTimeout(resolve, 10));
       
       return matches;
     } catch (error) {
