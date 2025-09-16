@@ -76,30 +76,15 @@ export async function GET(
     switch (sport) {
       case 'football':
         console.log('Fetching football matches');
-        matches = await Promise.race([
-          dbService.getMatchesBySport('football'),
-          new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Database timeout')), 15000)
-          )
-        ]);
+        matches = await dbService.getMatchesBySport('football');
         break;
       case 'basketball':
         console.log('Fetching basketball matches');
-        matches = await Promise.race([
-          dbService.getMatchesBySport('basketball'),
-          new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Database timeout')), 15000)
-          )
-        ]);
+        matches = await dbService.getMatchesBySport('basketball');
         break;
       case 'track':
         console.log('Fetching track matches');
-        matches = await Promise.race([
-          dbService.getMatchesBySport('track'),
-          new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Database timeout')), 15000)
-          )
-        ]);
+        matches = await dbService.getMatchesBySport('track');
         break;
       default:
         console.log('Unknown sport, returning empty array');

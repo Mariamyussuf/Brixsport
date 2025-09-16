@@ -50,12 +50,7 @@ export async function GET(request: NextRequest) {
     
     try {
       console.log('Fetching live matches');
-      const allLiveMatches = await Promise.race([
-        dbService.getLiveMatches(),
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Database timeout')), 15000)
-        )
-      ]);
+      const allLiveMatches = await dbService.getLiveMatches();
       console.log('All live matches fetched:', allLiveMatches.length);
       
       liveFootball = allLiveMatches.filter(match => match.sport === 'football');
@@ -64,12 +59,7 @@ export async function GET(request: NextRequest) {
       
       console.log('Live matches by sport - Football:', liveFootball.length, 'Basketball:', liveBasketball.length, 'Track:', liveTrack.length);
       
-      featuredContent = await Promise.race([
-        dbService.getFeaturedContent(),
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Database timeout')), 15000)
-        )
-      ]);
+      featuredContent = await dbService.getFeaturedContent();
       console.log('Featured content fetched');
     } catch (dbError) {
       console.error('Database error:', dbError);
@@ -128,14 +118,9 @@ export async function GET(request: NextRequest) {
     
     try {
       console.log('Fetching upcoming matches and user stats');
-      const results = await Promise.race([
-        Promise.all([
-          dbService.getUpcomingMatches(session.user.id),
-          dbService.getUserStats(session.user.id)
-        ]),
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Database timeout')), 15000)
-        )
+      const results = await Promise.all([
+        dbService.getUpcomingMatches(session.user.id),
+        dbService.getUserStats(session.user.id)
       ]);
       [upcomingMatches, userStats] = results;
       console.log('Upcoming matches and user stats fetched');
