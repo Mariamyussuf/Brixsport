@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from '@/lib/auth';
-import { dbService as databaseService } from '@/lib/databaseService';
+import { dbService } from '@/lib/databaseService';
 
 // GET /api/user/competitions - List all competitions for regular users
 export async function GET(request: NextRequest) {
@@ -9,11 +9,17 @@ export async function GET(request: NextRequest) {
     const session = await getAuth(request);
     
     if (!session) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { 
+          success: false,
+          message: 'Unauthorized: User not authenticated'
+        },
+        { status: 401 }
+      );
     }
     
     // Fetch competitions directly from the database service
-    const competitions = await databaseService.getAllCompetitions();
+    const competitions = await dbService.getAllCompetitions();
     
     return NextResponse.json({
       success: true,
@@ -24,7 +30,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false,
-        error: 'Failed to fetch competitions'
+        message: error instanceof Error ? error.message : 'Failed to fetch competitions'
       },
       { status: 500 }
     );

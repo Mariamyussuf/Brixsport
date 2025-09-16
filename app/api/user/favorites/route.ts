@@ -18,6 +18,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Check if API_BASE_URL points to our own API to avoid infinite loops
+    if (API_BASE_URL === '/api' || API_BASE_URL.startsWith('/api')) {
+      // For development, return mock data
+      return NextResponse.json({
+        success: true,
+        data: {
+          teams: [],
+          players: [],
+          competitions: []
+        }
+      });
+    }
+
     // Forward request to backend
     const response = await fetch(`${API_BASE_URL}/favorites`, {
       headers: {
@@ -60,6 +73,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Parse the request body
+    const body = await request.json();
+    
+    // Validate required fields
+    if (!body.favorite_type || body.favorite_id === undefined) {
+      return NextResponse.json(
+        { 
+          success: false,
+          message: 'Missing required fields: favorite_type and favorite_id'
+        },
+        { status: 400 }
+      );
+    }
+
+    // Check if API_BASE_URL points to our own API to avoid infinite loops
+    if (API_BASE_URL === '/api' || API_BASE_URL.startsWith('/api')) {
+      // For development, simulate success
+      return NextResponse.json({
+        success: true,
+        data: null,
+        message: 'Favorite added successfully (mock)'
+      });
+    }
+
     // Forward request to backend
     const response = await fetch(`${API_BASE_URL}/favorites`, {
       method: 'POST',
@@ -68,7 +105,10 @@ export async function POST(request: NextRequest) {
         'host': new URL(API_BASE_URL).host,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(await request.json())
+      body: JSON.stringify({
+        favorite_type: body.favorite_type,
+        favorite_id: body.favorite_id
+      })
     });
 
     const data = await response.json();
@@ -105,6 +145,29 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // Parse the request body
+    const body = await request.json();
+    
+    // Validate required fields
+    if (!body.favorite_type || body.favorite_id === undefined) {
+      return NextResponse.json(
+        { 
+          success: false,
+          message: 'Missing required fields: favorite_type and favorite_id'
+        },
+        { status: 400 }
+      );
+    }
+
+    // Check if API_BASE_URL points to our own API to avoid infinite loops
+    if (API_BASE_URL === '/api' || API_BASE_URL.startsWith('/api')) {
+      // For development, simulate success
+      return NextResponse.json({
+        success: true,
+        message: 'Favorite removed successfully (mock)'
+      });
+    }
+
     // Forward request to backend
     const response = await fetch(`${API_BASE_URL}/favorites`, {
       method: 'DELETE',
@@ -113,7 +176,10 @@ export async function DELETE(request: NextRequest) {
         'host': new URL(API_BASE_URL).host,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(await request.json())
+      body: JSON.stringify({
+        favorite_type: body.favorite_type,
+        favorite_id: body.favorite_id
+      })
     });
 
     const data = await response.json();
