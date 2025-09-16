@@ -41,12 +41,12 @@ const convertTrackEventToAPITrackEvent = (event: any) => {
 // GET /api/home/matches/[sport]?status=[status]
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sport: string } }
+  context: { params: { sport: string } }
 ) {
-  console.log('Matches API route called with sport:', params.sport);
+  console.log('Matches API route called with sport:', context.params.sport);
   
   try {
-    const { sport } = params;
+    const { sport } = context.params;
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || 'all';
     

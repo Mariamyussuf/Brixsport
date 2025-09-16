@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLoggerAuth } from '@/hooks/useAuth';
 import LoggerNotifications from '@/components/logger/notifications/LoggerNotifications';
-import { MatchTrackerPage } from '@/components/logger/matches';
+import MatchTrackerPage from '@/components/logger/matches/MatchTrackerPage';
 
 const LoggerDashboard = () => {
   const { user, isLogger, hasLoggerPermissions } = useLoggerAuth();
