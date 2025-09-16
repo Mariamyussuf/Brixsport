@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dbService as databaseService } from '@/lib/databaseService';
 
 // GET /api/competitions/[id] - Get a specific competition by ID with matches
-export async function GET(request: NextRequest, context: { params: any }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // `context.params` may be a Promise in the generated Next types — await it
-    const params = await context.params;
-    const { id } = params as { id: string };
+    // `params` is a Promise in the generated Next types — await it
+    const { id } = await params;
     
     // Convert id to number
     const competitionId = parseInt(id, 10);

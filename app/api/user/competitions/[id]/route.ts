@@ -3,7 +3,7 @@ import { getAuth } from '@/lib/auth';
 import { dbService as databaseService } from '@/lib/databaseService';
 
 // GET /api/user/competitions/[id] - Get a specific competition by ID for regular users
-export async function GET(request: NextRequest, context: { params: any }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Get the authentication session
     const session = await getAuth(request);
@@ -12,8 +12,7 @@ export async function GET(request: NextRequest, context: { params: any }) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const params = await context.params;
-    const { id } = params as { id: string };
+    const { id } = await params;
     
     // Convert id to number
     const competitionId = parseInt(id, 10);

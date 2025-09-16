@@ -2,7 +2,7 @@
 // Displays information about a favorite competition
 
 import React from 'react';
-import { Competition } from '@/types/favorites';
+import { Competition } from '@/lib/userFavoritesService';
 
 interface CompetitionCardProps {
   competition: Competition;
@@ -25,19 +25,23 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({ competition })
         </div>
         
         <div className="space-y-2">
-          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span>{competition.category}</span>
-          </div>
+          {competition.country && (
+            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{competition.country}</span>
+            </div>
+          )}
           
-          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span>{new Date(competition.start_date).toLocaleDateString()} - {new Date(competition.end_date).toLocaleDateString()}</span>
-          </div>
+          {competition.season && (
+            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>Season: {competition.season}</span>
+            </div>
+          )}
         </div>
       </div>
       

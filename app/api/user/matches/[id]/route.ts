@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from '@/lib/auth';
 
 // GET /api/user/matches/[id] - Get a specific match by ID for regular users
-export async function GET(request: NextRequest, context: { params: any }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Get the authentication session
     const session = await getAuth(request);
@@ -11,8 +11,7 @@ export async function GET(request: NextRequest, context: { params: any }) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const params = await context.params;
-    const { id } = params as { id: string };
+    const { id } = await params;
     
     // Placeholder for actual implementation
     // This would fetch a specific match from your database by ID
