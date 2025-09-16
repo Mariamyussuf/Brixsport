@@ -3,6 +3,28 @@ import { verifyAdminToken, hasAdminPermission } from '@/lib/adminAuth';
 import { cookies } from 'next/headers';
 import { dbService as databaseService } from '@/lib/databaseService';
 
+// Define the Competition interface locally to match the database service
+interface Competition {
+  id: number;
+  name: string;
+  type: string;
+  category: string;
+  status: string;
+  start_date: string;
+  end_date: string;
+  created_at: string;
+}
+
+// Define the competition data interface for creation
+interface CreateCompetitionData {
+  name: string;
+  type: string;
+  category: string;
+  status: string;
+  start_date: string;
+  end_date: string;
+}
+
 // GET /api/admin/competitions - Get all competitions
 export async function GET() {
   try {
@@ -76,23 +98,24 @@ export async function POST(request: Request) {
     const body = await request.json();
     
     // Validate required fields
-    if (!body.name || !body.sport || !body.startDate || !body.endDate) {
+    if (!body.name || !body.type || !body.start_date || !body.end_date) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Name, sport, start date, and end date are required' 
+        error: 'Name, type, start date, and end date are required' 
       }, { status: 400 });
     }
     
     // Create new competition in database
-    const newCompetition = await databaseService.createCompetition({
+    const competitionData = {
       name: body.name,
-      sport: body.sport,
-      startDate: body.startDate,
-      endDate: body.endDate,
-      status: body.status || 'upcoming',
-      assignedLoggers: body.assignedLoggers || [],
-      location: body.location || ''
-    });
+      type: body.type,
+      category: body.category || 'school',
+      status: 'upcoming', // Status is set by backend, not from request
+      start_date: body.start_date,
+      end_date: body.end_date
+    };
+    
+    const newCompetition = await databaseService.createCompetition(competitionData as Partial<Omit<Competition, 'id'>> as Omit<Competition, 'id'>);
     
     return NextResponse.json({ 
       success: true, 
@@ -138,8 +161,17 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const body = await request.json();
     const { id } = await params;
     
+    // Convert id to number
+    const competitionId = parseInt(id, 10);
+    if (isNaN(competitionId)) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Invalid competition ID' 
+      }, { status: 400 });
+    }
+    
     // Update competition in database
-    const updatedCompetition = await databaseService.updateCompetition(id, body);
+    const updatedCompetition = await databaseService.updateCompetition(competitionId, body);
     
     if (!updatedCompetition) {
       return NextResponse.json({ 
@@ -191,8 +223,17 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     const { id } = await params;
     
+    // Convert id to number
+    const competitionId = parseInt(id, 10);
+    if (isNaN(competitionId)) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Invalid competition ID' 
+      }, { status: 400 });
+    }
+    
     // Delete competition from database
-    const deletedCompetition = await databaseService.deleteCompetition(id);
+    const deletedCompetition = await databaseService.deleteCompetition(competitionId);
     
     if (!deletedCompetition) {
       return NextResponse.json({ 

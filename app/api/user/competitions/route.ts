@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from '@/lib/auth';
-import { getCompetitions } from '@/lib/userCompetitionService';
+import { dbService as databaseService } from '@/lib/databaseService';
 
 // GET /api/user/competitions - List all competitions for regular users
 export async function GET(request: NextRequest) {
@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
     
-    // Fetch competitions from the user competition service
-    const competitions = await getCompetitions();
+    // Fetch competitions directly from the database service
+    const competitions = await databaseService.getAllCompetitions();
     
     return NextResponse.json({
       success: true,
