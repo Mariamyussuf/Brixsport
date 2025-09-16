@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { getHomeData, getMatchesBySport } from '@/lib/homeService';
-import { BrixSportsHomeData, Match as BrixMatch, TrackEvent as BrixTrackEvent } from '@/types/brixsports';
+import { getHomeData, getMatchesBySport, getLiveMatches } from '@/lib/homeService';
+import { BrixSportsHomeData, Match as BrixMatch, TrackEvent as BrixTrackEvent, LiveMatchesResponse } from '@/types/brixsports';
+import { TokenManager } from '@/hooks/useAuth';
 
 // Types for our home data
 interface Match {
@@ -9,10 +10,17 @@ interface Match {
   home_team_id: number;
   away_team_id: number;
   match_date: string;
+  venue: string | null;
   status: 'live' | 'scheduled' | 'completed';
-  home_score: number | null;
-  away_score: number | null;
-  sport?: string;
+  home_score: number;
+  away_score: number;
+  current_minute: number;
+  period: string | null;
+  home_team_name: string;
+  home_team_logo: string;
+  away_team_name: string;
+  away_team_logo: string;
+  competition_name: string;
 }
 
 interface FeaturedContent {
@@ -29,18 +37,12 @@ interface UserStats {
 
 interface TrackEvent {
   id: number;
-  name: string;
-  status: 'live' | 'scheduled' | 'completed';
-  start_time: string;
-  results?: TrackResult[];
-}
-
-interface TrackResult {
-  position: number;
-  team_id: number;
-  team_name: string;
-  time?: string; // For timed events
-  distance?: number; // For field events
+  competition_id: number;
+  event_name: string;
+  event_type: string;
+  gender: string;
+  scheduled_time: string;
+  status: string;
 }
 
 interface HomeData {
@@ -54,69 +56,36 @@ interface HomeData {
 
 // Helper function to convert BrixMatch to Match
 const convertBrixMatchToMatch = (brixMatch: BrixMatch): Match => {
-  // Map status values from BrixMatch to local Match interface
-  let status: 'live' | 'scheduled' | 'completed';
-  switch (brixMatch.status) {
-    case 'live':
-      status = 'live';
-      break;
-    case 'scheduled':
-      status = 'scheduled';
-      break;
-    case 'completed':
-    case 'finished':
-    case 'ended':
-      status = 'completed';
-      break;
-    default:
-      status = 'scheduled'; // default fallback
-  }
-
   return {
-    id: parseInt(brixMatch.id, 10) || 0,
-    competition_id: parseInt(brixMatch.competition_id, 10) || 0,
-    home_team_id: parseInt(brixMatch.home_team_id, 10) || 0,
-    away_team_id: parseInt(brixMatch.away_team_id, 10) || 0,
+    id: brixMatch.id,
+    competition_id: brixMatch.competition_id,
+    home_team_id: brixMatch.home_team_id,
+    away_team_id: brixMatch.away_team_id,
     match_date: brixMatch.match_date,
-    status: status,
+    venue: brixMatch.venue,
+    status: brixMatch.status as 'live' | 'scheduled' | 'completed',
     home_score: brixMatch.home_score,
     away_score: brixMatch.away_score,
-    sport: brixMatch.sport
+    current_minute: brixMatch.current_minute,
+    period: brixMatch.period,
+    home_team_name: `Home Team ${brixMatch.home_team_id}`,
+    home_team_logo: '',
+    away_team_name: `Away Team ${brixMatch.away_team_id}`,
+    away_team_logo: '',
+    competition_name: 'Competition'
   };
 };
 
 // Helper function to convert BrixTrackEvent to TrackEvent
 const convertBrixTrackEventToTrackEvent = (brixTrackEvent: BrixTrackEvent): TrackEvent => {
-  // Map status values from BrixTrackEvent to local TrackEvent interface
-  let status: 'live' | 'scheduled' | 'completed';
-  switch (brixTrackEvent.status) {
-    case 'live':
-      status = 'live';
-      break;
-    case 'scheduled':
-      status = 'scheduled';
-      break;
-    case 'completed':
-    case 'finished':
-    case 'ended':
-      status = 'completed';
-      break;
-    default:
-      status = 'scheduled'; // default fallback
-  }
-
   return {
-    id: parseInt(brixTrackEvent.id, 10) || 0,
-    name: brixTrackEvent.name || `Track Event ${brixTrackEvent.id}`,
-    status: status,
-    start_time: brixTrackEvent.start_time || new Date().toISOString(),
-    results: Array.isArray(brixTrackEvent.results) ? brixTrackEvent.results.map(result => ({
-      position: result.position,
-      team_id: parseInt(result.team_id, 10) || 0,
-      team_name: result.team_name,
-      time: result.time,
-      distance: result.distance
-    })) : []
+    id: brixTrackEvent.id,
+    competition_id: brixTrackEvent.competition_id,
+    event_name: brixTrackEvent.event_name,
+    event_type: brixTrackEvent.event_type,
+    gender: brixTrackEvent.gender,
+    scheduled_time: brixTrackEvent.scheduled_time,
+    status: brixTrackEvent.status
   };
 };
 
@@ -128,9 +97,10 @@ export const useHomeData = () => {
   const fetchHomeData = async (signal?: AbortSignal) => {
     try {
       setLoading(true);
-      const response = await getHomeData({ signal });
+      // Get auth token from TokenManager
+      const authToken = TokenManager.getToken();
+      const response = await getHomeData({ signal, authToken: authToken || undefined });
       if (response.success && response.data) {
-        // Convert BrixHomeData to HomeData with safety checks
         const convertedData: HomeData = {
           liveFootball: (response.data.liveFootball || []).map(convertBrixMatchToMatch),
           liveBasketball: (response.data.liveBasketball || []).map(convertBrixMatchToMatch),
@@ -171,8 +141,12 @@ export const useHomeData = () => {
   return { homeData, loading, error, refetch: fetchHomeData };
 };
 
-export const useSportMatches = (sport: string, status: string = 'all') => {
+export const useSportMatches = (
+  sport: 'football' | 'basketball' | 'track', 
+  status: 'all' | 'live' | 'scheduled' | 'completed' = 'all'
+) => {
   const [matches, setMatches] = useState<Match[]>([]);
+  const [trackEvents, setTrackEvents] = useState<TrackEvent[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -180,6 +154,7 @@ export const useSportMatches = (sport: string, status: string = 'all') => {
     // Don't fetch if sport is empty
     if (!sport) {
       setMatches([]);
+      setTrackEvents([]);
       setLoading(false);
       setError(null);
       return;
@@ -187,20 +162,40 @@ export const useSportMatches = (sport: string, status: string = 'all') => {
     
     try {
       setLoading(true);
-      const response = await getMatchesBySport(sport, status, { signal });
+      // Get auth token from TokenManager
+      const authToken = TokenManager.getToken();
+      const response = await getMatchesBySport(sport, status, { signal, authToken: authToken || undefined });
       if (response.success && response.data) {
-        // Convert BrixMatch[] to Match[] with safety checks
-        const convertedMatches = (response.data || []).map(convertBrixMatchToMatch);
-        setMatches(convertedMatches);
+        // Handle different data types based on sport
+        if (sport === 'track' && Array.isArray(response.data)) {
+          // For track events, convert to TrackEvent[]
+          const convertedEvents = (response.data || []).map((item: any) => convertBrixTrackEventToTrackEvent(item as BrixTrackEvent));
+          setTrackEvents(convertedEvents);
+          setMatches([]); // Clear matches
+        } else if (Array.isArray(response.data)) {
+          // For football/basketball, convert to Match[]
+          const convertedMatches = (response.data || []).map((item: any) => convertBrixMatchToMatch(item as BrixMatch));
+          setMatches(convertedMatches);
+          setTrackEvents([]); // Clear track events
+        } else {
+          setMatches([]);
+          setTrackEvents([]);
+        }
         setError(null);
       } else {
         setError(response.error?.message || `Failed to fetch ${sport} matches`);
         console.error('API Error:', response.error || 'Unknown error occurred');
+        // Clear data on error
+        setMatches([]);
+        setTrackEvents([]);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : `Failed to fetch ${sport} matches`;
       setError(errorMessage);
       console.error(`Error fetching ${sport} matches:`, err);
+      // Clear data on error
+      setMatches([]);
+      setTrackEvents([]);
     } finally {
       setLoading(false);
     }
@@ -215,5 +210,66 @@ export const useSportMatches = (sport: string, status: string = 'all') => {
     };
   }, [sport, status]);
 
-  return { matches, loading, error, refetch: fetchMatches };
+  return { matches, trackEvents, loading, error, refetch: fetchMatches };
+};
+
+export const useLiveMatches = () => {
+  const [liveMatches, setLiveMatches] = useState<LiveMatchesResponse>({
+    football: [],
+    basketball: [],
+    track: []
+  });
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchLiveMatches = async (signal?: AbortSignal) => {
+    try {
+      setLoading(true);
+      // Get auth token from TokenManager
+      const authToken = TokenManager.getToken();
+      const response = await getLiveMatches({ signal, authToken: authToken || undefined });
+      if (response.success && response.data) {
+        // Convert BrixLiveMatchesResponse to LiveMatchesResponse
+        const convertedData: LiveMatchesResponse = {
+          football: (response.data.football || []).map(convertBrixMatchToMatch),
+          basketball: (response.data.basketball || []).map(convertBrixMatchToMatch),
+          track: (response.data.track || []).map(convertBrixTrackEventToTrackEvent)
+        };
+        setLiveMatches(convertedData);
+        setError(null);
+      } else {
+        setError(response.error?.message || 'Failed to fetch live matches');
+        console.error('API Error:', response.error || 'Unknown error occurred');
+        // Clear data on error
+        setLiveMatches({
+          football: [],
+          basketball: [],
+          track: []
+        });
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch live matches';
+      setError(errorMessage);
+      console.error('Error fetching live matches:', err);
+      // Clear data on error
+      setLiveMatches({
+        football: [],
+        basketball: [],
+        track: []
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchLiveMatches(controller.signal);
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  return { liveMatches, loading, error, refetch: fetchLiveMatches };
 };

@@ -52,5 +52,17 @@ icons.forEach(icon => {
   console.log(`Created: ${icon.name}`);
 });
 
+// Create favicon.ico by copying the 96x96 icon (browsers will accept PNG as ICO)
+const sourceIcon = path.join(outputDir, 'icon-96x96.png');
+const faviconPath = path.join(outputDir, 'favicon.ico');
+
+// Copy the PNG file as favicon.ico
+if (fs.existsSync(sourceIcon)) {
+  fs.copyFileSync(sourceIcon, faviconPath);
+  console.log('Created: favicon.ico (copied from icon-96x96.png)');
+} else {
+  console.log('Warning: Could not create favicon.ico - source icon not found');
+}
+
 console.log('PWA icons generated successfully!');
 console.log('Note: For production, replace these with properly designed icons.');

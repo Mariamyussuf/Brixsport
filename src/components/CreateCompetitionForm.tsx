@@ -1,12 +1,10 @@
 // src/components/CreateCompetitionForm.tsx
-
 import React, { useState } from 'react';
-import CompetitionService from '@/services/competitionService';
+import { createCompetition } from '@/lib/competitionService';
 
 interface FormData {
   name: string;
   type: string;
-  category: string;
   start_date: string;
   end_date: string;
 }
@@ -15,7 +13,6 @@ const CreateCompetitionForm: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({
     name: '',
     type: 'football',
-    category: '',
     start_date: '',
     end_date: '',
   });
@@ -33,13 +30,12 @@ const CreateCompetitionForm: React.FC = () => {
     setError(null);
 
     try {
-      await CompetitionService.createCompetition(formData);
+      await createCompetition(formData);
       alert('Competition created successfully!');
       // Reset form
       setFormData({
         name: '',
         type: 'football',
-        category: '',
         start_date: '',
         end_date: '',
       });
@@ -78,19 +74,6 @@ const CreateCompetitionForm: React.FC = () => {
           <option value="basketball">Basketball</option>
           <option value="track">Track</option>
         </select>
-      </div>
-      
-      <div>
-        <label htmlFor="category">Category:</label>
-        <input 
-          type="text" 
-          id="category"
-          name="category" 
-          value={formData.category} 
-          onChange={handleChange} 
-          placeholder="Category" 
-          required 
-        />
       </div>
       
       <div>

@@ -1,56 +1,32 @@
 // User Competition Service
 // Provides integration with the Competition API endpoints for regular users
 
-import { API_BASE_URL } from './apiConfig';
-import { getAuth } from './auth';
+import APIService from '@/services/APIService';
+import { APIEndpoint } from '@/types/api';
+import { TokenManager } from '@/hooks/useAuth';
 
 // Competition interface
 export interface Competition {
-  id: string;
+  id: number;
   name: string;
   type: string;
   category: string;
   status: string;
-  start_date?: string;
-  end_date?: string;
-  created_at: string;
-  location?: string;
-  description?: string;
+  start_date: string;
+  end_date: string;
 }
 
-// Generic request function with authentication
-const fetchAPI = async (endpoint: string, options: RequestInit = {}) => {
-  try {
-    // Get auth token from localStorage
-    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-    
-    if (!token) {
-      throw new Error('Unauthorized: No authentication token found');
-    }
-    
-    const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    };
+// Define API endpoints for user competitions
+const userCompetitionEndpoints = {
+  getAll: {
+    url: '/user/competitions',
+    method: 'GET' as const
+  } as APIEndpoint<Competition[]>,
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        ...headers,
-        ...options.headers
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} - ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('API request failed:', error);
-    throw error;
-  }
+  getById: (id: string) => ({
+    url: `/user/competitions/${id}`,
+    method: 'GET' as const
+  } as APIEndpoint<Competition>),
 };
 
 /**
@@ -59,8 +35,17 @@ const fetchAPI = async (endpoint: string, options: RequestInit = {}) => {
  */
 export const getCompetitions = async (): Promise<Competition[]> => {
   try {
-    const response = await fetchAPI('/user/competitions');
-    if (response.success) {
+    // Get auth token from TokenManager
+    const authToken = TokenManager.getToken();
+    
+    const response = await APIService.request(
+      userCompetitionEndpoints.getAll,
+      undefined,
+      undefined,
+      { authToken: authToken || undefined }
+    );
+    
+    if (response.success && Array.isArray(response.data)) {
       return response.data || [];
     }
     return [];
@@ -77,8 +62,17 @@ export const getCompetitions = async (): Promise<Competition[]> => {
  */
 export const getCompetitionById = async (id: string): Promise<Competition | null> => {
   try {
-    const response = await fetchAPI(`/user/competitions/${id}`);
-    if (response.success) {
+    // Get auth token from TokenManager
+    const authToken = TokenManager.getToken();
+    
+    const response = await APIService.request(
+      userCompetitionEndpoints.getById(id),
+      undefined,
+      undefined,
+      { authToken: authToken || undefined }
+    );
+    
+    if (response.success && response.data) {
       return response.data || null;
     }
     return null;

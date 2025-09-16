@@ -1,43 +1,38 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
-import { Team, Player, Tournament, SportType } from '../../types/campus';
+import { Plus, X } from 'lucide-react';
+import { SportType } from '../../types/campus';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/components/shared/I18nProvider';
-import { useFavorites } from '@/hooks/useFavorites';
+import { useFavoritesNew } from '@/hooks/useFavoritesNew';
+import { Team as ApiTeam, Player as ApiPlayer } from '@/types/favorites';
+import { Competition } from '@/lib/competitionService';
 
-// Define interfaces for the new API data structure
-interface ApiTeam {
+// Define interfaces for the component structure
+interface Team {
   id: string;
   name: string;
-  logo_url: string;
-  founded_year: number;
-  stadium: string;
-  city: string;
-  color?: string;
+  color: string;
+  players: any[];
 }
 
-interface ApiPlayer {
+interface Player {
   id: string;
   name: string;
+  teamId: string;
+  number: string;
   position: string;
-  team_id: string;
-  nationality: string;
-  age: number;
-  teamColor?: string;
-  number?: string;
+  team: string;
+  teamColor: string;
 }
 
-interface ApiCompetition {
+interface Tournament {
   id: string;
   name: string;
-  type: string;
-  country: string;
-  season: string;
-  color?: string;
-  description?: string;
-  sportType?: SportType;
+  color: string;
+  sportType: SportType;
+  description: string;
 }
 
 interface FavouritesscreenProps {
@@ -49,8 +44,10 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
   const { t } = useI18n();
   const isAuthed = typeof window !== 'undefined' && !!localStorage.getItem('token');
   
-  // Use the new useFavorites hook
-  const { favorites, loading, error, refreshFavorites } = useFavorites();
+  // Use the new useFavoritesNew hook
+  const { favorites, loading, error, refreshFavorites, addFavorite, removeFavorite } = useFavoritesNew();
+  
+  const [toast, setToast] = useState<{type: 'success' | 'info' | 'error', message: string} | null>(null);
   
   const requireAuth = (next: string = '/?tab=Favourites'): boolean => {
     if (!isAuthed) {
@@ -60,19 +57,75 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
     return false;
   };
 
-  const handleAddTeam = (): void => {
+  const handleAddTeam = async (teamId: string): Promise<void> => {
     if (requireAuth()) return;
-    alert(t('coming_soon'));
+    
+    try {
+      const response = await addFavorite('team', parseInt(teamId, 10));
+      showToast(response.success ? 'success' : 'info', response.message);
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to add team to favorites');
+    }
   };
 
-  const handleAddPlayer = (): void => {
+  const handleRemoveTeam = async (teamId: string): Promise<void> => {
     if (requireAuth()) return;
-    alert(t('coming_soon'));
+    
+    try {
+      const response = await removeFavorite('team', parseInt(teamId, 10));
+      showToast(response.success ? 'success' : 'info', response.message);
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to remove team from favorites');
+    }
   };
 
-  const handleAddCompetition = (): void => {
+  const handleAddPlayer = async (playerId: string): Promise<void> => {
     if (requireAuth()) return;
-    alert(t('coming_soon'));
+    
+    try {
+      const response = await addFavorite('player', parseInt(playerId, 10));
+      showToast(response.success ? 'success' : 'info', response.message);
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to add player to favorites');
+    }
+  };
+
+  const handleRemovePlayer = async (playerId: string): Promise<void> => {
+    if (requireAuth()) return;
+    
+    try {
+      const response = await removeFavorite('player', parseInt(playerId, 10));
+      showToast(response.success ? 'success' : 'info', response.message);
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to remove player from favorites');
+    }
+  };
+
+  const handleAddCompetition = async (competitionId: number): Promise<void> => {
+    if (requireAuth()) return;
+    
+    try {
+      const response = await addFavorite('competition', competitionId);
+      showToast(response.success ? 'success' : 'info', response.message);
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to add competition to favorites');
+    }
+  };
+
+  const handleRemoveCompetition = async (competitionId: number): Promise<void> => {
+    if (requireAuth()) return;
+    
+    try {
+      const response = await removeFavorite('competition', competitionId);
+      showToast(response.success ? 'success' : 'info', response.message);
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to remove competition from favorites');
+    }
+  };
+
+  const showToast = (type: 'success' | 'info' | 'error', message: string) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 3000);
   };
 
   const getColorClass = (color: string): string => {
@@ -126,29 +179,29 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
   }
 
   // Transform API data to match existing component structure
-  const favouriteTeams = favorites?.teams.map(team => ({
+  const favouriteTeams = favorites?.teams.map((team: ApiTeam) => ({
     id: team.id,
     name: team.name,
-    color: team.color || '#1e3a8a',
+    color: '#1e3a8a', // Default color since it's not in the API response
     players: []
   })) || [];
 
-  const favouritePlayers = favorites?.players.map(player => ({
+  const favouritePlayers = favorites?.players.map((player: ApiPlayer) => ({
     id: player.id,
     name: player.name,
     teamId: player.team_id,
-    number: player.number || '10',
+    number: '10', // Default number since it's not in the API response
     position: player.position,
     team: '', // Would need to fetch team name separately
-    teamColor: player.teamColor || '#1e3a8a'
+    teamColor: '#1e3a8a' // Default color since it's not in the API response
   })) || [];
 
-  const favouriteCompetitions = favorites?.competitions.map(competition => ({
+  const favouriteCompetitions = favorites?.competitions.map((competition: Competition) => ({
     id: competition.id,
     name: competition.name,
-    color: competition.color || '#1e3a8a',
-    sportType: competition.sportType || 'football' as SportType,
-    description: competition.description || `${competition.type} - ${competition.country}`
+    color: '#1e3a8a', // Default color since it's not in the API response
+    sportType: 'football' as SportType, // Default sport type
+    description: `${competition.type} - ${competition.category}`
   })) || [];
 
   // Filter competitions by sport if needed
@@ -158,6 +211,16 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
 
   return (
     <div className="space-y-6 text-neutral-900 dark:text-neutral-100">
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md shadow-lg text-white ${
+          toast.type === 'success' ? 'bg-green-500' : 
+          toast.type === 'info' ? 'bg-blue-500' : 'bg-red-500'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+      
       {/* Your Teams Section */}
       <section>
         <div className="flex items-center justify-between mb-4">
@@ -168,7 +231,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
             </span>
           </div>
           <button
-            onClick={handleAddTeam}
+            onClick={() => handleAddTeam('1')} // Example ID
             className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors touch-manipulation"
             aria-label={t('add_favourite_team')}
           >
@@ -176,21 +239,43 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
           </button>
         </div>
         
-        <div className="grid grid-cols-2 gap-3">
-          {favouriteTeams.map((team) => (
-            <button
-              key={team.id}
-              className={`${getColorClass(team.color || '#1e3a8a')} text-white p-4 rounded-lg shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95`}
-            >
-              <div className="flex flex-col items-center space-y-2">
-                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-sm flex items-center justify-center">
-                  <div className="w-6 h-6 bg-white rounded-sm opacity-80"></div>
-                </div>
-                <span className="font-medium text-sm text-center">{team.name}</span>
+        {favouriteTeams.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-gray-400 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No Favorite Teams</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
+              You haven't added any teams to your favorites yet.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {favouriteTeams.map((team) => (
+              <div key={team.id} className="relative">
+                <button
+                  className={`${getColorClass(team.color)} text-white p-4 rounded-lg shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95 w-full text-left`}
+                >
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="w-8 h-8 bg-white bg-opacity-20 rounded-sm flex items-center justify-center">
+                      <div className="w-6 h-6 bg-white rounded-sm opacity-80"></div>
+                    </div>
+                    <span className="font-medium text-sm text-center">{team.name}</span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleRemoveTeam(team.id)}
+                  className="absolute top-2 right-2 p-1 bg-black bg-opacity-30 rounded-full hover:bg-opacity-50 transition-colors"
+                  aria-label="Remove from favorites"
+                >
+                  <X className="w-3 h-3 text-white" />
+                </button>
               </div>
-            </button>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Your Players Section */}
@@ -203,7 +288,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
             </span>
           </div>
           <button
-            onClick={handleAddPlayer}
+            onClick={() => handleAddPlayer('1')} // Example ID
             className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors touch-manipulation"
             aria-label={t('add_favourite_player')}
           >
@@ -211,24 +296,46 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
           </button>
         </div>
         
-        <div className="grid grid-cols-3 gap-3">
-          {favouritePlayers.map((player) => (
-            <button
-              key={player.id}
-              className="bg-white dark:bg-slate-900/40 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-white/10 hover:shadow-md transition-all touch-manipulation active:scale-95"
-            >
-              <div className="flex flex-col items-center space-y-2">
-                <div className={`w-10 h-10 ${getColorClass(player.teamColor || '#6b7280')} rounded-full flex items-center justify-center`}>
-                  <span className="text-white font-bold text-sm">{player.number}</span>
-                </div>
-                <div className="text-center">
-                  <p className="font-medium text-gray-800 dark:text-gray-100 text-sm">{player.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-300">{player.team}</p>
-                </div>
+        {favouritePlayers.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-gray-400 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No Favorite Players</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
+              You haven't added any players to your favorites yet.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-3">
+            {favouritePlayers.map((player) => (
+              <div key={player.id} className="relative">
+                <button
+                  className="bg-white dark:bg-slate-900/40 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-white/10 hover:shadow-md transition-all touch-manipulation active:scale-95 w-full"
+                >
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className={`w-10 h-10 ${getColorClass(player.teamColor)} rounded-full flex items-center justify-center`}>
+                      <span className="text-white font-bold text-sm">{player.number}</span>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium text-gray-800 dark:text-gray-100 text-sm">{player.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-300">{player.team}</p>
+                    </div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleRemovePlayer(player.id)}
+                  className="absolute top-2 right-2 p-1 bg-black bg-opacity-30 rounded-full hover:bg-opacity-50 transition-colors"
+                  aria-label="Remove from favorites"
+                >
+                  <X className="w-3 h-3 text-white" />
+                </button>
               </div>
-            </button>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Your Competitions Section */}
@@ -241,7 +348,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
             </span>
           </div>
           <button
-            onClick={handleAddCompetition}
+            onClick={() => handleAddCompetition(1)} // Example ID
             className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors touch-manipulation"
             aria-label={t('add_favourite_competition')}
           >
@@ -249,24 +356,46 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
           </button>
         </div>
         
-        <div className="grid grid-cols-2 gap-3">
-          {filteredCompetitions.map((competition) => (
-            <button
-              key={competition.id}
-              className={`${getColorClass(competition.color || '#1e3a8a')} text-white p-4 rounded-lg shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95`}
-            >
-              <div className="flex flex-col items-center space-y-2">
-                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-sm flex items-center justify-center">
-                  <div className="w-6 h-6 bg-white rounded-sm opacity-80"></div>
-                </div>
-                <div className="text-center">
-                  <p className="font-medium text-sm">{competition.name}</p>
-                  <p className="text-xs opacity-80 mt-1">{competition.description}</p>
-                </div>
+        {filteredCompetitions.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-gray-400 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No Favorite Competitions</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
+              You haven't added any competitions to your favorites yet.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {filteredCompetitions.map((competition) => (
+              <div key={competition.id} className="relative">
+                <button
+                  className={`${getColorClass(competition.color)} text-white p-4 rounded-lg shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95 w-full`}
+                >
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="w-8 h-8 bg-white bg-opacity-20 rounded-sm flex items-center justify-center">
+                      <div className="w-6 h-6 bg-white rounded-sm opacity-80"></div>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium text-sm">{competition.name}</p>
+                      <p className="text-xs opacity-80 mt-1">{competition.description}</p>
+                    </div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleRemoveCompetition(competition.id)}
+                  className="absolute top-2 right-2 p-1 bg-black bg-opacity-30 rounded-full hover:bg-opacity-50 transition-colors"
+                  aria-label="Remove from favorites"
+                >
+                  <X className="w-3 h-3 text-white" />
+                </button>
               </div>
-            </button>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

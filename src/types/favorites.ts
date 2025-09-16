@@ -1,9 +1,12 @@
 export interface Competition {
-  id: string;
+  id: number;
   name: string;
   type: string;
-  country: string;
-  season: string;
+  category: string;
+  status: string;
+  start_date: string;
+  end_date: string;
+  created_at: string;
 }
 
 export interface Player {

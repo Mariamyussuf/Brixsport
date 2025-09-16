@@ -31,17 +31,21 @@ const TrackEventCard: React.FC<TrackEventCardProps> = ({ event }) => {
       </div>
       
       <div className="space-y-1.5 sm:space-y-2">
-        {event.results && event.results.map((result, index) => (
+        {/* Ensure results is an array before mapping */}
+        {Array.isArray(event.results) && event.results.map((result, index) => (
           <div key={index} className="flex items-center space-x-2 sm:space-x-3">
             <span className="text-gray-600 dark:text-gray-300 font-medium w-8 sm:w-10 text-xs sm:text-sm">{result.position}</span>
-            <span className="text-gray-800 dark:text-gray-100 text-xs sm:text-sm">{result.team}</span>
+            <span className="text-gray-800 dark:text-gray-200 text-sm sm:text-base truncate">{result.team}</span>
           </div>
         ))}
+        
+        {/* Show message when no results */}
+        {(!Array.isArray(event.results) || event.results.length === 0) && (
+          <div className="text-gray-500 dark:text-gray-400 text-sm italic">
+            {t('no_results_available')}
+          </div>
+        )}
       </div>
-      
-      {event.time && (
-        <div className="mt-2 text-gray-600 dark:text-gray-300 font-medium text-xs sm:text-sm">{event.time}</div>
-      )}
     </div>
   );
 };

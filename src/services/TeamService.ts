@@ -1,6 +1,7 @@
 import APIService from './APIService';
 import { APIEndpoint } from '@/types/api';
 import { Team } from '@/types/favorites';
+import { TokenManager } from '@/hooks/useAuth';
 
 const teamEndpoints = {
   getAll: {
@@ -11,7 +12,14 @@ const teamEndpoints = {
 
 class TeamService {
   async getAll(): Promise<Team[]> {
-    const response = await APIService.request(teamEndpoints.getAll);
+    // Get auth token from TokenManager
+    const authToken = TokenManager.getToken();
+    const response = await APIService.request(
+      teamEndpoints.getAll,
+      undefined,
+      undefined,
+      { authToken: authToken || undefined }
+    );
     if (response.success && response.data) {
       return response.data;
     }

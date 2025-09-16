@@ -15,23 +15,31 @@ interface Match {
   home_team_id: number;
   away_team_id: number;
   match_date: string;
-  status: 'live' | 'scheduled' | 'completed';
-  home_score: number | null;
-  away_score: number | null;
+  venue: string | null;
+  status: string; // scheduled, live, completed
+  home_score: number;
+  away_score: number;
+  current_minute: number;
+  period: string | null;
+  // Optional properties that may be included in some responses
+  home_team_name?: string;
+  home_team_logo?: string;
+  away_team_name?: string;
+  away_team_logo?: string;
+  competition_name?: string;
+  created_at?: string;
   sport?: string;
 }
 
 interface Competition {
-  id: string;
+  id: number;
   name: string;
-  sport: string;
-  startDate: string;
-  endDate: string;
+  type: string;
+  category: string;
   status: string;
-  assignedLoggers: string[];
-  location: string;
-  createdAt?: string;
-  updatedAt?: string;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
 }
 
 interface FeaturedContent {
@@ -68,9 +76,12 @@ class InMemoryStorage {
       home_team_id: 1,
       away_team_id: 2,
       match_date: new Date().toISOString(),
+      venue: "Stadium 1",
       status: 'live',
       home_score: 2,
       away_score: 1,
+      current_minute: 45,
+      period: "HT",
       sport: 'football'
     },
     {
@@ -79,9 +90,12 @@ class InMemoryStorage {
       home_team_id: 3,
       away_team_id: 4,
       match_date: new Date().toISOString(),
+      venue: "Stadium 2",
       status: 'live',
       home_score: 0,
       away_score: 0,
+      current_minute: 23,
+      period: "1H",
       sport: 'football'
     },
     {
@@ -90,9 +104,12 @@ class InMemoryStorage {
       home_team_id: 5,
       away_team_id: 6,
       match_date: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
+      venue: "Arena 1",
       status: 'scheduled',
-      home_score: null,
-      away_score: null,
+      home_score: 0,
+      away_score: 0,
+      current_minute: 0,
+      period: null,
       sport: 'basketball'
     },
     {
@@ -101,9 +118,12 @@ class InMemoryStorage {
       home_team_id: 7,
       away_team_id: 8,
       match_date: new Date(Date.now() + 7200000).toISOString(), // 2 hours from now
+      venue: "Arena 2",
       status: 'scheduled',
-      home_score: null,
-      away_score: null,
+      home_score: 0,
+      away_score: 0,
+      current_minute: 0,
+      period: null,
       sport: 'basketball'
     },
     {
@@ -112,9 +132,12 @@ class InMemoryStorage {
       home_team_id: 10,
       away_team_id: 11,
       match_date: new Date().toISOString(),
+      venue: "Court 1",
       status: 'live',
       home_score: 78,
       away_score: 75,
+      current_minute: 38,
+      period: "2H",
       sport: 'basketball'
     },
     {
@@ -123,9 +146,12 @@ class InMemoryStorage {
       home_team_id: 12,
       away_team_id: 13,
       match_date: new Date(Date.now() + 3600000).toISOString(),
+      venue: "Court 2",
       status: 'scheduled',
-      home_score: null,
-      away_score: null,
+      home_score: 0,
+      away_score: 0,
+      current_minute: 0,
+      period: null,
       sport: 'basketball'
     },
     {
@@ -134,9 +160,12 @@ class InMemoryStorage {
       home_team_id: 15,
       away_team_id: 16,
       match_date: new Date().toISOString(),
+      venue: "Track Field",
       status: 'live',
-      home_score: null,
-      away_score: null,
+      home_score: 0,
+      away_score: 0,
+      current_minute: 0,
+      period: null,
       sport: 'track'
     },
     {
@@ -145,43 +174,46 @@ class InMemoryStorage {
       home_team_id: 17,
       away_team_id: 18,
       match_date: new Date(Date.now() + 7200000).toISOString(),
+      venue: "Track Field",
       status: 'scheduled',
-      home_score: null,
-      away_score: null,
+      home_score: 0,
+      away_score: 0,
+      current_minute: 0,
+      period: null,
       sport: 'track'
     }
   ];
 
   private competitions: Competition[] = [
     {
-      id: 'comp1',
+      id: 1,
       name: 'Fall Championship',
-      sport: 'football',
-      startDate: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-      endDate: new Date(Date.now() + 86400000 * 30).toISOString(), // 30 days from now
+      type: 'football',
+      category: 'school',
       status: 'ongoing',
-      assignedLoggers: ['logger1', 'logger2'],
-      location: 'Main Stadium'
+      start_date: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+      end_date: new Date(Date.now() + 86400000 * 30).toISOString(), // 30 days from now
+      created_at: new Date(Date.now() - 86400000).toISOString() // 1 day ago
     },
     {
-      id: 'comp2',
+      id: 2,
       name: 'Winter Cup',
-      sport: 'basketball',
-      startDate: new Date(Date.now() + 86400000 * 7).toISOString(), // 1 week from now
-      endDate: new Date(Date.now() + 86400000 * 37).toISOString(), // 37 days from now
+      type: 'basketball',
+      category: 'inter-team',
       status: 'upcoming',
-      assignedLoggers: ['logger3'],
-      location: 'Gymnasium A'
+      start_date: new Date(Date.now() + 86400000 * 7).toISOString(), // 1 week from now
+      end_date: new Date(Date.now() + 86400000 * 37).toISOString(), // 37 days from now
+      created_at: new Date().toISOString()
     },
     {
-      id: 'comp3',
+      id: 3,
       name: 'Spring Tournament',
-      sport: 'track',
-      startDate: new Date(Date.now() + 86400000 * 60).toISOString(), // 2 months from now
-      endDate: new Date(Date.now() + 86400000 * 67).toISOString(), // 2 months and 1 week from now
+      type: 'track',
+      category: 'school',
       status: 'upcoming',
-      assignedLoggers: ['logger1', 'logger3'],
-      location: 'Track Field'
+      start_date: new Date(Date.now() + 86400000 * 60).toISOString(), // 2 months from now
+      end_date: new Date(Date.now() + 86400000 * 67).toISOString(), // 2 months and 1 week from now
+      created_at: new Date().toISOString()
     }
   ];
 
@@ -270,7 +302,7 @@ class InMemoryStorage {
     this.competitions.push(competition);
   }
 
-  updateCompetition(id: string, updates: Partial<Competition>): boolean {
+  updateCompetition(id: number, updates: Partial<Competition>): boolean {
     const index = this.competitions.findIndex(c => c.id === id);
     if (index === -1) return false;
     
@@ -278,7 +310,7 @@ class InMemoryStorage {
     return true;
   }
 
-  deleteCompetition(id: string): boolean {
+  deleteCompetition(id: number): boolean {
     const index = this.competitions.findIndex(c => c.id === id);
     if (index === -1) return false;
     
@@ -311,19 +343,31 @@ class InMemoryStorage {
 // Database service class
 export class DatabaseService {
   private storage: InMemoryStorage;
-  saveMatchEvents: any;
-  updateMatchScores: any;
-  logUserActivity: any;
 
   constructor() {
+    console.log('Initializing DatabaseService');
     this.storage = new InMemoryStorage();
+    console.log('DatabaseService initialized successfully');
+  }
+
+  // Helper function to add timeout to async operations
+  private async withTimeout<T>(promise: Promise<T>, timeoutMs: number = 5000): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs)
+      )
+    ]);
   }
 
   // Home screen data methods
   async getLiveMatches(): Promise<Match[]> {
     try {
+      console.log('Fetching live matches from database');
       const matches = this.storage.getMatches();
-      return matches.filter(match => match.status === 'live');
+      const liveMatches = matches.filter(match => match.status === 'live');
+      console.log(`Found ${liveMatches.length} live matches`);
+      return liveMatches;
     } catch (error) {
       console.error('Error fetching live matches:', error);
       throw error;
@@ -332,6 +376,7 @@ export class DatabaseService {
 
   async getUpcomingMatches(userId?: string): Promise<Match[]> {
     try {
+      console.log('Fetching upcoming matches from database');
       const matches = this.storage.getMatches();
       const upcoming = matches.filter(match => 
         match.status === 'scheduled' && 
@@ -340,9 +385,12 @@ export class DatabaseService {
       
       // For unauthenticated users, limit the number of matches returned
       if (!userId) {
-        return upcoming.slice(0, 5); // Return only first 5 matches for public users
+        const limitedMatches = upcoming.slice(0, 5); // Return only first 5 matches for public users
+        console.log(`Found ${limitedMatches.length} upcoming matches (limited for public user)`);
+        return limitedMatches;
       }
       
+      console.log(`Found ${upcoming.length} upcoming matches for user ${userId}`);
       return upcoming;
     } catch (error) {
       console.error('Error fetching upcoming matches:', error);
@@ -352,35 +400,62 @@ export class DatabaseService {
 
   async getFeaturedContent(): Promise<FeaturedContent> {
     try {
-      return this.storage.getFeaturedContent();
+      console.log('Fetching featured content from database');
+      const content = this.storage.getFeaturedContent();
+      console.log('Featured content fetched successfully');
+      return content;
     } catch (error) {
       console.error('Error fetching featured content:', error);
       throw error;
     }
   }
 
-  async getUserStats(userId: string): Promise<UserStats> {
+  async getUserStats(userId?: string): Promise<UserStats> {
     try {
-      // In a real implementation, this would query user-specific data
-      // For now, returning static data
-      return {
-        favoriteTeams: 3,
-        followedCompetitions: 5,
-        upcomingMatches: 2
+      console.log(`Fetching user stats for user ${userId || 'anonymous'}`);
+      // Mock user stats - in a real implementation, this would query actual user data
+      const stats = {
+        favoriteTeams: userId ? 3 : 0,
+        followedCompetitions: userId ? 2 : 0,
+        upcomingMatches: userId ? 5 : 3
       };
+      console.log('User stats fetched successfully:', stats);
+      return stats;
     } catch (error) {
       console.error('Error fetching user stats:', error);
       throw error;
     }
   }
 
-  // Sport-specific matches methods
-  async getMatchesBySport(sport: string, status?: string): Promise<Match[]> {
+  // Match methods
+  async getAllMatches(): Promise<Match[]> {
     try {
+      return this.storage.getMatches();
+    } catch (error) {
+      console.error('Error fetching matches:', error);
+      throw error;
+    }
+  }
+
+  async getMatchesByCompetitionId(competitionId: number): Promise<Match[]> {
+    try {
+      const matches = this.storage.getMatches();
+      return matches.filter(match => match.competition_id === competitionId);
+    } catch (error) {
+      console.error(`Error fetching matches for competition ${competitionId}:`, error);
+      throw error;
+    }
+  }
+
+  async getMatchesBySport(sport: string, status?: 'live' | 'scheduled' | 'completed' | 'all'): Promise<Match[]> {
+    try {
+      console.log(`Fetching matches for sport: ${sport}, status: ${status}`);
       let matches = this.storage.getMatches().filter(match => match.sport === sport);
+      console.log(`Found ${matches.length} matches for sport: ${sport}`);
       
       if (status && status !== 'all') {
         matches = matches.filter(match => match.status === status);
+        console.log(`Filtered to ${matches.length} matches with status: ${status}`);
       }
       
       return matches;
@@ -400,13 +475,16 @@ export class DatabaseService {
     }
   }
 
-  async createCompetition(competitionData: Omit<Competition, 'id' | 'createdAt' | 'updatedAt'>): Promise<Competition> {
+  async createCompetition(competitionData: Omit<Competition, 'id'>): Promise<Competition> {
     try {
+      // Find the highest ID and increment by 1
+      const competitions = this.storage.getCompetitions();
+      const maxId = competitions.length > 0 ? Math.max(...competitions.map(c => c.id)) : 0;
+      
       const newCompetition: Competition = {
-        id: `comp${Date.now()}`,
+        id: maxId + 1,
         ...competitionData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        created_at: new Date().toISOString()
       };
       
       this.storage.addCompetition(newCompetition);
@@ -417,12 +495,9 @@ export class DatabaseService {
     }
   }
 
-  async updateCompetition(id: string, updates: Partial<Competition>): Promise<Competition | null> {
+  async updateCompetition(id: number, updates: Partial<Competition>): Promise<Competition | null> {
     try {
-      const success = this.storage.updateCompetition(id, {
-        ...updates,
-        updatedAt: new Date().toISOString()
-      });
+      const success = this.storage.updateCompetition(id, updates);
       
       if (!success) {
         return null;
@@ -437,7 +512,7 @@ export class DatabaseService {
     }
   }
 
-  async deleteCompetition(id: string): Promise<Competition | null> {
+  async deleteCompetition(id: number): Promise<Competition | null> {
     try {
       const competitions = this.storage.getCompetitions();
       const competitionToDelete = competitions.find(competition => competition.id === id);
@@ -543,7 +618,43 @@ export class DatabaseService {
       throw error;
     }
   }
+
+  // Implementation of missing methods
+  async saveMatchEvents(events: any[], userId: string): Promise<void> {
+    try {
+      console.log(`Saving ${events.length} match events for user ${userId}`);
+      // In a real implementation, this would save events to the database
+      // For now, we'll just log them
+    } catch (error) {
+      console.error('Error saving match events:', error);
+      throw error;
+    }
+  }
+
+  async updateMatchScores(scores: any[], userId: string): Promise<void> {
+    try {
+      console.log(`Updating scores for ${scores.length} matches by user ${userId}`);
+      // In a real implementation, this would update match scores in the database
+      // For now, we'll just log them
+    } catch (error) {
+      console.error('Error updating match scores:', error);
+      throw error;
+    }
+  }
+
+  async logUserActivity(userId: string, activity: string, data?: any): Promise<void> {
+    try {
+      console.log(`User ${userId} performed activity: ${activity}`, data);
+      // In a real implementation, this would log user activity to the database
+      // For now, we'll just log it
+    } catch (error) {
+      console.error('Error logging user activity:', error);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance
+console.log('Creating dbService singleton instance');
 export const dbService = new DatabaseService();
+console.log('dbService singleton instance created');

@@ -1,12 +1,12 @@
-// useCompetition Hook
-// Custom hook for fetching and managing a single competition's data
+// useCompetitionDetails Hook
+// Custom hook for fetching and managing a single competition's details with matches
 
 import { useState, useEffect } from 'react';
 import { getCompetitionById } from '@/lib/competitionService';
 import { CompetitionDetailsResponse } from '@/lib/competitionService';
 
 // Hook return type
-interface UseCompetitionReturn {
+interface UseCompetitionDetailsReturn {
   competitionData: CompetitionDetailsResponse | null;
   loading: boolean;
   error: string | null;
@@ -14,34 +14,27 @@ interface UseCompetitionReturn {
 }
 
 /**
- * Custom hook for managing a single competition's data
+ * Custom hook for managing a single competition's details with matches
  * @param id - Competition ID
- * @returns Object containing competition data, loading state, error state, and helper functions
+ * @returns Object containing competition data with matches, loading state, error state, and helper functions
  */
-export const useCompetition = (id: string): UseCompetitionReturn => {
+export const useCompetitionDetails = (id: number): UseCompetitionDetailsReturn => {
   const [competitionData, setCompetitionData] = useState<CompetitionDetailsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Fetch competition from API
+   * Fetch competition details from API
    */
-  const fetchCompetition = async () => {
+  const fetchCompetitionDetails = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Convert string ID to number for the new service
-      const numericId = parseInt(id, 10);
-      if (isNaN(numericId)) {
-        throw new Error('Invalid competition ID');
-      }
-      
-      // Get competition details with matches
-      const data = await getCompetitionById(numericId);
+      const data = await getCompetitionById(id);
       setCompetitionData(data);
     } catch (err: any) {
-      console.error('Error fetching competition:', err);
+      console.error('Error fetching competition details:', err);
       
       // Handle different error types
       if (err.message.includes('401')) {
@@ -61,7 +54,7 @@ export const useCompetition = (id: string): UseCompetitionReturn => {
   // Fetch competition on component mount or when ID changes
   useEffect(() => {
     if (id) {
-      fetchCompetition();
+      fetchCompetitionDetails();
     }
   }, [id]);
 
@@ -69,6 +62,6 @@ export const useCompetition = (id: string): UseCompetitionReturn => {
     competitionData,
     loading,
     error,
-    refreshCompetition: fetchCompetition
+    refreshCompetition: fetchCompetitionDetails
   };
 };

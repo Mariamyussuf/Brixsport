@@ -64,12 +64,33 @@ const Homescreen: React.FC = () => {
   
   // Data hooks from File B
   const { homeData, loading: homeLoading, error: homeError } = useHomeData();
-  const { matches: sportMatches, loading: matchesLoading, error: matchesError } = 
-    useSportMatches(activeSport === 'all' ? '' : activeSport, 'all');
+  
+  // Map SportType to API sport type
+  const mapSportTypeToApiSport = (sportType: SportType | 'all'): 'football' | 'basketball' | 'track' | null => {
+    switch (sportType) {
+      case 'football':
+        return 'football';
+      case 'basketball':
+        return 'basketball';
+      case 'track_events':
+        return 'track';
+      default:
+        return null;
+    }
+  };
+  
+  // Get sport matches only when activeSport is a valid sport type
+  const apiSportType = mapSportTypeToApiSport(activeSport);
+  
+  const { matches: sportMatches, trackEvents: sportTrackEvents, loading: matchesLoading, error: matchesError } = 
+    useSportMatches(
+      apiSportType || 'football', 
+      'all'
+    );
 
   // Enhanced conversion functions from File B
   const convertMatchToUI = (match: any): UI_Match => {
-    // Handle API data structure
+    // Handle API data structure with new fields
     if (match.home_team_id !== undefined) {
       return {
         id: match.id.toString(),
@@ -81,17 +102,17 @@ const Homescreen: React.FC = () => {
           minute: '2-digit',
           hour12: false 
         }),
-        team1: `Team ${match.home_team_id}`,
-        team2: `Team ${match.away_team_id}`,
+        team1: match.home_team_name || `Team ${match.home_team_id}`,
+        team2: match.away_team_name || `Team ${match.away_team_id}`,
         score1: match.status === 'live' || match.status === 'Live' || 
                 match.status === 'finished' || match.status === 'ended' || 
                 match.status === 'completed' ? match.home_score : undefined,
         score2: match.status === 'live' || match.status === 'Live' || 
                 match.status === 'finished' || match.status === 'ended' || 
                 match.status === 'completed' ? match.away_score : undefined,
-        team1Color: `bg-blue-600`,
-        team2Color: `bg-red-600`,
-        sportType: match.sportType || 'football'
+        team1Color: match.home_team_logo ? '' : `bg-blue-600`,
+        team2Color: match.away_team_logo ? '' : `bg-red-600`,
+        sportType: 'football' // Default to football for now
       };
     }
     
@@ -158,11 +179,8 @@ const Homescreen: React.FC = () => {
     
     return {
       status: status,
-      event: trackEvent.name || `Track Event ${trackEvent.id}`,
-      results: Array.isArray(trackEvent.results) ? trackEvent.results.map((result: any) => ({
-        position: `${result.position}.`,
-        team: result.team_name || `Team ${result.team_id}`
-      })) : []
+      event: trackEvent.event_name || `Track Event ${trackEvent.id}`,
+      results: [] // Track events don't have results in this implementation
     };
   };
 
@@ -187,8 +205,12 @@ const Homescreen: React.FC = () => {
           ...(homeData?.liveFootball?.map(convertMatchToUI) || []),
           ...(homeData?.upcomingFootball?.map(convertMatchToUI) || [])
         ];
-      } else if (sportMatches && sportMatches.length > 0) {
+      } else if (sportType === 'basketball' && sportMatches && sportMatches.length > 0) {
         matches = sportMatches.map(convertMatchToUI);
+      } else if (sportType === 'track_events' && sportTrackEvents && sportTrackEvents.length > 0) {
+        // For track events, we use the trackEvents from the hook
+        // But we still return UI_Match[] for consistency with the function signature
+        // In practice, we'll use getTrackEvents() directly for track events
       }
     }
     
@@ -210,11 +232,18 @@ const Homescreen: React.FC = () => {
       return homeData.trackEvents.map(convertTrackEventToUI);
     }
     
+    // Use data from the sport matches hook if available
+    if (activeSport === 'track_events' && sportTrackEvents && sportTrackEvents.length > 0) {
+      return sportTrackEvents.map(convertTrackEventToUI);
+    }
+    
     return [];
   };
 
   const footballMatches = getFilteredMatches('football');
-  const basketballMatches = getFilteredMatches('basketball');
+  const basketballMatches = activeSport === 'basketball' && sportMatches.length > 0 ? 
+    sportMatches.map(convertMatchToUI) : 
+    getFilteredMatches('basketball');
   const liveMatches = getAllLiveMatches();
   const trackEvents = getTrackEvents();
 
@@ -290,11 +319,11 @@ const Homescreen: React.FC = () => {
   };
 
   const handleLiveClick = (): void => {
-    setShowLiveMatches(true);
+    router.push('/live-matches');
   };
 
   const handleBackFromLive = (): void => {
-    setShowLiveMatches(false);
+    router.push('/');
   };
 
   const getSportDisplayName = (sport: SportType | 'all'): string => {
@@ -312,9 +341,12 @@ const Homescreen: React.FC = () => {
 
   if (showLiveMatches) {
     return (
-      <LiveMatchesScreen 
-        onBack={handleBackFromLive} 
-      />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Redirecting to live matches...</p>
+        </div>
+      </div>
     );
   }
 

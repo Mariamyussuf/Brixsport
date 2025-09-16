@@ -3,16 +3,16 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Calendar, Users, Trophy, RefreshCw, MapPin, Clock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCompetition } from '@/hooks/useCompetition';
+import { useCompetitionDetails } from '@/hooks/useCompetitionDetails';
 import { Match } from '@/lib/competitionService';
 
-interface CompetitionDetailsScreenProps {
-  competitionId: string;
+interface CompetitionDetailsWithMatchesProps {
+  competitionId: number;
 }
 
-const CompetitionDetailsScreen: React.FC<CompetitionDetailsScreenProps> = ({ competitionId }) => {
+const CompetitionDetailsWithMatches: React.FC<CompetitionDetailsWithMatchesProps> = ({ competitionId }) => {
   const router = useRouter();
-  const { competitionData, loading, error, refreshCompetition } = useCompetition(competitionId);
+  const { competitionData, loading, error, refreshCompetition } = useCompetitionDetails(competitionId);
   const [activeTab, setActiveTab] = useState<'overview' | 'fixtures' | 'standings' | 'teams'>('overview');
 
   // Format date for display
@@ -332,4 +332,4 @@ const CompetitionDetailsScreen: React.FC<CompetitionDetailsScreenProps> = ({ com
   );
 };
 
-export default CompetitionDetailsScreen;
+export default CompetitionDetailsWithMatches;

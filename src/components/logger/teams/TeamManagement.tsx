@@ -6,11 +6,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Edit, Trash2, User, Users } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { CreateTeamPayload } from '@/types/brixsports';
 
 interface TeamForm {
   name: string;
   coachName: string;
   logoUrl: string;
+  foundedYear?: number;
+  stadium?: string;
+  city?: string;
+  country?: string;
+  colorPrimary?: string;
+  colorSecondary?: string;
 }
 
 interface PlayerForm {
@@ -21,7 +28,7 @@ interface PlayerForm {
 }
 
 const TeamManagement = () => {
-  const { getTeams } = useApi();
+  const { getTeams, createTeam } = useApi();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +39,13 @@ const TeamManagement = () => {
   const [teamFormData, setTeamFormData] = useState<TeamForm>({
     name: '',
     coachName: '',
-    logoUrl: ''
+    logoUrl: '',
+    foundedYear: undefined,
+    stadium: '',
+    city: '',
+    country: '',
+    colorPrimary: '',
+    colorSecondary: ''
   });
 
   useEffect(() => {
@@ -69,6 +82,12 @@ const TeamManagement = () => {
     setTeamFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Handle team form number input changes
+  const handleTeamNumberInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setTeamFormData(prev => ({ ...prev, [name]: value ? parseInt(value) : undefined }));
+  };
+
   // Handle player form input changes
   const handlePlayerInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -84,31 +103,63 @@ const TeamManagement = () => {
   };
 
   // Handle team form submission
-  const handleTeamSubmit = (e: React.FormEvent) => {
+  const handleTeamSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const newTeam: Team = {
-      id: editingTeam ? editingTeam.id : `team-${Date.now()}`,
-      name: teamFormData.name,
-      logoUrl: teamFormData.logoUrl,
-      coachName: teamFormData.coachName,
-      players: editingTeam ? editingTeam.players : []
-    };
     
-    if (editingTeam) {
-      setTeams(prev => prev.map(team => team.id === editingTeam.id ? newTeam : team));
-    } else {
-      setTeams(prev => [...prev, newTeam]);
+    // Validate required fields
+    if (!teamFormData.name.trim() || !teamFormData.logoUrl.trim()) {
+      setError('Team name and logo URL are required');
+      return;
     }
-    
-    // Reset form and close dialog
-    setTeamFormData({
-      name: '',
-      coachName: '',
-      logoUrl: ''
-    });
-    setEditingTeam(null);
-    setIsTeamDialogOpen(false);
+
+    // Create payload for API call
+    const payload: CreateTeamPayload = {
+      name: teamFormData.name,
+      logo_url: teamFormData.logoUrl,
+      founded_year: teamFormData.foundedYear,
+      stadium: teamFormData.stadium,
+      city: teamFormData.city,
+      country: teamFormData.country,
+      color_primary: teamFormData.colorPrimary,
+      color_secondary: teamFormData.colorSecondary
+    };
+
+    try {
+      const response = await createTeam(payload);
+      
+      if (response.success && response.data) {
+        // Add the new team to the list
+        const newTeam: Team = {
+          id: response.data.id.toString(), // Convert number to string for matchEvents Team interface
+          name: response.data.name,
+          logoUrl: response.data.logo_url,
+          coachName: teamFormData.coachName,
+          players: []
+        };
+        
+        setTeams(prev => [...prev, newTeam]);
+        
+        // Reset form and close dialog
+        setTeamFormData({
+          name: '',
+          coachName: '',
+          logoUrl: '',
+          foundedYear: undefined,
+          stadium: '',
+          city: '',
+          country: '',
+          colorPrimary: '',
+          colorSecondary: ''
+        });
+        setEditingTeam(null);
+        setIsTeamDialogOpen(false);
+        setError(null);
+      } else {
+        setError(response.error?.message || 'Failed to create team');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create team');
+    }
   };
 
   // Handle player form submission
@@ -155,7 +206,13 @@ const TeamManagement = () => {
     setTeamFormData({
       name: team.name,
       coachName: team.coachName || '',
-      logoUrl: team.logoUrl || ''
+      logoUrl: team.logoUrl || '',
+      foundedYear: undefined,
+      stadium: '',
+      city: '',
+      country: '',
+      colorPrimary: '',
+      colorSecondary: ''
     });
     setIsTeamDialogOpen(true);
   };
@@ -206,7 +263,13 @@ const TeamManagement = () => {
     setTeamFormData({
       name: '',
       coachName: '',
-      logoUrl: ''
+      logoUrl: '',
+      foundedYear: undefined,
+      stadium: '',
+      city: '',
+      country: '',
+      colorPrimary: '',
+      colorSecondary: ''
     });
   };
 
@@ -243,7 +306,7 @@ const TeamManagement = () => {
                 <form onSubmit={handleTeamSubmit} className="space-y-4">
                   <div className="space-y-2">
                     <label htmlFor="name" className="text-sm font-medium">
-                      Team Name
+                      Team Name *
                     </label>
                     <Input
                       id="name"
@@ -251,6 +314,20 @@ const TeamManagement = () => {
                       value={teamFormData.name}
                       onChange={handleTeamInputChange}
                       placeholder="e.g., Team A"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="logoUrl" className="text-sm font-medium">
+                      Logo URL *
+                    </label>
+                    <Input
+                      id="logoUrl"
+                      name="logoUrl"
+                      value={teamFormData.logoUrl}
+                      onChange={handleTeamInputChange}
+                      placeholder="e.g., https://example.com/logo.png"
                       required
                     />
                   </div>
@@ -269,16 +346,86 @@ const TeamManagement = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <label htmlFor="logoUrl" className="text-sm font-medium">
-                      Logo URL
+                    <label htmlFor="foundedYear" className="text-sm font-medium">
+                      Founded Year
                     </label>
                     <Input
-                      id="logoUrl"
-                      name="logoUrl"
-                      value={teamFormData.logoUrl}
-                      onChange={handleTeamInputChange}
-                      placeholder="e.g., https://example.com/logo.png"
+                      id="foundedYear"
+                      name="foundedYear"
+                      type="number"
+                      value={teamFormData.foundedYear || ''}
+                      onChange={handleTeamNumberInputChange}
+                      placeholder="e.g., 1990"
                     />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="stadium" className="text-sm font-medium">
+                      Stadium
+                    </label>
+                    <Input
+                      id="stadium"
+                      name="stadium"
+                      value={teamFormData.stadium}
+                      onChange={handleTeamInputChange}
+                      placeholder="e.g., National Stadium"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="city" className="text-sm font-medium">
+                        City
+                      </label>
+                      <Input
+                        id="city"
+                        name="city"
+                        value={teamFormData.city}
+                        onChange={handleTeamInputChange}
+                        placeholder="e.g., New York"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label htmlFor="country" className="text-sm font-medium">
+                        Country
+                      </label>
+                      <Input
+                        id="country"
+                        name="country"
+                        value={teamFormData.country}
+                        onChange={handleTeamInputChange}
+                        placeholder="e.g., USA"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="colorPrimary" className="text-sm font-medium">
+                        Primary Color
+                      </label>
+                      <Input
+                        id="colorPrimary"
+                        name="colorPrimary"
+                        value={teamFormData.colorPrimary}
+                        onChange={handleTeamInputChange}
+                        placeholder="e.g., #FF0000"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label htmlFor="colorSecondary" className="text-sm font-medium">
+                        Secondary Color
+                      </label>
+                      <Input
+                        id="colorSecondary"
+                        name="colorSecondary"
+                        value={teamFormData.colorSecondary}
+                        onChange={handleTeamInputChange}
+                        placeholder="e.g., #0000FF"
+                      />
+                    </div>
                   </div>
                   
                   <div className="flex justify-end space-x-2">

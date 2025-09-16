@@ -1,36 +1,57 @@
 import APIService from '@/services/APIService';
 import { APIEndpoint } from '@/types/api';
 import { handleApiError } from '@/types/apiError';
+import { TokenManager } from '@/hooks/useAuth';
 
+// Updated Competition interface to match backend specification
 export interface Competition {
-  id: string;
+  id: number;
   name: string;
-  sport: string;
-  startDate: string;
-  endDate: string;
+  type: string;
+  category: string;
   status: string;
-  assignedLoggers: string[];
-  location: string;
-  createdAt?: string;
-  updatedAt?: string;
+  start_date: string; // ISO date
+  end_date: string;   // ISO date
+}
+
+// New Match interface to match backend specification
+export interface Match {
+  id: number;
+  competition_id: number;
+  home_team_id: number;
+  away_team_id: number;
+  match_date: string;
+  venue: string | null;
+  status: string;
+  home_score: number;
+  away_score: number;
+  current_minute: number;
+  period: string | null;
+  home_team_name: string;
+  home_team_logo: string;
+  away_team_name: string;
+  away_team_logo: string;
+}
+
+export interface CompetitionDetailsResponse {
+  competition: Competition;
+  matches: Match[];
 }
 
 export interface CreateCompetitionData {
   name: string;
-  sport: string;
-  startDate: string;
-  endDate: string;
-  location: string;
+  type: string;
+  start_date: string;
+  end_date: string;
 }
 
 export interface UpdateCompetitionData {
   name?: string;
-  sport?: string;
-  startDate?: string;
-  endDate?: string;
+  type?: string;
+  category?: string;
   status?: string;
-  assignedLoggers?: string[];
-  location?: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 // Define API endpoints for competitions
@@ -40,33 +61,33 @@ const competitionEndpoints = {
     method: 'GET'
   } as APIEndpoint<Competition[]>,
 
-  getById: (id: string) => ({
+  getById: (id: number) => ({
     url: `/competitions/${id}`,
     method: 'GET'
-  } as APIEndpoint<Competition>),
+  } as APIEndpoint<CompetitionDetailsResponse>),
 
   create: {
     url: '/competitions',
     method: 'POST'
   } as APIEndpoint<Competition>,
 
-  update: (id: string) => ({
+  update: (id: number) => ({
     url: `/competitions/${id}`,
     method: 'PATCH'
   } as APIEndpoint<Competition>),
 
-  delete: (id: string) => ({
+  delete: (id: number) => ({
     url: `/competitions/${id}`,
     method: 'DELETE'
   } as APIEndpoint<void>),
 
   getBySport: (sport: string) => ({
-    url: `/competitions?sport=${sport}`,
+    url: `/competitions?type=${sport}`,
     method: 'GET'
   } as APIEndpoint<Competition[]>),
 
   getActive: {
-    url: '/competitions?status=ongoing',
+    url: '/competitions?status=active',
     method: 'GET'
   } as APIEndpoint<Competition[]>
 };
@@ -74,7 +95,14 @@ const competitionEndpoints = {
 // Get all competitions
 export async function getCompetitions(): Promise<Competition[]> {
   try {
-    const response = await APIService.request(competitionEndpoints.getAll);
+    // Get auth token from TokenManager
+    const authToken = TokenManager.getToken();
+    const response = await APIService.request(
+      competitionEndpoints.getAll,
+      undefined,
+      undefined,
+      { authToken: authToken || undefined }
+    );
     if (response.success && response.data) {
       return response.data;
     }
@@ -85,10 +113,17 @@ export async function getCompetitions(): Promise<Competition[]> {
   }
 }
 
-// Get competition by ID
-export async function getCompetitionById(id: string): Promise<Competition> {
+// Get competition by ID with matches
+export async function getCompetitionById(id: number): Promise<CompetitionDetailsResponse> {
   try {
-    const response = await APIService.request(competitionEndpoints.getById(id));
+    // Get auth token from TokenManager
+    const authToken = TokenManager.getToken();
+    const response = await APIService.request(
+      competitionEndpoints.getById(id),
+      undefined,
+      undefined,
+      { authToken: authToken || undefined }
+    );
     if (response.success && response.data) {
       return response.data;
     }
@@ -102,7 +137,14 @@ export async function getCompetitionById(id: string): Promise<Competition> {
 // Create a new competition
 export async function createCompetition(data: CreateCompetitionData): Promise<Competition> {
   try {
-    const response = await APIService.request(competitionEndpoints.create, data);
+    // Get auth token from TokenManager
+    const authToken = TokenManager.getToken();
+    const response = await APIService.request(
+      competitionEndpoints.create,
+      data,
+      undefined,
+      { authToken: authToken || undefined }
+    );
     if (response.success && response.data) {
       return response.data;
     }
@@ -114,9 +156,16 @@ export async function createCompetition(data: CreateCompetitionData): Promise<Co
 }
 
 // Update competition
-export async function updateCompetition(id: string, data: UpdateCompetitionData): Promise<Competition> {
+export async function updateCompetition(id: number, data: UpdateCompetitionData): Promise<Competition> {
   try {
-    const response = await APIService.request(competitionEndpoints.update(id), data);
+    // Get auth token from TokenManager
+    const authToken = TokenManager.getToken();
+    const response = await APIService.request(
+      competitionEndpoints.update(id),
+      data,
+      undefined,
+      { authToken: authToken || undefined }
+    );
     if (response.success && response.data) {
       return response.data;
     }
@@ -128,9 +177,16 @@ export async function updateCompetition(id: string, data: UpdateCompetitionData)
 }
 
 // Delete competition
-export async function deleteCompetition(id: string): Promise<void> {
+export async function deleteCompetition(id: number): Promise<void> {
   try {
-    const response = await APIService.request(competitionEndpoints.delete(id));
+    // Get auth token from TokenManager
+    const authToken = TokenManager.getToken();
+    const response = await APIService.request(
+      competitionEndpoints.delete(id),
+      undefined,
+      undefined,
+      { authToken: authToken || undefined }
+    );
     if (!response.success) {
       throw new Error(response.error?.message || 'Failed to delete competition');
     }
@@ -143,7 +199,14 @@ export async function deleteCompetition(id: string): Promise<void> {
 // Get competitions by sport
 export async function getCompetitionsBySport(sport: string): Promise<Competition[]> {
   try {
-    const response = await APIService.request(competitionEndpoints.getBySport(sport));
+    // Get auth token from TokenManager
+    const authToken = TokenManager.getToken();
+    const response = await APIService.request(
+      competitionEndpoints.getBySport(sport),
+      undefined,
+      undefined,
+      { authToken: authToken || undefined }
+    );
     if (response.success && response.data) {
       return response.data;
     }
@@ -157,7 +220,14 @@ export async function getCompetitionsBySport(sport: string): Promise<Competition
 // Get active competitions
 export async function getActiveCompetitions(): Promise<Competition[]> {
   try {
-    const response = await APIService.request(competitionEndpoints.getActive);
+    // Get auth token from TokenManager
+    const authToken = TokenManager.getToken();
+    const response = await APIService.request(
+      competitionEndpoints.getActive,
+      undefined,
+      undefined,
+      { authToken: authToken || undefined }
+    );
     if (response.success && response.data) {
       return response.data;
     }

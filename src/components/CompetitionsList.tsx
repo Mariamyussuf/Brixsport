@@ -1,19 +1,14 @@
-
-
 import React from 'react';
 import { useRouter } from 'next/navigation';
 
 interface Competition {
-  id: string;
+  id: number;
   name: string;
   type: string;
   category: string;
   status: string;
-  start_date?: string;
-  end_date?: string;
-  created_at: string;
-  location?: string;
-  description?: string;
+  start_date: string;
+  end_date: string;
 }
 
 interface CompetitionsListProps {
@@ -73,20 +68,10 @@ const CompetitionsList: React.FC<CompetitionsListProps> = ({
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {competition.location}
-              </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                {competition.start_date 
-                  ? new Date(competition.start_date).toLocaleDateString() 
-                  : 'Date TBD'}
+                {new Date(competition.start_date).toLocaleDateString()} - {new Date(competition.end_date).toLocaleDateString()}
               </p>
             </div>
           </div>
-          {competition.description && (
-            <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
-              {competition.description}
-            </p>
-          )}
         </div>
       ))}
     </div>

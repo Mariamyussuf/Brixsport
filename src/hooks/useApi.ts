@@ -4,6 +4,8 @@ import type { AccessLevel, UserRole } from './useRoleAccess';
 import TeamService from '@/services/TeamService';
 import APIService from '@/services/APIService';
 import { useRouter } from 'next/navigation';
+import BrixSportsService from '@/services/BrixSportsService';
+import { CreateTeamPayload, CreateTrackEventPayload, TrackEvent } from '@/types/brixsports';
 
 export function useApi() {
   const { hasAccess, currentRole } = useRoleAccess();
@@ -33,6 +35,36 @@ export function useApi() {
     // Teams API
     getTeams: () => handleApiCall(
       () => TeamService.getAll(),
+      ['user', 'logger', 'admin']
+    ),
+    
+    // Create team API
+    createTeam: (payload: CreateTeamPayload) => handleApiCall(
+      () => BrixSportsService.createTeam(payload),
+      ['logger', 'admin']
+    ),
+    
+    // Get team by ID API
+    getTeamById: (id: number) => handleApiCall(
+      () => BrixSportsService.getTeamById(id),
+      ['user', 'logger', 'admin']
+    ),
+    
+    // Create track event API
+    createTrackEvent: (payload: CreateTrackEventPayload) => handleApiCall(
+      () => BrixSportsService.createTrackEvent(payload),
+      ['logger', 'admin']
+    ),
+    
+    // Update track event status API
+    updateTrackEventStatus: (id: number, status: string) => handleApiCall(
+      () => BrixSportsService.updateTrackEventStatus(id, status),
+      ['logger', 'admin']
+    ),
+    
+    // Get track event by ID API
+    getTrackEventById: (id: number) => handleApiCall(
+      () => BrixSportsService.getTrackEventById(id),
       ['user', 'logger', 'admin']
     ),
   };

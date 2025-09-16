@@ -13,8 +13,11 @@ import { SportType } from '@/types/campus';
 import { ErrorHandler } from '@/lib/errorHandler';
 import { ValidationErrorDisplay } from '../shared/ValidationErrorDisplay';
 import { PostMatchWrapUp } from './PostMatchWrapUp';
-import CompetitionService from '@/services/competitionService';
+import { getCompetitions } from '@/lib/competitionService';
 import TeamService from '@/services/TeamService';
+import { ScoreUpdateForm } from './ScoreUpdateForm';
+import { LiveEventForm } from './LiveEventForm';
+import { Match as BrixMatch, LiveEvent } from '@/types/brixsports';
 
 interface MatchForm {
   name: string;
@@ -46,6 +49,7 @@ export default function MatchTrackerPage() {
     sportType: 'football'
   });
   const [syncStats, setSyncStats] = useState({ total: 0, pending: 0, retrying: 0, failed: 0 });
+  const [isLiveEventFormOpen, setIsLiveEventFormOpen] = useState(false);
   
   // State for competitions and teams data
   const [competitions, setCompetitions] = useState<any[]>([]);
@@ -57,7 +61,7 @@ export default function MatchTrackerPage() {
       try {
         // Fetch from real API endpoints
         const [competitionsData, teamsData] = await Promise.all([
-          CompetitionService.getAll(),
+          getCompetitions(),
           TeamService.getAll()
         ]);
         
@@ -136,6 +140,35 @@ export default function MatchTrackerPage() {
       setSelectedMatch(match);
       loadMatchEvents(matchId);
     }
+  };
+
+  // Handle score update
+  const handleScoreUpdate = (updatedMatch: BrixMatch) => {
+    // Update the selected match with the new data
+    if (selectedMatch) {
+      const updatedLocalMatch = {
+        ...selectedMatch,
+        homeScore: updatedMatch.home_score,
+        awayScore: updatedMatch.away_score,
+        status: updatedMatch.status as import('@/types/matchTracker').MatchStatus
+      };
+      setSelectedMatch(updatedLocalMatch);
+    }
+    
+    // Update the match in the matches list
+    setMatches(prevMatches => 
+      prevMatches.map(m => {
+        if (m.id === selectedMatch?.id) {
+          return {
+            ...m,
+            homeScore: updatedMatch.home_score,
+            awayScore: updatedMatch.away_score,
+            status: updatedMatch.status as import('@/types/matchTracker').MatchStatus
+          };
+        }
+        return m;
+      })
+    );
   };
 
   // Handle match form input changes
@@ -267,6 +300,14 @@ export default function MatchTrackerPage() {
   const handleTimeUpdate = (minutes: number, seconds: number) => {
     // Update the match with the current time
     console.log(`Match time updated: ${minutes}:${seconds}`);
+  };
+
+  // Handle live event added
+  const handleLiveEventAdded = (newEvent: LiveEvent) => {
+    // For now, we'll just show an alert and close the form
+    // In a real implementation, you might want to update the events list
+    alert('Live event added successfully');
+    setIsLiveEventFormOpen(false);
   };
 
   // Subscribe to real-time updates
@@ -507,6 +548,43 @@ export default function MatchTrackerPage() {
             onTimeUpdate={handleTimeUpdate}
           />
         </div>
+        
+        {/* Score Update Form - New Component */}
+        {selectedMatch.status === 'live' && (
+          <ScoreUpdateForm
+            matchId={parseInt(selectedMatch.id)}
+            initialData={{
+              home_score: selectedMatch.homeScore,
+              away_score: selectedMatch.awayScore,
+              current_minute: 0, // Default value since not available in local Match interface
+              period: '1st Half', // Default value since not available in local Match interface
+              status: selectedMatch.status
+            }}
+            onScoreUpdate={handleScoreUpdate}
+          />
+        )}
+        
+        {/* Live Event Form - New Component */}
+        {selectedMatch.status === 'live' && isLiveEventFormOpen && (
+          <LiveEventForm
+            matchId={parseInt(selectedMatch.id)}
+            teams={teams}
+            onEventAdded={handleLiveEventAdded}
+            onCancel={() => setIsLiveEventFormOpen(false)}
+          />
+        )}
+        
+        {/* Add Live Event Button */}
+        {selectedMatch.status === 'live' && !isLiveEventFormOpen && (
+          <div className="bg-gray-800 rounded-lg p-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-bold">Live Events</h3>
+              <Button onClick={() => setIsLiveEventFormOpen(true)}>
+                Add Live Event
+              </Button>
+            </div>
+          </div>
+        )}
         
         {/* Team Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
