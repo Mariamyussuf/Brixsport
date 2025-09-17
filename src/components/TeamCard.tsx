@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Team } from '@/types/favorites';
 import Link from 'next/link';
 
@@ -8,53 +8,123 @@ interface TeamCardProps {
 }
 
 export const TeamCard: React.FC<TeamCardProps> = ({ team, showDetails = true }) => {
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  const toggleFavorite = () => {
+    // In a real implementation, this would make an API call
+    setIsFavorite(!isFavorite);
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  };
+
+  // Type guard to check if team has color property
+  const hasColor = (team: Team): team is Team & { color?: string } => {
+    return 'color' in team;
+  };
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-      <div className="p-4">
-        <div className="flex items-center mb-4">
-          {team.logo_url ? (
-            <img 
-              src={team.logo_url} 
-              alt={team.name} 
-              className="w-16 h-16 rounded-full object-contain"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-              }}
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-              <span className="text-gray-500 dark:text-gray-400 text-2xl font-bold">
-                {team.name.charAt(0)}
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700">
+      {/* Header with favorite toggle */}
+      <div className="p-4 pb-2 flex justify-between items-start">
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate">
+            {team.name}
+          </h3>
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFavorite();
+          }}
+          className={`p-1 rounded-full ${
+            isFavorite 
+              ? 'text-red-500 hover:text-red-600' 
+              : 'text-gray-400 hover:text-red-500'
+          }`}
+          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+        >
+          <svg 
+            className="w-5 h-5" 
+            fill={isFavorite ? "currentColor" : "none"} 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Team logo or initials */}
+      <div className="px-4 py-2 flex justify-center">
+        {team.logo_url ? (
+          <img 
+            src={team.logo_url} 
+            alt={team.name} 
+            className="w-20 h-20 rounded-full object-contain border-2 border-gray-200 dark:border-gray-700"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
+          />
+        ) : (
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+            <span className="text-white text-2xl font-bold">
+              {getInitials(team.name)}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Team details */}
+      <div className="px-4 py-3">
+        <div className="space-y-2">
+          {team.founded_year && (
+            <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+              </svg>
+              <span>Founded: {team.founded_year}</span>
+            </div>
+          )}
+          
+          {(team.stadium || team.city) && (
+            <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+              </svg>
+              <span>{team.stadium}{team.stadium && team.city ? ', ' : ''}{team.city}</span>
+            </div>
+          )}
+          
+          {hasColor(team) && team.color && (
+            <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4 2a2 2 0 00-2 2v11a3 3 0 106 0V4a2 2 0 00-2-2H4zm1 14a1 1 0 100-2 1 1 0 000 2zm5-1.757l4.9-4.9a2 2 0 000-2.828L13.485 5.1a2 2 0 00-2.828 0L10 5.757v8.486zM16 18H9.071l6-6H16a2 2 0 012 2v2a2 2 0 01-2 2z" clipRule="evenodd" />
+              </svg>
+              <span>Team Color: 
+                <span 
+                  className="inline-block w-4 h-4 rounded-full ml-2 border border-gray-300 dark:border-gray-600" 
+                  style={{ backgroundColor: team.color }}
+                />
               </span>
             </div>
           )}
-          <div className="ml-4">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">{team.name}</h3>
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span>Founded: {team.founded_year}</span>
-          </div>
-          
-          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span>{team.stadium}, {team.city}</span>
-          </div>
         </div>
       </div>
-      
+
       {showDetails && (
-        <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
-          <Link href={`/team/${team.id}`} className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+        <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-100 dark:border-gray-700">
+          <Link 
+            href={`/team/${team.id}`}
+            className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+          >
             View Details
           </Link>
         </div>

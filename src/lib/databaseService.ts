@@ -368,8 +368,6 @@ export class DatabaseService {
       const liveMatches = matches.filter(match => match.status === 'live');
       console.log(`Found ${liveMatches.length} live matches`);
       
-      // Removed artificial delay to improve performance
-      // await new Promise(resolve => setTimeout(resolve, 10));
       
       return liveMatches;
     } catch (error) {
