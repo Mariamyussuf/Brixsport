@@ -31,10 +31,8 @@ class RateLimiter {
 
 const rateLimiter = new RateLimiter();
 
-// Mock API functions (replace with your actual API calls)
 const mockForgotPassword = async (email: string) => {
-// Removed artificial delay to improve performance
-  // await new Promise(resolve => setTimeout(resolve, 1000));
+
   return { success: true, message: 'Password reset link sent!' };
 };
 

@@ -100,10 +100,6 @@ class OfflineQueue {
         // For now, just simulate success
         console.log(`Syncing item: ${item.id} (${item.type})`);
         
-        // Removed artificial delay to improve performance
-        // await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Mark as completed
         item.status = 'completed';
       } catch (error) {
         console.error(`Error syncing item ${item.id}:`, error);

@@ -83,8 +83,7 @@ export async function GET(
         matches = await dbService.getMatchesBySport('basketball');
         break;
       case 'track':
-        console.log('Fetching track matches');
-        matches = await dbService.getMatchesBySport('track');
+        console.log('Fetching track matches');        matches = await dbService.getMatchesBySport('track');
         break;
       default:
         console.log('Unknown sport, returning empty array');

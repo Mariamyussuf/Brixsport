@@ -161,8 +161,7 @@ export const PostMatchWrapUp: React.FC<PostMatchWrapUpProps> = ({
     try {
       // In a real implementation, this would send the report to stakeholders
       // For now, we'll just simulate the action
-      // Removed artificial delay to improve performance
-      // await new Promise(resolve => setTimeout(resolve, 1000));
+      
       
       setStep('share');
       console.log('Report shared successfully');
