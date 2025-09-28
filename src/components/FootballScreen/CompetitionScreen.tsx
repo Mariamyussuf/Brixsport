@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { Bell, Star, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Bell, Star, ArrowLeft, RefreshCw, Filter, Calendar } from 'lucide-react';
 import BracketView from './BracketView';
 import GroupStageTable, { GroupData } from './GroupStageTable';
 import { useRouter } from 'next/navigation';
@@ -32,6 +32,8 @@ interface StandingsEntry {
   pts: number;
 }
 
+type FixtureStatus = 'all' | 'live' | 'upcoming' | 'completed';
+
 const CompetitionsScreen: React.FC = () => {
   const router = useRouter();
   const { t } = useI18n();
@@ -40,6 +42,15 @@ const CompetitionsScreen: React.FC = () => {
   const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
   const [matchTab, setMatchTab] = useState<'fixtures' | 'results' | 'stats' | 'standings'>('fixtures');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [fixtureStatus, setFixtureStatus] = useState<FixtureStatus>('all');
+  const [fixtureDate, setFixtureDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+
+  const fixtureStatusOptions: { key: FixtureStatus; label: string }[] = [
+    { key: 'all', label: t('all') || 'All' },
+    { key: 'live', label: t('live') || 'Live' },
+    { key: 'upcoming', label: t('upcoming') || 'Upcoming' },
+    { key: 'completed', label: t('completed') || 'Completed' }
+  ];
 
   // Convert API competitions to local format
   const competitions = apiCompetitions.map(comp => ({
@@ -267,24 +278,27 @@ const CompetitionsScreen: React.FC = () => {
     const flagColors = getFlagColors(competition.type);
     
     return (
-      <div className={`flex items-center justify-between py-4 ${showBorder ? 'border-b border-gray-200 dark:border-white/10' : ''}`}>
+      <div
+        className={`bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm p-4 sm:p-5 flex items-center justify-between transition-all duration-200 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-700 ${showBorder ? 'mb-4' : ''}`}
+      >
         <div className="flex items-center space-x-4">
-          <div className="w-10 h-10 rounded-full overflow-hidden flex flex-col">
+          <div className="w-12 h-12 rounded-full overflow-hidden flex flex-col border border-gray-100 dark:border-gray-700">
             <div className={`${flagColors.top} h-1/2 w-full`}></div>
             <div className={`${flagColors.bottom} h-1/2 w-full`}></div>
           </div>
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-300 uppercase tracking-wide font-medium">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
               {competition.category}
             </p>
-            <h3 className="text-gray-900 dark:text-white text-lg font-medium">
+            <h3 className="text-gray-900 dark:text-white text-lg sm:text-xl font-semibold">
               {competition.name}
             </h3>
           </div>
         </div>
         <button
           onClick={() => toggleFavorite(competition.id)}
-          className="p-1"
+          className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          aria-label={competition.isFavorited ? t('remove_favorite') || 'Remove from favorites' : t('add_favorite') || 'Add to favorites'}
         >
           <Star
             className={`w-5 h-5 ${
@@ -301,7 +315,7 @@ const CompetitionsScreen: React.FC = () => {
   // Show loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="flex flex-col items-center">
           <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
           <p className="mt-2 text-gray-500 dark:text-gray-400">Loading competitions...</p>
@@ -313,7 +327,7 @@ const CompetitionsScreen: React.FC = () => {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center p-4">
           <div className="text-red-500 mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -336,9 +350,9 @@ const CompetitionsScreen: React.FC = () => {
   return (
     <>
       <LoginPrompt isOpen={isLoginPromptOpen} onClose={() => setIsLoginPromptOpen(false)} />
-      <div className="min-h-screen bg-white dark:bg-black text-neutral-900 dark:text-neutral-100">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-neutral-900 dark:text-neutral-100 pb-20">
         {/* Header */}
-        <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-white/10 px-6 py-4 flex items-center justify-between">
+        <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center space-x-3">
             <button
               onClick={() => router.back()}
@@ -346,33 +360,41 @@ const CompetitionsScreen: React.FC = () => {
               className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
               type="button"
             >
-              <ArrowLeft className="w-5 h-5 text-slate-900 dark:text-white" />
+              <ArrowLeft className="w-5 h-5 text-gray-900 dark:text-white" />
             </button>
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                <div className="w-4 h-4 border-2 border-white rounded-full"></div>
+              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center shadow-inner">
+                <div className="w-4 h-4 border-2 border-white rounded-full bg-white"></div>
               </div>
-              <h1 className="text-xl font-normal text-slate-900 dark:text-white">{t('app_title')}</h1>
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white tracking-tight">{t('app_title')}</h1>
             </div>
           </div>
           <div className="flex items-center space-x-3">
             <button
               onClick={refreshCompetitions}
-              className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
               aria-label="Refresh"
             >
-              <RefreshCw className="w-5 h-5 text-slate-900 dark:text-white" />
+              <RefreshCw className="w-5 h-5 text-gray-900 dark:text-white" />
             </button>
-            <Bell className="w-6 h-6 text-slate-900 dark:text-white" />
+            <Bell className="w-6 h-6 text-gray-900 dark:text-white" />
           </div>
         </header>
 
         {/* Main Content */}
-        <div className="bg-white dark:bg-slate-900/40 min-h-screen text-slate-900 dark:text-slate-100">
-          <div className="px-6">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-6 text-slate-900 dark:text-slate-100 max-w-7xl mx-auto">
             {/* Active Competition Section */}
             <section className="py-6">
-              <h2 className="text-xl font-medium mb-6 text-gray-900 dark:text-white">{t('active_competition')}</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{t('active_competition')}</h2>
+                <button
+                  onClick={refreshCompetitions}
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  {t('refresh') || 'Refresh'}
+                </button>
+              </div>
               <div>
                 {activeCompetitions.length > 0 ? (
                   activeCompetitions.map((competition) => (
@@ -386,7 +408,7 @@ const CompetitionsScreen: React.FC = () => {
 
             {/* Match/Competition tabs moved to body */}
             <section className="pt-2">
-              <div className="inline-flex rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 mb-4">
+              <div className="inline-flex rounded-full overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm mb-6">
                 {([
                   { key: 'fixtures' as const },
                   { key: 'results' as const },
@@ -395,11 +417,11 @@ const CompetitionsScreen: React.FC = () => {
                 ]).map(({ key }) => (
                   <button
                     key={key}
-                    className={`px-4 py-2 text-sm font-medium ${
+                    className={`px-4 sm:px-6 py-2 text-sm font-semibold capitalize transition-colors ${
                       matchTab === key
-                        ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
-                        : 'bg-gray-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300'
-                    } ${key !== 'fixtures' ? 'border-l border-gray-200 dark:border-white/10' : ''}`}
+                        ? 'bg-blue-600 text-white shadow'
+                        : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    } ${key !== 'fixtures' ? 'border-l border-gray-200 dark:border-gray-700' : ''}`}
                     onClick={() => setMatchTab(key)}
                   >
                     {t(key)}
@@ -411,24 +433,24 @@ const CompetitionsScreen: React.FC = () => {
             {/* Content under tabs */}
             {matchTab === 'standings' ? (
               <section className="py-6">
-                <h2 className="text-xl font-medium mb-4 text-gray-900">{t('standings')}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold mb-4 text-gray-900 dark:text-white">{t('standings')}</h2>
                 {/* Standings sub-tabs */}
-                <div className="inline-flex rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 mb-4">
+                <div className="inline-flex rounded-full overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm mb-6">
                   <button
-                    className={`px-4 py-2 text-sm font-medium ${
+                    className={`px-4 sm:px-6 py-2 text-sm font-semibold capitalize ${
                       standingsTab === 'group'
-                        ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
-                        : 'bg-gray-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300'
+                        ? 'bg-blue-600 text-white shadow'
+                        : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
                     onClick={() => setStandingsTab('group')}
                   >
                     {t('group_stage')}
                   </button>
                   <button
-                    className={`px-4 py-2 text-sm font-medium border-l border-gray-200 dark:border-white/10 ${
+                    className={`px-4 sm:px-6 py-2 text-sm font-semibold capitalize border-l border-gray-200 dark:border-gray-700 ${
                       standingsTab === 'knockout'
-                        ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white'
-                        : 'bg-gray-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300'
+                        ? 'bg-blue-600 text-white shadow'
+                        : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
                     onClick={() => setStandingsTab('knockout')}
                   >
@@ -448,7 +470,7 @@ const CompetitionsScreen: React.FC = () => {
                     )}
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40">
+                  <div className="rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-4">
                     <BracketView competitionId={''} />
                   </div>
                 )}
@@ -456,17 +478,53 @@ const CompetitionsScreen: React.FC = () => {
             ) : (
               <section className="py-6">
                 {matchTab === 'fixtures' && (
-                  <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40 p-6 text-slate-700 dark:text-slate-300">
-                    <p>{t('coming_soon')}</p>
-                  </div>
+                  <>
+                    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300">
+                          <Filter className="w-4 h-4" />
+                          {t('filter_by') || 'Filter by'}
+                        </span>
+                        {fixtureStatusOptions.map(option => (
+                          <button
+                            key={option.key}
+                            onClick={() => setFixtureStatus(option.key)}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                              fixtureStatus === option.key
+                                ? 'bg-blue-600 text-white border-blue-600 shadow'
+                                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                      <label className="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 shadow-sm">
+                        <Calendar className="w-4 h-4" />
+                        <span className="font-medium hidden sm:inline">{t('date') || 'Date'}</span>
+                        <input
+                          type="date"
+                          value={fixtureDate}
+                          onChange={(event) => setFixtureDate(event.target.value)}
+                          className="bg-transparent focus:outline-none text-gray-700 dark:text-gray-200"
+                        />
+                      </label>
+                    </div>
+                    <div className="rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 text-slate-700 dark:text-slate-300 shadow-sm">
+                      <p>{t('coming_soon')}</p>
+                      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        {t('fixtures_filter_hint') || 'Use the filters above to view fixtures once available.'}
+                      </p>
+                    </div>
+                  </>
                 )}
                 {matchTab === 'results' && (
-                  <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40 p-6 text-slate-700 dark:text-slate-300">
+                  <div className="rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 text-slate-700 dark:text-slate-300 shadow-sm">
                     <p>{t('coming_soon')}</p>
                   </div>
                 )}
                 {matchTab === 'stats' && (
-                  <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900/40 p-6 text-slate-700 dark:text-slate-300">
+                  <div className="rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 text-slate-700 dark:text-slate-300 shadow-sm">
                     <p>{t('coming_soon')}</p>
                   </div>
                 )}
@@ -474,14 +532,26 @@ const CompetitionsScreen: React.FC = () => {
             )}
 
             {/* Separator */}
-            <div className="border-t border-gray-200 dark:border-white/10"></div>
+            <div className="border-t border-gray-200 dark:border-gray-800 my-8"></div>
 
             {/* All Competitions Section */}
             <section className="py-6">
-              <h2 className="text-xl font-medium mb-6 text-gray-900 dark:text-white flex items-center space-x-2">
-                <span>{t('all_competitions')}</span>
-                <span className="text-gray-500 dark:text-slate-400">• {allCompetitions.length}</span>
-              </h2>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+                    {t('all_competitions')}
+                  </h2>
+                  <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-full">
+                    {allCompetitions.length}
+                  </span>
+                </div>
+                <button
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                  className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                >
+                  {t('back_to_top') || 'Back to top'}
+                </button>
+              </div>
               <div>
                 {allCompetitions.length > 0 ? (
                   allCompetitions.map((competition, index) => (
@@ -492,13 +562,13 @@ const CompetitionsScreen: React.FC = () => {
                     />
                   ))
                 ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 dark:text-gray-400">
+                  <div className="text-center py-12 rounded-3xl border border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
+                    <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
                       No competitions available at the moment.
                     </p>
                     <button
                       onClick={refreshCompetitions}
-                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900"
                     >
                       Refresh
                     </button>
@@ -508,7 +578,6 @@ const CompetitionsScreen: React.FC = () => {
             </section>
           </div>
         </div>
-      </div>
     </>
   );
 };

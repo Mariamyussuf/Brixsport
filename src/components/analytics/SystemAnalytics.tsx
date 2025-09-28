@@ -1,0 +1,511 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import MetricCard from '@/components/analytics/charts/MetricCard';
+import LineChart from '@/components/analytics/charts/LineChart';
+import BarChart from '@/components/analytics/charts/BarChart';
+import AreaChart from '@/components/analytics/charts/AreaChart';
+
+interface SystemAnalyticsProps {
+  className?: string;
+}
+
+const SystemAnalytics: React.FC<SystemAnalyticsProps> = ({ className = '' }) => {
+  const [systemMetrics, setSystemMetrics] = useState({
+    cpuUsage: 0,
+    memoryUsage: 0,
+    diskUsage: 0,
+    networkLatency: 0,
+    responseTime: 0,
+    throughput: 0,
+    errorRate: 0,
+    uptime: 0
+  });
+
+  const [performanceData, setPerformanceData] = useState({
+    cpuHistory: [],
+    memoryHistory: [],
+    responseTimeHistory: [],
+    throughputHistory: [],
+    errorHistory: []
+  });
+
+  const [systemHealth, setSystemHealth] = useState({
+    services: [],
+    alerts: [],
+    incidents: []
+  });
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading system analytics data
+    const loadData = async () => {
+      try {
+        // Mock current system metrics
+        setSystemMetrics({
+          cpuUsage: 45.2,
+          memoryUsage: 68.7,
+          diskUsage: 42.1,
+          networkLatency: 23.4,
+          responseTime: 145,
+          throughput: 1247,
+          errorRate: 0.02,
+          uptime: 99.8
+        });
+
+        // Mock performance history data
+        setPerformanceData({
+          cpuHistory: [
+            { time: '00:00', usage: 32.1 },
+            { time: '04:00', usage: 28.4 },
+            { time: '08:00', usage: 45.2 },
+            { time: '12:00', usage: 52.8 },
+            { time: '16:00', usage: 48.9 },
+            { time: '20:00', usage: 38.7 }
+          ],
+          memoryHistory: [
+            { time: '00:00', usage: 45.2 },
+            { time: '04:00', usage: 42.8 },
+            { time: '08:00', usage: 58.3 },
+            { time: '12:00', usage: 68.7 },
+            { time: '16:00', usage: 62.1 },
+            { time: '20:00', usage: 55.9 }
+          ],
+          responseTimeHistory: [
+            { time: '00:00', responseTime: 120 },
+            { time: '04:00', responseTime: 115 },
+            { time: '08:00', responseTime: 145 },
+            { time: '12:00', responseTime: 165 },
+            { time: '16:00', responseTime: 155 },
+            { time: '20:00', responseTime: 135 }
+          ],
+          throughputHistory: [
+            { time: '00:00', requests: 890 },
+            { time: '04:00', requests: 756 },
+            { time: '08:00', requests: 1247 },
+            { time: '12:00', requests: 1456 },
+            { time: '16:00', requests: 1321 },
+            { time: '20:00', requests: 1098 }
+          ],
+          errorHistory: [
+            { time: '00:00', errors: 2 },
+            { time: '04:00', errors: 1 },
+            { time: '08:00', errors: 3 },
+            { time: '12:00', errors: 5 },
+            { time: '16:00', errors: 2 },
+            { time: '20:00', errors: 1 }
+          ]
+        });
+
+        // Mock system health data
+        setSystemHealth({
+          services: [
+            { name: 'API Server', status: 'healthy', uptime: '99.9%', responseTime: '145ms' },
+            { name: 'Database', status: 'healthy', uptime: '99.8%', responseTime: '23ms' },
+            { name: 'Redis Cache', status: 'healthy', uptime: '99.7%', responseTime: '2ms' },
+            { name: 'WebSocket', status: 'healthy', uptime: '99.9%', responseTime: '15ms' },
+            { name: 'CDN', status: 'warning', uptime: '98.5%', responseTime: '45ms' },
+            { name: 'Auth Service', status: 'healthy', uptime: '99.9%', responseTime: '89ms' }
+          ],
+          alerts: [
+            { level: 'warning', message: 'CDN response time increased', time: '2 hours ago' },
+            { level: 'info', message: 'Database backup completed', time: '4 hours ago' },
+            { level: 'info', message: 'Cache cleared automatically', time: '6 hours ago' }
+          ],
+          incidents: [
+            { severity: 'low', title: 'Brief API slowdown', duration: '5 minutes', resolved: true },
+            { severity: 'medium', title: 'Database connection pool exhausted', duration: '12 minutes', resolved: true }
+          ]
+        });
+
+        setLoading(false);
+      } catch (error) {
+        console.error('Error loading system analytics:', error);
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`space-y-6 ${className}`}>
+      {/* System Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard
+          title="CPU Usage"
+          value={`${systemMetrics.cpuUsage}%`}
+          change="-2.1%"
+          trend="down"
+          icon="⚡"
+          color="blue"
+        />
+        <MetricCard
+          title="Memory Usage"
+          value={`${systemMetrics.memoryUsage}%`}
+          change="+5.3%"
+          trend="up"
+          icon="🧠"
+          color="purple"
+        />
+        <MetricCard
+          title="Response Time"
+          value={`${systemMetrics.responseTime}ms`}
+          change="-8.2%"
+          trend="down"
+          icon="⏱️"
+          color="green"
+        />
+        <MetricCard
+          title="Throughput"
+          value={`${systemMetrics.throughput} req/s`}
+          change="+12.4%"
+          trend="up"
+          icon="📈"
+          color="emerald"
+        />
+      </div>
+
+      {/* Additional Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard
+          title="Network Latency"
+          value={`${systemMetrics.networkLatency}ms`}
+          change="-1.5%"
+          trend="down"
+          icon="🌐"
+          color="cyan"
+        />
+        <MetricCard
+          title="Error Rate"
+          value={`${systemMetrics.errorRate}%`}
+          change="-0.02%"
+          trend="down"
+          icon="🚨"
+          color="red"
+        />
+        <MetricCard
+          title="System Uptime"
+          value={`${systemMetrics.uptime}%`}
+          change="0%"
+          trend="neutral"
+          icon="✅"
+          color="indigo"
+        />
+        <MetricCard
+          title="Disk Usage"
+          value={`${systemMetrics.diskUsage}%`}
+          change="+1.2%"
+          trend="up"
+          icon="💾"
+          color="orange"
+        />
+      </div>
+
+      {/* Performance Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* CPU Usage History */}
+        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">CPU Usage History</h3>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <span className="text-sm text-gray-400">Last 24 hours</span>
+            </div>
+          </div>
+          <AreaChart
+            data={performanceData.cpuHistory}
+            xKey="time"
+            yKey="usage"
+            color="#3b82f6"
+            height={300}
+          />
+        </div>
+
+        {/* Memory Usage History */}
+        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Memory Usage History</h3>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+              <span className="text-sm text-gray-400">Last 24 hours</span>
+            </div>
+          </div>
+          <AreaChart
+            data={performanceData.memoryHistory}
+            xKey="time"
+            yKey="usage"
+            color="#8b5cf6"
+            height={300}
+          />
+        </div>
+
+        {/* Response Time Trends */}
+        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Response Time Trends</h3>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span className="text-sm text-gray-400">Milliseconds</span>
+            </div>
+          </div>
+          <LineChart
+            data={performanceData.responseTimeHistory}
+            xKey="time"
+            yKey="responseTime"
+            color="#10b981"
+            height={300}
+          />
+        </div>
+
+        {/* Throughput History */}
+        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Request Throughput</h3>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+              <span className="text-sm text-gray-400">Requests per second</span>
+            </div>
+          </div>
+          <BarChart
+            data={performanceData.throughputHistory}
+            xKey="time"
+            yKey="requests"
+            color="#10b981"
+            height={300}
+          />
+        </div>
+      </div>
+
+      {/* System Health Overview */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Service Status */}
+        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <h3 className="text-lg font-semibold text-white mb-4">Service Status</h3>
+          <div className="space-y-3">
+            {systemHealth.services.map((service, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-3 h-3 rounded-full ${
+                    service.status === 'healthy' ? 'bg-green-500' :
+                    service.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                  }`} />
+                  <div>
+                    <p className="text-sm font-medium text-gray-300">{service.name}</p>
+                    <p className="text-xs text-gray-500">{service.uptime} uptime</p>
+                  </div>
+                </div>
+                <span className="text-sm text-gray-400">{service.responseTime}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Alerts */}
+        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <h3 className="text-lg font-semibold text-white mb-4">Recent Alerts</h3>
+          <div className="space-y-3">
+            {systemHealth.alerts.map((alert, index) => (
+              <div key={index} className="flex items-start space-x-3 p-3 bg-gray-700/50 rounded-lg">
+                <div className={`w-3 h-3 rounded-full mt-1 ${
+                  alert.level === 'warning' ? 'bg-yellow-500' :
+                  alert.level === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                }`} />
+                <div className="flex-1">
+                  <p className="text-sm text-gray-300">{alert.message}</p>
+                  <p className="text-xs text-gray-500">{alert.time}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* System Incidents */}
+        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <h3 className="text-lg font-semibold text-white mb-4">System Incidents</h3>
+          <div className="space-y-3">
+            {systemHealth.incidents.map((incident, index) => (
+              <div key={index} className="p-3 bg-gray-700/50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    incident.severity === 'low' ? 'bg-green-500/20 text-green-400' :
+                    incident.severity === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                    'bg-red-500/20 text-red-400'
+                  }`}>
+                    {incident.severity}
+                  </span>
+                  {incident.resolved && (
+                    <span className="text-xs text-green-400">✓ Resolved</span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-300 mb-1">{incident.title}</p>
+                <p className="text-xs text-gray-500">Duration: {incident.duration}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Performance Insights */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Error Rate Analysis */}
+        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Error Rate Analysis</h3>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span className="text-sm text-gray-400">Errors per hour</span>
+            </div>
+          </div>
+          <BarChart
+            data={performanceData.errorHistory}
+            xKey="time"
+            yKey="errors"
+            color="#ef4444"
+            height={250}
+          />
+        </div>
+
+        {/* Performance Metrics Summary */}
+        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <h3 className="text-lg font-semibold text-white mb-4">Performance Summary</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+              <span className="text-sm text-gray-300">Average Response Time</span>
+              <span className="text-sm font-medium text-green-400">145ms</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+              <span className="text-sm text-gray-300">Peak Throughput</span>
+              <span className="text-sm font-medium text-blue-400">1,456 req/s</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+              <span className="text-sm text-gray-300">Error Rate</span>
+              <span className="text-sm font-medium text-orange-400">0.02%</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+              <span className="text-sm text-gray-300">System Uptime</span>
+              <span className="text-sm font-medium text-emerald-400">99.8%</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+              <span className="text-sm text-gray-300">Cache Hit Rate</span>
+              <span className="text-sm font-medium text-purple-400">94.2%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Resource Utilization Details */}
+      <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <h3 className="text-lg font-semibold text-white mb-4">Resource Utilization Details</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="text-center">
+            <div className="relative w-24 h-24 mx-auto mb-2">
+              <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#374151"
+                  strokeWidth="3"
+                />
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#3b82f6"
+                  strokeWidth="3"
+                  strokeDasharray={`${systemMetrics.cpuUsage * 1.13}, 113`}
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-lg font-bold text-white">{systemMetrics.cpuUsage}%</span>
+              </div>
+            </div>
+            <p className="text-sm text-gray-400">CPU Usage</p>
+          </div>
+
+          <div className="text-center">
+            <div className="relative w-24 h-24 mx-auto mb-2">
+              <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#374151"
+                  strokeWidth="3"
+                />
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#8b5cf6"
+                  strokeWidth="3"
+                  strokeDasharray={`${systemMetrics.memoryUsage * 1.13}, 113`}
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-lg font-bold text-white">{systemMetrics.memoryUsage}%</span>
+              </div>
+            </div>
+            <p className="text-sm text-gray-400">Memory Usage</p>
+          </div>
+
+          <div className="text-center">
+            <div className="relative w-24 h-24 mx-auto mb-2">
+              <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#374151"
+                  strokeWidth="3"
+                />
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#f59e0b"
+                  strokeWidth="3"
+                  strokeDasharray={`${systemMetrics.diskUsage * 1.13}, 113`}
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-lg font-bold text-white">{systemMetrics.diskUsage}%</span>
+              </div>
+            </div>
+            <p className="text-sm text-gray-400">Disk Usage</p>
+          </div>
+
+          <div className="text-center">
+            <div className="relative w-24 h-24 mx-auto mb-2">
+              <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#374151"
+                  strokeWidth="3"
+                />
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#06b6d4"
+                  strokeWidth="3"
+                  strokeDasharray={`${(systemMetrics.uptime * 1.13)}, 113`}
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-lg font-bold text-white">{systemMetrics.uptime}%</span>
+              </div>
+            </div>
+            <p className="text-sm text-gray-400">System Uptime</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SystemAnalytics;
