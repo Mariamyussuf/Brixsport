@@ -1,6 +1,26 @@
-// Database Service
-// This service will handle all database operations for the application
-// Implementation uses in-memory storage for offline-first PWA functionality
+// Backend API configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const API_V1_URL = `${API_BASE_URL}/v1`;
+
+// Helper function to make authenticated API calls
+const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+  
+  const response = await fetch(`${API_V1_URL}${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+};
 
 // Types
 interface Team {
@@ -67,610 +87,332 @@ interface Logger {
   updatedAt?: string;
 }
 
-// In-memory storage for our data
-class InMemoryStorage {
-  private matches: Match[] = [
-    {
-      id: 1,
-      competition_id: 101,
-      home_team_id: 1,
-      away_team_id: 2,
-      match_date: new Date().toISOString(),
-      venue: "Stadium 1",
-      status: 'live',
-      home_score: 2,
-      away_score: 1,
-      current_minute: 45,
-      period: "HT",
-      sport: 'football'
-    },
-    {
-      id: 2,
-      competition_id: 102,
-      home_team_id: 3,
-      away_team_id: 4,
-      match_date: new Date().toISOString(),
-      venue: "Stadium 2",
-      status: 'live',
-      home_score: 0,
-      away_score: 0,
-      current_minute: 23,
-      period: "1H",
-      sport: 'football'
-    },
-    {
-      id: 3,
-      competition_id: 103,
-      home_team_id: 5,
-      away_team_id: 6,
-      match_date: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
-      venue: "Arena 1",
-      status: 'scheduled',
-      home_score: 0,
-      away_score: 0,
-      current_minute: 0,
-      period: null,
-      sport: 'basketball'
-    },
-    {
-      id: 4,
-      competition_id: 104,
-      home_team_id: 7,
-      away_team_id: 8,
-      match_date: new Date(Date.now() + 7200000).toISOString(), // 2 hours from now
-      venue: "Arena 2",
-      status: 'scheduled',
-      home_score: 0,
-      away_score: 0,
-      current_minute: 0,
-      period: null,
-      sport: 'basketball'
-    },
-    {
-      id: 5,
-      competition_id: 201,
-      home_team_id: 10,
-      away_team_id: 11,
-      match_date: new Date().toISOString(),
-      venue: "Court 1",
-      status: 'live',
-      home_score: 78,
-      away_score: 75,
-      current_minute: 38,
-      period: "2H",
-      sport: 'basketball'
-    },
-    {
-      id: 6,
-      competition_id: 202,
-      home_team_id: 12,
-      away_team_id: 13,
-      match_date: new Date(Date.now() + 3600000).toISOString(),
-      venue: "Court 2",
-      status: 'scheduled',
-      home_score: 0,
-      away_score: 0,
-      current_minute: 0,
-      period: null,
-      sport: 'basketball'
-    },
-    {
-      id: 7,
-      competition_id: 301,
-      home_team_id: 15,
-      away_team_id: 16,
-      match_date: new Date().toISOString(),
-      venue: "Track Field",
-      status: 'live',
-      home_score: 0,
-      away_score: 0,
-      current_minute: 0,
-      period: null,
-      sport: 'track'
-    },
-    {
-      id: 8,
-      competition_id: 302,
-      home_team_id: 17,
-      away_team_id: 18,
-      match_date: new Date(Date.now() + 7200000).toISOString(),
-      venue: "Track Field",
-      status: 'scheduled',
-      home_score: 0,
-      away_score: 0,
-      current_minute: 0,
-      period: null,
-      sport: 'track'
-    }
-  ];
-
-  private competitions: Competition[] = [
-    {
-      id: 1,
-      name: 'Fall Championship',
-      type: 'football',
-      category: 'school',
-      status: 'ongoing',
-      start_date: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-      end_date: new Date(Date.now() + 86400000 * 30).toISOString(), // 30 days from now
-      created_at: new Date(Date.now() - 86400000).toISOString() // 1 day ago
-    },
-    {
-      id: 2,
-      name: 'Winter Cup',
-      type: 'basketball',
-      category: 'inter-team',
-      status: 'upcoming',
-      start_date: new Date(Date.now() + 86400000 * 7).toISOString(), // 1 week from now
-      end_date: new Date(Date.now() + 86400000 * 37).toISOString(), // 37 days from now
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 3,
-      name: 'Spring Tournament',
-      type: 'track',
-      category: 'school',
-      status: 'upcoming',
-      start_date: new Date(Date.now() + 86400000 * 60).toISOString(), // 2 months from now
-      end_date: new Date(Date.now() + 86400000 * 67).toISOString(), // 2 months and 1 week from now
-      created_at: new Date().toISOString()
-    }
-  ];
-
-  private loggers: Logger[] = [
-    {
-      id: 'logger1',
-      name: 'John Logger',
-      email: 'john.logger@example.com',
-      role: 'logger',
-      status: 'active',
-      assignedCompetitions: ['comp1', 'comp2'],
-      createdAt: new Date().toISOString(),
-      lastActive: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 'logger2',
-      name: 'Jane Logger',
-      email: 'jane.logger@example.com',
-      role: 'logger',
-      status: 'inactive',
-      assignedCompetitions: ['comp3'],
-      createdAt: new Date().toISOString(),
-      lastActive: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 'logger3',
-      name: 'Bob Logger',
-      email: 'bob.logger@example.com',
-      role: 'logger',
-      status: 'online',
-      assignedCompetitions: ['comp1', 'comp4'],
-      createdAt: new Date().toISOString(),
-      lastActive: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-  ];
-
-  private featuredContent: FeaturedContent = {
-    title: "Championship Finals This Weekend",
-    description: "Don't miss the biggest matches of the season!",
-    image: "/featured-match.jpg"
-  };
-
-  // Getters
-  getMatches(): Match[] {
-    return this.matches;
-  }
-
-  getCompetitions(): Competition[] {
-    return this.competitions;
-  }
-
-  getLoggers(): Logger[] {
-    return this.loggers;
-  }
-
-  getFeaturedContent(): FeaturedContent {
-    return this.featuredContent;
-  }
-
-  // Match operations
-  addMatch(match: Match): void {
-    this.matches.push(match);
-  }
-
-  updateMatch(id: number, updates: Partial<Match>): boolean {
-    const index = this.matches.findIndex(m => m.id === id);
-    if (index === -1) return false;
-    
-    this.matches[index] = { ...this.matches[index], ...updates };
-    return true;
-  }
-
-  deleteMatch(id: number): boolean {
-    const index = this.matches.findIndex(m => m.id === id);
-    if (index === -1) return false;
-    
-    this.matches.splice(index, 1);
-    return true;
-  }
-
-  // Competition operations
-  addCompetition(competition: Competition): void {
-    this.competitions.push(competition);
-  }
-
-  updateCompetition(id: number, updates: Partial<Competition>): boolean {
-    const index = this.competitions.findIndex(c => c.id === id);
-    if (index === -1) return false;
-    
-    this.competitions[index] = { ...this.competitions[index], ...updates };
-    return true;
-  }
-
-  deleteCompetition(id: number): boolean {
-    const index = this.competitions.findIndex(c => c.id === id);
-    if (index === -1) return false;
-    
-    this.competitions.splice(index, 1);
-    return true;
-  }
-
-  // Logger operations
-  addLogger(logger: Logger): void {
-    this.loggers.push(logger);
-  }
-
-  updateLogger(id: string, updates: Partial<Logger>): boolean {
-    const index = this.loggers.findIndex(l => l.id === id);
-    if (index === -1) return false;
-    
-    this.loggers[index] = { ...this.loggers[index], ...updates };
-    return true;
-  }
-
-  deleteLogger(id: string): boolean {
-    const index = this.loggers.findIndex(l => l.id === id);
-    if (index === -1) return false;
-    
-    this.loggers.splice(index, 1);
-    return true;
-  }
-}
-
-// Database service class
 export class DatabaseService {
-  private storage: InMemoryStorage;
-
-  constructor() {
-    console.log('Initializing DatabaseService');
-    this.storage = new InMemoryStorage();
-    console.log('DatabaseService initialized successfully');
-  }
-
-  // Helper function to add timeout to async operations
-  private async withTimeout<T>(promise: Promise<T>, timeoutMs: number = 5000): Promise<T> {
-    return Promise.race([
-      promise,
-      new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs)
-      )
-    ]);
-  }
-
-  // Home screen data methods
-  async getLiveMatches(): Promise<Match[]> {
-    try {
-      console.log('Fetching live matches from database');
-      const matches = this.storage.getMatches();
-      const liveMatches = matches.filter(match => match.status === 'live');
-      console.log(`Found ${liveMatches.length} live matches`);
-      
-      
-      return liveMatches;
-    } catch (error) {
-      console.error('Error fetching live matches:', error);
-      throw error;
-    }
-  }
-
-  async getUpcomingMatches(userId?: string): Promise<Match[]> {
-    try {
-      console.log('Fetching upcoming matches from database');
-      const matches = this.storage.getMatches();
-      const upcoming = matches.filter(match => 
-        match.status === 'scheduled' && 
-        new Date(match.match_date).getTime() > Date.now()
-      );
-      
-      // Removed artificial delay to improve performance
-      // await new Promise(resolve => setTimeout(resolve, 10));
-      
-      // For unauthenticated users, limit the number of matches returned
-      if (!userId) {
-        const limitedMatches = upcoming.slice(0, 5); // Return only first 5 matches for public users
-        console.log(`Found ${limitedMatches.length} upcoming matches (limited for public user)`);
-        return limitedMatches;
-      }
-      
-      console.log(`Found ${upcoming.length} upcoming matches for user ${userId}`);
-      return upcoming;
-    } catch (error) {
-      console.error('Error fetching upcoming matches:', error);
-      throw error;
-    }
-  }
-
-  async getFeaturedContent(): Promise<FeaturedContent> {
-    try {
-      console.log('Fetching featured content from database');
-      const content = this.storage.getFeaturedContent();
-      console.log('Featured content fetched successfully');
-      
-      // Removed artificial delay to improve performance
-      // await new Promise(resolve => setTimeout(resolve, 10));
-      
-      return content;
-    } catch (error) {
-      console.error('Error fetching featured content:', error);
-      throw error;
-    }
-  }
-
-  async getUserStats(userId?: string): Promise<UserStats> {
-    try {
-      console.log(`Fetching user stats for user ${userId || 'anonymous'}`);
-      // Mock user stats - in a real implementation, this would query actual user data
-      
-      // Removed artificial delay to improve performance
-      // await new Promise(resolve => setTimeout(resolve, 10));
-      
-      const stats = {
-        favoriteTeams: userId ? 3 : 0,
-        followedCompetitions: userId ? 2 : 0,
-        upcomingMatches: userId ? 5 : 3
-      };
-      console.log('User stats fetched successfully:', stats);
-      return stats;
-    } catch (error) {
-      console.error('Error fetching user stats:', error);
-      throw error;
-    }
-  }
-
-  // Match methods
-  async getAllMatches(): Promise<Match[]> {
-    try {
-      return this.storage.getMatches();
-    } catch (error) {
-      console.error('Error fetching matches:', error);
-      throw error;
-    }
-  }
-
-  async getMatchesByCompetitionId(competitionId: number): Promise<Match[]> {
-    try {
-      const matches = this.storage.getMatches();
-      return matches.filter(match => match.competition_id === competitionId);
-    } catch (error) {
-      console.error(`Error fetching matches for competition ${competitionId}:`, error);
-      throw error;
-    }
-  }
-
-  async getMatchesBySport(sport: string, status?: 'live' | 'scheduled' | 'completed' | 'all'): Promise<Match[]> {
-    try {
-      console.log(`Fetching matches for sport: ${sport}, status: ${status}`);
-      let matches = this.storage.getMatches().filter(match => match.sport === sport);
-      console.log(`Found ${matches.length} matches for sport: ${sport}`);
-      
-      if (status && status !== 'all') {
-        matches = matches.filter(match => match.status === status);
-        console.log(`Filtered to ${matches.length} matches with status: ${status}`);
-      }
-      
-      // Removed artificial delay to improve performance
-      // await new Promise(resolve => setTimeout(resolve, 10));
-      
-      return matches;
-    } catch (error) {
-      console.error(`Error fetching ${sport} matches:`, error);
-      throw error;
-    }
-  }
-
-  // Competition methods
-  async getAllCompetitions(): Promise<Competition[]> {
-    try {
-      return this.storage.getCompetitions();
-    } catch (error) {
-      console.error('Error fetching competitions:', error);
-      throw error;
-    }
-  }
-
-  async createCompetition(competitionData: Omit<Competition, 'id'>): Promise<Competition> {
-    try {
-      // Find the highest ID and increment by 1
-      const competitions = this.storage.getCompetitions();
-      const maxId = competitions.length > 0 ? Math.max(...competitions.map(c => c.id)) : 0;
-      
-      const newCompetition: Competition = {
-        id: maxId + 1,
-        ...competitionData,
-        created_at: new Date().toISOString()
-      };
-      
-      this.storage.addCompetition(newCompetition);
-      return newCompetition;
-    } catch (error) {
-      console.error('Error creating competition:', error);
-      throw error;
-    }
-  }
-
-  async updateCompetition(id: number, updates: Partial<Competition>): Promise<Competition | null> {
-    try {
-      const success = this.storage.updateCompetition(id, updates);
-      
-      if (!success) {
-        return null;
-      }
-      
-      const competitions = this.storage.getCompetitions();
-      const updatedCompetition = competitions.find(competition => competition.id === id);
-      return updatedCompetition || null;
-    } catch (error) {
-      console.error('Error updating competition:', error);
-      throw error;
-    }
-  }
-
-  async deleteCompetition(id: number): Promise<Competition | null> {
-    try {
-      const competitions = this.storage.getCompetitions();
-      const competitionToDelete = competitions.find(competition => competition.id === id);
-      
-      if (!competitionToDelete) {
-        return null;
-      }
-      
-      const success = this.storage.deleteCompetition(id);
-      return success ? competitionToDelete : null;
-    } catch (error) {
-      console.error('Error deleting competition:', error);
-      throw error;
-    }
-  }
-
   // Logger methods
   async getAllLoggers(): Promise<Logger[]> {
     try {
-      return this.storage.getLoggers();
+      const response = await apiCall('/admin/loggers');
+      return response.data || [];
     } catch (error) {
-      console.error('Error fetching loggers:', error);
-      throw error;
+      console.error('Error in getAllLoggers:', error);
+      // Return empty array as fallback
+      return [];
     }
   }
 
   async getLoggerById(id: string): Promise<Logger | null> {
     try {
-      const loggers = this.storage.getLoggers();
-      return loggers.find(logger => logger.id === id) || null;
+      // Validate input
+      if (!id) {
+        console.error('Invalid logger ID provided');
+        return null;
+      }
+      
+      const response = await apiCall(`/admin/loggers/${id}`);
+      return response.data || null;
     } catch (error) {
-      console.error('Error fetching logger by ID:', error);
-      throw error;
+      console.error('Error in getLoggerById:', error);
+      return null;
     }
   }
 
   async getLoggerByEmail(email: string): Promise<Logger | null> {
     try {
-      const loggers = this.storage.getLoggers();
-      return loggers.find(logger => logger.email === email) || null;
+      // Validate input
+      if (!email || typeof email !== 'string') {
+        console.error('Invalid email provided');
+        return null;
+      }
+      
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        console.error('Invalid email format');
+        return null;
+      }
+      
+      const response = await apiCall(`/admin/loggers?email=${encodeURIComponent(email)}`);
+      const loggers = response.data || [];
+      return loggers.find((logger: Logger) => logger.email === email) || null;
     } catch (error) {
-      console.error('Error fetching logger by email:', error);
-      throw error;
+      console.error('Error in getLoggerByEmail:', error);
+      return null;
     }
   }
 
-  async createLogger(loggerData: Partial<Logger>): Promise<Logger> {
+  async createLogger(loggerData: Omit<Logger, 'id' | 'createdAt' | 'lastActive'>): Promise<Logger> {
     try {
-      const newLogger: Logger = {
-        id: `logger${Date.now()}`,
-        name: loggerData.name || '',
-        email: loggerData.email || '',
-        role: loggerData.role || 'logger',
-        status: loggerData.status || 'inactive',
-        assignedCompetitions: loggerData.assignedCompetitions || [],
-        createdAt: new Date().toISOString(),
-        lastActive: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        ...loggerData
-      };
+      // Validate required fields
+      if (!loggerData.name || !loggerData.email) {
+        throw new Error('Name and email are required');
+      }
       
-      this.storage.addLogger(newLogger);
-      return newLogger;
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(loggerData.email)) {
+        throw new Error('Invalid email format');
+      }
+      
+      const response = await apiCall('/admin/loggers', {
+        method: 'POST',
+        body: JSON.stringify(loggerData),
+      });
+      
+      return response.data;
     } catch (error) {
-      console.error('Error creating logger:', error);
+      console.error('Error in createLogger:', error);
       throw error;
     }
   }
 
   async updateLogger(id: string, updates: Partial<Logger>): Promise<Logger | null> {
     try {
-      const success = this.storage.updateLogger(id, {
-        ...updates,
-        updatedAt: new Date().toISOString()
-      });
-      
-      if (!success) {
-        return null;
+      // Validate input
+      if (!id) {
+        throw new Error('Logger ID is required');
       }
       
-      const loggers = this.storage.getLoggers();
-      const updatedLogger = loggers.find(logger => logger.id === id);
-      return updatedLogger || null;
+      const response = await apiCall(`/admin/loggers/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+      
+      return response.data || null;
     } catch (error) {
-      console.error('Error updating logger:', error);
-      throw error;
+      console.error('Error in updateLogger:', error);
+      return null;
     }
   }
 
   async deleteLogger(id: string): Promise<Logger | null> {
     try {
-      const loggers = this.storage.getLoggers();
-      const loggerToDelete = loggers.find(logger => logger.id === id);
-      
-      if (!loggerToDelete) {
-        return null;
+      // Validate input
+      if (!id) {
+        throw new Error('Logger ID is required');
       }
       
-      const success = this.storage.deleteLogger(id);
-      return success ? loggerToDelete : null;
+      const response = await apiCall(`/admin/loggers/${id}`, {
+        method: 'DELETE',
+      });
+      
+      return response.data || null;
     } catch (error) {
-      console.error('Error deleting logger:', error);
-      throw error;
+      console.error('Error in deleteLogger:', error);
+      return null;
     }
   }
 
-  // Implementation of missing methods
+  // Competitions
+  async getCompetitions(): Promise<Competition[]> {
+    try {
+      const response = await apiCall('/competitions');
+      return response.data || [];
+    } catch (error) {
+      console.error('Error in getCompetitions:', error);
+      throw (error instanceof Error ? error : new Error('Unknown error in getCompetitions'));
+    }
+  }
+
+  async getCompetitionById(id: number): Promise<Competition | null> {
+    try {
+      // Validate input
+      if (isNaN(id) || id <= 0) {
+        console.error('Invalid competition ID provided');
+        return null;
+      }
+      
+      const response = await apiCall(`/competitions/${id}`);
+      return response.data || null;
+    } catch (error) {
+      console.error('Error in getCompetitionById:', error);
+      throw (error instanceof Error ? error : new Error('Unknown error in getCompetitionById'));
+    }
+  }
+
+  // Matches
+  async getMatches(): Promise<Match[]> {
+    try {
+      const response = await apiCall('/matches');
+      return response.data || [];
+    } catch (error) {
+      console.error('Error in getMatches:', error);
+      throw (error instanceof Error ? error : new Error('Unknown error in getMatches'));
+    }
+  }
+
+  async getMatchesByCompetition(competitionId: number): Promise<Match[]> {
+    try {
+      // Validate input
+      if (isNaN(competitionId) || competitionId <= 0) {
+        throw new Error('Invalid competition ID');
+      }
+      
+      const response = await apiCall(`/matches?competition_id=${competitionId}`);
+      return response.data || [];
+    } catch (error) {
+      console.error('Error in getMatchesByCompetition:', error);
+      throw (error instanceof Error ? error : new Error('Unknown error in getMatchesByCompetition'));
+    }
+  }
+
+  // Additional match methods
+  async getMatchesBySport(sport: string): Promise<Match[]> {
+    try {
+      // Validate input
+      if (!sport || typeof sport !== 'string') {
+        throw new Error('Invalid sport parameter');
+      }
+      
+      const response = await apiCall(`/matches?sport=${encodeURIComponent(sport)}`);
+      return response.data || [];
+    } catch (error) {
+      console.error('Error in getMatchesBySport:', error);
+      throw (error instanceof Error ? error : new Error('Unknown error in getMatchesBySport'));
+    }
+  }
+
+  async getLiveMatches(): Promise<{ football: Match[]; basketball: Match[]; track: Match[] }> {
+    try {
+      const response = await apiCall('/live/matches');
+      return response.data || {
+        football: [],
+        basketball: [],
+        track: []
+      };
+    } catch (error) {
+      console.error('Error in getLiveMatches:', error);
+      throw (error instanceof Error ? error : new Error('Unknown error in getLiveMatches'));
+    }
+  }
+
+  // Teams
+  async getTeams(): Promise<Team[]> {
+    try {
+      const response = await apiCall('/teams');
+      return response.data || [];
+    } catch (error) {
+      console.error('Error in getTeams:', error);
+      throw (error instanceof Error ? error : new Error('Unknown error in getTeams'));
+    }
+  }
+
+  // Featured content and user stats
+  async getFeaturedContent(): Promise<FeaturedContent> {
+    try {
+      const response = await apiCall('/media/featured');
+      return response.data || {
+        title: 'Featured Event',
+        description: 'Check out this exciting event',
+        image: '/images/featured.jpg'
+      };
+    } catch (error) {
+      console.error('Error in getFeaturedContent:', error);
+      throw (error instanceof Error ? error : new Error('Unknown error in getFeaturedContent'));
+    }
+  }
+
+  async getUpcomingMatches(userId: string): Promise<Match[]> {
+    try {
+      // Validate input
+      if (!userId || typeof userId !== 'string') {
+        throw new Error('Invalid user ID');
+      }
+      
+      const response = await apiCall(`/users/${userId}/upcoming-matches`);
+      return response.data || [];
+    } catch (error) {
+      console.error('Error in getUpcomingMatches:', error);
+      throw (error instanceof Error ? error : new Error('Unknown error in getUpcomingMatches'));
+    }
+  }
+
+  async getUserStats(userId: string): Promise<UserStats> {
+    try {
+      // Validate input
+      if (!userId || typeof userId !== 'string') {
+        throw new Error('Invalid user ID');
+      }
+      
+      const response = await apiCall(`/users/${userId}/stats`);
+      return response.data || {
+        favoriteTeams: 0,
+        followedCompetitions: 0,
+        upcomingMatches: 0
+      };
+    } catch (error) {
+      console.error('Error in getUserStats:', error);
+      throw (error instanceof Error ? error : new Error('Unknown error in getUserStats'));
+    }
+  }
+
+  // Logger data submission methods
   async saveMatchEvents(events: any[], userId: string): Promise<void> {
     try {
-      console.log(`Saving ${events.length} match events for user ${userId}`);
-      // In a real implementation, this would save events to the database
-      // For now, we'll just log them
+      // Validate input
+      if (!Array.isArray(events)) {
+        throw new Error('Events must be an array');
+      }
+      
+      if (!userId || typeof userId !== 'string') {
+        throw new Error('Invalid user ID');
+      }
+      
+      await apiCall('/live/events', {
+        method: 'POST',
+        body: JSON.stringify({ events, userId }),
+      });
     } catch (error) {
-      console.error('Error saving match events:', error);
+      console.error('Error in saveMatchEvents:', error);
       throw error;
     }
   }
 
   async updateMatchScores(scores: any[], userId: string): Promise<void> {
     try {
-      console.log(`Updating scores for ${scores.length} matches by user ${userId}`);
-      // In a real implementation, this would update match scores in the database
-      // For now, we'll just log them
+      // Validate input
+      if (!Array.isArray(scores)) {
+        throw new Error('Scores must be an array');
+      }
+      
+      if (!userId || typeof userId !== 'string') {
+        throw new Error('Invalid user ID');
+      }
+      
+      await apiCall('/matches/scores', {
+        method: 'PATCH',
+        body: JSON.stringify({ scores, userId }),
+      });
     } catch (error) {
-      console.error('Error updating match scores:', error);
+      console.error('Error in updateMatchScores:', error);
       throw error;
     }
   }
 
-  async logUserActivity(userId: string, activity: string, data?: any): Promise<void> {
+  async logUserActivity(userId: string, activity: string, data: any): Promise<void> {
     try {
-      console.log(`User ${userId} performed activity: ${activity}`, data);
-      // In a real implementation, this would log user activity to the database
-      // For now, we'll just log it
+      // Validate input
+      if (!userId || typeof userId !== 'string') {
+        throw new Error('Invalid user ID');
+      }
+      
+      if (!activity || typeof activity !== 'string') {
+        throw new Error('Invalid activity parameter');
+      }
+      
+      await apiCall('/user-activity', {
+        method: 'POST',
+        body: JSON.stringify({ userId, activity, data }),
+      });
     } catch (error) {
-      console.error('Error logging user activity:', error);
+      console.error('Error in logUserActivity:', error);
       throw error;
     }
   }
+
 }
 
-// Export singleton instance
-console.log('Creating dbService singleton instance');
-export const dbService = new DatabaseService();
-console.log('dbService singleton instance created');
+// Export a singleton instance
+export const databaseService = new DatabaseService();
+
+// Export dbService as an alias for backward compatibility
+export const dbService = databaseService;

@@ -1,9 +1,6 @@
 // User Competition Service
 // Provides integration with the Competition API endpoints for regular users
-
-import APIService from '@/services/APIService';
-import { APIEndpoint } from '@/types/api';
-import { TokenManager } from '@/hooks/useAuth';
+import { databaseService } from '@/lib/databaseService';
 
 // Competition interface
 export interface Competition {
@@ -12,73 +9,48 @@ export interface Competition {
   type: string;
   category: string;
   status: string;
-  start_date: string;
-  end_date: string;
+  start_date: string | null;
+  end_date: string | null;
 }
-
-// Define API endpoints for user competitions
-const userCompetitionEndpoints = {
-  getAll: {
-    url: '/user/competitions',
-    method: 'GET' as const
-  } as APIEndpoint<Competition[]>,
-
-  getById: (id: string) => ({
-    url: `/user/competitions/${id}`,
-    method: 'GET' as const
-  } as APIEndpoint<Competition>),
-};
 
 /**
  * Gets all competitions
  * @returns Promise resolving to array of competitions
+ * @throws Error if failed to fetch competitions
  */
 export const getCompetitions = async (): Promise<Competition[]> => {
   try {
-    // Get auth token from TokenManager
-    const authToken = TokenManager.getToken();
-    
-    const response = await APIService.request(
-      userCompetitionEndpoints.getAll,
-      undefined,
-      undefined,
-      { authToken: authToken || undefined }
-    );
-    
-    if (response.success && Array.isArray(response.data)) {
-      return response.data || [];
-    }
-    return [];
+    // Get competitions from database service
+    const competitions = await databaseService.getCompetitions();
+    return competitions;
   } catch (error) {
     console.error('Failed to fetch competitions:', error);
-    return [];
+    throw (error instanceof Error ? error : new Error('Failed to fetch competitions'));
   }
 };
 
 /**
  * Gets a competition by ID
  * @param id Competition ID
- * @returns Promise resolving to competition or null if not found
+ * @returns Promise resolving to competition if found
  */
-export const getCompetitionById = async (id: string): Promise<Competition | null> => {
+export const getCompetitionById = async (id: string): Promise<Competition> => {
   try {
-    // Get auth token from TokenManager
-    const authToken = TokenManager.getToken();
-    
-    const response = await APIService.request(
-      userCompetitionEndpoints.getById(id),
-      undefined,
-      undefined,
-      { authToken: authToken || undefined }
-    );
-    
-    if (response.success && response.data) {
-      return response.data || null;
+    // Convert string ID to number for the database service
+    const numericId = parseInt(id, 10);
+    if (isNaN(numericId)) {
+      throw new Error('Invalid competition ID');
     }
-    return null;
+    
+    // Get competition from database service
+    const competition = await databaseService.getCompetitionById(numericId);
+    if (!competition) {
+      throw new Error('Competition not found');
+    }
+    return competition;
   } catch (error) {
     console.error(`Failed to fetch competition with ID ${id}:`, error);
-    return null;
+    throw (error instanceof Error ? error : new Error('Failed to fetch competition'));
   }
 };
 

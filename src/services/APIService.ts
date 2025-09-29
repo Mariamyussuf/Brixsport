@@ -1,8 +1,7 @@
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { APIEndpoint, APIResponse } from '@/types/api';
 import ErrorHandler from '@/lib/errorHandler';
-import { API_BASE_URL, API_TIMEOUT } from '@/lib/apiConfig';
 
+// Mock APIService that uses databaseService instead of actual API calls
 class APIService {
   private static instance: APIService;
 
@@ -21,29 +20,15 @@ class APIService {
     params?: any,
     options?: { signal?: AbortSignal; authToken?: string }
   ): Promise<APIResponse<T>> {
-    const config: AxiosRequestConfig = {
-      method: endpoint.method,
-      url: `${API_BASE_URL}${endpoint.url}`,
-      data,
-      params,
-      timeout: API_TIMEOUT,
-      signal: options?.signal,
-    };
-
-    // Attach auth header when provided
-    if (options?.authToken) {
-      config.headers = {
-        ...(config.headers || {}),
-        Authorization: `Bearer ${options.authToken}`,
-      };
-    }
-
     try {
-      const response: AxiosResponse = await axios(config);
-      const responseData = endpoint.transform ? endpoint.transform(response.data) : response.data;
-      return { success: true, data: responseData };
+      // For now, return a mock response as this needs backend implementation
+      // In a real implementation, this would fetch from the database service
+      return {
+        success: true,
+        data: {} as T // Return empty data as placeholder
+      };
     } catch (error: any) {
-      // Normalize axios errors into our StandardizedError via ErrorHandler
+      // Normalize errors via ErrorHandler
       const handledError = ErrorHandler.handle(error, `API request to ${endpoint.url} failed`);
       return { success: false, error: handledError };
     }

@@ -35,8 +35,8 @@ const FixturesScreen = () => {
           minute: '2-digit',
           hour12: false 
         }),
-        team1: `Team ${match.home_team_id}`,
-        team2: `Team ${match.away_team_id}`,
+        team1: match.home_team_name || `Team ${match.home_team_id}`,
+        team2: match.away_team_name || `Team ${match.away_team_id}`,
         score1: match.status === 'live' || match.status === 'Live' || 
                 match.status === 'finished' || match.status === 'ended' || 
                 match.status === 'completed' ? match.home_score : undefined,
@@ -112,7 +112,7 @@ const FixturesScreen = () => {
     
     return {
       status: status,
-      event: trackEvent.name || `Track Event ${trackEvent.id}`,
+      event: trackEvent.event_name || trackEvent.name || `Track Event ${trackEvent.id}`,
       results: Array.isArray(trackEvent.results) ? trackEvent.results.map((result: any) => ({
         position: `${result.position}.`,
         team: result.team_name || `Team ${result.team_id}`

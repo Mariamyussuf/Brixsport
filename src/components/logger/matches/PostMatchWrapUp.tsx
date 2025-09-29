@@ -80,8 +80,8 @@ export const PostMatchWrapUp: React.FC<PostMatchWrapUpProps> = ({
           onReportGenerated(reportData);
         }
       } else {
-        // Fallback to mock data if API doesn't return expected data
-        const mockReport: MatchReport = {
+        // Generate report from match data if API doesn't return expected format
+        const generatedReport: MatchReport = {
           id: `report-${Date.now()}`,
           matchId: match.id,
           generatedAt: new Date().toISOString(),
@@ -94,38 +94,18 @@ export const PostMatchWrapUp: React.FC<PostMatchWrapUpProps> = ({
           notes
         };
         
-        setReport(mockReport);
+        setReport(generatedReport);
         setStep('generate');
         
         if (onReportGenerated) {
-          onReportGenerated(mockReport);
+          onReportGenerated(generatedReport);
         }
       }
     } catch (error) {
-      // Fallback to mock data if API call fails
-      const mockReport: MatchReport = {
-        id: `report-${Date.now()}`,
-        matchId: match.id,
-        generatedAt: new Date().toISOString(),
-        summary: {
-          finalScore: `${match.homeScore} - ${match.awayScore}`,
-          duration: '90 minutes',
-          eventsCount: match.events?.length || 0,
-          keyEvents: match.events?.slice(0, 5) || []
-        },
-        notes
-      };
-      
-      setReport(mockReport);
-      setStep('generate');
-      
-      if (onReportGenerated) {
-        onReportGenerated(mockReport);
-      }
-      
-      // Still show error to user
+      // Handle API error gracefully
       const handledError = ErrorHandler.handle(error);
-      setError(`Failed to generate report: ${handledError.message}. Showing mock data instead.`);
+      setError(`Failed to generate report: ${handledError.message}`);
+      setStep('review'); // Go back to review step
     } finally {
       setIsGeneratingReport(false);
     }

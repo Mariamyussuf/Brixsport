@@ -5,19 +5,16 @@ import BrixSportsService from '@/services/BrixSportsService';
 import { Match } from '@/types/brixsports';
 import { Button } from '@/components/ui/button';
 
+// Match status for internal use
 const MatchStatus = {
-  ALL: 'all',
   SCHEDULED: 'scheduled',
   LIVE: 'live',
   COMPLETED: 'completed'
 } as const;
 
-type MatchStatusType = typeof MatchStatus[keyof typeof MatchStatus];
-
 export default function MatchesScreen() {
   const [matches, setMatches] = useState<Match[]>([]);
-  const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
-  const [activeFilter, setActiveFilter] = useState<MatchStatusType>(MatchStatus.ALL);
+  const [sortedMatches, setSortedMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,8 +23,8 @@ export default function MatchesScreen() {
   }, []);
 
   useEffect(() => {
-    filterMatches();
-  }, [matches, activeFilter]);
+    sortMatches();
+  }, [matches]);
 
   const fetchMatches = async () => {
     setLoading(true);
@@ -50,12 +47,35 @@ export default function MatchesScreen() {
     }
   };
 
-  const filterMatches = () => {
-    if (activeFilter === MatchStatus.ALL) {
-      setFilteredMatches(matches);
-    } else {
-      setFilteredMatches(matches.filter(match => match.status === activeFilter));
-    }
+  const sortMatches = () => {
+    if (!matches.length) return;
+    
+    const now = new Date();
+    
+    const sorted = [...matches].sort((a, b) => {
+      // First sort by status: live > scheduled > completed
+      const statusOrder = { live: 0, scheduled: 1, completed: 2 };
+      const statusDiff = statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
+      
+      if (statusDiff !== 0) return statusDiff;
+      
+      // For matches with same status, sort by time
+      const dateA = new Date(a.match_date);
+      const dateB = new Date(b.match_date);
+      
+      if (a.status === 'live') {
+        // For live matches, sort by match time (earlier in the match comes first)
+        return dateA.getTime() - dateB.getTime();
+      } else if (a.status === 'scheduled') {
+        // For upcoming matches, sort by match time (sooner matches first)
+        return dateA.getTime() - dateB.getTime();
+      } else {
+        // For completed matches, sort by most recent first
+        return dateB.getTime() - dateA.getTime();
+      }
+    });
+    
+    setSortedMatches(sorted);
   };
 
   const formatDate = (dateString: string) => {
@@ -172,9 +192,7 @@ export default function MatchesScreen() {
     <div className="text-center py-12">
       <div className="text-gray-400 mb-2">No matches available</div>
       <p className="text-gray-500 text-sm">
-        {activeFilter === MatchStatus.ALL 
-          ? 'There are no matches at the moment.' 
-          : `There are no ${activeFilter} matches at the moment.`}
+        There are no matches at the moment.
       </p>
     </div>
   );
@@ -184,21 +202,30 @@ export default function MatchesScreen() {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">Matches</h1>
         
-        {/* Filter Tabs */}
-        <div className="flex space-x-2 mb-6 overflow-x-auto">
-          {Object.values(MatchStatus).map((status) => (
-            <button
-              key={status}
-              className={`px-4 py-2 rounded-lg whitespace-nowrap ${
-                activeFilter === status
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-              }`}
-              onClick={() => setActiveFilter(status)}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </button>
-          ))}
+        {/* Section Headers */}
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-4">Live Matches</h2>
+          {sortedMatches.filter(m => m.status === 'live').length === 0 && (
+            <p className="text-gray-500 text-sm mb-6">No live matches at the moment</p>
+          )}
+          
+          {sortedMatches.filter(m => m.status === 'scheduled').length > 0 && (
+            <>
+              <h2 className="text-xl font-semibold mt-8 mb-4">Upcoming Matches</h2>
+              {sortedMatches.filter(m => m.status === 'scheduled').length === 0 && (
+                <p className="text-gray-500 text-sm mb-6">No upcoming matches scheduled</p>
+              )}
+            </>
+          )}
+          
+          {sortedMatches.filter(m => m.status === 'completed').length > 0 && (
+            <>
+              <h2 className="text-xl font-semibold mt-8 mb-4">Finished Matches</h2>
+              {sortedMatches.filter(m => m.status === 'completed').length === 0 && (
+                <p className="text-gray-500 text-sm mb-6">No recent matches</p>
+              )}
+            </>
+          )}
         </div>
         
         {/* Content */}
@@ -206,9 +233,9 @@ export default function MatchesScreen() {
           renderLoading()
         ) : error ? (
           renderError()
-        ) : filteredMatches.length > 0 ? (
+        ) : sortedMatches.length > 0 ? (
           <div>
-            {filteredMatches.map(renderMatchCard)}
+            {sortedMatches.map(renderMatchCard)}
           </div>
         ) : (
           renderEmptyState()

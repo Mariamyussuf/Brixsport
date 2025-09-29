@@ -1,29 +1,29 @@
-import APIService from './APIService';
-import { APIEndpoint } from '@/types/api';
+import { databaseService } from '@/lib/databaseService';
 import { Team } from '@/types/favorites';
 import { TokenManager } from '@/hooks/useAuth';
 
-const teamEndpoints = {
-  getAll: {
-    url: '/teams',
-    method: 'GET',
-  } as APIEndpoint<Team[]>,
-};
-
 class TeamService {
   async getAll(): Promise<Team[]> {
-    // Get auth token from TokenManager
-    const authToken = TokenManager.getToken();
-    const response = await APIService.request(
-      teamEndpoints.getAll,
-      undefined,
-      undefined,
-      { authToken: authToken || undefined }
-    );
-    if (response.success && response.data) {
-      return response.data;
+    try {
+      // Get auth token from TokenManager
+      const authToken = TokenManager.getToken();
+      
+      // Fetch teams from database service
+      const dbTeams = await databaseService.getTeams();
+      
+      // Transform to Team type
+      return dbTeams.map(team => ({
+        id: team.id.toString(),
+        name: team.name,
+        logo_url: team.logo || '',
+        founded_year: 0, // Default value since not in database type
+        stadium: '', // Default value since not in database type
+        city: '' // Default value since not in database type
+      }));
+    } catch (error) {
+      console.error('Failed to fetch teams:', error);
+      throw new Error(error instanceof Error ? error.message : 'Failed to fetch teams');
     }
-    throw new Error(response.error?.message || 'Failed to fetch teams');
   }
 }
 

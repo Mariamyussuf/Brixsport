@@ -13,6 +13,7 @@ export interface APIEndpoint<T = any> {
 export interface APIError {
   message: string;
   code?: string;
+  isAbortError?: boolean;
 }
 
 export interface APIResponse<T> {

@@ -40,17 +40,7 @@ const CompetitionsScreen: React.FC = () => {
   const { user } = useAuth();
   const { competitions: apiCompetitions, loading, error, refreshCompetitions } = useCompetitions();
   const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
-  const [matchTab, setMatchTab] = useState<'fixtures' | 'results' | 'stats' | 'standings'>('fixtures');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [fixtureStatus, setFixtureStatus] = useState<FixtureStatus>('all');
-  const [fixtureDate, setFixtureDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
-
-  const fixtureStatusOptions: { key: FixtureStatus; label: string }[] = [
-    { key: 'all', label: t('all') || 'All' },
-    { key: 'live', label: t('live') || 'Live' },
-    { key: 'upcoming', label: t('upcoming') || 'Upcoming' },
-    { key: 'completed', label: t('completed') || 'Completed' }
-  ];
 
   // Convert API competitions to local format
   const competitions = apiCompetitions.map(comp => ({
@@ -91,26 +81,7 @@ const CompetitionsScreen: React.FC = () => {
   const allCompetitions = competitions.filter(comp => !comp.isActive);
 
   // Standings tabs: group/knockout (persist to localStorage)
-  const [standingsTab, setStandingsTab] = useState<'group' | 'knockout'>('group');
-
-  // Load persisted tab on mount
-  useEffect(() => {
-    try {
-      const saved = typeof window !== 'undefined' ? window.localStorage.getItem('standingsTab') : null;
-      if (saved === 'group' || saved === 'knockout') {
-        setStandingsTab(saved as 'group' | 'knockout');
-      }
-    } catch {}
-  }, []);
-
-  // Persist on change
-  useEffect(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('standingsTab', standingsTab);
-      }
-    } catch {}
-  }, [standingsTab]);
+  const [standingsTab] = useState<'group' | 'knockout'>('group');
 
   // Group data will be fetched from the API
   const [groupData, setGroupData] = useState<GroupData[]>([]);
@@ -350,39 +321,10 @@ const CompetitionsScreen: React.FC = () => {
   return (
     <>
       <LoginPrompt isOpen={isLoginPromptOpen} onClose={() => setIsLoginPromptOpen(false)} />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-neutral-900 dark:text-neutral-100 pb-20">
-        {/* Header */}
-        <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-30">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => router.back()}
-              aria-label="Back"
-              className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
-              type="button"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-900 dark:text-white" />
-            </button>
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center shadow-inner">
-                <div className="w-4 h-4 border-2 border-white rounded-full bg-white"></div>
-              </div>
-              <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white tracking-tight">{t('app_title')}</h1>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={refreshCompetitions}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              aria-label="Refresh"
-            >
-              <RefreshCw className="w-5 h-5 text-gray-900 dark:text-white" />
-            </button>
-            <Bell className="w-6 h-6 text-gray-900 dark:text-white" />
-          </div>
-        </header>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-neutral-900 dark:text-neutral-100">
 
         {/* Main Content */}
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-6 text-slate-900 dark:text-slate-100 max-w-7xl mx-auto">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-4 text-slate-900 dark:text-slate-100 max-w-7xl mx-auto">
             {/* Active Competition Section */}
             <section className="py-6">
               <div className="flex items-center justify-between mb-6">
@@ -406,130 +348,22 @@ const CompetitionsScreen: React.FC = () => {
               </div>
             </section>
 
-            {/* Match/Competition tabs moved to body */}
-            <section className="pt-2">
-              <div className="inline-flex rounded-full overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm mb-6">
-                {([
-                  { key: 'fixtures' as const },
-                  { key: 'results' as const },
-                  { key: 'stats' as const },
-                  { key: 'standings' as const }
-                ]).map(({ key }) => (
-                  <button
-                    key={key}
-                    className={`px-4 sm:px-6 py-2 text-sm font-semibold capitalize transition-colors ${
-                      matchTab === key
-                        ? 'bg-blue-600 text-white shadow'
-                        : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    } ${key !== 'fixtures' ? 'border-l border-gray-200 dark:border-gray-700' : ''}`}
-                    onClick={() => setMatchTab(key)}
-                  >
-                    {t(key)}
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            {/* Content under tabs */}
-            {matchTab === 'standings' ? (
               <section className="py-6">
-                <h2 className="text-xl sm:text-2xl font-bold mb-4 text-gray-900 dark:text-white">{t('standings')}</h2>
-                {/* Standings sub-tabs */}
-                <div className="inline-flex rounded-full overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm mb-6">
-                  <button
-                    className={`px-4 sm:px-6 py-2 text-sm font-semibold capitalize ${
-                      standingsTab === 'group'
-                        ? 'bg-blue-600 text-white shadow'
-                        : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                    onClick={() => setStandingsTab('group')}
-                  >
-                    {t('group_stage')}
-                  </button>
-                  <button
-                    className={`px-4 sm:px-6 py-2 text-sm font-semibold capitalize border-l border-gray-200 dark:border-gray-700 ${
-                      standingsTab === 'knockout'
-                        ? 'bg-blue-600 text-white shadow'
-                        : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                    onClick={() => setStandingsTab('knockout')}
-                  >
-                    {t('knockout_stage')}
-                  </button>
-                </div>
+                <h2 className="text-xl sm:text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+                  {t('standings')}
+                </h2>
 
                 {/* Standings content */}
-                {standingsTab === 'group' ? (
-                  <div>
-                    {groupLoading ? (
-                      <div className="text-center p-8">Loading group stage data...</div>
-                    ) : groupError ? (
-                      <div className="text-center p-8 text-red-500">Error: {groupError}</div>
-                    ) : (
-                      <GroupStageTable groups={groupData} />
-                    )}
-                  </div>
-                ) : (
-                  <div className="rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-4">
-                    <BracketView competitionId={''} />
-                  </div>
-                )}
+                <div>
+                  {groupLoading ? (
+                    <div className="text-center p-8">Loading group stage data...</div>
+                  ) : groupError ? (
+                    <div className="text-center p-8 text-red-500">Error: {groupError}</div>
+                  ) : (
+                    <GroupStageTable groups={groupData} />
+                  )}
+                </div>
               </section>
-            ) : (
-              <section className="py-6">
-                {matchTab === 'fixtures' && (
-                  <>
-                    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300">
-                          <Filter className="w-4 h-4" />
-                          {t('filter_by') || 'Filter by'}
-                        </span>
-                        {fixtureStatusOptions.map(option => (
-                          <button
-                            key={option.key}
-                            onClick={() => setFixtureStatus(option.key)}
-                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
-                              fixtureStatus === option.key
-                                ? 'bg-blue-600 text-white border-blue-600 shadow'
-                                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                      <label className="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 shadow-sm">
-                        <Calendar className="w-4 h-4" />
-                        <span className="font-medium hidden sm:inline">{t('date') || 'Date'}</span>
-                        <input
-                          type="date"
-                          value={fixtureDate}
-                          onChange={(event) => setFixtureDate(event.target.value)}
-                          className="bg-transparent focus:outline-none text-gray-700 dark:text-gray-200"
-                        />
-                      </label>
-                    </div>
-                    <div className="rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 text-slate-700 dark:text-slate-300 shadow-sm">
-                      <p>{t('coming_soon')}</p>
-                      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                        {t('fixtures_filter_hint') || 'Use the filters above to view fixtures once available.'}
-                      </p>
-                    </div>
-                  </>
-                )}
-                {matchTab === 'results' && (
-                  <div className="rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 text-slate-700 dark:text-slate-300 shadow-sm">
-                    <p>{t('coming_soon')}</p>
-                  </div>
-                )}
-                {matchTab === 'stats' && (
-                  <div className="rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 text-slate-700 dark:text-slate-300 shadow-sm">
-                    <p>{t('coming_soon')}</p>
-                  </div>
-                )}
-              </section>
-            )}
 
             {/* Separator */}
             <div className="border-t border-gray-200 dark:border-gray-800 my-8"></div>

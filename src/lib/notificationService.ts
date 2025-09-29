@@ -2,11 +2,11 @@
 // Provides typed notification helpers and runtime validation via zod.
 
 import { z } from 'zod';
-import APIService from '@/services/APIService';
 import { APIEndpoint, APIResponse } from '@/types/api';
 import type { Match, MatchEvent } from '@/lib/userMatchService';
 import type { Team, Competition } from '@/lib/api';
 import type { Notification } from '@/components/shared/NotificationsContext';
+import { databaseService } from '@/lib/databaseService';
 
 // Zod schemas for runtime validation
 export const NotificationTypeSchema = z.enum([
@@ -79,7 +79,30 @@ export async function sendNotification(
 ): Promise<APIResponse<Notification>> {
   // Validate payload against schema before sending
   NotificationCreateSchema.parse(payload);
-  return APIService.request(notificationEndpoints.send, payload);
+  
+  // For now, return a mock response as this needs backend implementation
+  // In a real implementation, this would save to the database service
+  return {
+    success: true,
+    data: {
+      id: Date.now().toString(),
+      title: payload.title,
+      message: payload.message,
+      timestamp: Date.now(),
+      isRead: false,
+      type: payload.type,
+      actionId: payload.actionId,
+      sound: payload.sound,
+      priority: payload.priority,
+      relatedTeamId: payload.relatedTeamId,
+      relatedPlayerId: payload.relatedPlayerId,
+      relatedCompetitionId: payload.relatedCompetitionId,
+      imageUrl: payload.imageUrl,
+      category: payload.category,
+      scheduledTime: payload.scheduledTime,
+      isPushNotification: payload.isPushNotification,
+    }
+  };
 }
 
 export function createKickoffNotification(match: Match, minutesBefore: number = 15): NotificationCreate {
@@ -199,67 +222,3 @@ export function createPlayerNotification(
     relatedTeamId: match?.homeTeam, // Using team name as ID since it's a string
   });
 }
-
-export function createStandingNotification(competition: Competition): NotificationCreate {
-  return NotificationCreateSchema.parse({
-    title: 'Standings',
-    message: `${competition?.name ?? 'Competition'} standings updated`,
-    type: 'standing',
-    category: 'competition',
-    priority: 'normal',
-    relatedCompetitionId: competition?.id,
-  });
-}
-
-export function createQualificationNotification(team: Team, competition: Competition): NotificationCreate {
-  return NotificationCreateSchema.parse({
-    title: 'Qualification',
-    message: `${team?.name ?? 'Team'} qualification update for ${competition?.name ?? 'competition'}`,
-    type: 'qualification',
-    category: 'competition',
-    priority: 'high',
-    relatedTeamId: team?.id,
-    relatedCompetitionId: competition?.id,
-  });
-}
-
-export function createFixtureNotification(match: Match, competition: Competition): NotificationCreate {
-  return NotificationCreateSchema.parse({
-    title: 'Fixture',
-    message: `${match.homeTeam} vs ${match.awayTeam} fixture update`,
-    type: 'fixture',
-    category: 'match',
-    priority: 'normal',
-    relatedCompetitionId: competition?.id,
-  });
-}
-
-export function createNewsNotification(title: string, msg: string): NotificationCreate {
-  return NotificationCreateSchema.parse({
-    title,
-    message: msg,
-    type: 'news',
-    category: 'news',
-    priority: 'low',
-  });
-}
-
-const notificationService = {
-  sendNotification,
-  createKickoffNotification,
-  createGoalNotification,
-  createCardNotification,
-  createSubstitutionNotification,
-  createHalfTimeNotification,
-  createFullTimeNotification,
-  createLineupNotification,
-  createPreviewNotification,
-  createResultNotification,
-  createPlayerNotification,
-  createStandingNotification,
-  createQualificationNotification,
-  createFixtureNotification,
-  createNewsNotification,
-};
-
-export { notificationService as default };

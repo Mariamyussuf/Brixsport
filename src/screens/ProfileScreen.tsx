@@ -26,7 +26,9 @@ import {
   Trophy,
   Plus,
   Wifi,
-  ArrowLeft
+  ArrowLeft,
+  BookOpen,
+  MessageCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -146,7 +148,15 @@ const ProfileScreen = () => {
   };
 
   const handleChangePassword = () => {
-    router.push('/auth/change-password');
+    // Password change functionality is now in the SettingsSheet
+    // We'll open the settings sheet to allow users to change their password
+    const settingsButton = document.querySelector('[aria-label="Settings"]');
+    if (settingsButton) {
+      (settingsButton as HTMLButtonElement).click();
+    } else {
+      // Fallback: navigate to a dedicated settings page if it exists
+      router.push('/settings');
+    }
   };
 
   const closeModal = () => {
@@ -267,8 +277,6 @@ const ProfileScreen = () => {
                 ))}
               </div>
             </div>
-            
-            {/* Removed Notification Settings - now in SettingsSheet */}
           </div>
 
           {/* Quick Links Section - Full width on mobile, 1/3 on desktop */}
@@ -305,6 +313,18 @@ const ProfileScreen = () => {
                   icon={<Shield className="h-5 w-5" />} 
                   text="Privacy Policy" 
                   onClick={handlePrivacyPolicy} 
+                />
+                {/* FAQ as a link instead of section */}
+                <MenuItem 
+                  icon={<MessageCircle className="h-5 w-5" />} 
+                  text="FAQ" 
+                  onClick={() => router.push('/faq')} 
+                />
+                {/* Blog as a link instead of section */}
+                <MenuItem 
+                  icon={<BookOpen className="h-5 w-5" />} 
+                  text="Blog" 
+                  onClick={() => router.push('/blog')} 
                 />
                 <MenuItem 
                   icon={<HelpCircle className="h-5 w-5" />} 

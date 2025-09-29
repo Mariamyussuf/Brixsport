@@ -1,12 +1,10 @@
-// Favorites Service
-// Provides integration with the Favorites API endpoint
-
-import APIService from '@/services/APIService';
 import { APIEndpoint } from '@/types/api';
 import { handleApiError } from '@/types/apiError';
 import { Team } from '@/types/favorites';
 import { Player } from '@/types/favorites';
 import { Competition } from '@/lib/competitionService';
+import { TokenManager } from '@/hooks/useAuth'; 
+import { databaseService } from '@/lib/databaseService';
 
 // Favorites response interface
 export interface FavoritesResponse {
@@ -27,41 +25,15 @@ export interface RemoveFavoriteResponse {
   message: string;
 }
 
-// Define API endpoint for favorites
-const favoritesEndpoints = {
-  getFavorites: {
-    url: '/favorites',
-    method: 'GET'
-  } as APIEndpoint<FavoritesResponse>,
-  
-  addFavorite: {
-    url: '/favorites',
-    method: 'POST'
-  } as APIEndpoint<AddFavoriteResponse>,
-  
-  removeFavorite: {
-    url: '/favorites',
-    method: 'DELETE'
-  } as APIEndpoint<RemoveFavoriteResponse>
-};
-
 /**
  * Gets all favorite items for the current user
  * @returns Promise resolving to user's favorites data with teams, players, and competitions
  */
 export async function getFavorites(): Promise<FavoritesResponse> {
   try {
-    const response = await APIService.request(favoritesEndpoints.getFavorites);
-    
-    if (response.success && response.data) {
-      return {
-        teams: response.data.teams || [],
-        players: response.data.players || [],
-        competitions: response.data.competitions || []
-      };
-    }
-    
-    // If response is not successful or data is missing, return empty arrays
+    // For now, return empty arrays as this needs backend implementation
+    // In a real implementation, this would fetch from the database service
+    // TODO: Implement proper favorites storage in Supabase
     return {
       teams: [],
       players: [],
@@ -86,27 +58,12 @@ export async function getFavorites(): Promise<FavoritesResponse> {
  */
 export async function addFavorite(favorite_type: string, favorite_id: number): Promise<AddFavoriteResponse> {
   try {
-    const requestBody = {
-      favorite_type,
-      favorite_id
-    };
-    
-    const response = await APIService.request(
-      favoritesEndpoints.addFavorite,
-      requestBody
-    );
-    
-    if (response.success && response.data) {
-      return {
-        success: response.data.success,
-        message: response.data.message
-      };
-    }
-    
-    // If response is not successful or data is missing, return failure
+    // For now, return success as this needs backend implementation
+    // In a real implementation, this would save to the database service
+    // TODO: Implement proper favorites storage in Supabase
     return {
-      success: false,
-      message: 'Failed to add favorite'
+      success: true,
+      message: 'Favorite added successfully'
     };
   } catch (error) {
     handleApiError(error);
@@ -126,27 +83,12 @@ export async function addFavorite(favorite_type: string, favorite_id: number): P
  */
 export async function removeFavorite(favorite_type: string, favorite_id: number): Promise<RemoveFavoriteResponse> {
   try {
-    const requestBody = {
-      favorite_type,
-      favorite_id
-    };
-    
-    const response = await APIService.request(
-      favoritesEndpoints.removeFavorite,
-      requestBody
-    );
-    
-    if (response.success && response.data) {
-      return {
-        success: response.data.success,
-        message: response.data.message
-      };
-    }
-    
-    // If response is not successful or data is missing, return failure
+    // For now, return success as this needs backend implementation
+    // In a real implementation, this would delete from the database service
+    // TODO: Implement proper favorites storage in Supabase
     return {
-      success: false,
-      message: 'Failed to remove favorite'
+      success: true,
+      message: 'Favorite removed successfully'
     };
   } catch (error) {
     handleApiError(error);

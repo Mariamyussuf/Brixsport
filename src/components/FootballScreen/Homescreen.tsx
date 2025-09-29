@@ -23,12 +23,26 @@ import {
   SportType, 
   TabType, 
   UI_TeamLogoProps,
-  UI_Match,
   UI_TrackEvent,
   UI_TrackResult
 } from '../../types/campus';
 
 // Enhanced match interface for LiveScore-like functionality
+interface UI_Match {
+  id: string;
+  status: 'Live' | 'Upcoming' | 'Finished';
+  time: string;
+  team1: string;
+  team2: string;
+  score1?: number;
+  score2?: number;
+  team1Color?: string;
+  team2Color?: string;
+  sportType?: SportType;
+  competition_id?: string;
+  competition_name?: string;
+}
+
 interface EnhancedMatch extends UI_Match {
   minute?: number;
   period?: string;
@@ -54,9 +68,11 @@ const Homescreen: React.FC = () => {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   
-  // State management - keeping File A's simpler structure for UI
+  // State management - enhanced with status and date filtering
   const [activeTab, setActiveTab] = useState<TabType>('Fixtures');
   const [activeSport, setActiveSport] = useState<SportType | 'all'>('all');
+  const [activeStatus, setActiveStatus] = useState<'all' | 'live' | 'upcoming' | 'completed'>('all');
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLiveMatches, setShowLiveMatches] = useState(false);
   const [showFavoritesDialog, setShowFavoritesDialog] = useState(false);
@@ -78,14 +94,26 @@ const Homescreen: React.FC = () => {
         return null;
     }
   };
-  
+  const mapStatusForAPI = (status: 'all' | 'live' | 'upcoming' | 'completed'): 'all' | 'live' | 'scheduled' | 'completed' => {
+    switch (status) {
+      case 'upcoming':
+        return 'scheduled';
+      case 'completed':
+        return 'completed';
+      case 'live':
+        return 'live';
+      default:
+        return 'all';
+    }
+  };
+
   // Get sport matches only when activeSport is a valid sport type
   const apiSportType = mapSportTypeToApiSport(activeSport);
   
   const { matches: sportMatches, trackEvents: sportTrackEvents, loading: matchesLoading, error: matchesError } = 
     useSportMatches(
       apiSportType || 'football', 
-      'all'
+      mapStatusForAPI(activeStatus)
     );
 
   // Enhanced conversion functions from File B
@@ -112,7 +140,9 @@ const Homescreen: React.FC = () => {
                 match.status === 'completed' ? match.away_score : undefined,
         team1Color: match.home_team_logo ? '' : `bg-blue-600`,
         team2Color: match.away_team_logo ? '' : `bg-red-600`,
-        sportType: 'football' // Default to football for now
+        sportType: 'football', // Default to football for now
+        competition_id: match.competition_id,
+        competition_name: match.competition_name
       };
     }
     
@@ -156,7 +186,9 @@ const Homescreen: React.FC = () => {
       score2: match.status === 'live' || match.status === 'Live' ? team2Score : undefined,
       team1Color: `bg-blue-600`,
       team2Color: `bg-red-600`,
-      sportType: match.sportType
+      sportType: match.sportType,
+      competition_id: match.competition_id,
+      competition_name: match.competition_name
     };
   };
 
@@ -194,27 +226,64 @@ const Homescreen: React.FC = () => {
     });
   };
 
-  // Get data with fallback logic
+  // Group matches by league with proper typing
+  const groupMatchesByLeague = (matches: UI_Match[]): [string, UI_Match[]][] => {
+    const grouped = matches.reduce<Record<string, UI_Match[]>>((acc, match) => {
+      const league = match.competition_name || match.competition_id || 'Other';
+      if (!acc[league]) {
+        acc[league] = [];
+      }
+      acc[league].push(match);
+      return acc;
+    }, {});
+    
+    return Object.entries(grouped);
+  };
+
+  // Get and sort matches with live matches first, then by league and time
   const getFilteredMatches = (sportType: SportType): UI_Match[] => {
     let matches: UI_Match[] = [];
     
-    // Try to use API data first
-    if (homeData?.liveFootball || homeData?.upcomingFootball) {
-      if (sportType === 'football') {
-        matches = [
-          ...(homeData?.liveFootball?.map(convertMatchToUI) || []),
-          ...(homeData?.upcomingFootball?.map(convertMatchToUI) || [])
-        ];
-      } else if (sportType === 'basketball' && sportMatches && sportMatches.length > 0) {
-        matches = sportMatches.map(convertMatchToUI);
-      } else if (sportType === 'track_events' && sportTrackEvents && sportTrackEvents.length > 0) {
-        // For track events, we use the trackEvents from the hook
-        // But we still return UI_Match[] for consistency with the function signature
-        // In practice, we'll use getTrackEvents() directly for track events
-      }
+    // Get all matches from API
+    if (sportType === 'football' && (homeData?.liveFootball || homeData?.upcomingFootball)) {
+      matches = [
+        ...(homeData?.liveFootball?.map(convertMatchToUI) || []),
+        ...(homeData?.upcomingFootball?.map(convertMatchToUI) || [])
+      ];
+    } else if (sportType === 'basketball' && sportMatches?.length) {
+      matches = sportMatches.map(convertMatchToUI);
+    } else if (sportType === 'track_events' && sportTrackEvents?.length) {
+      // Track events are handled separately
+      return [];
     }
     
-    return sortMatches(matches);
+    // Sort matches: Live > Upcoming > Finished, then by league, then by time
+    return [...matches].sort((a, b) => {
+      // Status priority: Live > Upcoming > Finished
+      const statusOrder = { 'Live': 0, 'Upcoming': 1, 'Finished': 2 };
+      const statusDiff = statusOrder[a.status] - statusOrder[b.status];
+      
+      if (statusDiff !== 0) return statusDiff;
+      
+      // For same status, sort by league name (competition_name or competition_id)
+      const leagueA = a.competition_name || a.competition_id || '';
+      const leagueB = b.competition_name || b.competition_id || '';
+      const leagueCompare = leagueA.localeCompare(leagueB);
+      
+      if (leagueCompare !== 0) return leagueCompare;
+      
+      // For same league, sort by time (earlier first for live/upcoming, most recent first for finished)
+      const timeA = a.time;
+      const timeB = b.time;
+      
+      if (a.status === 'Finished') {
+        // For finished matches, most recent first within the same league
+        return timeA > timeB ? -1 : timeA < timeB ? 1 : 0;
+      } else {
+        // For live/upcoming matches, soonest first within the same league
+        return timeA < timeB ? -1 : timeA > timeB ? 1 : 0;
+      }
+    });
   };
 
   const getAllLiveMatches = (): UI_Match[] => {
@@ -319,7 +388,19 @@ const Homescreen: React.FC = () => {
   };
 
   const handleLiveClick = (): void => {
-    router.push('/live-matches');
+    // Filter to show only live matches when the LIVE button is clicked
+    const liveMatches = getFilteredMatches(activeSport).filter(match => match.status === 'Live');
+    
+    if (liveMatches.length > 0) {
+      // If there are live matches, navigate to a filtered view
+      router.push('/live-matches');
+    } else {
+      // If no live matches, show a message or scroll to upcoming matches
+      const upcomingSection = document.getElementById('upcoming-matches');
+      if (upcomingSection) {
+        upcomingSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
   };
 
   const handleBackFromLive = (): void => {
@@ -427,27 +508,99 @@ const Homescreen: React.FC = () => {
       </div>
 
       <div className="w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4 max-w-7xl mx-auto">
-        <div className="mb-4 sm:mb-6">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" 
-               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-               role="tablist">
-            {sportTabs.map((sport) => (
-              <button
-                key={sport}
-                onClick={() => handleSportClick(sport)}
-                className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-full font-medium transition-all text-xs sm:text-sm whitespace-nowrap flex-shrink-0 touch-manipulation active:scale-95 ${
-                  activeSport === sport
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 border border-gray-200 dark:border-gray-700'
-                }`}
-                role="tab"
-                aria-selected={activeSport === sport}
-              >
-                {getSportDisplayName(sport)}
-              </button>
-            ))}
+        {activeTab === 'Fixtures' && (
+          <div className="mb-4 sm:mb-6">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" 
+                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                 role="tablist">
+              {sportTabs.map((sport) => (
+                <button
+                  key={sport}
+                  onClick={() => handleSportClick(sport)}
+                  className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-full font-medium transition-all text-xs sm:text-sm whitespace-nowrap flex-shrink-0 touch-manipulation active:scale-95 ${
+                    activeSport === sport
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                  }`}
+                  role="tab"
+                  aria-selected={activeSport === sport}
+                >
+                  {getSportDisplayName(sport)}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
+        {activeTab === 'Fixtures' && activeSport !== 'track_events' && (
+          <div className="mb-4 sm:mb-6">
+            {liveMatches.length > 0 ? (
+              <>
+                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3">
+                  Live Matches
+                  <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+                    ({liveMatches.length} ongoing)
+                  </span>
+                </h2>
+                
+                {/* Render live matches */}
+                {getFilteredMatches(activeSport)
+                  .filter(match => match.status === 'Live')
+                  .map((match, index) => (
+                    <MatchCard key={`live-${index}`} match={match} />
+                  ))}
+              </>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                No live matches at the moment
+              </p>
+            )}
+            
+            {getFilteredMatches(activeSport).some(m => m.status === 'Upcoming') && (
+              <>
+                <h2 id="upcoming-matches" className="text-lg font-bold text-gray-800 dark:text-gray-100 mt-6 mb-3">
+                  Upcoming Matches
+                </h2>
+                
+                {/* Group upcoming matches by league */}
+                {groupMatchesByLeague(
+                  getFilteredMatches(activeSport)
+                    .filter((match: UI_Match) => match.status === 'Upcoming')
+                ).map(([league, leagueMatches]: [string, UI_Match[]]) => (
+                  <div key={league} className="mb-4">
+                    <h3 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">{league}</h3>
+                    {leagueMatches.map((match: UI_Match, index: number) => (
+                      <MatchCard key={`${league}-${index}`} match={match} />
+                    ))}
+                  </div>
+                ))}
+              </>
+            )}
+            
+            {getFilteredMatches(activeSport).some(m => m.status === 'Finished') && (
+              <>
+                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 mt-6 mb-3">
+                  Recent Matches
+                </h2>
+                
+                {/* Group finished matches by league */}
+                {groupMatchesByLeague(
+                  getFilteredMatches(activeSport)
+                    .filter((match: UI_Match) => match.status === 'Finished')
+                    .slice(0, 10) // Show only recent 10 matches
+                ).map(([league, leagueMatches]: [string, UI_Match[]]) => (
+                  <div key={`recent-${league}`} className="mb-4">
+                    <h3 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">{league}</h3>
+                    {leagueMatches.map((match: UI_Match, index: number) => (
+                      <MatchCard key={`recent-${league}-${index}`} match={match} />
+                    ))}
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+
 
         {/* Show API error if exists but don't block UI */}
         {homeError && (
@@ -517,17 +670,17 @@ const Homescreen: React.FC = () => {
         )}
 
         {activeTab === 'Favourites' && (
-          <div className="space-y-6 sm:space-y-8">
+          <div>
             <Favouritesscreen activeSport={activeSport} />
           </div>
         )}
 
+        {/* Competition Tab */}
         {activeTab === 'Competition' && (
           <section>
             <CompetitionScreen />
           </section>
         )}
-
         {activeTab === 'Profile' && (
           <div className="flex flex-col items-center justify-center py-8">
             <div className="bg-white dark:bg-gray-900 rounded-lg p-6 shadow-sm border border-gray-100 dark:border-gray-700 w-full max-w-md">

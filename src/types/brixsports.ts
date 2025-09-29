@@ -101,18 +101,171 @@ export interface CreateTeamPayload {
   color_secondary?: string;
 }
 
+// Updated Player interface to match system requirements
 export interface Player {
-  id: number;
-  name: string;
-  position: string;
-  jersey_number: number;
-  team_id: number;
-  age: number;
+  id: string; // UUID
+  firstName: string;
+  lastName: string;
+  displayName?: string; // Optional custom display name
+  dateOfBirth: string; // ISO date format
+  nationality: string; // ISO 3166-1 alpha-2 country code
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  sport: 'FOOTBALL' | 'BASKETBALL' | 'TRACK';
+  position?: string; // Sport-specific position
+  height?: number; // in cm
+  weight?: number; // in kg
+  teamId?: string; // Current team
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'RETIRED';
+  profilePictureUrl?: string;
+  biography?: string;
+  socialMediaLinks?: { // Added social media links
+    twitter?: string;
+    instagram?: string;
+    facebook?: string;
+  };
+  careerStats?: CareerStats; // Added career stats
+  createdAt: string; // ISO date format
+  updatedAt: string; // ISO date format
+}
+
+// Sport-specific career statistics
+export interface CareerStats {
+  // Football stats
+  football?: {
+    goals?: number;
+    assists?: number;
+    matchesPlayed?: number;
+    yellowCards?: number;
+    redCards?: number;
+    cleanSheets?: number; // For goalkeepers
+  };
+  
+  // Basketball stats
+  basketball?: {
+    points?: number;
+    rebounds?: number;
+    assists?: number;
+    steals?: number;
+    blocks?: number;
+    matchesPlayed?: number;
+    fieldGoalPercentage?: number;
+  };
+  
+  // Track stats
+  track?: {
+    personalBests?: {
+      event: string; // e.g., "100m", "Marathon"
+      time?: string; // For timed events
+      distance?: number; // For distance events
+      date?: string;
+    }[];
+    matchesParticipated?: number;
+    medalsWon?: {
+      gold: number;
+      silver: number;
+      bronze: number;
+    };
+  };
+}
+
+// Admin-only player management payloads
+export interface CreatePlayerPayload {
+  firstName: string;
+  lastName: string;
+  displayName?: string;
+  dateOfBirth: string;
   nationality: string;
-  photo_url: string | null;
-  // Optional properties that may be included in some responses
-  height?: number | null;
-  weight?: number | null;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  sport: 'FOOTBALL' | 'BASKETBALL' | 'TRACK';
+  position?: string;
+  height?: number;
+  weight?: number;
+  teamId?: string;
+  profilePictureUrl?: string;
+  biography?: string;
+  socialMediaLinks?: {
+    twitter?: string;
+    instagram?: string;
+    facebook?: string;
+  };
+}
+
+export interface UpdatePlayerPayload {
+  firstName?: string;
+  lastName?: string;
+  displayName?: string;
+  dateOfBirth?: string;
+  nationality?: string;
+  gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  sport?: 'FOOTBALL' | 'BASKETBALL' | 'TRACK';
+  position?: string;
+  height?: number;
+  weight?: number;
+  teamId?: string;
+  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'RETIRED';
+  profilePictureUrl?: string;
+  biography?: string;
+  socialMediaLinks?: {
+    twitter?: string;
+    instagram?: string;
+    facebook?: string;
+  };
+}
+
+export interface UpdatePlayerStatsPayload {
+  stats: CareerStats;
+}
+
+export interface AssignPlayerToTeamPayload {
+  teamId: string;
+}
+
+export interface PlayerListParams {
+  page?: number;
+  limit?: number;
+  sport?: 'FOOTBALL' | 'BASKETBALL' | 'TRACK';
+  teamId?: string;
+  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'RETIRED';
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'ASC' | 'DESC';
+}
+
+export interface PlayerSearchParams {
+  q?: string;
+  sports?: string;
+  positions?: string;
+  minAge?: number;
+  maxAge?: number;
+  nationalities?: string;
+}
+
+export interface PlayerListResponse {
+  players: Player[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface PlayerSearchResponse {
+  players: Player[];
+  count: number;
+}
+
+// Public search interfaces for all authenticated users
+export interface GlobalSearchParams {
+  query: string;
+  types?: ('players' | 'competitions' | 'teams')[];
+  limit?: number;
+}
+
+export interface GlobalSearchResult {
+  players?: Player[];
+  competitions?: Match[]; // Using Match as competition type
+  teams?: Team[];
 }
 
 export interface CreateTrackEventPayload {

@@ -1,7 +1,7 @@
 // User Match Service
 // Provides integration with the Match API endpoints for regular users
 
-import { API_BASE_URL } from './apiConfig';
+import { databaseService } from '@/lib/databaseService';
 
 // Match interface
 export interface Match {
@@ -27,47 +27,27 @@ export interface MatchEvent {
   teamId?: string;
 }
 
-// Generic request function with authentication
-const fetchAPI = async (endpoint: string, options: RequestInit = {}) => {
-  try {
-    // Get auth session
-    // Note: This is a simplified version. In a real implementation, you would pass the request object
-    // from the API route to getAuth() to properly extract headers/cookies
-    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-    
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-    };
-
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        ...headers,
-        ...options.headers
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} - ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('API request failed:', error);
-    throw error;
-  }
-};
-
 /**
  * Gets all matches
  * @returns Promise resolving to array of matches
  */
 export const getMatches = async (): Promise<Match[]> => {
   try {
-    const response = await fetchAPI('/matches');
-    return response.matches || [];
+    // Fetch matches from database service
+    const dbMatches = await databaseService.getMatches();
+    
+    // Transform to Match type
+    return dbMatches.map(match => ({
+      id: match.id.toString(),
+      homeTeam: match.home_team_name || `Home Team ${match.home_team_id}`,
+      awayTeam: match.away_team_name || `Away Team ${match.away_team_id}`,
+      venue: match.venue || '',
+      date: match.match_date,
+      status: match.status,
+      competitionId: match.competition_id.toString(),
+      homeScore: match.home_score,
+      awayScore: match.away_score
+    }));
   } catch (error) {
     console.error('Failed to fetch matches:', error);
     return [];
@@ -81,8 +61,21 @@ export const getMatches = async (): Promise<Match[]> => {
  */
 export const getMatchesByCompetition = async (competitionId: string): Promise<Match[]> => {
   try {
-    const response = await fetchAPI(`/matches?competitionId=${competitionId}`);
-    return response.matches || [];
+    // Fetch matches from database service
+    const dbMatches = await databaseService.getMatchesByCompetition(parseInt(competitionId));
+    
+    // Transform to Match type
+    return dbMatches.map(match => ({
+      id: match.id.toString(),
+      homeTeam: match.home_team_name || `Home Team ${match.home_team_id}`,
+      awayTeam: match.away_team_name || `Away Team ${match.away_team_id}`,
+      venue: match.venue || '',
+      date: match.match_date,
+      status: match.status,
+      competitionId: match.competition_id.toString(),
+      homeScore: match.home_score,
+      awayScore: match.away_score
+    }));
   } catch (error) {
     console.error(`Failed to fetch matches for competition ${competitionId}:`, error);
     return [];
@@ -95,8 +88,25 @@ export const getMatchesByCompetition = async (competitionId: string): Promise<Ma
  */
 export const getPopulatedMatches = async (): Promise<any[]> => {
   try {
-    const response = await fetchAPI('/matches/populated');
-    return response.data || [];
+    // Fetch matches from database service
+    const dbMatches = await databaseService.getMatches();
+    
+    // Transform to populated match format
+    return dbMatches.map(match => ({
+      id: match.id.toString(),
+      homeTeam: match.home_team_name || `Home Team ${match.home_team_id}`,
+      awayTeam: match.away_team_name || `Away Team ${match.away_team_id}`,
+      venue: match.venue || '',
+      date: match.match_date,
+      status: match.status,
+      competitionId: match.competition_id.toString(),
+      homeScore: match.home_score,
+      awayScore: match.away_score,
+      competition: {
+        id: match.competition_id,
+        name: match.competition_name || 'Competition'
+      }
+    }));
   } catch (error) {
     console.error('Failed to fetch populated matches:', error);
     return [];
@@ -110,13 +120,26 @@ export const getPopulatedMatches = async (): Promise<any[]> => {
  */
 export const getMatchById = async (id: string): Promise<Match | null> => {
   try {
-    // Fetch a specific match by ID from the API
-    const response = await fetch(`${API_BASE_URL}/matches/${id}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch match with ID ${id}`);
+    // Fetch matches from database service
+    const dbMatches = await databaseService.getMatches();
+    const dbMatch = dbMatches.find(m => m.id.toString() === id);
+    
+    if (!dbMatch) {
+      return null;
     }
-    const match = await response.json();
-    return match;
+    
+    // Transform to Match type
+    return {
+      id: dbMatch.id.toString(),
+      homeTeam: dbMatch.home_team_name || `Home Team ${dbMatch.home_team_id}`,
+      awayTeam: dbMatch.away_team_name || `Away Team ${dbMatch.away_team_id}`,
+      venue: dbMatch.venue || '',
+      date: dbMatch.match_date,
+      status: dbMatch.status,
+      competitionId: dbMatch.competition_id.toString(),
+      homeScore: dbMatch.home_score,
+      awayScore: dbMatch.away_score
+    };
   } catch (error) {
     console.error(`Failed to fetch match with ID ${id}:`, error);
     return null;
@@ -129,15 +152,24 @@ export const getMatchById = async (id: string): Promise<Match | null> => {
  */
 export const getLiveMatches = async (): Promise<Match[]> => {
   try {
-    const response = await fetchAPI('/live/matches');
-    // Ensure we always return an array, even if the API response structure is different
-    if (response && Array.isArray(response.data)) {
-      return response.data;
-    }
-    if (response && Array.isArray(response)) {
-      return response;
-    }
-    return [];
+    // Fetch matches from database service
+    const dbMatches = await databaseService.getMatches();
+    
+    // Filter for live matches
+    const liveDbMatches = dbMatches.filter(match => match.status === 'live');
+    
+    // Transform to Match type
+    return liveDbMatches.map(match => ({
+      id: match.id.toString(),
+      homeTeam: match.home_team_name || `Home Team ${match.home_team_id}`,
+      awayTeam: match.away_team_name || `Away Team ${match.away_team_id}`,
+      venue: match.venue || '',
+      date: match.match_date,
+      status: match.status,
+      competitionId: match.competition_id.toString(),
+      homeScore: match.home_score,
+      awayScore: match.away_score
+    }));
   } catch (error) {
     console.error('Failed to fetch live matches:', error);
     // Always return an empty array in case of error

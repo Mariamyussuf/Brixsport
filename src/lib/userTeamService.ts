@@ -1,7 +1,7 @@
 // User Team Service
 // Provides integration with the Team API endpoints for regular users
 
-import { API_BASE_URL } from './apiConfig';
+import { databaseService } from '@/lib/databaseService';
 import { Team as UserTeam } from '@/lib/api';
 
 // Team interface (matching the one from matchEvents for consistency)
@@ -23,49 +23,21 @@ export interface Player {
   status: 'on-field' | 'substituted' | 'injured';
 }
 
-// Generic request function with authentication
-const fetchAPI = async (endpoint: string, options: RequestInit = {}) => {
-  try {
-    // Get auth token from localStorage
-    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-    
-    if (!token) {
-      throw new Error('Unauthorized: No authentication token found');
-    }
-    
-    const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    };
-
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        ...headers,
-        ...options.headers
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} - ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('API request failed:', error);
-    throw error;
-  }
-};
-
 /**
  * Gets all teams
  * @returns Promise resolving to array of teams
  */
 export const getTeams = async (): Promise<UserTeam[]> => {
   try {
-    const response = await fetchAPI('/teams');
-    return response.data || [];
+    // Fetch teams from database service
+    const dbTeams = await databaseService.getTeams();
+    
+    // Transform to UserTeam type
+    return dbTeams.map(team => ({
+      id: team.id.toString(),
+      name: team.name,
+      logo: team.logo || ''
+    }));
   } catch (error) {
     console.error('Failed to fetch teams:', error);
     return [];
@@ -79,11 +51,18 @@ export const getTeams = async (): Promise<UserTeam[]> => {
  */
 export const getTeamsByCompetition = async (competitionId: string): Promise<Team[]> => {
   try {
-    const response = await fetchAPI(`/teams?competitionId=${competitionId}`);
-    if (response.success) {
-      return response.data || [];
-    }
-    return [];
+    // Fetch teams from database service
+    const dbTeams = await databaseService.getTeams();
+    
+    // For now, return all teams since we don't have competition-team relationships in the database
+    // In a real implementation, you would filter by competition
+    return dbTeams.map(team => ({
+      id: team.id.toString(),
+      name: team.name,
+      logoUrl: team.logo || '',
+      coachName: 'Coach Name',
+      players: [] // Empty players array for now
+    }));
   } catch (error) {
     console.error(`Failed to fetch teams for competition ${competitionId}:`, error);
     return [];
@@ -97,11 +76,22 @@ export const getTeamsByCompetition = async (competitionId: string): Promise<Team
  */
 export const getTeamById = async (id: string): Promise<Team | null> => {
   try {
-    const response = await fetchAPI(`/teams/${id}`);
-    if (response.success) {
-      return response.data || null;
+    // Fetch teams from database service
+    const dbTeams = await databaseService.getTeams();
+    const dbTeam = dbTeams.find(t => t.id.toString() === id);
+    
+    if (!dbTeam) {
+      return null;
     }
-    return null;
+    
+    // Transform to Team type
+    return {
+      id: dbTeam.id.toString(),
+      name: dbTeam.name,
+      logoUrl: dbTeam.logo || '',
+      coachName: 'Coach Name',
+      players: [] // Empty players array for now
+    };
   } catch (error) {
     console.error(`Failed to fetch team with ID ${id}:`, error);
     return null;

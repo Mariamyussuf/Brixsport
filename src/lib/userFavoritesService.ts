@@ -1,6 +1,8 @@
 // User Favorites Service
 // Provides integration with the Favorites API endpoints for regular users
 
+import { databaseService } from '@/lib/databaseService';
+
 // Team interface
 export interface Team {
   id: string;
@@ -49,27 +51,14 @@ export interface FavoritesData {
  */
 export const getFavorites = async (): Promise<FavoritesData | null> => {
   try {
-    // Get auth token from localStorage
-    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-    
-    if (!token) {
-      throw new Error('Unauthorized: No authentication token found');
-    }
-    
-    const response = await fetch('/api/user/favorites', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to fetch favorites');
-    }
-    
-    return data.data;
+    // For now, return empty arrays as this needs backend implementation
+    // In a real implementation, this would fetch from the database service
+    // TODO: Implement proper favorites storage in Supabase
+    return {
+      teams: [],
+      players: [],
+      competitions: []
+    };
   } catch (error) {
     console.error('Failed to fetch favorites:', error);
     return null;
