@@ -1,10 +1,12 @@
 "use client";
 import React, { useState } from "react";
-import { X, Sun, Moon, Monitor, Settings, Bell, Clock, User, Users, Trophy, Mail } from "lucide-react";
+import { X, Sun, Moon, Monitor, Settings, Bell, Clock, User, Users, Trophy, Mail, Key, LogOut } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useSettings } from "./SettingsContext";
 import { useNotifications } from "@/components/shared/NotificationsContext";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { changePassword } from "@/lib/userService";
 
 interface SettingsSheetProps {
   open: boolean;
@@ -15,9 +17,18 @@ export default function SettingsSheet({ open, onClose }: SettingsSheetProps) {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const { dataSaver, language, setNotifications, setDataSaver, setLanguage } = useSettings();
   const { preferences, updatePreferences } = useNotifications();
+  const { user, logout } = useAuth();
   const [quietHoursStart, setQuietHoursStart] = useState(preferences.quietHours?.start || '22:00');
   const [quietHoursEnd, setQuietHoursEnd] = useState(preferences.quietHours?.end || '08:00');
   const router = useRouter();
+  
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   if (!open) return null;
 
@@ -48,13 +59,55 @@ export default function SettingsSheet({ open, onClose }: SettingsSheetProps) {
     });
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess(false);
+    
+    // Validation
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      setPasswordError('Password must be at least 6 characters long');
+      return;
+    }
+    
+    if (currentPassword === newPassword) {
+      setPasswordError('New password must be different from current password');
+      return;
+    }
+    
+    setIsChangingPassword(true);
+    
+    try {
+      await changePassword(currentPassword, newPassword);
+      setPasswordSuccess(true);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setPasswordSuccess(false), 3000);
+    } catch (error: any) {
+      setPasswordError(error.message || 'Failed to change password');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    onClose();
+  };
+
   // Get default theme from environment variables
   const defaultTheme = process.env.NEXT_PUBLIC_DEFAULT_THEME || 'system';
 
   // Get available themes from environment variables
   const availableThemes = (process.env.NEXT_PUBLIC_THEMES?.split(',') || ['light', 'dark', 'system']) as Array<"light" | "dark" | "system">;
-
- 
 
   return (
     <div className="fixed inset-0 z-[1100]">
@@ -320,7 +373,7 @@ export default function SettingsSheet({ open, onClose }: SettingsSheetProps) {
         </div>
 
         {/* Data Saver */}
-        <div className="px-5 pb-8">
+        <div className="px-5 pb-6">
           <div className="mb-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Data</div>
           <div className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-white/10 p-4 bg-white/60 dark:bg-slate-900/40">
             <div>
@@ -337,6 +390,94 @@ export default function SettingsSheet({ open, onClose }: SettingsSheetProps) {
             </button>
           </div>
         </div>
+
+        {/* Account Settings - Only show if user is logged in */}
+        {user && (
+          <div className="px-5 pb-6">
+            <div className="mb-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Account</div>
+            
+            {/* Change Password */}
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 p-4 bg-white/60 dark:bg-slate-900/40 mb-4">
+              <div className="flex items-center mb-3">
+                <Key className="w-5 h-5 text-gray-500 dark:text-gray-400 mr-2" />
+                <div className="text-sm font-medium">Change Password</div>
+              </div>
+              
+              <form onSubmit={handleChangePassword} className="space-y-3">
+                <div>
+                  <label htmlFor="current-password" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Current Password
+                  </label>
+                  <input
+                    id="current-password"
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="new-password" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    New Password
+                  </label>
+                  <input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+                    required
+                    minLength={6}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">At least 6 characters</p>
+                </div>
+                
+                <div>
+                  <label htmlFor="confirm-password" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Confirm New Password
+                  </label>
+                  <input
+                    id="confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+                    required
+                  />
+                </div>
+                
+                {passwordError && (
+                  <div className="text-red-500 text-sm">{passwordError}</div>
+                )}
+                
+                {passwordSuccess && (
+                  <div className="text-green-500 text-sm">Password changed successfully!</div>
+                )}
+                
+                <button
+                  type="submit"
+                  disabled={isChangingPassword}
+                  className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                >
+                  {isChangingPassword ? 'Changing...' : 'Change Password'}
+                </button>
+              </form>
+            </div>
+            
+            {/* Logout */}
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 p-4 bg-white/60 dark:bg-slate-900/40">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center py-2 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

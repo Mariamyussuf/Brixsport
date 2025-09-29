@@ -253,16 +253,7 @@ const NotificationsScreen: React.FC = () => {
                 </span>
               )}
             </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                aria-label="Refresh"
-              >
-                <RefreshCw className={`w-5 h-5 text-gray-600 dark:text-gray-300 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
+            {/* Refresh button removed as per requirements */}
           </div>
           <button
             onClick={handleMarkAllAsRead}

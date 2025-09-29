@@ -68,11 +68,11 @@ const convertBrixMatchToMatch = (brixMatch: BrixMatch): Match => {
     away_score: brixMatch.away_score,
     current_minute: brixMatch.current_minute,
     period: brixMatch.period,
-    home_team_name: `Home Team ${brixMatch.home_team_id}`,
-    home_team_logo: '',
-    away_team_name: `Away Team ${brixMatch.away_team_id}`,
-    away_team_logo: '',
-    competition_name: 'Competition'
+    home_team_name: brixMatch.home_team_name || `Team ${brixMatch.home_team_id}`,
+    home_team_logo: brixMatch.home_team_logo || '',
+    away_team_name: brixMatch.away_team_name || `Team ${brixMatch.away_team_id}`,
+    away_team_logo: brixMatch.away_team_logo || '',
+    competition_name: brixMatch.competition_name || 'Competition'
   };
 };
 
@@ -94,8 +94,15 @@ export const useHomeData = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchHomeData = async (signal?: AbortSignal) => {
+  const fetchHomeData = async (signal?: AbortSignal): Promise<void> => {
+    // Early return if the signal is already aborted
+    if (signal?.aborted) {
+      return;
+    }
     try {
+      if (signal?.aborted) {
+        return;
+      }
       setLoading(true);
       // Get auth token from TokenManager
       const authToken = TokenManager.getToken();
@@ -121,20 +128,48 @@ export const useHomeData = () => {
         console.error('API Error:', response.error || 'Unknown error occurred');
       }
     } catch (err) {
+      if (signal?.aborted || (err instanceof DOMException && err.name === 'AbortError')) {
+        return;
+      }
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch home data';
       setError(errorMessage);
       console.error('Error fetching home data:', err);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    const controller = new AbortController();
-    fetchHomeData(controller.signal);
+    const abortController = new AbortController();
+    const signal = abortController.signal;
+    let isMounted = true;
+
+    const fetchData = async () => {
+      try {
+        await fetchHomeData(signal);
+      } catch (error) {
+        if (!isMounted) return;
+        // Only log if the error is not an abort error
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Error in useHomeData:', error);
+        }
+      }
+    };
+
+    fetchData();
 
     return () => {
-      controller.abort();
+      isMounted = false;
+      // Don't try to abort if already aborted
+      if (signal.aborted) return;
+      
+      try {
+        abortController.abort();
+      } catch (e) {
+        // Ignore any errors during abort
+      }
     };
   }, []);
 
@@ -150,7 +185,11 @@ export const useSportMatches = (
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMatches = async (signal?: AbortSignal) => {
+  const fetchMatches = async (signal?: AbortSignal): Promise<void> => {
+    // Early return if the signal is already aborted
+    if (signal?.aborted) {
+      return;
+    }
     // Don't fetch if sport is empty
     if (!sport) {
       setMatches([]);
@@ -161,6 +200,9 @@ export const useSportMatches = (
     }
     
     try {
+      if (signal?.aborted) {
+        return;
+      }
       setLoading(true);
       // Get auth token from TokenManager
       const authToken = TokenManager.getToken();
@@ -190,23 +232,60 @@ export const useSportMatches = (
         setTrackEvents([]);
       }
     } catch (err) {
+      // Don't update state if the request was aborted
+      if (signal?.aborted || (err instanceof DOMException && err.name === 'AbortError')) {
+        return;
+      }
+      
+      // Handle API error response with isAbortError flag
+      if (err && typeof err === 'object' && 'error' in err && (err as any).error?.isAbortError) {
+        return;
+      }
+      
       const errorMessage = err instanceof Error ? err.message : `Failed to fetch ${sport} matches`;
-      setError(errorMessage);
-      console.error(`Error fetching ${sport} matches:`, err);
-      // Clear data on error
-      setMatches([]);
-      setTrackEvents([]);
+      
+      // Only update state if we're still mounted and the request wasn't aborted
+      if (!signal?.aborted) {
+        setError(errorMessage);
+        console.error(`Error fetching ${sport} matches:`, err);
+        // Clear data on error
+        setMatches([]);
+        setTrackEvents([]);
+      }
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    const controller = new AbortController();
-    fetchMatches(controller.signal);
+    const abortController = new AbortController();
+    const signal = abortController.signal;
+    let isMounted = true;
+
+    const fetchData = async () => {
+      try {
+        await fetchMatches(signal);
+      } catch (error) {
+        if (!isMounted) return;
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Error in useSportMatches:', error);
+        }
+      }
+    };
+
+    fetchData();
 
     return () => {
-      controller.abort();
+      isMounted = false;
+      if (signal.aborted) return;
+      
+      try {
+        abortController.abort();
+      } catch (e) {
+        // Ignore any errors during abort
+      }
     };
   }, [sport, status]);
 
@@ -222,8 +301,15 @@ export const useLiveMatches = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchLiveMatches = async (signal?: AbortSignal) => {
+  const fetchLiveMatches = async (signal?: AbortSignal): Promise<void> => {
+    // Early return if the signal is already aborted
+    if (signal?.aborted) {
+      return;
+    }
     try {
+      if (signal?.aborted) {
+        return;
+      }
       setLoading(true);
       // Get auth token from TokenManager
       const authToken = TokenManager.getToken();
@@ -248,26 +334,59 @@ export const useLiveMatches = () => {
         });
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch live matches';
-      setError(errorMessage);
-      console.error('Error fetching live matches:', err);
-      // Clear data on error
-      setLiveMatches({
-        football: [],
-        basketball: [],
-        track: []
-      });
+      // Don't process errors if the component is unmounted or the request was aborted
+      if (signal?.aborted || (err instanceof DOMException && err.name === 'AbortError')) {
+        return;
+      }
+      
+      // Only update state if the component is still mounted
+      if (!signal?.aborted) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch live matches';
+        setError(errorMessage);
+        console.error('Error fetching live matches:', err);
+        // Clear data on error
+        setLiveMatches({
+          football: [],
+          basketball: [],
+          track: []
+        });
+      }
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    const controller = new AbortController();
-    fetchLiveMatches(controller.signal);
+    const abortController = new AbortController();
+    const signal = abortController.signal;
+    let isMounted = true;
+
+    const fetchData = async () => {
+      try {
+        await fetchLiveMatches(signal);
+      } catch (error) {
+        if (!isMounted) return;
+        // Only log if the error is not an abort error
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Error in useLiveMatches:', error);
+        }
+      }
+    };
+
+    fetchData();
 
     return () => {
-      controller.abort();
+      isMounted = false;
+      // Don't try to abort if already aborted
+      if (signal.aborted) return;
+      
+      try {
+        abortController.abort();
+      } catch (e) {
+        // Ignore any errors during abort
+      }
     };
   }, []);
 

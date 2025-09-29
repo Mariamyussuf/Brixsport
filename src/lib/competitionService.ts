@@ -1,7 +1,7 @@
-import APIService from '@/services/APIService';
 import { APIEndpoint } from '@/types/api';
 import { handleApiError } from '@/types/apiError';
 import { TokenManager } from '@/hooks/useAuth';
+import { databaseService } from '@/lib/databaseService';
 
 // Updated Competition interface to match backend specification
 export interface Competition {
@@ -27,10 +27,10 @@ export interface Match {
   away_score: number;
   current_minute: number;
   period: string | null;
-  home_team_name: string;
-  home_team_logo: string;
-  away_team_name: string;
-  away_team_logo: string;
+  home_team_name?: string;
+  home_team_logo?: string;
+  away_team_name?: string;
+  away_team_logo?: string;
 }
 
 export interface CompetitionDetailsResponse {
@@ -54,59 +54,12 @@ export interface UpdateCompetitionData {
   end_date?: string;
 }
 
-// Define API endpoints for competitions
-const competitionEndpoints = {
-  getAll: {
-    url: '/competitions',
-    method: 'GET'
-  } as APIEndpoint<Competition[]>,
-
-  getById: (id: number) => ({
-    url: `/competitions/${id}`,
-    method: 'GET'
-  } as APIEndpoint<CompetitionDetailsResponse>),
-
-  create: {
-    url: '/competitions',
-    method: 'POST'
-  } as APIEndpoint<Competition>,
-
-  update: (id: number) => ({
-    url: `/competitions/${id}`,
-    method: 'PATCH'
-  } as APIEndpoint<Competition>),
-
-  delete: (id: number) => ({
-    url: `/competitions/${id}`,
-    method: 'DELETE'
-  } as APIEndpoint<void>),
-
-  getBySport: (sport: string) => ({
-    url: `/competitions?type=${sport}`,
-    method: 'GET'
-  } as APIEndpoint<Competition[]>),
-
-  getActive: {
-    url: '/competitions?status=active',
-    method: 'GET'
-  } as APIEndpoint<Competition[]>
-};
-
 // Get all competitions
 export async function getCompetitions(): Promise<Competition[]> {
   try {
-    // Get auth token from TokenManager
-    const authToken = TokenManager.getToken();
-    const response = await APIService.request(
-      competitionEndpoints.getAll,
-      undefined,
-      undefined,
-      { authToken: authToken || undefined }
-    );
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.error?.message || 'Failed to fetch competitions');
+    // Try to get from database service first (Supabase)
+    const competitions = await databaseService.getCompetitions();
+    return competitions;
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -116,18 +69,18 @@ export async function getCompetitions(): Promise<Competition[]> {
 // Get competition by ID with matches
 export async function getCompetitionById(id: number): Promise<CompetitionDetailsResponse> {
   try {
-    // Get auth token from TokenManager
-    const authToken = TokenManager.getToken();
-    const response = await APIService.request(
-      competitionEndpoints.getById(id),
-      undefined,
-      undefined,
-      { authToken: authToken || undefined }
-    );
-    if (response.success && response.data) {
-      return response.data;
+    // Try to get from database service first (Supabase)
+    const competition = await databaseService.getCompetitionById(id);
+    const matches = await databaseService.getMatchesByCompetition(id);
+    
+    if (competition) {
+      return {
+        competition,
+        matches
+      };
     }
-    throw new Error(response.error?.message || 'Failed to fetch competition');
+    
+    throw new Error('Failed to fetch competition');
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -137,18 +90,8 @@ export async function getCompetitionById(id: number): Promise<CompetitionDetails
 // Create a new competition
 export async function createCompetition(data: CreateCompetitionData): Promise<Competition> {
   try {
-    // Get auth token from TokenManager
-    const authToken = TokenManager.getToken();
-    const response = await APIService.request(
-      competitionEndpoints.create,
-      data,
-      undefined,
-      { authToken: authToken || undefined }
-    );
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.error?.message || 'Failed to create competition');
+    // For now, we'll throw an error as this needs backend implementation
+    throw new Error('Competition creation not implemented');
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -158,18 +101,8 @@ export async function createCompetition(data: CreateCompetitionData): Promise<Co
 // Update competition
 export async function updateCompetition(id: number, data: UpdateCompetitionData): Promise<Competition> {
   try {
-    // Get auth token from TokenManager
-    const authToken = TokenManager.getToken();
-    const response = await APIService.request(
-      competitionEndpoints.update(id),
-      data,
-      undefined,
-      { authToken: authToken || undefined }
-    );
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.error?.message || 'Failed to update competition');
+    // For now, we'll throw an error as this needs backend implementation
+    throw new Error('Competition update not implemented');
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -179,17 +112,8 @@ export async function updateCompetition(id: number, data: UpdateCompetitionData)
 // Delete competition
 export async function deleteCompetition(id: number): Promise<void> {
   try {
-    // Get auth token from TokenManager
-    const authToken = TokenManager.getToken();
-    const response = await APIService.request(
-      competitionEndpoints.delete(id),
-      undefined,
-      undefined,
-      { authToken: authToken || undefined }
-    );
-    if (!response.success) {
-      throw new Error(response.error?.message || 'Failed to delete competition');
-    }
+    // For now, we'll throw an error as this needs backend implementation
+    throw new Error('Competition deletion not implemented');
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -199,18 +123,8 @@ export async function deleteCompetition(id: number): Promise<void> {
 // Get competitions by sport
 export async function getCompetitionsBySport(sport: string): Promise<Competition[]> {
   try {
-    // Get auth token from TokenManager
-    const authToken = TokenManager.getToken();
-    const response = await APIService.request(
-      competitionEndpoints.getBySport(sport),
-      undefined,
-      undefined,
-      { authToken: authToken || undefined }
-    );
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.error?.message || 'Failed to fetch competitions by sport');
+    // For now, we'll throw an error as this needs backend implementation
+    throw new Error('Get competitions by sport not implemented');
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -220,18 +134,8 @@ export async function getCompetitionsBySport(sport: string): Promise<Competition
 // Get active competitions
 export async function getActiveCompetitions(): Promise<Competition[]> {
   try {
-    // Get auth token from TokenManager
-    const authToken = TokenManager.getToken();
-    const response = await APIService.request(
-      competitionEndpoints.getActive,
-      undefined,
-      undefined,
-      { authToken: authToken || undefined }
-    );
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.error?.message || 'Failed to fetch active competitions');
+    // For now, we'll throw an error as this needs backend implementation
+    throw new Error('Get active competitions not implemented');
   } catch (error) {
     handleApiError(error);
     throw error;

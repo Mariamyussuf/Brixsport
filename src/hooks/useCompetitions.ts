@@ -36,13 +36,17 @@ export const useCompetitions = (): UseCompetitionsReturn => {
       console.error('Error fetching competitions:', err);
       
       // Handle different error types
-      if (err.message.includes('401')) {
+      const message = err instanceof Error ? err.message : 'Failed to load competitions. Please try again.';
+      if (message.includes('401')) {
         setError('Unauthorized: Please log in to view competitions');
-      } else if (err.message.includes('500')) {
+      } else if (message.includes('404')) {
+        setError('Competitions not found');
+      } else if (message.includes('500')) {
         setError('Server error: Unable to fetch competitions');
       } else {
-        setError('Failed to load competitions. Please try again.');
+        setError(message || 'Failed to load competitions. Please try again.');
       }
+      setCompetitions([]);
     } finally {
       setLoading(false);
     }

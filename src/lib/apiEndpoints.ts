@@ -54,6 +54,233 @@ export interface LiveMatchesResponse {
   track: TrackEvent[];
 }
 
+// User interfaces
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  avatar?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface UserPreferences {
+  theme: 'light' | 'dark';
+  notifications: boolean;
+  language: string;
+}
+
+export interface NotificationSettings {
+  enabled: boolean;
+  importantOnly: boolean;
+  quietHours?: {
+    start: string;
+    end: string;
+  };
+  followedTeams: string[];
+  followedPlayers: string[];
+  followedCompetitions: string[];
+  deliveryMethods: {
+    push: boolean;
+    inApp: boolean;
+    email: boolean;
+  };
+}
+
+export const userEndpoints = {
+  // Auth endpoints
+  signup: {
+    url: '/auth/signup',
+    method: 'POST',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return {
+          user: data.data.user,
+          token: data.data.token,
+          refreshToken: data.data.refreshToken
+        };
+      }
+      throw new Error(data.error?.message || 'Failed to sign up');
+    },
+  } as APIEndpoint<{ user: User; token: string; refreshToken: string }>,
+
+  login: {
+    url: '/auth/login',
+    method: 'POST',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return {
+          user: data.data.user,
+          token: data.data.token,
+          refreshToken: data.data.refreshToken
+        };
+      }
+      throw new Error(data.error?.message || 'Failed to log in');
+    },
+  } as APIEndpoint<{ user: User; token: string; refreshToken: string }>,
+
+  refreshToken: {
+    url: '/auth/refresh',
+    method: 'POST',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return {
+          token: data.data.token,
+          refreshToken: data.data.refreshToken
+        };
+      }
+      throw new Error(data.error?.message || 'Failed to refresh token');
+    },
+  } as APIEndpoint<{ token: string; refreshToken: string }>,
+
+  logout: {
+    url: '/auth/logout',
+    method: 'POST',
+    transform: (data: any) => {
+      if (data.success) {
+        return { success: true };
+      }
+      throw new Error(data.error?.message || 'Failed to log out');
+    },
+  } as APIEndpoint<{ success: boolean }>,
+
+  logoutAll: {
+    url: '/auth/logout-all',
+    method: 'POST',
+    transform: (data: any) => {
+      if (data.success) {
+        return { success: true };
+      }
+      throw new Error(data.error?.message || 'Failed to log out all sessions');
+    },
+  } as APIEndpoint<{ success: boolean }>,
+
+  forgotPassword: {
+    url: '/auth/forgot-password',
+    method: 'POST',
+    transform: (data: any) => {
+      if (data.success) {
+        return { success: true };
+      }
+      throw new Error(data.error?.message || 'Failed to send password reset instructions');
+    },
+  } as APIEndpoint<{ success: boolean }>,
+
+  resetPassword: {
+    url: '/auth/reset-password',
+    method: 'POST',
+    transform: (data: any) => {
+      if (data.success) {
+        return { success: true };
+      }
+      throw new Error(data.error?.message || 'Failed to reset password');
+    },
+  } as APIEndpoint<{ success: boolean }>,
+
+  changePassword: {
+    url: '/auth/change-password',
+    method: 'POST',
+    transform: (data: any) => {
+      if (data.success) {
+        return { success: true };
+      }
+      throw new Error(data.error?.message || 'Failed to change password');
+    },
+  } as APIEndpoint<{ success: boolean }>,
+
+  // User profile endpoints
+  getCurrentUser: {
+    url: '/user/profile',
+    method: 'GET',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return data.data as User;
+      }
+      throw new Error(data.error?.message || 'Failed to fetch user profile');
+    },
+  } as APIEndpoint<User>,
+
+  updateProfile: {
+    url: '/user/profile',
+    method: 'PUT',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return data.data as User;
+      }
+      throw new Error(data.error?.message || 'Failed to update profile');
+    },
+  } as APIEndpoint<User>,
+
+  uploadProfilePicture: {
+    url: '/user/profile/picture',
+    method: 'POST',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return { avatar: data.data.avatar };
+      }
+      throw new Error(data.error?.message || 'Failed to upload profile picture');
+    },
+  } as APIEndpoint<{ avatar: string }>,
+
+  removeProfilePicture: {
+    url: '/user/profile/picture',
+    method: 'DELETE',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return { avatar: data.data.avatar };
+      }
+      throw new Error(data.error?.message || 'Failed to remove profile picture');
+    },
+  } as APIEndpoint<{ avatar: string | null }>,
+
+  // User preferences endpoints
+  getPreferences: {
+    url: '/user/preferences',
+    method: 'GET',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return data.data as UserPreferences;
+      }
+      throw new Error(data.error?.message || 'Failed to fetch preferences');
+    },
+  } as APIEndpoint<UserPreferences>,
+
+  updatePreferences: {
+    url: '/user/preferences',
+    method: 'PUT',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return data.data as UserPreferences;
+      }
+      throw new Error(data.error?.message || 'Failed to update preferences');
+    },
+  } as APIEndpoint<UserPreferences>,
+
+  // Notification settings endpoints
+  getNotificationSettings: {
+    url: '/user/notifications',
+    method: 'GET',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return data.data as NotificationSettings;
+      }
+      throw new Error(data.error?.message || 'Failed to fetch notification settings');
+    },
+  } as APIEndpoint<NotificationSettings>,
+
+  updateNotificationSettings: {
+    url: '/user/notifications',
+    method: 'PUT',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return data.data as NotificationSettings;
+      }
+      throw new Error(data.error?.message || 'Failed to update notification settings');
+    },
+  } as APIEndpoint<NotificationSettings>,
+};
+
 export const homeEndpoints = {
   getHomeData: {
     url: '/home',
@@ -239,4 +466,360 @@ export const homeEndpoints = {
       throw new Error(data.error?.message || 'Failed to fetch track event details');
     },
   } as APIEndpoint<import('@/types/brixsports').TrackEvent>),
+};
+
+export const playerEndpoints = {
+  // GET /api/players - Retrieve a list of players with pagination and filtering
+  getPlayers: (params?: import('@/types/brixsports').PlayerListParams) => {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    
+    const queryString = queryParams.toString();
+    const url = queryString ? `/players?${queryString}` : '/players';
+    
+    return {
+      url,
+      method: 'GET',
+      transform: (data: any) => {
+        if (data.success && data.data) {
+          return data.data as import('@/types/brixsports').PlayerListResponse;
+        }
+        throw new Error(data.error?.message || 'Failed to fetch players');
+      },
+    } as import('@/types/api').APIEndpoint<import('@/types/brixsports').PlayerListResponse>;
+  },
+
+  // GET /api/players/:id - Retrieve detailed information about a specific player
+  getPlayerById: (id: string) => ({
+    url: `/players/${id}`,
+    method: 'GET',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return data.data as import('@/types/brixsports').Player;
+      }
+      throw new Error(data.error?.message || 'Failed to fetch player');
+    },
+  } as import('@/types/api').APIEndpoint<import('@/types/brixsports').Player>),
+
+  // POST /api/players - Create a new player profile
+  createPlayer: {
+    url: '/players',
+    method: 'POST',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return data.data as import('@/types/brixsports').Player;
+      }
+      throw new Error(data.error?.message || 'Failed to create player');
+    },
+  } as import('@/types/api').APIEndpoint<import('@/types/brixsports').Player>,
+
+  // PUT /api/players/:id - Update an existing player's information
+  updatePlayer: (id: string) => ({
+    url: `/players/${id}`,
+    method: 'PUT',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return data.data as import('@/types/brixsports').Player;
+      }
+      throw new Error(data.error?.message || 'Failed to update player');
+    },
+  } as import('@/types/api').APIEndpoint<import('@/types/brixsports').Player>),
+
+  // DELETE /api/players/:id - Delete a player profile (soft delete)
+  deletePlayer: (id: string) => ({
+    url: `/players/${id}`,
+    method: 'DELETE',
+    transform: (data: any) => {
+      if (data.success) {
+        return { message: 'Player deleted successfully' };
+      }
+      throw new Error(data.error?.message || 'Failed to delete player');
+    },
+  } as import('@/types/api').APIEndpoint<{ message: string }>),
+
+  // GET /api/players/:id/stats - Retrieve career statistics for a player
+  getPlayerStats: (id: string) => ({
+    url: `/players/${id}/stats`,
+    method: 'GET',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return data.data as import('@/types/brixsports').CareerStats;
+      }
+      throw new Error(data.error?.message || 'Failed to fetch player stats');
+    },
+  } as import('@/types/api').APIEndpoint<import('@/types/brixsports').CareerStats>),
+
+  // PUT /api/players/:id/stats - Update player statistics (admin/organizer only)
+  updatePlayerStats: (id: string) => ({
+    url: `/players/${id}/stats`,
+    method: 'PUT',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return data.data as import('@/types/brixsports').CareerStats;
+      }
+      throw new Error(data.error?.message || 'Failed to update player stats');
+    },
+  } as import('@/types/api').APIEndpoint<import('@/types/brixsports').CareerStats>),
+
+  // POST /api/players/:id/team - Assign a player to a team
+  assignPlayerToTeam: (id: string) => ({
+    url: `/players/${id}/team`,
+    method: 'POST',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return {
+          message: 'Player assigned to team successfully',
+          player: data.data as import('@/types/brixsports').Player
+        };
+      }
+      throw new Error(data.error?.message || 'Failed to assign player to team');
+    },
+  } as import('@/types/api').APIEndpoint<{ 
+    message: string; 
+    player: import('@/types/brixsports').Player 
+  }>),
+
+  // DELETE /api/players/:id/team - Remove a player from their current team
+  removePlayerFromTeam: (id: string) => ({
+    url: `/players/${id}/team`,
+    method: 'DELETE',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return {
+          message: 'Player removed from team successfully',
+          player: data.data as import('@/types/brixsports').Player
+        };
+      }
+      throw new Error(data.error?.message || 'Failed to remove player from team');
+    },
+  } as import('@/types/api').APIEndpoint<{ 
+    message: string; 
+    player: import('@/types/brixsports').Player 
+  }>),
+
+  // GET /api/players/search - Advanced search for players
+  searchPlayers: (params?: import('@/types/brixsports').PlayerSearchParams) => {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    
+    const queryString = queryParams.toString();
+    const url = queryString ? `/players/search?${queryString}` : '/players/search';
+    
+    return {
+      url,
+      method: 'GET',
+      transform: (data: any) => {
+        if (data.success && data.data) {
+          return data.data as import('@/types/brixsports').PlayerSearchResponse;
+        }
+        throw new Error(data.error?.message || 'Failed to search players');
+      },
+    } as import('@/types/api').APIEndpoint<import('@/types/brixsports').PlayerSearchResponse>;
+  },
+};
+
+// Public search endpoint for authenticated users
+export const searchEndpoints = {
+  // GET /api/search - Search players, competitions, and teams (Authenticated users)
+  globalSearch: (params: import('@/types/brixsports').GlobalSearchParams) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('query', params.query);
+    
+    if (params.types) {
+      params.types.forEach(type => queryParams.append('types', type));
+    }
+    
+    if (params.limit) {
+      queryParams.append('limit', params.limit.toString());
+    }
+    
+    const queryString = queryParams.toString();
+    const url = queryString ? `/search?${queryString}` : '/search';
+    
+    return {
+      url,
+      method: 'GET',
+      transform: (data: any) => {
+        if (data.success && data.data) {
+          return data.data as import('@/types/brixsports').GlobalSearchResult;
+        }
+        throw new Error(data.error?.message || 'Failed to perform search');
+      },
+    } as import('@/types/api').APIEndpoint<import('@/types/brixsports').GlobalSearchResult>;
+  },
+};
+
+// Admin-only player endpoints
+export const adminPlayerEndpoints = {
+  // GET /api/admin/players - Retrieve a list of players with pagination and filtering (Admin only)
+  getPlayers: (params?: import('@/types/brixsports').PlayerListParams) => {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    
+    const queryString = queryParams.toString();
+    const url = queryString ? `/admin/players?${queryString}` : '/admin/players';
+    
+    return {
+      url,
+      method: 'GET',
+      transform: (data: any) => {
+        if (data.success && data.data) {
+          return data.data as import('@/types/brixsports').PlayerListResponse;
+        }
+        throw new Error(data.error?.message || 'Failed to fetch players');
+      },
+    } as import('@/types/api').APIEndpoint<import('@/types/brixsports').PlayerListResponse>;
+  },
+
+  // GET /api/admin/players/:id - Retrieve detailed information about a specific player (Admin only)
+  getPlayerById: (id: string) => ({
+    url: `/admin/players/${id}`,
+    method: 'GET',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return data.data as import('@/types/brixsports').Player;
+      }
+      throw new Error(data.error?.message || 'Failed to fetch player');
+    },
+  } as import('@/types/api').APIEndpoint<import('@/types/brixsports').Player>),
+
+  // POST /api/admin/players - Create a new player profile (Admin only)
+  createPlayer: {
+    url: '/admin/players',
+    method: 'POST',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return data.data as import('@/types/brixsports').Player;
+      }
+      throw new Error(data.error?.message || 'Failed to create player');
+    },
+  } as import('@/types/api').APIEndpoint<import('@/types/brixsports').Player>,
+
+  // PUT /api/admin/players/:id - Update an existing player's information (Admin only)
+  updatePlayer: (id: string) => ({
+    url: `/admin/players/${id}`,
+    method: 'PUT',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return data.data as import('@/types/brixsports').Player;
+      }
+      throw new Error(data.error?.message || 'Failed to update player');
+    },
+  } as import('@/types/api').APIEndpoint<import('@/types/brixsports').Player>),
+
+  // DELETE /api/admin/players/:id - Delete a player profile (soft delete) (Admin only)
+  deletePlayer: (id: string) => ({
+    url: `/admin/players/${id}`,
+    method: 'DELETE',
+    transform: (data: any) => {
+      if (data.success) {
+        return { message: 'Player deleted successfully' };
+      }
+      throw new Error(data.error?.message || 'Failed to delete player');
+    },
+  } as import('@/types/api').APIEndpoint<{ message: string }>),
+
+  // GET /api/admin/players/:id/stats - Retrieve career statistics for a player (Admin only)
+  getPlayerStats: (id: string) => ({
+    url: `/admin/players/${id}/stats`,
+    method: 'GET',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return data.data as import('@/types/brixsports').CareerStats;
+      }
+      throw new Error(data.error?.message || 'Failed to fetch player stats');
+    },
+  } as import('@/types/api').APIEndpoint<import('@/types/brixsports').CareerStats>),
+
+  // PUT /api/admin/players/:id/stats - Update player statistics (Admin only)
+  updatePlayerStats: (id: string) => ({
+    url: `/admin/players/${id}/stats`,
+    method: 'PUT',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return data.data as import('@/types/brixsports').CareerStats;
+      }
+      throw new Error(data.error?.message || 'Failed to update player stats');
+    },
+  } as import('@/types/api').APIEndpoint<import('@/types/brixsports').CareerStats>),
+
+  // POST /api/admin/players/:id/team - Assign a player to a team (Admin only)
+  assignPlayerToTeam: (id: string) => ({
+    url: `/admin/players/${id}/team`,
+    method: 'POST',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return {
+          message: 'Player assigned to team successfully',
+          player: data.data as import('@/types/brixsports').Player
+        };
+      }
+      throw new Error(data.error?.message || 'Failed to assign player to team');
+    },
+  } as import('@/types/api').APIEndpoint<{ 
+    message: string; 
+    player: import('@/types/brixsports').Player 
+  }>),
+
+  // DELETE /api/admin/players/:id/team - Remove a player from their current team (Admin only)
+  removePlayerFromTeam: (id: string) => ({
+    url: `/admin/players/${id}/team`,
+    method: 'DELETE',
+    transform: (data: any) => {
+      if (data.success && data.data) {
+        return {
+          message: 'Player removed from team successfully',
+          player: data.data as import('@/types/brixsports').Player
+        };
+      }
+      throw new Error(data.error?.message || 'Failed to remove player from team');
+    },
+  } as import('@/types/api').APIEndpoint<{ 
+    message: string; 
+    player: import('@/types/brixsports').Player 
+  }>),
+
+  // GET /api/admin/players/search - Advanced search for players (Admin only)
+  searchPlayers: (params?: import('@/types/brixsports').PlayerSearchParams) => {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    
+    const queryString = queryParams.toString();
+    const url = queryString ? `/admin/players/search?${queryString}` : '/admin/players/search';
+    
+    return {
+      url,
+      method: 'GET',
+      transform: (data: any) => {
+        if (data.success && data.data) {
+          return data.data as import('@/types/brixsports').PlayerSearchResponse;
+        }
+        throw new Error(data.error?.message || 'Failed to search players');
+      },
+    } as import('@/types/api').APIEndpoint<import('@/types/brixsports').PlayerSearchResponse>;
+  },
 };

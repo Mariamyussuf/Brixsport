@@ -8,8 +8,10 @@ import React, {
   useEffect, 
   useCallback 
 } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
-// Define the shape of the user object
+
 export interface User {
   id: string;
   name: string;
@@ -354,27 +356,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const initializeAuth = async (): Promise<void> => {
       try {
-        const token = TokenManager.getToken();
-        if (!token) {
+        // Get current Supabase session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
           return;
         }
 
-        // Check if token is expired
-        if (AuthService.isTokenExpired(token)) {
-          // Try to refresh the token
-          try {
-            await refreshToken();
-          } catch {
-            // If refresh fails, clear tokens
-            TokenManager.clearTokens();
+        if (session?.user) {
+          // Transform Supabase user to our User type
+          const transformedUser: User = {
+            id: session.user.id,
+            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+            email: session.user.email || '',
+            role: session.user.user_metadata?.role || 'user',
+            image: session.user.user_metadata?.avatar_url,
+            assignedCompetitions: session.user.user_metadata?.assignedCompetitions,
+            permissions: session.user.user_metadata?.permissions,
+            managedLoggers: session.user.user_metadata?.managedLoggers,
+            adminLevel: session.user.user_metadata?.adminLevel,
+          };
+
+          if (isMounted) {
+            setUser(transformedUser);
+            TokenManager.setTokens(session.access_token, session.refresh_token);
           }
-          return;
-        }
-
-        // Validate existing token
-        const userData = await AuthService.validateToken(token);
-        if (isMounted) {
-          setUser(userData);
         }
       } catch (err) {
         if (isMounted) {
@@ -392,11 +399,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     initializeAuth();
 
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          const transformedUser: User = {
+            id: session.user.id,
+            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+            email: session.user.email || '',
+            role: session.user.user_metadata?.role || 'user',
+            image: session.user.user_metadata?.avatar_url,
+            assignedCompetitions: session.user.user_metadata?.assignedCompetitions,
+            permissions: session.user.user_metadata?.permissions,
+            managedLoggers: session.user.user_metadata?.managedLoggers,
+            adminLevel: session.user.user_metadata?.adminLevel,
+          };
+          setUser(transformedUser);
+          TokenManager.setTokens(session.access_token, session.refresh_token);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          TokenManager.clearTokens();
+        }
+      }
+    );
+
     // Cleanup function
     return (): void => {
       isMounted = false;
+      subscription.unsubscribe();
     };
-  }, [refreshToken, createError, updateLoading]);
+  }, [createError, updateLoading]);
 
   // Auto-refresh token before expiration
   useEffect(() => {
@@ -447,49 +479,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
 
     try {
-            // Call the authentication API
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
+      // Use Supabase authentication
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Authentication failed');
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const { user, token, refreshToken } = await response.json();
-      
-      // Store tokens and user data
-      TokenManager.setTokens(token, refreshToken);
-      setUser(user);
+      if (data.user && data.session) {
+        // Transform Supabase user to our User type
+        const transformedUser: User = {
+          id: data.user.id,
+          name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'User',
+          email: data.user.email || '',
+          role: data.user.user_metadata?.role || 'user',
+          image: data.user.user_metadata?.avatar_url,
+          assignedCompetitions: data.user.user_metadata?.assignedCompetitions,
+          permissions: data.user.user_metadata?.permissions,
+          managedLoggers: data.user.user_metadata?.managedLoggers,
+          adminLevel: data.user.user_metadata?.adminLevel,
+        };
+
+        // Store tokens and user data
+        TokenManager.setTokens(data.session.access_token, data.session.refresh_token);
+        setUser(transformedUser);
+      }
     } catch (err) {
       let errorType: AuthError['type'] = 'UNKNOWN';
       let errorMessage = 'An unexpected error occurred.';
 
       if (err instanceof Error) {
-        switch (err.message) {
-          case 'UNAUTHORIZED':
-            errorType = 'UNAUTHORIZED';
-            errorMessage = 'Invalid email or password.';
-            break;
-          case 'VALIDATION':
-            errorType = 'VALIDATION';
-            errorMessage = 'Please check your input and try again.';
-            break;
-          case 'RATE_LIMITED':
-            errorType = 'RATE_LIMITED';
-            errorMessage = `Too many failed attempts. Please try again in ${AuthService.getLockoutTime()} minutes.`;
-            break;
-          case 'NETWORK':
-            errorType = 'NETWORK';
-            errorMessage = 'Network error. Please check your connection.';
-            break;
-          default:
-            errorMessage = err.message;
+        if (err.message.includes('Invalid login credentials')) {
+          errorType = 'UNAUTHORIZED';
+          errorMessage = 'Invalid email or password.';
+        } else if (err.message.includes('Email not confirmed')) {
+          errorType = 'VALIDATION';
+          errorMessage = 'Please check your email and confirm your account.';
+        } else if (err.message.includes('Too many requests')) {
+          errorType = 'RATE_LIMITED';
+          errorMessage = 'Too many failed attempts. Please try again later.';
+        } else {
+          errorMessage = err.message;
         }
       }
 
@@ -566,22 +599,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Logout function
-  const logout = useCallback((): void => {
-    const currentToken = TokenManager.getToken();
-    TokenManager.clearTokens();
-    setUser(null);
-    setError(null);
-    
-    // Optional: Call logout endpoint to invalidate token on server
-    if (currentToken) {
-      fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${currentToken}`,
-        },
-      }).catch(() => {
-        // Ignore logout errors - user is already being logged out locally
-      });
+  const logout = useCallback(async (): Promise<void> => {
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    } finally {
+      TokenManager.clearTokens();
+      setUser(null);
+      setError(null);
     }
   }, []);
 

@@ -2,10 +2,10 @@ import { useCallback } from 'react';
 import useRoleAccess from './useRoleAccess';
 import type { AccessLevel, UserRole } from './useRoleAccess';
 import TeamService from '@/services/TeamService';
-import APIService from '@/services/APIService';
 import { useRouter } from 'next/navigation';
 import BrixSportsService from '@/services/BrixSportsService';
 import { CreateTeamPayload, CreateTrackEventPayload, TrackEvent } from '@/types/brixsports';
+import { databaseService } from '@/lib/databaseService';
 
 export function useApi() {
   const { hasAccess, currentRole } = useRoleAccess();
@@ -65,6 +65,18 @@ export function useApi() {
     // Get track event by ID API
     getTrackEventById: (id: number) => handleApiCall(
       () => BrixSportsService.getTrackEventById(id),
+      ['user', 'logger', 'admin']
+    ),
+    
+    // Get competitions API
+    getCompetitions: () => handleApiCall(
+      () => databaseService.getCompetitions(),
+      ['user', 'logger', 'admin']
+    ),
+    
+    // Get matches API
+    getMatches: () => handleApiCall(
+      () => databaseService.getMatches(),
       ['user', 'logger', 'admin']
     ),
   };

@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { Team, Player, Competition } from '@/lib/userFavoritesService';
+import { getFavorites } from '@/lib/userFavoritesService';
 
 // Define the favorites data interface
 export interface FavoritesData {
@@ -37,41 +38,17 @@ export const useFavorites = (): UseFavoritesReturn => {
       setLoading(true);
       setError(null);
       
-      // Get auth token from localStorage
-      const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+      // Get favorites from the service (which now uses databaseService)
+      const data = await getFavorites();
       
-      if (!token) {
-        throw new Error('Unauthorized: No authentication token found');
+      if (data) {
+        setFavorites(data);
+      } else {
+        setFavorites({ teams: [], players: [], competitions: [] });
       }
-      
-      const response = await fetch('/api/user/favorites', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch favorites');
-      }
-      
-      setFavorites(data.data);
     } catch (err: any) {
       console.error('Error fetching favorites:', err);
-      
-      // Handle different error types
-      if (err.message.includes('401')) {
-        setError('Unauthorized: Please log in to view your favorites');
-      } else if (err.message.includes('404')) {
-        setError('No favorites found');
-        setFavorites({ teams: [], players: [], competitions: [] });
-      } else if (err.message.includes('500')) {
-        setError('Server error: Unable to fetch favorites');
-      } else {
-        setError(err.message || 'Failed to load favorites. Please try again.');
-      }
+      setError(err.message || 'Failed to load favorites. Please try again.');
     } finally {
       setLoading(false);
     }
