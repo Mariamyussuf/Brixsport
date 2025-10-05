@@ -333,31 +333,37 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
     if (!user?.id) return;
     
     try {
-      await NotificationService.markAllAsRead(user.id);
+      const result = await NotificationService.markAllAsRead(user.id);
       
-      setNotifications(prev => 
-        prev.map(n => ({
-          ...n, 
-          isRead: true, 
-          status: 'READ' as const, 
-          readAt: new Date().toISOString() 
-        }))
-      );
-    } catch (err) {
-      console.error('Failed to mark all notifications as read:', err);
+      if (result.success) {
+        // Update the local state to reflect the changes
+        setNotifications(prev => 
+          prev.map(n => ({
+            ...n,
+            isRead: true,
+            status: 'READ',
+            readAt: new Date().toISOString()
+          }))
+        );
+        
+        // In a real app, you might want to show a success message
+        console.log(`Marked ${result.count} notifications as read`);
+      } else {
+        console.error('Failed to mark all notifications as read:', result.error);
+        // In a real app, you might want to show an error notification here
+      }
+    } catch (error) {
+      console.error('Error in markAllAsRead:', error);
+      // In a real app, you might want to show an error notification here
     }
   };
 
   // Clear all notifications
-  const clearNotifications = async () => {
+  const clearNotifications = () => {
     if (!user?.id) return;
     
-    try {
-      await NotificationService.clearNotifications(user.id);
-      setNotifications([]);
-    } catch (err) {
-      console.error('Failed to clear notifications:', err);
-    }
+    // In a real app, you would call an API to clear notifications
+    setNotifications([]);
   };
 
   // Update notification preferences

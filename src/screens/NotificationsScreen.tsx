@@ -15,7 +15,6 @@ import {
   AlertCircle, 
   Star, 
   Loader2,
-  RefreshCw,
   AlertTriangle,
   CheckCircle
 } from 'lucide-react';
@@ -34,8 +33,7 @@ const NotificationsScreen: React.FC = () => {
     markAllAsRead, 
     unreadCount = 0, 
     preferences, 
-    updatePreferences,
-    getNotificationsByCategory
+    updatePreferences
   } = useNotifications();
   
   const [isLoading, setIsLoading] = useState(false);
@@ -73,24 +71,12 @@ const NotificationsScreen: React.FC = () => {
     }
   }, [markAsRead, router]);
   
-  // Handle refresh action
-  const handleRefresh = useCallback(async () => {
-    try {
-      setIsRefreshing(true);
-      // Re-fetch notifications
-      // Note: You'll need to add a refetch function to your context
-      // For now, we'll just force a re-render
-      setActiveTab(prev => prev);
-    } catch (error) {
-      console.error('Error refreshing notifications:', error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, []);
+  // Refresh functionality has been removed as per requirements
   
   // Handle mark all as read
   const handleMarkAllAsRead = useCallback(async () => {
     try {
+      await markAllAsRead();
     } catch (error) {
       console.error('Error marking all as read:', error);
     }
@@ -197,7 +183,7 @@ const NotificationsScreen: React.FC = () => {
   };
 
   // Show loading state
-  if (isLoading && !isRefreshing) {
+  if (isLoading) {
     return (
       <div className="min-h-screen w-full bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -220,13 +206,9 @@ const NotificationsScreen: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             {error}
           </p>
-          <button
-            onClick={handleRefresh}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Try Again
-          </button>
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Please check your connection and try again later.
+          </div>
         </div>
       </div>
     );
@@ -413,49 +395,35 @@ const NotificationsScreen: React.FC = () => {
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                   {error}
                 </p>
-                <button
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  Refresh
-                </button>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                Please check your connection and try again later.
+              </div>
               </div>
             )}
-            {!isLoading && !error && (
-              <div className="w-full flex flex-col items-center justify-center">
-                {filteredNotifications.length === 0 && (
-                  <div className="w-full flex items-center justify-center">
-                    <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-                      <Bell className="w-8 h-8 text-gray-400 dark:text-gray-500" />
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
-                      {activeTab === 'unread' 
-                        ? t('no_unread_notifications') 
-                        : activeTab !== 'all'
-                          ? `No ${activeTab} notifications`
-                          : t('no_notifications')
-                      }
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                      {activeTab === 'unread' 
-                        ? t('all_caught_up') 
-                        : activeTab !== 'all'
-                          ? `You don't have any ${activeTab} notifications yet.`
-                          : t('notifications_appear_here')
-                      }
-                    </p>
-                    <button
-                      onClick={handleRefresh}
-                      disabled={isRefreshing}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                    >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                      Refresh
-                    </button>
-                  </div>
-                )}
+            {!isLoading && !error && filteredNotifications.length === 0 && (
+              <div className="w-full flex flex-col items-center justify-center py-12 px-4 text-center">
+                <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                  <Bell className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
+                  {activeTab === 'unread' 
+                    ? t('no_unread_notifications') 
+                    : activeTab !== 'all'
+                      ? `No ${activeTab} notifications`
+                      : t('no_notifications')
+                  }
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  {activeTab === 'unread' 
+                    ? t('all_caught_up') 
+                    : activeTab !== 'all'
+                      ? `You don't have any ${activeTab} notifications yet.`
+                      : t('notifications_appear_here')
+                  }
+                </p>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Notifications will update automatically.
+                </div>
               </div>
             )}
           </div>

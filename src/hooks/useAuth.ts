@@ -26,7 +26,7 @@ export interface User {
 }
 
 // Define the AuthContextType interface
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
   loading: LoadingStates;
   error: AuthError | null;

@@ -58,8 +58,29 @@ export class NotificationService {
   static markAsRead(id: string) {
     throw new Error('Method not implemented.');
   }
-  static markAllAsRead(id: string) {
-    throw new Error('Method not implemented.');
+  static async markAllAsRead(userId: string): Promise<{ success: boolean; count?: number; error?: string }> {
+    try {
+      // In a real implementation, this would be an API call to the backend
+      const unreadNotifications = notifications.filter(n => n.userId === userId && n.status === 'UNREAD');
+      
+      // Update all unread notifications to READ
+      notifications = notifications.map(n => 
+        n.userId === userId && n.status === 'UNREAD'
+          ? { ...n, status: 'READ', updatedAt: new Date().toISOString() }
+          : n
+      );
+      
+      return { 
+        success: true, 
+        count: unreadNotifications.length 
+      };
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to mark notifications as read' 
+      };
+    }
   }
   static
     // In a real implementation, this would fetch users who favorited specific teams/players
