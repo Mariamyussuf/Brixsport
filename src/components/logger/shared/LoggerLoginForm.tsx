@@ -78,6 +78,16 @@ const LoggerLoginForm: React.FC<LoggerLoginFormProps> = ({ onLogin, onDemoLogin 
 
     if (Object.keys(errs).length > 0) return;
 
+    // Check if logger is trying to log in on the wrong domain
+    if (typeof window !== 'undefined') {
+      const currentHost = window.location.hostname;
+      // If not on admin domain, show error
+      if (!(currentHost === 'admin.brixsports.com' || currentHost === 'admin.brixsport.vercel.app' || currentHost.startsWith('localhost'))) {
+        setSubmitError('Logger accounts can only be accessed from the admin domain (admin.brixsports.com).');
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
@@ -95,6 +105,16 @@ const LoggerLoginForm: React.FC<LoggerLoginFormProps> = ({ onLogin, onDemoLogin 
 
   // Handle demo login
   const handleDemoLoginClick = async () => {
+    // Check if logger is trying to log in on the wrong domain
+    if (typeof window !== 'undefined') {
+      const currentHost = window.location.hostname;
+      // If not on admin domain, show error
+      if (!(currentHost === 'admin.brixsports.com' || currentHost === 'admin.brixsport.vercel.app' || currentHost.startsWith('localhost'))) {
+        setSubmitError('Logger accounts can only be accessed from the admin domain (admin.brixsports.com).');
+        return;
+      }
+    }
+
     setIsLoading(true);
     setSubmitError('');
     

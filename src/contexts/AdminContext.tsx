@@ -484,7 +484,19 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     logout: () => {
       authLogout();
       dispatch({ type: 'RESET' });
-      router.push('/admin/login');
+      // Redirect to admin login page on the same domain
+      if (typeof window !== 'undefined') {
+        const currentHost = window.location.hostname;
+        // For localhost development, stay on the same host
+        if (currentHost.startsWith('localhost') || currentHost.includes('vercel.app')) {
+          router.push('/admin/login');
+        } else {
+          // For production, redirect to the admin subdomain
+          window.location.href = 'https://admin.brixsports.com/admin/login';
+        }
+      } else {
+        router.push('/admin/login');
+      }
     },
     // Logger functionality for admins
     loadLoggerCompetitions,

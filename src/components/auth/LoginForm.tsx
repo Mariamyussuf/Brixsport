@@ -107,6 +107,16 @@ const LoginForm: React.FC = () => {
 
     if (Object.keys(errs).length > 0) return;
 
+    // Check if user is trying to log in on the wrong domain
+    if (typeof window !== 'undefined') {
+      const currentHost = window.location.hostname;
+      // If on admin domain, show error
+      if (currentHost === 'admin.brixsports.com' || currentHost === 'admin.brixsport.vercel.app') {
+        setSubmitError('User accounts cannot be accessed from the admin domain. Please visit brixsports.com to log in.');
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {

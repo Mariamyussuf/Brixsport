@@ -68,7 +68,19 @@ const ProfileScreen = () => {
     // Perform the actual logout
     logout();
     setShowLogoutConfirm(false);
-    router.push('/auth/login');
+    // Redirect to user login page on the same domain
+    if (typeof window !== 'undefined') {
+      const currentHost = window.location.hostname;
+      // For localhost development, stay on the same host
+      if (currentHost.startsWith('localhost') || currentHost.includes('vercel.app')) {
+        router.push('/auth/login');
+      } else {
+        // For production, redirect to the main domain
+        window.location.href = 'https://brixsports.com/auth/login';
+      }
+    } else {
+      router.push('/auth/login');
+    }
   };
 
   const cancelLogout = () => {

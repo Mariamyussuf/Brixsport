@@ -19,6 +19,17 @@ export default function AdminLoginForm() {
     setIsLoading(true);
     setError('');
 
+    // Check if admin is trying to log in on the wrong domain
+    if (typeof window !== 'undefined') {
+      const currentHost = window.location.hostname;
+      // If not on admin domain, show error
+      if (!(currentHost === 'admin.brixsports.com' || currentHost === 'admin.brixsport.vercel.app' || currentHost.startsWith('localhost'))) {
+        setError('Admin accounts can only be accessed from the admin domain (admin.brixsports.com).');
+        setIsLoading(false);
+        return;
+      }
+    }
+
     try {
       // Replace with actual admin authentication
       console.log('Admin login attempt:', { email });
