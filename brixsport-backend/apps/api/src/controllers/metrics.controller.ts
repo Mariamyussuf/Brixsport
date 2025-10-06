@@ -19,12 +19,12 @@ export const metricsController = {
       const platformUsage = platformUsageResult.data;
       const userOverview = userOverviewResult.data;
       
-      res.status(200).json({
+      return res.status(200).json({
         metrics: {
-          http_requests_total: platformUsage.apiRequests,
-          http_request_duration_seconds: systemPerformance.responseTime / 1000,
-          api_response_time_seconds: systemPerformance.responseTime / 1000,
-          active_users: userOverview.activeUsers,
+          http_requests_total: platformUsage.totalRequests,
+          http_request_duration_seconds: (systemPerformance.responseTimes.p50 || 0) / 1000,
+          api_response_time_seconds: (systemPerformance.responseTimes.p50 || 0) / 1000,
+          active_users: userOverview.activeUsers || 0,
           active_connections: 0, // Would need WebSocket service to get this
           database_connections: 0, // Would need database connection pool metrics
           cache_hit_ratio: 0 // Would need cache service metrics
@@ -32,7 +32,7 @@ export const metricsController = {
         timestamp: new Date().toISOString()
       });
     } catch (error: any) {
-      res.status(500).json({
+      return res.status(500).json({
         error: 'Failed to fetch metrics',
         details: error.message
       });
