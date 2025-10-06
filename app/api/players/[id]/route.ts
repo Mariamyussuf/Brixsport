@@ -1,15 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { API_BASE_URL } from '@/lib/apiConfig';
 
 // Helper function to forward requests to backend
-async function forwardRequest(url: string, request: NextRequest, method: string = 'GET', body?: any) {
+async function forwardRequest(url: string, method: string = 'GET', body?: any) {
   try {
     const response = await fetch(url, {
       method,
       headers: {
         'Content-Type': 'application/json',
-        ...request.headers,
-        'host': new URL(API_BASE_URL).host
       },
       ...(body && { body: JSON.stringify(body) })
     });
@@ -38,24 +36,21 @@ async function forwardRequest(url: string, request: NextRequest, method: string 
 }
 
 // GET /api/admin/players/[id] - Get player by ID (Admin only)
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     
-    // Check if user is admin (this would be implemented with proper auth middleware)
-    // For now, we'll just forward to the backend
-    
     // Check if this is a stats request
-    const url = new URL(request.url);
+    const url = new URL(req.url);
     const isStatsRequest = url.pathname.endsWith('/stats');
     
     if (isStatsRequest) {
       // GET /api/admin/players/[id]/stats - Get player stats (Admin only)
-      return forwardRequest(`${API_BASE_URL}/admin/players/${id}/stats`, request);
+      return forwardRequest(`${API_BASE_URL}/admin/players/${id}/stats`);
     }
     
     // Regular player request
-    return forwardRequest(`${API_BASE_URL}/admin/players/${id}`, request);
+    return forwardRequest(`${API_BASE_URL}/admin/players/${id}`);
   } catch (error) {
     console.error('Error fetching player:', error);
     return NextResponse.json(
@@ -70,26 +65,23 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 // PUT /api/admin/players/[id] - Update player (Admin only)
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     
-    // Check if user is admin (this would be implemented with proper auth middleware)
-    // For now, we'll just forward to the backend
-    
-    const body = await request.json();
+    const body = await req.json();
     
     // Check if this is a stats update request
-    const url = new URL(request.url);
+    const url = new URL(req.url);
     const isStatsRequest = url.pathname.endsWith('/stats');
     
     if (isStatsRequest) {
       // PUT /api/admin/players/[id]/stats - Update player stats (Admin only)
-      return forwardRequest(`${API_BASE_URL}/admin/players/${id}/stats`, request, 'PUT', body);
+      return forwardRequest(`${API_BASE_URL}/admin/players/${id}/stats`, 'PUT', body);
     }
     
     // Regular player update
-    return forwardRequest(`${API_BASE_URL}/admin/players/${id}`, request, 'PUT', body);
+    return forwardRequest(`${API_BASE_URL}/admin/players/${id}`, 'PUT', body);
   } catch (error) {
     console.error('Error updating player:', error);
     return NextResponse.json(
@@ -104,24 +96,21 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 // DELETE /api/admin/players/[id] - Delete player (Admin only)
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     
-    // Check if user is admin (this would be implemented with proper auth middleware)
-    // For now, we'll just forward to the backend
-    
     // Check if this is a team removal request
-    const url = new URL(request.url);
+    const url = new URL(req.url);
     const isTeamRequest = url.pathname.endsWith('/team');
     
     if (isTeamRequest) {
       // DELETE /api/admin/players/[id]/team - Remove player from team (Admin only)
-      return forwardRequest(`${API_BASE_URL}/admin/players/${id}/team`, request, 'DELETE');
+      return forwardRequest(`${API_BASE_URL}/admin/players/${id}/team`, 'DELETE');
     }
     
     // Regular player deletion
-    return forwardRequest(`${API_BASE_URL}/admin/players/${id}`, request, 'DELETE');
+    return forwardRequest(`${API_BASE_URL}/admin/players/${id}`, 'DELETE');
   } catch (error) {
     console.error('Error deleting player:', error);
     return NextResponse.json(
@@ -136,16 +125,13 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 }
 
 // POST /api/admin/players/[id]/team - Assign player to team (Admin only)
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     
-    // Check if user is admin (this would be implemented with proper auth middleware)
-    // For now, we'll just forward to the backend
+    const body = await req.json();
     
-    const body = await request.json();
-    
-    return forwardRequest(`${API_BASE_URL}/admin/players/${id}/team`, request, 'POST', body);
+    return forwardRequest(`${API_BASE_URL}/admin/players/${id}/team`, 'POST', body);
   } catch (error) {
     console.error('Error assigning player to team:', error);
     return NextResponse.json(

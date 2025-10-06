@@ -1,44 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/auth';
+import { dbService } from '@/lib/databaseService';
 
-// GET /api/user/matches/[id] - Get a specific match by ID for regular users
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// GET /api/user/matches/[id] - Get user match details
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // Get the authentication session
-    const session = await getAuth(request);
-    
-    if (!session) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const session = await getAuth(req);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
 
-    const { id } = await params;
-    
-    // Placeholder for actual implementation
-    // This would fetch a specific match from your database by ID
-    const match = null;
+    const { id: matchId } = await params;
+
+    // Get match details
+    const matches = await dbService.getMatches();
+    const match = matches.find(m => m.id === parseInt(matchId));
     
     if (!match) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Match not found'
-        },
-        { status: 404 }
-      );
+      return NextResponse.json({ 
+        error: { 
+          code: 'NOT_FOUND', 
+          message: 'Match not found' 
+        } 
+      }, { status: 404 });
     }
-    
+
     return NextResponse.json({
       success: true,
       data: match
     });
   } catch (error) {
-    console.error('Error fetching match:', error);
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Failed to fetch match'
-      },
-      { status: 500 }
-    );
+    console.error('Error fetching match details:', error);
+    return NextResponse.json({ 
+      error: { 
+        code: 'INTERNAL_ERROR', 
+        message: 'An error occurred while fetching match details' 
+      } 
+    }, { status: 500 });
   }
 }
