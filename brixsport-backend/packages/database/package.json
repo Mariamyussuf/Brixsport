@@ -1,0 +1,31 @@
+{
+  "name": "@brixsport/database",
+  "version": "1.0.0",
+  "description": "Database package for Brixsport",
+  "main": "index.js",
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "prisma db seed",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "brixsport",
+    "database",
+    "prisma"
+  ],
+  "author": "Brixsport Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@prisma/client": "^6.16.2",
+    "prisma": "^5.22.0",
+    "typescript": "^5.2.2"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
+  }
+}
