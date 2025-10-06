@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/auth';
 import MessagingService from '@/services/messagingService';
 
 // GET /api/messages/conversations/[id] - Get conversation details
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getAuth(req);
     if (!session || !session.user) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
 
-    const conversationId = params.id;
+    const { id: conversationId } = await params;
 
     const result = await MessagingService.getConversationDetails(
       session.user.id,
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // PUT /api/messages/conversations/[id] - Update conversation settings (admin only)
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getAuth(req);
     if (!session || !session.user) {
@@ -49,7 +49,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     // Check if user is admin (in a real implementation, you would check admin permissions)
     // For now, we'll assume this check is done in the service layer
 
-    const conversationId = params.id;
+    const { id: conversationId } = await params;
     const { name, isMuted, isArchived } = await req.json();
 
     const result = await MessagingService.updateConversation(
@@ -93,7 +93,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 // DELETE /api/messages/conversations/[id] - Delete conversation (admin only)
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getAuth(req);
     if (!session || !session.user) {
@@ -103,7 +103,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     // Check if user is admin (in a real implementation, you would check admin permissions)
     // For now, we'll assume this check is done in the service layer
 
-    const conversationId = params.id;
+    const { id: conversationId } = await params;
 
     const result = await MessagingService.deleteConversation(
       session.user.id,

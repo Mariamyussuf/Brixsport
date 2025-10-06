@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/auth';
 import MessagingService from '@/services/messagingService';
 
 // DELETE /api/admin/messages/announcements/[id] - Remove system announcement
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getAuth(req);
     if (!session || !session.user) {
@@ -21,7 +21,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       }, { status: 403 });
     }
 
-    const announcementId = params.id;
+    const { id: announcementId } = await params;
 
     const result = await MessagingService.deleteAnnouncement(
       session.user.id,
