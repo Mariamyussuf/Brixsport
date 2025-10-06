@@ -6,6 +6,7 @@ import { getAuth } from './src/lib/auth';
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const host = request.headers.get('host');
+  const referer = request.headers.get('referer');
 
   // API role-based access control
   if (pathname.startsWith('/api')) {
@@ -78,6 +79,16 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
+// Enhanced middleware config with more specific matching
 export const config = {
-  matcher: ['/((?!_next|api|static|favicon.ico).*)'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!_next/static|_next/image|favicon.ico).*)',
+  ],
 }

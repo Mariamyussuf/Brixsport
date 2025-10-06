@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminToken, hasAdminPermission } from '@/lib/adminAuth';
 import { cookies } from 'next/headers';
 import { dbService as databaseService } from '@/lib/databaseService';
@@ -52,7 +52,7 @@ export async function GET() {
     }
 
     // Fetch competitions from database
-    const competitions = await databaseService.getAllCompetitions();
+    const competitions = await databaseService.getCompetitions();
     
     return NextResponse.json({ 
       success: true, 
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
       end_date: body.end_date
     };
     
-    const newCompetition = await databaseService.createCompetition(competitionData as Partial<Omit<Competition, 'id'>> as Omit<Competition, 'id'>);
+    const newCompetition = await databaseService.createCompetition(competitionData as Omit<Competition, 'id' | 'created_at'>);
     
     return NextResponse.json({ 
       success: true, 
@@ -131,7 +131,7 @@ export async function POST(request: Request) {
 }
 
 // PUT /api/admin/competitions/:id - Update a competition
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     // Verify admin token
     const token = (await cookies()).get('admin_token')?.value;
@@ -159,7 +159,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const body = await request.json();
-    const { id } = await params;
+    const { id } = params;
     
     // Convert id to number
     const competitionId = parseInt(id, 10);
@@ -194,7 +194,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 // DELETE /api/admin/competitions/:id - Delete a competition
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     // Verify admin token
     const token = (await cookies()).get('admin_token')?.value;
@@ -221,7 +221,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       }, { status: 403 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     
     // Convert id to number
     const competitionId = parseInt(id, 10);
@@ -233,9 +233,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     }
     
     // Delete competition from database
-    const deletedCompetition = await databaseService.deleteCompetition(competitionId);
+    const isDeleted = await databaseService.deleteCompetition(competitionId);
     
-    if (!deletedCompetition) {
+    if (!isDeleted) {
       return NextResponse.json({ 
         success: false, 
         error: 'Competition not found' 
@@ -244,8 +244,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     
     return NextResponse.json({ 
       success: true, 
-      message: 'Competition deleted successfully',
-      data: deletedCompetition
+      message: 'Competition deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting competition:', error);

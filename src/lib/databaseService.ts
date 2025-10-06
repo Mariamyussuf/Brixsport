@@ -229,6 +229,62 @@ export class DatabaseService {
     }
   }
 
+  // Create a new competition
+  async createCompetition(competitionData: Omit<Competition, 'id' | 'created_at'>): Promise<Competition> {
+    try {
+      const response = await apiCall('/competitions', {
+        method: 'POST',
+        body: JSON.stringify(competitionData),
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error in createCompetition:', error);
+      throw (error instanceof Error ? error : new Error('Unknown error in createCompetition'));
+    }
+  }
+
+  // Update an existing competition
+  async updateCompetition(id: number, updates: Partial<Competition>): Promise<Competition | null> {
+    try {
+      // Validate input
+      if (isNaN(id) || id <= 0) {
+        console.error('Invalid competition ID provided');
+        return null;
+      }
+      
+      const response = await apiCall(`/competitions/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+      
+      return response.data || null;
+    } catch (error) {
+      console.error('Error in updateCompetition:', error);
+      return null;
+    }
+  }
+
+  // Delete a competition
+  async deleteCompetition(id: number): Promise<boolean> {
+    try {
+      // Validate input
+      if (isNaN(id) || id <= 0) {
+        console.error('Invalid competition ID provided');
+        return false;
+      }
+      
+      await apiCall(`/competitions/${id}`, {
+        method: 'DELETE',
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error in deleteCompetition:', error);
+      return false;
+    }
+  }
+
   // Matches
   async getMatches(): Promise<Match[]> {
     try {

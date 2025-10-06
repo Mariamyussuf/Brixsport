@@ -48,9 +48,9 @@ function verifyPassword(password: string, hash: string): boolean {
 }
 
 // POST /api/admin/login - Admin login
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const body = await request.json();
+    const body = await req.json();
     
     // Validate required fields
     if (!body.email || !body.password) {
@@ -108,14 +108,28 @@ export async function POST(request: Request) {
       .setExpirationTime(exp)
       .sign(JWT_SECRET);
     
-    // Set cookie with token
-    (await cookies()).set('admin_token', token, {
+    // Set cookie with token and domain-specific settings
+    const cookieStore = await cookies();
+    const host = req.headers.get('host') || '';
+    
+    // Determine the domain for the cookie
+    let cookieDomain = undefined;
+    if (process.env.NODE_ENV === 'production') {
+      // For production, set domain to admin subdomain
+      if (host.includes('brixsport.vercel.app')) {
+        cookieDomain = '.brixsport.vercel.app';
+      } else if (host.includes('brixsports.com')) {
+        cookieDomain = '.brixsports.com';
+      }
+    }
+    
+    cookieStore.set('admin_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 60 * 60, // 1 hour
       path: '/',
-      sameSite: 'lax', // Use 'lax' for better flexibility with subdomains/paths
-      domain: process.env.NODE_ENV === 'production' ? '.brixsport.vercel.app' : undefined,
+      sameSite: 'lax',
+      domain: cookieDomain,
     });
     
     // Return admin without password

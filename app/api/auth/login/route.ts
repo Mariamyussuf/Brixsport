@@ -1,28 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    // This will be replaced with actual backend integration
     const { email, password } = await req.json();
 
-    // Return mock success response for now
+    // Forward to backend API
+    const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await backendResponse.json();
+    
+    if (!backendResponse.ok) {
+      return NextResponse.json(
+        { success: false, error: data.error || { message: 'Authentication failed' } },
+        { status: backendResponse.status }
+      );
+    }
+
     return NextResponse.json({
       success: true,
-      data: {
-        token: 'mock-token',
-        refreshToken: 'mock-refresh-token',
-        user: {
-          id: 'mock-user-id',
-          email,
-          name: 'Mock User',
-          role: 'user'
-        }
-      }
+      data
     }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({
-      success: false,
-      error: 'Invalid credentials'
-    }, { status: 401 });
+    console.error('Login API error:', error);
+    return NextResponse.json(
+      { success: false, error: { message: 'Internal server error' } },
+      { status: 500 }
+    );
   }
 }

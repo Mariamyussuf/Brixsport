@@ -29,13 +29,7 @@ export async function GET() {
     }
 
     // Fetch matches from database
-    // Using getMatchesBySport with 'all' to get all matches
-    const footballMatches = await dbService.getMatchesBySport('football');
-    const basketballMatches = await dbService.getMatchesBySport('basketball');
-    const trackMatches = await dbService.getMatchesBySport('track');
-    
-    // Combine all matches
-    const matches = [...footballMatches, ...basketballMatches, ...trackMatches];
+    const matches = await dbService.getMatches();
     
     return NextResponse.json({ 
       success: true, 
@@ -81,14 +75,15 @@ export async function POST(request: Request) {
     const body = await request.json();
     
     // Validate required fields
-    if (!body.competitionId || !body.homeTeamId || !body.awayTeamId || !body.startTime || !body.sport) {
+    if (!body.competitionId || !body.homeTeamId || !body.awayTeamId || !body.startTime) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Competition ID, home team ID, away team ID, start time, and sport are required' 
+        error: 'Competition ID, home team ID, away team ID, and start time are required' 
       }, { status: 400 });
     }
     
-    // Create new match in storage
+    // Create new match (mock implementation)
+    // TODO: Implement real database creation
     const newMatch = {
       id: Date.now(), // Simple ID generation for mock
       competition_id: body.competitionId,
@@ -96,15 +91,16 @@ export async function POST(request: Request) {
       away_team_id: body.awayTeamId,
       match_date: body.startTime,
       status: body.status || 'scheduled',
-      home_score: body.homeScore || null,
-      away_score: body.awayScore || null,
-      sport: body.sport,
+      home_score: body.homeScore || 0,
+      away_score: body.awayScore || 0,
+      current_minute: 0,
+      period: null,
+      venue: body.venue || null,
       // Add other required fields with default values
+      created_at: new Date().toISOString()
     };
     
-    // Add match to storage
-    // Note: In a real implementation, this would be properly typed and validated
-    (dbService as any).storage.addMatch(newMatch);
+    console.log('Creating match:', newMatch);
     
     return NextResponse.json({ 
       success: true, 
@@ -150,20 +146,26 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const body = await request.json();
     const { id } = await params;
     
-    // Update match in storage
-    // Note: This is a simplified implementation for the mock database
-    const success = (dbService as any).storage.updateMatch(parseInt(id), body);
+    // Update match (mock implementation)
+    // TODO: Implement real database update
+    console.log('Updating match:', id, body);
     
-    if (!success) {
+    // Get existing matches to simulate update
+    const matches = await dbService.getMatches();
+    const matchIndex = matches.findIndex(m => m.id === parseInt(id));
+    
+    if (matchIndex === -1) {
       return NextResponse.json({ 
         success: false, 
         error: 'Match not found' 
       }, { status: 404 });
     }
     
-    // Get updated match
-    const matches = (dbService as any).storage.getMatches();
-    const updatedMatch = matches.find((m: any) => m.id === parseInt(id));
+    const updatedMatch = {
+      ...matches[matchIndex],
+      ...body,
+      id: parseInt(id)
+    };
     
     return NextResponse.json({ 
       success: true, 
@@ -208,16 +210,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     const { id } = await params;
     
-    // Delete match from storage
-    // Note: This is a simplified implementation for the mock database
-    const success = (dbService as any).storage.deleteMatch(parseInt(id));
-    
-    if (!success) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Match not found' 
-      }, { status: 404 });
-    }
+    // Delete match (mock implementation)
+    // TODO: Implement real database deletion
+    console.log('Deleting match:', id);
     
     return NextResponse.json({ 
       success: true, 
@@ -231,4 +226,3 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     }, { status: 500 });
   }
 }
-

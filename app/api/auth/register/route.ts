@@ -2,26 +2,36 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-    // This will be replaced with actual backend integration
     const { name, email, password } = await req.json();
 
-    // Return mock success response for now
+    // Forward to backend API
+    const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    const data = await backendResponse.json();
+    
+    if (!backendResponse.ok) {
+      return NextResponse.json(
+        { success: false, error: data.error || { message: 'Registration failed' } },
+        { status: backendResponse.status }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Registration successful',
-      data: {
-        user: {
-          id: 'mock-user-id',
-          email,
-          name,
-          role: 'user'
-        }
-      }
+      data
     }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({
-      success: false,
-      error: 'Registration failed'
-    }, { status: 400 });
+    console.error('Registration API error:', error);
+    return NextResponse.json(
+      { success: false, error: { message: 'Internal server error' } },
+      { status: 500 }
+    );
   }
 }

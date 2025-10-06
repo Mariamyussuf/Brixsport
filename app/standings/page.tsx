@@ -25,8 +25,9 @@ const StandingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Hardcoded competition ID for now - in a real implementation, this would come from URL params or props
-  const competitionId = 'COMPETITION_ID_PLACEHOLDER';
+  // Get competition ID from URL params or use default
+  const searchParams = new URLSearchParams(window?.location?.search || '');
+  const competitionId = searchParams.get('competition') || '1';
 
   useEffect(() => {
     const calculateStandings = async () => {

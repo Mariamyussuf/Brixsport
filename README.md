@@ -9,6 +9,7 @@ An offline-first Next.js 14 PWA for managing campus sports activities. Built wit
 - PWA: `public/manifest.json` + `public/service-worker.js`
 - UI Components: `framer-motion`, `lucide-react`, `@hello-pangea/dnd`, `react-window`
 - Tournament Brackets: `@g-loot/react-tournament-brackets`
+- Database: Supabase PostgreSQL
 
 ## Project Structure
 - `app/` - Next.js App Router pages
@@ -28,6 +29,8 @@ An offline-first Next.js 14 PWA for managing campus sports activities. Built wit
 - **IndexedDB Storage**: Client-side event storage for offline access
 - **Service Worker**: Custom implementation for caching and background sync
 - **Notification System**: Real-time updates for matches, teams, and players with personalized alerts
+- **Supabase Integration**: PostgreSQL database hosted on Supabase for production data storage
+- **API Integration**: Full backend API connectivity with real-time data
 
 ## Getting Started
 
@@ -44,11 +47,32 @@ yarn install
 pnpm install
 ```
 
+### Environment Setup
+Create a `.env.local` file in the root directory with your Supabase credentials:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+DATABASE_URL=your_database_connection_string
+```
+
+**⚠️ SECURITY WARNING:** Never commit actual secret values to version control. Use the `.env.local` file for development and configure environment variables in your deployment platform for production.
+
+For production deployment, configure these environment variables in your Vercel project settings or deployment platform.
+
 ### Run Development Server
 ```bash
 npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Backend Setup
+The backend services need to be running for full functionality:
+```bash
+cd brixsport-backend
+npm run dev
+```
 
 ### Build for Production
 ```bash
@@ -73,6 +97,21 @@ This application provides comprehensive offline support through:
 2. When online, events are automatically synced to the server
 3. Manual sync is available through the offline status indicator
 4. Service worker handles background synchronization
+
+## Database Integration
+The application uses Supabase PostgreSQL for data storage:
+- **Backend**: Prisma ORM with Supabase PostgreSQL
+- **Frontend**: Supabase JS client for real-time subscriptions
+- **Configuration**: See `src/lib/supabaseClient.ts` for client setup
+- **Documentation**: See `docs/SUPABASE_SETUP.md` for detailed configuration
+
+## API Integration
+Full API connectivity has been implemented:
+- **Competitions**: Create, read, update, delete competitions
+- **Matches**: Real-time match data and updates
+- **Teams**: Team information and rosters
+- **Players**: Player profiles and statistics
+- **Documentation**: See `docs/API_INTEGRATION_SUMMARY.md` for details
 
 ## Scripts (from package.json)
 - `dev`: `next dev` - Run development server
@@ -112,6 +151,7 @@ To register the service worker in UI, use `PWARegister` component or ensure regi
 - Ensure `next.config.js` and `manifest.json` are committed
 - Icons must exist for install prompts on devices
 - Static export mode is enabled for better offline capabilities
+- Configure Supabase environment variables in Vercel project settings
 
 ## Contributing
 1. Fork the repository

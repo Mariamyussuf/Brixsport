@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { dbService as databaseService } from '@/lib/databaseService';
+import { databaseService } from '@/lib/databaseService';
 
 // GET /api/competitions/[id] - Get a specific competition by ID with matches
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
     
     // Fetch competition from database
-    const competitions = await databaseService.getAllCompetitions();
+    const competitions = await databaseService.getCompetitions();
     const competition = competitions.find(c => c.id === competitionId);
     
     if (!competition) {
@@ -34,24 +34,25 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
     
     // Fetch matches for this competition
-    const competitionMatches = await databaseService.getMatchesByCompetitionId(competitionId);
+    const competitionMatches = await databaseService.getMatchesByCompetition(competitionId);
     const formattedMatches = competitionMatches.map(match => ({
       id: match.id,
       competition_id: match.competition_id,
       home_team_id: match.home_team_id,
       away_team_id: match.away_team_id,
       match_date: match.match_date,
-      venue: null, // Not available in current data model
+      venue: match.venue,
       status: match.status,
       home_score: match.home_score || 0,
       away_score: match.away_score || 0,
-      current_minute: 0, // Not available in current data model
-      period: null, // Not available in current data model
-      created_at: match.match_date, // Using match_date as created_at
-      home_team_name: `Home Team ${match.home_team_id}`,
-      home_team_logo: '', // Not available in current data model
-      away_team_name: `Away Team ${match.away_team_id}`,
-      away_team_logo: '' // Not available in current data model
+      current_minute: match.current_minute || 0,
+      period: match.period,
+      created_at: match.match_date,
+      home_team_name: match.home_team_name || `Home Team ${match.home_team_id}`,
+      home_team_logo: match.home_team_logo || '',
+      away_team_name: match.away_team_name || `Away Team ${match.away_team_id}`,
+      away_team_logo: match.away_team_logo || '',
+      competition_name: match.competition_name || 'Competition'
     }));
     
     return NextResponse.json({

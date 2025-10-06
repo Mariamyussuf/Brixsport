@@ -1,0 +1,50 @@
+{
+  "name": "brixsport-backend",
+  "version": "1.0.0",
+  "description": "Backend for Brixsport campus live score application",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "docker-compose up",
+    "dev:direct": "concurrently \"npm run dev:api:direct\" \"npm run dev:analytics:direct\"",
+    "dev:direct:windows": "scripts\\dev-direct.bat",
+    "dev:api": "cd apps/api && npm run dev",
+    "dev:api:direct": "cd apps/api && npm run dev",
+    "dev:analytics:direct": "cd apps/analytics && python -m uvicorn main:app --reload",
+    "build": "npm run build:shared && npm run build:api",
+    "build:shared": "cd packages/shared && npm run build",
+    "build:api": "cd apps/api && npm run build",
+    "test": "npm run test:api",
+    "test:api": "cd apps/api && npm run test",
+    "test:watch": "cd apps/api && npm run test:watch",
+    "lint": "cd apps/api && npm run lint",
+    "format": "cd apps/api && npm run prettier",
+    "db:generate": "cd packages/database && npm run db:generate",
+    "db:migrate": "cd packages/database && npm run db:migrate",
+    "db:studio": "cd packages/database && npm run db:studio",
+    "setup": "bash scripts/dev-setup.sh",
+    "deploy": "bash scripts/deploy.sh",
+    "migrate": "bash scripts/migrate.sh"
+  },
+  "keywords": [
+    "brixsport",
+    "sports",
+    "live-score",
+    "campus"
+  ],
+  "author": "Brixsport Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/supertest": "^6.0.3",
+    "concurrently": "^9.2.1",
+    "supertest": "^7.1.4",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
+    "redis": "^5.8.2",
+    "web-vitals": "^5.1.0"
+  }
+}
