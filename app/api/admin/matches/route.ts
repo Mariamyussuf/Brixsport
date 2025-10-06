@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminToken, hasAdminPermission } from '@/lib/adminAuth';
 import { cookies } from 'next/headers';
 import { dbService } from '@/lib/databaseService';
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
 }
 
 // PUT /api/admin/matches/:id - Update a match
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     // Verify admin token
     const token = (await cookies()).get('admin_token')?.value;
@@ -144,7 +144,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const body = await request.json();
-    const { id } = await params;
+    const { id } = params;
     
     // Update match (mock implementation)
     // TODO: Implement real database update
@@ -181,7 +181,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 // DELETE /api/admin/matches/:id - Delete a match
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     // Verify admin token
     const token = (await cookies()).get('admin_token')?.value;
@@ -208,7 +208,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       }, { status: 403 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     
     // Delete match (mock implementation)
     // TODO: Implement real database deletion

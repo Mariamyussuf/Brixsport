@@ -1,0 +1,1356 @@
+// Enhanced Prisma schema with comprehensive improvements
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// =============================================================================
+// CORE USER MANAGEMENT
+// =============================================================================
+
+// User model with GDPR compliance
+model User {
+  id                      String     @id @default(uuid())
+  email                   String     @unique
+  name                    String?
+  password                String
+  role                    String     @default("user")
+  avatar                  String?
+  preferences             Json?
+  notificationSettings    Json?
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
+  suspended               Boolean    @default(false)
+  suspendedAt             DateTime?
+  
+  // GDPR Compliance fields
+  dataProcessingConsent   Boolean    @default(false)
+  consentDate            DateTime?
+  dataRetentionExpiry    DateTime?
+  anonymized             Boolean    @default(false)
+  
+  // Soft delete
+  deleted                Boolean    @default(false)
+  deletedAt              DateTime?
+  
+  // Relationships
+  sessions                Session[]
+  favorites               Favorite[]
+  followedPlayers         FollowedPlayer[]
+  notificationPreferences NotificationPreferences[]
+  notifications           Notification[]
+  broadcastMessages       BroadcastMessage[]
+  dashboards              Dashboard[]
+  reports                 Report[]
+  transactions            Transaction[]
+  articles                Article[]
+  auditLogs               AuditLog[]
+  securityEvents          SecurityEvent[]
+  dashboardShares         DashboardShare[]
+  searchIndices           SearchIndex[]
+  userActivities          UserActivity[]
+  apiKeys                 ApiKey[]
+  webhooks                Webhook[]
+  featureFlags            FeatureFlag[]
+  experiments             Experiment[]
+  experimentAssignments   ExperimentAssignment[]
+  feedback                Feedback[]
+  activityLogs            UserActivityLog[] @relation("UserActivityLogs")
+  chatMessages            ChatMessage[] @relation("ChatMessages")
+
+  @@index([name])
+  @@index([email])
+  @@index([deleted])
+}
+
+// Session model with enhanced security
+model Session {
+  id         String   @id @default(uuid())
+  userId     String
+  userAgent  String?
+  ip         String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+  revoked    Boolean  @default(false)
+  revokedAt  DateTime?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// =============================================================================
+// SPORTS HIERARCHY
+// =============================================================================
+
+// Season/League hierarchy
+model Season {
+  id           String        @id @default(uuid())
+  name         String
+  year         Int
+  startDate    DateTime
+  endDate      DateTime
+  description  String?
+  status       String        @default("upcoming") // "upcoming", "active", "completed", "cancelled"
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deleted      Boolean       @default(false)
+  deletedAt    DateTime?
+  competitions Competition[]
+
+  @@index([year])
+  @@index([status])
+  @@index([deleted])
+}
+
+// Competition model with enhanced features
+model Competition {
+  id              String     @id @default(uuid())
+  seasonId        String?
+  name            String
+  description     String?
+  sportType       String     // "football", "basketball", "track_events", etc.
+  startDate       DateTime?
+  endDate         DateTime?
+  status          String     @default("draft") // "draft", "upcoming", "live", "completed", "cancelled"
+  format          String     // "single_elimination", "double_elimination", "round_robin", "group_stage"
+  settings        Json?      // Format-specific settings
+  prizeMoney      Decimal?   @db.Money
+  currency        String?    @default("USD")
+  maxTeams        Int?
+  minTeams        Int?       @default(2)
+  registrationFee Decimal?   @db.Money
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  deleted         Boolean    @default(false)
+  deletedAt       DateTime?
+  
+  // Relationships
+  season          Season?    @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  matches         Match[]
+  teams           CompetitionTeam[]
+  groups          Group[]
+  standings       Standing[]
+  statistics      CompetitionStatistics[]
+  playerStats     PlayerStatistics[]
+  transactions    Transaction[]
+
+  @@index([name, sportType])
+  @@index([status, startDate])
+  @@index([seasonId])
+  @@index([deleted])
+}
+
+// Team model with computed statistics
+model Team {
+  id              String     @id @default(uuid())
+  name            String
+  description     String?
+  logo            String?
+  color           String?
+  foundedYear     Int?
+  website         String?
+  socialMedia     Json?
+  
+  // Computed statistics (updated via triggers/jobs)
+  totalWins       Int        @default(0)
+  totalLosses     Int        @default(0)
+  totalDraws      Int        @default(0)
+  winPercentage   Decimal    @default(0) @db.Decimal(5,2)
+  
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  deleted         Boolean    @default(false)
+  deletedAt       DateTime?
+  
+  // Relationships
+  matchesAsHome   Match[]    @relation("HomeTeam")
+  matchesAsAway   Match[]    @relation("AwayTeam")
+  players         Player[]
+  competitionTeams CompetitionTeam[]
+  groupTeams      GroupTeam[]
+  standings       Standing[]
+  groupStandings  GroupStanding[]
+  matchStats      MatchStatistics[]
+  formations      Formation[]
+  transactions    Transaction[]
+  teamMatchEvents MatchEvent[] @relation("TeamMatchEvents")
+
+  @@index([name])
+  @@index([foundedYear])
+  @@index([deleted])
+}
+
+// Player model with enhanced validation
+model Player {
+  id                String     @id @default(uuid())
+  firstName         String
+  lastName          String?
+  displayName       String?
+  dateOfBirth       DateTime?
+  nationality       String?    // ISO 3166-1 alpha-2 code
+  gender            String?    // "male", "female", "other"
+  sport             String     // "football", "basketball", "track_events", etc.
+  position          String?
+  number            Int?
+  height            Int?       // in cm
+  weight            Int?       // in kg
+  teamId            String?
+  status            String     @default("active") // "active", "injured", "suspended", "retired"
+  profilePictureUrl String?
+  biography         String?
+  socialMediaLinks  Json?
+  careerStats       Json?
+  marketValue       Decimal?   @db.Money
+  salary            Decimal?   @db.Money
+  contractStart     DateTime?
+  contractEnd       DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  deleted           Boolean    @default(false)
+  deletedAt         DateTime?
+  
+  // Relationships
+  team              Team?      @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  matches           PlayerMatch[]
+  followedBy        FollowedPlayer[]
+  playerStats       PlayerStatistics[]
+  matchStats        MatchStatistics[]
+  playerMatchEvents MatchEvent[] @relation("PlayerMatchEvents")
+
+  @@index([firstName, lastName])
+  @@index([teamId])
+  @@index([sport, position])
+  @@index([status])
+  @@index([deleted])
+}
+
+// Venue management
+model Venue {
+  id          String   @id @default(uuid())
+  name        String
+  capacity    Int?
+  address     String?
+  city        String?
+  country     String?  // ISO 3166-1 alpha-2
+  coordinates Json?    // {lat: float, lng: float}
+  facilities  Json?    // Available facilities
+  timezone    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deleted     Boolean  @default(false)
+  deletedAt   DateTime?
+  matches     Match[]
+
+  @@index([name])
+  @@index([city, country])
+  @@index([deleted])
+}
+
+// =============================================================================
+// MATCH MANAGEMENT
+// =============================================================================
+
+// Match model with enhanced validation
+model Match {
+  id              String     @id @default(uuid())
+  competitionId   String
+  homeTeamId      String
+  awayTeamId      String
+  venueId         String?
+  startTime       DateTime?
+  endTime         DateTime?
+  status          String     @default("scheduled") // "scheduled", "live", "paused", "finished", "postponed", "cancelled"
+  homeScore       Int?
+  awayScore       Int?
+  currentMinute   Int?       // For football
+  period          String?    // "1H", "2H", "HT", "FT" for football; "1Q", "2Q", "3Q", "4Q", "OT" for basketball
+  referee         String?
+  attendance      Int?
+  weather         String?
+  notes           String?
+  metadata        Json?
+  
+  // Match importance
+  importance      String     @default("regular") // "regular", "playoff", "final", "friendly"
+  
+  // Archival
+  archived        Boolean    @default(false)
+  archivedAt      DateTime?
+  
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  deleted         Boolean    @default(false)
+  deletedAt       DateTime?
+  
+  // Relationships
+  competition     Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  homeTeam        Team        @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Restrict)
+  awayTeam        Team        @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Restrict)
+  venue           Venue?      @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  playerMatches   PlayerMatch[]
+  matchStats      MatchStatistics[]
+  formations      Formation[]
+  chatMessages    ChatMessage[]
+  events          MatchEvent[]
+  liveData        LiveMatchData?
+  transactions    Transaction[]
+  playerStatistics PlayerStatistics[] // Added missing relation field
+
+  @@index([status, startTime])
+  @@index([competitionId])
+  @@index([homeTeamId, awayTeamId])
+  @@index([venueId])
+  @@index([archived])
+  @@index([deleted])
+}
+
+// MatchEvent model with proper relationships
+model MatchEvent {
+  id          String     @id @default(uuid())
+  matchId     String
+  type        String     // Sport-specific event types
+  playerId    String?
+  teamId      String?
+  minute      Int?
+  second      Int?
+  description String?
+  value       String?    // Additional data for the event
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deleted     Boolean    @default(false)
+  deletedAt   DateTime?
+  
+  // Relationships
+  match       Match      @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player      Player?    @relation("PlayerMatchEvents", fields: [playerId], references: [id], onDelete: SetNull)
+  team        Team?      @relation("TeamMatchEvents", fields: [teamId], references: [id], onDelete: SetNull)
+
+  @@index([matchId, type])
+  @@index([playerId])
+  @@index([teamId])
+  @@index([minute])
+  @@index([deleted])
+  @@map("match_events")
+}
+
+// PlayerMatch model (junction table)
+model PlayerMatch {
+  id           String   @id @default(uuid())
+  playerId     String
+  matchId      String
+  started      Boolean  @default(false)
+  substituted  Boolean  @default(false)
+  startTime    DateTime?
+  endTime      DateTime?
+  jerseyNumber Int?
+  position     String?
+  statistics   Json?
+  rating       Decimal? @db.Decimal(3,1) // Player rating out of 10
+  
+  // Relationships
+  player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  match        Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, matchId])
+  @@index([matchId])
+  @@unique([playerId, matchId])
+}
+
+// Live match data for real-time features
+model LiveMatchData {
+  id          String   @id @default(uuid())
+  matchId     String   @unique
+  lastEventAt DateTime @default(now())
+  viewers     Int      @default(0)
+  commentary  String?
+  metadata    Json?
+  updatedAt   DateTime @updatedAt
+  
+  // Relationship
+  match       Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@index([lastEventAt])
+}
+
+// =============================================================================
+// STATISTICS & ANALYTICS
+// =============================================================================
+
+// PlayerStatistics model with partitioning considerations
+model PlayerStatistics {
+  id            String   @id @default(uuid())
+  playerId      String
+  matchId       String?
+  competitionId String?
+  sport         String
+  statistics    Json     // Sport-specific statistics
+  period        String?  // "season", "career", "match"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relationships
+  player        Player       @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  match         Match?       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  competition   Competition? @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, sport])
+  @@index([competitionId])
+  @@index([matchId])
+  @@index([createdAt]) // For partitioning by date
+}
+
+// MatchStatistics model with proper relationships
+model MatchStatistics {
+  id        String   @id @default(uuid())
+  matchId   String
+  teamId    String?
+  playerId  String?
+  statistics Json     // Sport-specific statistics
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relationships
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  team      Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  player    Player?  @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@index([matchId])
+  @@index([teamId])
+  @@index([playerId])
+}
+
+// CompetitionStatistics model
+model CompetitionStatistics {
+  id            String   @id @default(uuid())
+  competitionId String
+  statistics    Json     // Aggregated competition statistics
+  generatedAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relationship
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@index([competitionId])
+  @@index([generatedAt])
+}
+
+// Formation model with enhanced validation
+model Formation {
+  id        String   @id @default(uuid())
+  matchId   String
+  teamId    String
+  formation String   // e.g., "4-4-2", "3-5-2"
+  players   Json     // Array of player positions
+  period    String?  // "1H", "2H", etc.
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relationships
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([matchId, teamId])
+  @@index([teamId])
+}
+
+// =============================================================================
+// TOURNAMENT STRUCTURE
+// =============================================================================
+
+// Group model for tournament structures
+model Group {
+  id            String     @id @default(uuid())
+  competitionId String
+  name          String
+  description   String?
+  maxTeams      Int?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  deleted       Boolean    @default(false)
+  deletedAt     DateTime?
+  
+  // Relationships
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  groupTeams    GroupTeam[]
+  standings     GroupStanding[]
+
+  @@index([competitionId])
+  @@index([deleted])
+}
+
+// GroupTeam model
+model GroupTeam {
+  id        String   @id @default(uuid())
+  groupId   String
+  teamId    String
+  seed      Int?
+  joinedAt  DateTime @default(now())
+  
+  // Relationships
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, teamId])
+  @@unique([groupId, teamId])
+}
+
+// Standing model with proper relationship
+model Standing {
+  id            String   @id @default(uuid())
+  competitionId String
+  teamId        String
+  position      Int
+  played        Int      @default(0)
+  won           Int      @default(0)
+  drawn         Int      @default(0)
+  lost          Int      @default(0)
+  goalsFor      Int      @default(0)
+  goalsAgainst  Int      @default(0)
+  points        Int      @default(0)
+  form          String?  // Last 5 matches: "WWDLL"
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relationships
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  team          Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([competitionId, position])
+  @@index([teamId])
+  @@unique([competitionId, teamId])
+}
+
+// GroupStanding model
+model GroupStanding {
+  id           String   @id @default(uuid())
+  groupId      String
+  teamId       String
+  position     Int
+  played       Int      @default(0)
+  won          Int      @default(0)
+  drawn        Int      @default(0)
+  lost         Int      @default(0)
+  goalsFor     Int      @default(0)
+  goalsAgainst Int      @default(0)
+  points       Int      @default(0)
+  form         String?  // Last 5 matches: "WWDLL"
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relationships
+  group        Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  team         Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, position])
+  @@index([teamId])
+  @@unique([groupId, teamId])
+}
+
+// CompetitionTeam model
+model CompetitionTeam {
+  id            String   @id @default(uuid())
+  competitionId String
+  teamId        String
+  registeredAt  DateTime @default(now())
+  status        String   @default("registered") // "registered", "confirmed", "withdrawn"
+  seedRank      Int?
+  metadata      Json?
+  
+  // Relationships
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  team          Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([competitionId, teamId])
+  @@unique([competitionId, teamId])
+  @@index([status])
+}
+
+// =============================================================================
+// USER ENGAGEMENT
+// =============================================================================
+
+// Favorite model
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   // "team", "competition", "player"
+  targetId  String   // ID of the target entity
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, type])
+}
+
+// FollowedPlayer model
+model FollowedPlayer {
+  id        String   @id @default(uuid())
+  userId    String
+  playerId  String
+  createdAt DateTime @default(now())
+  
+  // Relationships
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([playerId])
+  @@unique([userId, playerId])
+}
+
+// =============================================================================
+// NOTIFICATION SYSTEM
+// =============================================================================
+
+// Enhanced Notification model
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  title       String
+  message     String
+  type        String   // "MATCH_UPDATE", "SCORE_ALERT", "FAVORITE_TEAM", "COMPETITION_NEWS", "SYSTEM_ALERT", "REMINDER", "ACHIEVEMENT", "ADMIN_NOTICE", "LOG_ALERT"
+  priority    String   // "LOW", "NORMAL", "HIGH", "URGENT", "CRITICAL"
+  status      String   @default("UNREAD") // "UNREAD", "READ", "ARCHIVED", "DELETED"
+  entityId    String?
+  entityType  String?  // "MATCH", "TEAM", "COMPETITION", "PLAYER", "SYSTEM", "ADMIN"
+  actionUrl   String?
+  imageUrl    String?
+  scheduledAt DateTime?
+  deliveredAt DateTime?
+  readAt      DateTime?
+  expiresAt   DateTime?
+  metadata    Json?
+  source      String   @default("SYSTEM") // "SYSTEM", "ADMIN", "USER", "LOGGER"
+  tags        String[] // Tags for categorization
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relationships
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  history     NotificationHistory[]
+
+  @@index([userId, status])
+  @@index([type, priority])
+  @@index([scheduledAt])
+  @@index([expiresAt])
+  @@index([createdAt]) // For partitioning
+}
+
+// NotificationPreferences model
+model NotificationPreferences {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  settings   Json     // Delivery methods, categories, quiet hours, etc.
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Relationship
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// NotificationTemplate model
+model NotificationTemplate {
+  id               String   @id @default(uuid())
+  name             String   @unique
+  type             String
+  titleTemplate    String
+  messageTemplate  String
+  defaultPriority  String   @default("NORMAL") // "LOW", "NORMAL", "HIGH", "URGENT", "CRITICAL"
+  defaultCategory  String
+  variables        String[] // List of template variables
+  isActive         Boolean  @default(true)
+  metadata         Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([type, isActive])
+  @@index([name])
+}
+
+// NotificationHistory model
+model NotificationHistory {
+  id             String   @id @default(uuid())
+  notificationId String
+  userId         String
+  deliveryMethod String   // "PUSH", "EMAIL", "SMS", "IN_APP"
+  status         String   // "QUEUED", "SENT", "DELIVERED", "FAILED", "CLICKED"
+  provider       String?
+  providerId     String?
+  errorMessage   String?
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  clickedAt      DateTime?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  
+  // Relationship
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([deliveryMethod])
+  @@index([createdAt]) // For partitioning
+}
+
+// =============================================================================
+// FINANCIAL MANAGEMENT
+// =============================================================================
+
+// Transaction model for financial tracking
+model Transaction {
+  id            String   @id @default(uuid())
+  userId        String?
+  teamId        String?
+  competitionId String?
+  matchId       String?
+  type          String   // "REGISTRATION", "MERCHANDISE", "TICKET", "PRIZE", "REFUND"
+  amount        Decimal  @db.Money
+  currency      String   @default("USD")
+  status        String   @default("pending") // "pending", "completed", "failed", "refunded"
+  description   String?
+  paymentMethod String?  // "credit_card", "paypal", "bank_transfer", "cash"
+  referenceId   String?  // External payment reference
+  metadata      Json?
+  processedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relationships
+  user          User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  team          Team?        @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  competition   Competition? @relation(fields: [competitionId], references: [id], onDelete: SetNull)
+  match         Match?       @relation(fields: [matchId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// =============================================================================
+// CONTENT MANAGEMENT
+// =============================================================================
+
+// Article model for content management
+model Article {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  excerpt     String?
+  authorId    String
+  published   Boolean  @default(false)
+  publishedAt DateTime?
+  featuredImageUrl String?
+  tags        String[]
+  category    String?
+  viewCount   Int      @default(0)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deleted     Boolean  @default(false)
+  deletedAt   DateTime?
+  
+  // Relationships
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  translations Translation[]
+
+  @@index([published, publishedAt])
+  @@index([authorId])
+  @@index([category])
+  @@index([tags])
+  @@index([deleted])
+}
+
+// =============================================================================
+// INTERNATIONALIZATION
+// =============================================================================
+
+// Translation model for multi-language support
+model Translation {
+  id         String  @id @default(uuid())
+  entityType String  // "article", "competition", "team", etc.
+  entityId   String
+  fieldName  String  // "title", "description", etc.
+  language   String  // ISO 639-1 (en, es, fr, etc.)
+  value      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Optional relationships (example with Article)
+  article    Article? @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  
+  @@unique([entityType, entityId, fieldName, language])
+  @@index([entityType, entityId])
+  @@index([language])
+}
+
+// =============================================================================
+// SYSTEM MANAGEMENT
+// =============================================================================
+
+// SystemLogEvent model for tracking system events
+model SystemLogEvent {
+  id            String   @id @default(uuid())
+  level         String   // "debug", "info", "warn", "error", "fatal"
+  service       String
+  component     String
+  message       String
+  metadata      Json
+  timestamp     DateTime @default(now())
+  correlationId String?
+  tags          String[] // Tags like "PR", "DEPLOYMENT", "SECURITY"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([level, timestamp])
+  @@index([service, component])
+  @@index([tags])
+  @@index([correlationId])
+  @@index([timestamp]) // For partitioning
+}
+
+// Deployment model for tracking deployments
+model Deployment {
+  id              String   @id @default(uuid())
+  prNumber        String?
+  prTitle         String?
+  author          String?
+  repository      String?
+  branch          String?
+  mergedBy        String?
+  filesChanged    Int?
+  linesAdded      Int?
+  linesDeleted    Int?
+  deploymentType  String   // "PR_MERGE", "DEPLOYMENT", "ROLLBACK"
+  status          String   // "SUCCESS", "FAILED", "IN_PROGRESS"
+  environment     String?  // "development", "staging", "production"
+  version         String?
+  deployedAt      DateTime @default(now())
+  completedAt     DateTime?
+  rollbackAt      DateTime?
+  metadata        Json?
+  tags            String[] // Tags like "PR", "DEPLOYMENT", "SECURITY"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status, deployedAt])
+  @@index([deploymentType])
+  @@index([environment])
+  @@index([tags])
+}
+
+// BroadcastMessage model
+model BroadcastMessage {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  type        String   @default("announcement") // "announcement", "alert", "update", "maintenance"
+  priority    String   @default("normal") // "normal", "high", "urgent", "critical"
+  recipients  Json     // JSON object with recipient information
+  scheduledAt DateTime?
+  sentAt      DateTime @default(now())
+  expiresAt   DateTime?
+  isPublished Boolean  @default(true)
+  readCount   Int      @default(0)
+  tags        String[] // Tags like "PR", "DEPLOYMENT", "SECURITY"
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deleted     Boolean  @default(false)
+  deletedAt   DateTime?
+  
+  // Relationship
+  user        User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([type, priority])
+  @@index([isPublished])
+  @@index([scheduledAt])
+  @@index([tags])
+  @@index([deleted])
+}
+
+// System configuration management
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       Json
+  type        String   // "string", "number", "boolean", "json", "array"
+  category    String?  // "general", "sports", "notifications", "payments"
+  description String?
+  isPublic    Boolean  @default(false) // Can be accessed by frontend
+  isEditable  Boolean  @default(true)  // Can be modified
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([isPublic])
+}
+
+// System health monitoring
+model HealthCheck {
+  id         String   @id @default(uuid())
+  service    String
+  endpoint   String?
+  status     String   // "healthy", "degraded", "unhealthy"
+  latency    Int?     // in milliseconds
+  errorRate  Decimal? @db.Decimal(5,2) // percentage
+  uptime     Decimal? @db.Decimal(5,2) // percentage
+  metadata   Json?
+  timestamp  DateTime @default(now())
+  nextCheck  DateTime?
+
+  @@index([service, status])
+  @@index([timestamp])
+}
+
+// =============================================================================
+// AUDIT & SECURITY
+// =============================================================================
+
+// Comprehensive audit logging
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?
+  action       String   // "CREATE", "UPDATE", "DELETE", "LOGIN", "LOGOUT"
+  entity       String   // Table name
+  entityId     String
+  oldValues    Json?
+  newValues    Json?
+  ipAddress    String?
+  userAgent    String?
+  sessionId    String?
+  reason       String?  // Reason for change
+  metadata     Json?
+  timestamp    DateTime @default(now())
+  
+  // Relationships
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([action])
+  @@index([timestamp]) // For partitioning
+}
+
+// Security events tracking
+model SecurityEvent {
+  id          String   @id @default(uuid())
+  type        String   // "FAILED_LOGIN", "SUSPICIOUS_ACTIVITY", "DATA_BREACH", "UNAUTHORIZED_ACCESS"
+  severity    String   // "LOW", "MEDIUM", "HIGH", "CRITICAL"
+  userId      String?
+  ipAddress   String?
+  userAgent   String?
+  description String
+  metadata    Json?
+  resolved    Boolean  @default(false)
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  createdAt   DateTime @default(now())
+  
+  // Relationship
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([type, severity])
+  @@index([resolved])
+  @@index([createdAt])
+  @@index([ipAddress])
+}
+
+// =============================================================================
+// ANALYTICS & REPORTING
+// =============================================================================
+
+// Enhanced Report model
+model Report {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  type        String   // "user", "sports", "competition", "platform", "system", "deployment", "financial"
+  parameters  Json
+  data        Json?
+  format      String   @default("json") // "json", "csv", "pdf", "xlsx"
+  status      String   @default("pending") // "pending", "processing", "completed", "failed"
+  fileUrl     String?  // URL to generated file
+  fileSize    Int?     // File size in bytes
+  generatedAt DateTime?
+  expiresAt   DateTime?
+  isPublic    Boolean  @default(false)
+  downloadCount Int    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ownerId     String
+  
+  // Relationship
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([type, generatedAt])
+  @@index([ownerId])
+  @@index([status])
+  @@index([isPublic])
+}
+
+// Enhanced Dashboard model
+model Dashboard {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  widgets     Json     // Widget configurations
+  layout      Json?    // Layout configuration
+  ownerId     String
+  isPublic    Boolean  @default(false)
+  isTemplate  Boolean  @default(false)
+  tags        String[]
+  viewCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deleted     Boolean  @default(false)
+  deletedAt   DateTime?
+  
+  // Relationships
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  shares      DashboardShare[]
+
+  @@index([ownerId, isPublic])
+  @@index([isTemplate])
+  @@index([tags])
+  @@index([deleted])
+}
+
+// Dashboard sharing
+model DashboardShare {
+  id          String   @id @default(uuid())
+  dashboardId String
+  userId      String
+  permission  String   @default("view") // "view", "edit"
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([dashboardId, userId])
+  @@index([userId])
+}
+
+// Enhanced SearchIndex model
+model SearchIndex {
+  id           String   @id @default(uuid())
+  term         String
+  entityType   String   // "user", "player", "team", "competition", "match", "article"
+  entityId     String
+  frequency    Int      @default(1)
+  lastSearched DateTime @default(now())
+  userId       String?  // Track who searched
+  resultClicked Boolean @default(false)
+  position     Int?     // Position in search results when clicked
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relationship
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([term], map: "SearchIndex_term")
+  @@index([entityType])
+  @@index([frequency])
+  @@index([userId])
+  @@index([lastSearched], map: "SearchIndex_lastSearched")
+}
+
+// User behavior analytics
+model UserActivity {
+  id         String   @id @default(uuid())
+  userId     String?
+  sessionId  String?
+  action     String   // "page_view", "click", "search", "favorite", "share"
+  page       String?
+  entityType String?
+  entityId   String?
+  duration   Int?     // Time spent in milliseconds
+  metadata   Json?
+  timestamp  DateTime @default(now())
+  
+  // Relationship
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([action])
+  @@index([timestamp]) // For partitioning
+}
+
+// Feedback model for user feedback
+model Feedback {
+  id          String   @id @default(uuid())
+  userId      String?
+  type        String   // "bug", "feature_request", "general", "ui_improvement"
+  subject     String
+  message     String
+  status      String   @default("open") // "open", "in_progress", "responded", "closed"
+  priority    String   @default("medium") // "low", "medium", "high", "urgent"
+  response    String?
+  respondedAt DateTime?
+  respondedBy String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deleted     Boolean  @default(false)
+  deletedAt   DateTime?
+  
+  // Relationship
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([priority])
+  @@index([deleted])
+}
+
+// =============================================================================
+// API & INTEGRATION
+// =============================================================================
+
+// API key management
+model ApiKey {
+  id          String   @id @default(uuid())
+  name        String
+  key         String   @unique
+  hashedKey   String   // Store hashed version for security
+  userId      String
+  permissions Json     // API permissions
+  rateLimit   Int      @default(1000) // Requests per hour
+  isActive    Boolean  @default(true)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relationships
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usage       ApiUsage[]
+
+  @@index([userId])
+  @@index([isActive])
+  @@index([expiresAt])
+}
+
+// API usage tracking
+model ApiUsage {
+  id         String   @id @default(uuid())
+  apiKeyId   String
+  endpoint   String
+  method     String   // "GET", "POST", "PUT", "DELETE"
+  statusCode Int
+  responseTime Int    // in milliseconds
+  ipAddress  String?
+  userAgent  String?
+  timestamp  DateTime @default(now())
+  
+  // Relationship
+  apiKey     ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+
+  @@index([apiKeyId])
+  @@index([endpoint])
+  @@index([timestamp]) // For partitioning
+  @@index([statusCode])
+}
+
+// Webhook management
+model Webhook {
+  id          String   @id @default(uuid())
+  name        String
+  url         String
+  events      String[] // Events to subscribe to
+  isActive    Boolean  @default(true)
+  secret      String?  // For signature verification
+  retryPolicy Json?    // Retry configuration
+  createdBy   String
+  lastTriggered DateTime?
+  failureCount Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relationships
+  user        User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  deliveries  WebhookDelivery[]
+
+  @@index([isActive])
+  @@index([events])
+}
+
+// Webhook delivery tracking
+model WebhookDelivery {
+  id         String   @id @default(uuid())
+  webhookId  String
+  event      String
+  payload    Json
+  response   Json?
+  statusCode Int?
+  success    Boolean  @default(false)
+  attempts   Int      @default(1)
+  nextRetry  DateTime?
+  createdAt  DateTime @default(now())
+  
+  // Relationship
+  webhook    Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([success])
+  @@index([createdAt])
+  @@index([nextRetry])
+}
+
+// =============================================================================
+// CACHING & PERFORMANCE
+// =============================================================================
+
+// Cache management
+model CacheEntry {
+  id         String   @id @default(uuid())
+  key        String   @unique
+  value      Json
+  tags       String[] // For cache invalidation
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  accessCount Int     @default(0)
+  lastAccessed DateTime @default(now())
+
+  @@index([expiresAt])
+  @@index([tags])
+  @@index([lastAccessed])
+}
+
+// Performance metrics
+model PerformanceMetric {
+  id         String   @id @default(uuid())
+  metric     String   // "response_time", "query_time", "cpu_usage", "memory_usage"
+  value      Decimal  @db.Decimal(10,2)
+  unit       String   // "ms", "seconds", "percent", "bytes"
+  service    String?
+  endpoint   String?
+  timestamp  DateTime @default(now())
+  metadata   Json?
+
+  @@index([metric, timestamp])
+  @@index([service])
+}
+
+// =============================================================================
+// FEATURE FLAGS & A/B TESTING
+// =============================================================================
+
+// Feature flag management
+model FeatureFlag {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isEnabled   Boolean  @default(false)
+  rolloutPercentage Decimal @default(0) @db.Decimal(5,2)
+  conditions  Json?    // Targeting conditions
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relationship
+  user        User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([isEnabled])
+}
+
+// A/B test experiments
+model Experiment {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  hypothesis  String?
+  status      String   @default("draft") // "draft", "running", "paused", "completed"
+  variants    Json     // Experiment variants
+  trafficSplit Json    // Traffic allocation
+  startDate   DateTime?
+  endDate     DateTime?
+  results     Json?
+  winner      String?
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relationships
+  user        User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  assignments ExperimentAssignment[]
+
+  @@index([status])
+  @@index([startDate, endDate])
+}
+
+// User experiment assignments
+model ExperimentAssignment {
+  id           String   @id @default(uuid())
+  experimentId String
+  userId       String
+  variant      String
+  assignedAt   DateTime @default(now())
+  
+  // Relationships
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([experimentId, userId])
+  @@index([userId])
+}
+
+// =============================================================================
+// ENHANCED ACTIVITY LOGGING AND CHAT SYSTEM
+// =============================================================================
+
+// Enhanced user activity logs with IP tracking and user agents
+model UserActivityLog {
+  id         String   @id @default(uuid())
+  userId     String
+  action     String   // "user_created", "profile_updated", "profile_picture_uploaded", etc.
+  details    Json?    // Additional action details
+  ipAddress  String?  // IP address for audit trails
+  userAgent  String?  // User agent for audit trails
+  createdAt  DateTime @default(now())
+  
+  // Relationship
+  user       User     @relation("UserActivityLogs", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([ipAddress])
+  @@map("user_activity_logs")
+}
+
+// Chat messages for match discussions
+model ChatMessage {
+  id        String   @id @default(uuid())
+  matchId   String
+  userId    String
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deleted   Boolean  @default(false)
+  deletedAt DateTime?
+  
+  // Relationships
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user      User     @relation("ChatMessages", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([matchId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([deleted])
+  @@map("chat_messages")
+}
+

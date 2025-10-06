@@ -1,0 +1,1935 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Brixsport Statistics API",
+    "description": "API documentation for sports statistics and analytics in the Brixsport platform",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001/api/v1",
+      "description": "Development server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "PlayerStatistics": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "playerId": {
+            "type": "string"
+          },
+          "sport": {
+            "type": "string",
+            "enum": ["FOOTBALL", "BASKETBALL", "TRACK"]
+          },
+          "matchesPlayed": {
+            "type": "integer"
+          },
+          "minutesPlayed": {
+            "type": "integer"
+          },
+          "goals": {
+            "type": "integer"
+          },
+          "assists": {
+            "type": "integer"
+          },
+          "yellowCards": {
+            "type": "integer"
+          },
+          "redCards": {
+            "type": "integer"
+          },
+          "football": {
+            "type": "object",
+            "properties": {
+              "goals": {
+                "type": "integer"
+              },
+              "assists": {
+                "type": "integer"
+              },
+              "cleanSheets": {
+                "type": "integer"
+              },
+              "goalsConceded": {
+                "type": "integer"
+              },
+              "saves": {
+                "type": "integer"
+              },
+              "passesCompleted": {
+                "type": "integer"
+              },
+              "passAccuracy": {
+                "type": "number"
+              },
+              "tackles": {
+                "type": "integer"
+              },
+              "interceptions": {
+                "type": "integer"
+              },
+              "foulsCommitted": {
+                "type": "integer"
+              },
+              "foulsSuffered": {
+                "type": "integer"
+              }
+            }
+          },
+          "basketball": {
+            "type": "object",
+            "properties": {
+              "points": {
+                "type": "integer"
+              },
+              "rebounds": {
+                "type": "integer"
+              },
+              "assists": {
+                "type": "integer"
+              },
+              "steals": {
+                "type": "integer"
+              },
+              "blocks": {
+                "type": "integer"
+              },
+              "fieldGoalsMade": {
+                "type": "integer"
+              },
+              "fieldGoalsAttempted": {
+                "type": "integer"
+              },
+              "fieldGoalPercentage": {
+                "type": "number"
+              },
+              "threePointersMade": {
+                "type": "integer"
+              },
+              "threePointersAttempted": {
+                "type": "integer"
+              },
+              "threePointPercentage": {
+                "type": "number"
+              },
+              "freeThrowsMade": {
+                "type": "integer"
+              },
+              "freeThrowsAttempted": {
+                "type": "integer"
+              },
+              "freeThrowPercentage": {
+                "type": "number"
+              },
+              "turnovers": {
+                "type": "integer"
+              },
+              "personalFouls": {
+                "type": "integer"
+              }
+            }
+          },
+          "track": {
+            "type": "object",
+            "properties": {
+              "eventsParticipated": {
+                "type": "integer"
+              },
+              "firstPlaceFinishes": {
+                "type": "integer"
+              },
+              "secondPlaceFinishes": {
+                "type": "integer"
+              },
+              "thirdPlaceFinishes": {
+                "type": "integer"
+              },
+              "personalBests": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "type": "string"
+                    },
+                    "time": {
+                      "type": "string"
+                    },
+                    "distance": {
+                      "type": "number"
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "totalPoints": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TeamStatistics": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "teamId": {
+            "type": "string"
+          },
+          "sport": {
+            "type": "string",
+            "enum": ["FOOTBALL", "BASKETBALL", "TRACK"]
+          },
+          "matchesPlayed": {
+            "type": "integer"
+          },
+          "wins": {
+            "type": "integer"
+          },
+          "draws": {
+            "type": "integer"
+          },
+          "losses": {
+            "type": "integer"
+          },
+          "goalsFor": {
+            "type": "integer"
+          },
+          "goalsAgainst": {
+            "type": "integer"
+          },
+          "goalDifference": {
+            "type": "integer"
+          },
+          "points": {
+            "type": "integer"
+          },
+          "football": {
+            "type": "object",
+            "properties": {
+              "cleanSheets": {
+                "type": "integer"
+              },
+              "goalsConceded": {
+                "type": "integer"
+              },
+              "shots": {
+                "type": "integer"
+              },
+              "shotsOnTarget": {
+                "type": "integer"
+              },
+              "possession": {
+                "type": "number"
+              },
+              "passesCompleted": {
+                "type": "integer"
+              },
+              "passAccuracy": {
+                "type": "number"
+              },
+              "tackles": {
+                "type": "integer"
+              },
+              "interceptions": {
+                "type": "integer"
+              },
+              "foulsCommitted": {
+                "type": "integer"
+              },
+              "yellowCards": {
+                "type": "integer"
+              },
+              "redCards": {
+                "type": "integer"
+              }
+            }
+          },
+          "basketball": {
+            "type": "object",
+            "properties": {
+              "points": {
+                "type": "integer"
+              },
+              "rebounds": {
+                "type": "integer"
+              },
+              "assists": {
+                "type": "integer"
+              },
+              "steals": {
+                "type": "integer"
+              },
+              "blocks": {
+                "type": "integer"
+              },
+              "fieldGoalsMade": {
+                "type": "integer"
+              },
+              "fieldGoalsAttempted": {
+                "type": "integer"
+              },
+              "fieldGoalPercentage": {
+                "type": "number"
+              },
+              "threePointersMade": {
+                "type": "integer"
+              },
+              "threePointersAttempted": {
+                "type": "integer"
+              },
+              "threePointPercentage": {
+                "type": "number"
+              },
+              "freeThrowsMade": {
+                "type": "integer"
+              },
+              "freeThrowsAttempted": {
+                "type": "integer"
+              },
+              "freeThrowPercentage": {
+                "type": "number"
+              },
+              "turnovers": {
+                "type": "integer"
+              },
+              "personalFouls": {
+                "type": "integer"
+              }
+            }
+          },
+          "track": {
+            "type": "object",
+            "properties": {
+              "eventsParticipated": {
+                "type": "integer"
+              },
+              "goldMedals": {
+                "type": "integer"
+              },
+              "silverMedals": {
+                "type": "integer"
+              },
+              "bronzeMedals": {
+                "type": "integer"
+              },
+              "totalMedals": {
+                "type": "integer"
+              },
+              "bestPerformances": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "type": "string"
+                    },
+                    "position": {
+                      "type": "integer"
+                    },
+                    "time": {
+                      "type": "string"
+                    },
+                    "distance": {
+                      "type": "number"
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "winPercentage": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CompetitionStatistics": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "competitionId": {
+            "type": "string"
+          },
+          "sport": {
+            "type": "string",
+            "enum": ["FOOTBALL", "BASKETBALL", "TRACK"]
+          },
+          "totalMatches": {
+            "type": "integer"
+          },
+          "totalTeams": {
+            "type": "integer"
+          },
+          "totalPlayers": {
+            "type": "integer"
+          },
+          "totalGoals": {
+            "type": "integer"
+          },
+          "averageGoalsPerMatch": {
+            "type": "number"
+          },
+          "totalYellowCards": {
+            "type": "integer"
+          },
+          "totalRedCards": {
+            "type": "integer"
+          },
+          "football": {
+            "type": "object",
+            "properties": {
+              "totalCleanSheets": {
+                "type": "integer"
+              },
+              "totalGoalsConceded": {
+                "type": "integer"
+              },
+              "averagePossession": {
+                "type": "number"
+              },
+              "totalShots": {
+                "type": "integer"
+              },
+              "totalShotsOnTarget": {
+                "type": "integer"
+              },
+              "passAccuracy": {
+                "type": "number"
+              }
+            }
+          },
+          "basketball": {
+            "type": "object",
+            "properties": {
+              "totalPoints": {
+                "type": "integer"
+              },
+              "averagePointsPerGame": {
+                "type": "number"
+              },
+              "fieldGoalPercentage": {
+                "type": "number"
+              },
+              "threePointPercentage": {
+                "type": "number"
+              },
+              "freeThrowPercentage": {
+                "type": "number"
+              },
+              "totalRebounds": {
+                "type": "integer"
+              },
+              "totalAssists": {
+                "type": "integer"
+              },
+              "totalSteals": {
+                "type": "integer"
+              },
+              "totalBlocks": {
+                "type": "integer"
+              },
+              "totalTurnovers": {
+                "type": "integer"
+              }
+            }
+          },
+          "track": {
+            "type": "object",
+            "properties": {
+              "totalEvents": {
+                "type": "integer"
+              },
+              "totalParticipants": {
+                "type": "integer"
+              },
+              "medalDistribution": {
+                "type": "object",
+                "properties": {
+                  "gold": {
+                    "type": "integer"
+                  },
+                  "silver": {
+                    "type": "integer"
+                  },
+                  "bronze": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "recordPerformances": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "type": "string"
+                    },
+                    "time": {
+                      "type": "string"
+                    },
+                    "distance": {
+                      "type": "number"
+                    },
+                    "playerName": {
+                      "type": "string"
+                    },
+                    "teamName": {
+                      "type": "string"
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "monthlyTrends": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "month": {
+                  "type": "string"
+                },
+                "matches": {
+                  "type": "integer"
+                },
+                "goals": {
+                  "type": "integer"
+                },
+                "cards": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PerformanceTrend": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": "string"
+          },
+          "entityType": {
+            "type": "string",
+            "enum": ["PLAYER", "TEAM", "COMPETITION"]
+          },
+          "period": {
+            "type": "string",
+            "enum": ["DAILY", "WEEKLY", "MONTHLY", "SEASON"]
+          },
+          "formRating": {
+            "type": "integer"
+          },
+          "performanceScore": {
+            "type": "integer"
+          },
+          "improvementRate": {
+            "type": "number"
+          },
+          "consistencyRating": {
+            "type": "integer"
+          },
+          "ranking": {
+            "type": "integer"
+          },
+          "rankingChange": {
+            "type": "integer"
+          },
+          "comparisonWithAverage": {
+            "type": "number"
+          },
+          "sportMetrics": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Standing": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "logoUrl": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "position": {
+            "type": "integer"
+          },
+          "played": {
+            "type": "integer"
+          },
+          "won": {
+            "type": "integer"
+          },
+          "drawn": {
+            "type": "integer"
+          },
+          "lost": {
+            "type": "integer"
+          },
+          "goalsFor": {
+            "type": "integer"
+          },
+          "goalsAgainst": {
+            "type": "integer"
+          },
+          "goalDifference": {
+            "type": "integer"
+          },
+          "points": {
+            "type": "integer"
+          }
+        }
+      },
+      "TopPerformer": {
+        "type": "object",
+        "properties": {
+          "player": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "firstName": {
+                "type": "string"
+              },
+              "lastName": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string",
+                "nullable": true
+              },
+              "profilePictureUrl": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "team": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "logoUrl": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "value": {
+            "type": "number"
+          }
+        }
+      },
+      "PlayerComparison": {
+        "type": "object",
+        "properties": {
+          "player": {
+            "$ref": "#/components/schemas/PlayerStatistics"
+          },
+          "comparison": {
+            "type": "object",
+            "properties": {
+              "versus": {
+                "type": "string"
+              },
+              "metrics": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "player": {
+                      "type": "number"
+                    },
+                    "comparison": {
+                      "type": "number"
+                    },
+                    "difference": {
+                      "type": "number"
+                    },
+                    "percentage": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "TeamComparison": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "$ref": "#/components/schemas/TeamStatistics"
+          },
+          "comparison": {
+            "type": "object",
+            "properties": {
+              "versus": {
+                "type": "string"
+              },
+              "metrics": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "team": {
+                      "type": "number"
+                    },
+                    "comparison": {
+                      "type": "number"
+                    },
+                    "difference": {
+                      "type": "number"
+                    },
+                    "percentage": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "PlayerAnalyticsReport": {
+        "type": "object",
+        "properties": {
+          "player": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "firstName": {
+                "type": "string"
+              },
+              "lastName": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string",
+                "nullable": true
+              },
+              "profilePictureUrl": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "report": {
+            "type": "object",
+            "properties": {
+              "period": {
+                "type": "object",
+                "properties": {
+                  "startDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "performance": {
+                "type": "object",
+                "properties": {
+                  "overallRating": {
+                    "type": "integer"
+                  },
+                  "form": {
+                    "type": "string"
+                  },
+                  "improvement": {
+                    "type": "number"
+                  },
+                  "consistency": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "keyMetrics": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "number"
+                    },
+                    "rank": {
+                      "type": "integer"
+                    },
+                    "percentile": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              },
+              "trends": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "TeamAnalyticsReport": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "logoUrl": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "report": {
+            "type": "object",
+            "properties": {
+              "period": {
+                "type": "object",
+                "properties": {
+                  "startDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "performance": {
+                "type": "object",
+                "properties": {
+                  "overallRating": {
+                    "type": "integer"
+                  },
+                  "form": {
+                    "type": "string"
+                  },
+                  "improvement": {
+                    "type": "number"
+                  },
+                  "consistency": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "keyMetrics": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "number"
+                    },
+                    "rank": {
+                      "type": "integer"
+                    },
+                    "percentile": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              },
+              "trends": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ComparisonResult": {
+        "type": "object",
+        "properties": {
+          "comparison": {
+            "type": "object",
+            "properties": {
+              "entities": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "metrics": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }
+              },
+              "analysis": {
+                "type": "object",
+                "properties": {
+                  "bestPerformer": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "metric": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "closestCompetition": {
+                    "type": "object",
+                    "properties": {
+                      "entity1": {
+                        "type": "string"
+                      },
+                      "entity2": {
+                        "type": "string"
+                      },
+                      "similarity": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/statistics/players/{id}": {
+      "get": {
+        "summary": "Get Player Statistics",
+        "description": "Retrieve detailed statistics for a specific player",
+        "tags": ["Player Statistics"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Player ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/PlayerStatistics"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statistics/players/{id}/trends": {
+      "get": {
+        "summary": "Get Player Performance Trends",
+        "description": "Retrieve performance trends for a specific player",
+        "tags": ["Player Statistics"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Player ID"
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["DAILY", "WEEKLY", "MONTHLY", "SEASON"]
+            },
+            "description": "Time period for trends"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "description": "Number of data points to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PerformanceTrend"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statistics/players/{id}/comparison": {
+      "get": {
+        "summary": "Compare Player Performance",
+        "description": "Compare a player's performance with league averages or specific competitors",
+        "tags": ["Player Statistics"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Player ID"
+          },
+          {
+            "name": "compareWith",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comparison target (league_average or comma-separated player IDs)"
+          },
+          {
+            "name": "metrics",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of metrics to compare"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/PlayerComparison"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statistics/teams/{id}": {
+      "get": {
+        "summary": "Get Team Statistics",
+        "description": "Retrieve detailed statistics for a specific team",
+        "tags": ["Team Statistics"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Team ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/TeamStatistics"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Team not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statistics/teams/{id}/trends": {
+      "get": {
+        "summary": "Get Team Performance Trends",
+        "description": "Retrieve performance trends for a specific team",
+        "tags": ["Team Statistics"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Team ID"
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["DAILY", "WEEKLY", "MONTHLY", "SEASON"]
+            },
+            "description": "Time period for trends"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "description": "Number of data points to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PerformanceTrend"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Team not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statistics/teams/{id}/comparison": {
+      "get": {
+        "summary": "Compare Team Performance",
+        "description": "Compare a team's performance with league averages or specific competitors",
+        "tags": ["Team Statistics"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Team ID"
+          },
+          {
+            "name": "compareWith",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comparison target (league_average or comma-separated team IDs)"
+          },
+          {
+            "name": "metrics",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of metrics to compare"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/TeamComparison"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Team not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statistics/competitions/{id}": {
+      "get": {
+        "summary": "Get Competition Statistics",
+        "description": "Retrieve detailed statistics for a specific competition",
+        "tags": ["Competition Statistics"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Competition ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CompetitionStatistics"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statistics/competitions/{id}/standings": {
+      "get": {
+        "summary": "Get Competition Standings",
+        "description": "Retrieve current standings for a competition",
+        "tags": ["Competition Statistics"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Competition ID"
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Field to sort by"
+          },
+          {
+            "name": "sortOrder",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["ASC", "DESC"]
+            },
+            "description": "Sort order"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Standing"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statistics/competitions/{id}/top-performers": {
+      "get": {
+        "summary": "Get Top Performers",
+        "description": "Retrieve top performers in a competition",
+        "tags": ["Competition Statistics"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Competition ID"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Performance category (goals, assists, clean_sheets, etc.)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "description": "Number of performers to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TopPerformer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statistics/analytics/player-performance/{id}": {
+      "get": {
+        "summary": "Generate Player Performance Analytics Report",
+        "description": "Generate player performance analytics report",
+        "tags": ["Analytics"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Player ID"
+          },
+          {
+            "name": "timeRange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["week", "month", "season", "custom"]
+            },
+            "description": "Time range for the report"
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Start date for custom time range"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "End date for custom time range"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/PlayerAnalyticsReport"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statistics/analytics/team-performance/{id}": {
+      "get": {
+        "summary": "Generate Team Performance Analytics Report",
+        "description": "Generate team performance analytics report",
+        "tags": ["Analytics"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Team ID"
+          },
+          {
+            "name": "timeRange",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["week", "month", "season", "custom"]
+            },
+            "description": "Time range for the report"
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Start date for custom time range"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "End date for custom time range"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/TeamAnalyticsReport"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Team not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statistics/analytics/compare": {
+      "post": {
+        "summary": "Compare Multiple Entities",
+        "description": "Compare multiple entities (players, teams, or competitions)",
+        "tags": ["Analytics"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["PLAYER", "TEAM", "COMPETITION"]
+                  },
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "metrics": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": ["type", "ids", "metrics"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ComparisonResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,103 @@
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { logger } from '@utils/logger';
+
+const verifyToken = (token: string) => {
+  try {
+    // Verify JWT token
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || 'fallback_secret'
+    );
+    return decoded;
+  } catch (error) {
+    throw new Error('Invalid or expired token');
+  }
+};
+
+export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    // Get token from header
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    
+    if (!token) {
+      res.status(401).json({ 
+        success: false,
+        error: 'Access token required' 
+      });
+      return;
+    }
+    
+    // Verify token
+    const decoded = verifyToken(token);
+    
+    // Add user info to request
+    (req as any).user = decoded;
+    
+    logger.info('User authenticated', { userId: (decoded as any).userId });
+    
+    next();
+  } catch (error: any) {
+    logger.error('Authentication error', error);
+    res.status(401).json({ 
+      success: false,
+      error: 'Invalid or expired token' 
+    });
+    return;
+  }
+};
+
+export const authorize = (roles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      // Check if user is authenticated
+      const user = (req as any).user;
+      if (!user) {
+        res.status(401).json({ 
+          success: false,
+          error: 'Authentication required' 
+        });
+        return;
+      }
+      
+      // Check if user has required role
+      const userRole = user.role || 'user';
+      if (!roles.includes(userRole)) {
+        logger.warn('Authorization failed', { 
+          userId: user.userId, 
+          userRole, 
+          requiredRoles: roles 
+        });
+        
+        res.status(403).json({ 
+          success: false,
+          error: 'Insufficient permissions' 
+        });
+        return;
+      }
+      
+      logger.info('User authorized', { 
+        userId: user.userId, 
+        userRole, 
+        requiredRoles: roles 
+      });
+      
+      next();
+    } catch (error: any) {
+      logger.error('Authorization error', error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Authorization check failed' 
+      });
+      return;
+    }
+  };
+};
+
+// Specific role-based authorization middleware
+export const requireAdmin = authorize(['admin', 'super_admin']);
+export const requireLogger = authorize(['logger', 'senior_logger', 'logger_admin', 'admin', 'super_admin']);
+export const requireSeniorLogger = authorize(['senior_logger', 'logger_admin', 'admin', 'super_admin']);
+export const requireLoggerAdmin = authorize(['logger_admin', 'admin', 'super_admin']);
+export const requireSuperAdmin = authorize(['super_admin']);

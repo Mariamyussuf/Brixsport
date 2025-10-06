@@ -1,0 +1,24 @@
+{
+  "name": "@brixsport/shared",
+  "version": "1.0.0",
+  "description": "Shared types and schemas for Brixsport",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "brixsport",
+    "shared",
+    "types",
+    "schemas"
+  ],
+  "author": "Brixsport Team",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "zod": "^3.22.2"
+  }
+}
