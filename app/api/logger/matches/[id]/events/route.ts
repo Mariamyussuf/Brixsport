@@ -1,36 +1,57 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { getAuth } from '@/lib/auth';
+import { dbService } from '@/lib/databaseService';
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// POST /api/logger/matches/[id]/events - Log match events
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    const event = await req.json();
-
-    // Forward the request to the backend
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/live/events`, {
-      method: 'POST',
-      headers: {
-        ...req.headers,
-        'host': new URL(process.env.NEXT_PUBLIC_API_BASE_URL || '').host,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        ...event,
-        matchId: id,
-        timestamp: event.timestamp || new Date().toISOString()
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to add event');
+    const session = await getAuth(req);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
 
-    return NextResponse.json(data, { status: response.status });
-  } catch (error) {
+    // Check if user is a logger
+    if (session.user.role !== 'logger') {
+      return NextResponse.json({ 
+        error: { 
+          code: 'FORBIDDEN', 
+          message: 'Only loggers can log match events' 
+        } 
+      }, { status: 403 });
+    }
+
+    const { id: matchId } = await params;
+    const events = await req.json();
+
+    // Validate required fields
+    if (!Array.isArray(events) || events.length === 0) {
+      return NextResponse.json({ 
+        error: { 
+          code: 'INVALID_REQUEST', 
+          message: 'Events array is required and cannot be empty' 
+        } 
+      }, { status: 400 });
+    }
+
+    // Add matchId to each event
+    const eventsWithMatchId = events.map(event => ({
+      ...event,
+      matchId: parseInt(matchId)
+    }));
+
+    await dbService.saveMatchEvents(eventsWithMatchId, session.user.id);
+
     return NextResponse.json({
-      success: false,
-      error: 'Failed to add event'
-    }, { status: 400 });
+      success: true,
+      message: 'Events logged successfully'
+    }, { status: 201 });
+  } catch (error) {
+    console.error('Error logging match events:', error);
+    return NextResponse.json({ 
+      error: { 
+        code: 'INTERNAL_ERROR', 
+        message: 'An error occurred while logging match events' 
+      } 
+    }, { status: 500 });
   }
 }

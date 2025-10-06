@@ -1,59 +1,97 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { getAuth } from '@/lib/auth';
+import { dbService } from '@/lib/databaseService';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// GET /api/logger/matches/[id] - Get match details for logger
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    
-    // Forward the request to the backend
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/matches/${id}`, {
-      headers: {
-        ...req.headers,
-        'host': new URL(process.env.NEXT_PUBLIC_API_BASE_URL || '').host
-      }
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to fetch match');
+    const session = await getAuth(req);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
 
-    return NextResponse.json(data, { status: response.status });
-  } catch (error) {
+    // Check if user is a logger
+    if (session.user.role !== 'logger') {
+      return NextResponse.json({ 
+        error: { 
+          code: 'FORBIDDEN', 
+          message: 'Only loggers can access match details' 
+        } 
+      }, { status: 403 });
+    }
+
+    const { id: matchId } = await params;
+
+    // Get match details
+    const matches = await dbService.getMatches();
+    const match = matches.find(m => m.id === parseInt(matchId));
+    
+    if (!match) {
+      return NextResponse.json({ 
+        error: { 
+          code: 'NOT_FOUND', 
+          message: 'Match not found' 
+        } 
+      }, { status: 404 });
+    }
+
     return NextResponse.json({
-      success: false,
-      error: 'Match not found'
-    }, { status: 404 });
+      success: true,
+      data: match
+    });
+  } catch (error) {
+    console.error('Error fetching match details:', error);
+    return NextResponse.json({ 
+      error: { 
+        code: 'INTERNAL_ERROR', 
+        message: 'An error occurred while fetching match details' 
+      } 
+    }, { status: 500 });
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// PATCH /api/logger/matches/[id] - Update match status
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    const updates = await req.json();
-
-    // Forward the request to the backend
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/matches/${id}`, {
-      method: 'PATCH',
-      headers: {
-        ...req.headers,
-        'host': new URL(process.env.NEXT_PUBLIC_API_BASE_URL || '').host,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(updates)
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to update match');
+    const session = await getAuth(req);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
 
-    return NextResponse.json(data, { status: response.status });
-  } catch (error) {
+    // Check if user is a logger
+    if (session.user.role !== 'logger') {
+      return NextResponse.json({ 
+        error: { 
+          code: 'FORBIDDEN', 
+          message: 'Only loggers can update match status' 
+        } 
+      }, { status: 403 });
+    }
+
+    const { id: matchId } = await params;
+    const { status, currentMinute, period } = await req.json();
+
+    // Update match status
+    const scores = [{
+      matchId: parseInt(matchId),
+      status,
+      currentMinute,
+      period
+    }];
+
+    await dbService.updateMatchScores(scores, session.user.id);
+
     return NextResponse.json({
-      success: false,
-      error: 'Failed to update match'
-    }, { status: 400 });
+      success: true,
+      message: 'Match status updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating match status:', error);
+    return NextResponse.json({ 
+      error: { 
+        code: 'INTERNAL_ERROR', 
+        message: 'An error occurred while updating match status' 
+      } 
+    }, { status: 500 });
   }
 }
