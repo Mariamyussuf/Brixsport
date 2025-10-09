@@ -3,14 +3,14 @@ import { getAuth } from '@/lib/auth';
 import { dbService } from '@/lib/databaseService';
 
 // GET /api/user/matches/[id] - Get user match details
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{}> }) {
   try {
+    const { id: matchId } = await params as { id: string };
+
     const session = await getAuth(req);
     if (!session || !session.user) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
-
-    const { id: matchId } = await params;
 
     // Get match details
     const matches = await dbService.getMatches();

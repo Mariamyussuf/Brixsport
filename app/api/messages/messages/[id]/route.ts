@@ -3,8 +3,10 @@ import { getAuth } from '@/lib/auth';
 import MessagingService from '@/services/messagingService';
 
 // PUT /api/messages/messages/[id] - Update system message (admin only)
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(req: Request, { params }: { params: Promise<{}> }) {
   try {
+    const { id: messageId } = await params as { id: string };
+
     const session = await getAuth(req);
     if (!session || !session.user) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
@@ -13,7 +15,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     // Check if user is admin (in a real implementation, you would check admin permissions)
     // For now, we'll assume this check is done in the service layer
 
-    const { id: messageId } = await params;
     const { content } = await req.json();
 
     // Validate required fields
@@ -63,8 +64,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 // DELETE /api/messages/messages/[id] - Delete system message (admin only)
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{}> }) {
   try {
+    const { id: messageId } = await params as { id: string };
+
     const session = await getAuth(req);
     if (!session || !session.user) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
@@ -72,8 +75,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
     // Check if user is admin (in a real implementation, you would check admin permissions)
     // For now, we'll assume this check is done in the service layer
-
-    const { id: messageId } = await params;
 
     const result = await MessagingService.deleteMessage(
       session.user.id,

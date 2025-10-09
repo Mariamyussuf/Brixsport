@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { dbService } from '@/lib/databaseService';
 
 // PUT /api/admin/loggers/:id - Update a logger
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(request: Request, { params }: { params: Promise<{}> }) {
   try {
     // Verify admin token
     const token = (await cookies()).get('admin_token')?.value;
@@ -32,7 +32,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const body = await request.json();
-    const { id } = await params;
+    const { id } = await params as { id: string };
     
     // Check if admin can manage this specific logger
     if (adminUser.adminLevel !== 'super' && !canManageLogger(adminUser, id)) {
@@ -66,7 +66,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 // DELETE /api/admin/loggers/:id - Delete a logger
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{}> }) {
   try {
     // Verify admin token
     const token = (await cookies()).get('admin_token')?.value;
@@ -93,7 +93,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       }, { status: 403 });
     }
 
-    const { id } = await params;
+    const { id } = await params as { id: string };
     
     // Check if admin can manage this specific logger
     if (adminUser.adminLevel !== 'super' && !canManageLogger(adminUser, id)) {

@@ -3,14 +3,15 @@ import { getAuth } from '@/lib/auth';
 import MessagingService from '@/services/messagingService';
 
 // POST /api/messages/messages/[id]/react - Add reaction to system message
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{}> }) {
   try {
+    const { id: messageId } = await params as { id: string };
+
     const session = await getAuth(req);
     if (!session || !session.user) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
 
-    const { id: messageId } = await params;
     const { emoji } = await req.json();
 
     // Validate required fields

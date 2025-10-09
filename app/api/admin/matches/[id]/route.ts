@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { dbService } from '@/lib/databaseService';
 
 // PUT /api/admin/matches/:id - Update a match
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(request: Request, { params }: { params: Promise<{}> }) {
   try {
     // Verify admin token
     const token = (await cookies()).get('admin_token')?.value;
@@ -32,7 +32,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const body = await request.json();
-    const { id } = await params;
+    const { id } = await params as { id: string };
     
     // Update match (mock implementation)
     // TODO: Implement real database update
@@ -69,7 +69,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 // DELETE /api/admin/matches/:id - Delete a match
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{}> }) {
   try {
     // Verify admin token
     const token = (await cookies()).get('admin_token')?.value;
@@ -96,7 +96,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       }, { status: 403 });
     }
 
-    const { id } = await params;
+    const { id } = await params as { id: string };
     
     // Delete match (mock implementation)
     // TODO: Implement real database deletion

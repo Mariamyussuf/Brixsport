@@ -90,7 +90,7 @@ let matches: Match[] = [
 ];
 
 // POST /api/admin/matches/:id/events - Add an event to a match
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{}> }) {
   try {
     // Verify admin token
     const token = (await cookies()).get('admin_token')?.value;
@@ -118,7 +118,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     const body = await request.json();
-    const { id } = await params;
+    const { id } = await params as { id: string };
     
     // Find match to update
     const matchIndex = matches.findIndex(match => match.id === id);

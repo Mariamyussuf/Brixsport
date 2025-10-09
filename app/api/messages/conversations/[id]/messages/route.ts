@@ -3,15 +3,15 @@ import { getAuth } from '@/lib/auth';
 import MessagingService from '@/services/messagingService';
 
 // GET /api/messages/conversations/[id]/messages - Get messages in conversation
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{}> }) {
   try {
+    const { id: conversationId } = await params as { id: string };
+    
     const session = await getAuth(req);
     if (!session || !session.user) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
 
-    const { id: conversationId } = await params;
-    
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
@@ -51,8 +51,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 // POST /api/messages/conversations/[id]/messages - Send system message (admin only)
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{}> }) {
   try {
+    const { id: conversationId } = await params as { id: string };
+
     const session = await getAuth(req);
     if (!session || !session.user) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
@@ -61,7 +63,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // Check if user is admin (in a real implementation, you would check admin permissions)
     // For now, we'll assume this check is done in the service layer
 
-    const { id: conversationId } = await params;
     const { content, type, attachments, replyTo } = await req.json();
 
     // Validate required fields

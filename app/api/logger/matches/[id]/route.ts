@@ -3,8 +3,10 @@ import { getAuth } from '@/lib/auth';
 import { dbService } from '@/lib/databaseService';
 
 // GET /api/logger/matches/[id] - Get match details for logger
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{}> }) {
   try {
+    const { id: matchId } = await params as { id: string };
+
     const session = await getAuth(req);
     if (!session || !session.user) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
@@ -19,8 +21,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         } 
       }, { status: 403 });
     }
-
-    const { id: matchId } = await params;
 
     // Get match details
     const matches = await dbService.getMatches();
@@ -51,8 +51,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 // PATCH /api/logger/matches/[id] - Update match status
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{}> }) {
   try {
+    const { id: matchId } = await params as { id: string };
+
     const session = await getAuth(req);
     if (!session || !session.user) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
@@ -68,7 +70,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }, { status: 403 });
     }
 
-    const { id: matchId } = await params;
     const { status, currentMinute, period } = await req.json();
 
     // Update match status

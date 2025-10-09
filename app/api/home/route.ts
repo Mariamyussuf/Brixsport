@@ -2,29 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from '@/lib/auth';
 import { dbService } from '@/lib/databaseService';
 
-// Helper function to convert database Match to API Match
-const convertMatchToAPIMatch = (match: any) => {
-  return {
-    id: match.id,
-    competition_id: match.competition_id,
-    home_team_id: match.home_team_id,
-    away_team_id: match.away_team_id,
-    match_date: match.match_date,
-    venue: match.venue,
-    status: match.status,
-    home_score: match.home_score || 0,
-    away_score: match.away_score || 0,
-    current_minute: match.current_minute || 0,
-    period: match.period,
-    created_at: match.created_at,
-    home_team_name: match.home_team_name || `Home Team ${match.home_team_id}`,
-    home_team_logo: match.home_team_logo || '',
-    away_team_name: match.away_team_name || `Away Team ${match.away_team_id}`,
-    away_team_logo: match.away_team_logo || '',
-    competition_name: match.competition_name || 'Competition'
-  };
-};
-
 // GET /api/home - Get home screen data with live and upcoming matches
 export async function GET(request: NextRequest) {
   console.log('Home API route called');
@@ -43,19 +20,22 @@ export async function GET(request: NextRequest) {
     console.log('Fetching data from database service');
     
     // Fetch public data that's available to all users
-    let liveFootball = [];
-    let liveBasketball = [];
-    let liveTrack = [];
+    let liveFootball: any[] = [];
+    let liveBasketball: any[] = [];
+    let liveTrack: any[] = [];
     let featuredContent = {};
     
     try {
       console.log('Fetching live matches');
       const allLiveMatches = await dbService.getLiveMatches();
-      console.log('All live matches fetched:', allLiveMatches.length);
+      console.log('All live matches fetched:', 
+        'football:', allLiveMatches.football.length, 
+        'basketball:', allLiveMatches.basketball.length, 
+        'track:', allLiveMatches.track.length);
       
-      liveFootball = allLiveMatches.filter(match => match.sport === 'football');
-      liveBasketball = allLiveMatches.filter(match => match.sport === 'basketball');
-      liveTrack = allLiveMatches.filter(match => match.sport === 'track');
+      liveFootball = allLiveMatches.football;
+      liveBasketball = allLiveMatches.basketball;
+      liveTrack = allLiveMatches.track;
       
       console.log('Live matches by sport - Football:', liveFootball.length, 'Basketball:', liveBasketball.length, 'Track:', liveTrack.length);
       
@@ -83,7 +63,7 @@ export async function GET(request: NextRequest) {
         liveFootball: liveFootball.map(convertMatchToAPIMatch),
         upcomingFootball: [], // Public users see limited upcoming matches
         liveBasketball: liveBasketball.map(convertMatchToAPIMatch),
-        trackEvents: liveTrack.map(match => ({
+        trackEvents: liveTrack.map((match: any) => ({
           id: match.id,
           competition_id: match.competition_id || 0,
           event_name: `Track Event ${match.id}`,
@@ -109,7 +89,7 @@ export async function GET(request: NextRequest) {
 
     // For authenticated users, provide personalized data
     console.log('Processing data for authenticated user');
-    let upcomingMatches = [];
+    let upcomingMatches: any[] = [];
     let userStats = {
       favoriteTeams: 0,
       followedCompetitions: 0,
@@ -127,13 +107,14 @@ export async function GET(request: NextRequest) {
     } catch (dbError) {
       console.error('Database error for authenticated user:', dbError);
       // Continue with empty data if database fails
+      upcomingMatches = [];
     }
 
     const homeData = {
       liveFootball: liveFootball.map(convertMatchToAPIMatch),
       upcomingFootball: upcomingMatches.map(convertMatchToAPIMatch),
       liveBasketball: liveBasketball.map(convertMatchToAPIMatch),
-      trackEvents: liveTrack.map(match => ({
+      trackEvents: liveTrack.map((match: any) => ({
         id: match.id,
         competition_id: match.competition_id || 0,
         event_name: `Track Event ${match.id}`,
@@ -171,4 +152,27 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Helper function to convert database Match to API Match
+function convertMatchToAPIMatch(match: any) {
+  return {
+    id: match.id,
+    competition_id: match.competition_id,
+    home_team_id: match.home_team_id,
+    away_team_id: match.away_team_id,
+    match_date: match.match_date,
+    venue: match.venue,
+    status: match.status,
+    home_score: match.home_score || 0,
+    away_score: match.away_score || 0,
+    current_minute: match.current_minute || 0,
+    period: match.period,
+    created_at: match.created_at,
+    home_team_name: match.home_team_name || `Home Team ${match.home_team_id}`,
+    home_team_logo: match.home_team_logo || '',
+    away_team_name: match.away_team_name || `Away Team ${match.away_team_id}`,
+    away_team_logo: match.away_team_logo || '',
+    competition_name: match.competition_name || 'Competition'
+  };
 }

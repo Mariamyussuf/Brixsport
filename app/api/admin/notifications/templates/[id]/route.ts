@@ -3,8 +3,10 @@ import { getAuth } from '@/lib/auth';
 import { NotificationService } from '@/services/notificationService';
 
 // GET /api/admin/notifications/templates/:id - Retrieve a specific notification template
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{}> }) {
   try {
+    const { id: templateId } = await params as { id: string };
+
     const session = await getAuth(req);
     if (!session || !session.user) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
@@ -14,8 +16,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     if (session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Forbidden' } }, { status: 403 });
     }
-
-    const { id: templateId } = await params;
 
     const template = await NotificationService.getTemplate(templateId);
     
@@ -43,8 +43,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 // PUT /api/admin/notifications/templates/:id - Update a notification template
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(req: Request, { params }: { params: Promise<{}> }) {
   try {
+    const { id: templateId } = await params as { id: string };
+
     const session = await getAuth(req);
     if (!session || !session.user) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
@@ -55,7 +57,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Forbidden' } }, { status: 403 });
     }
 
-    const { id: templateId } = await params;
     const updatedData = await req.json();
 
     const template = await NotificationService.updateTemplate(templateId, updatedData);
@@ -84,8 +85,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 // DELETE /api/admin/notifications/templates/:id - Delete a notification template
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{}> }) {
   try {
+    const { id: templateId } = await params as { id: string };
+
     const session = await getAuth(req);
     if (!session || !session.user) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
@@ -95,8 +98,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     if (session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Forbidden' } }, { status: 403 });
     }
-
-    const { id: templateId } = await params;
 
     const deleted = await NotificationService.deleteTemplate(templateId);
     

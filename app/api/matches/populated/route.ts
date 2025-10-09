@@ -1,19 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { databaseService } from '@/lib/databaseService';
 
-// This route would fetch matches with populated competition and logger data
-// In a production environment, this would integrate with your database
+// Define the interface for populated match data
+interface PopulatedMatch {
+  id: string;
+  homeTeam: string;
+  awayTeam: string;
+  venue: string;
+  date: string;
+  status: string;
+  competitionId: string;
+  homeScore?: number;
+  awayScore?: number;
+  competition: {
+    id: number | string;
+    name: string;
+  };
+  // Add other populated fields as needed
+}
 
+// This route fetches matches with populated competition data
 export async function GET(request: NextRequest) {
   try {
-    // Placeholder for actual implementation
-    // This would join matches with competitions and loggers collections/tables
-    const populatedMatches = [];
-    
+    // Fetch matches and competitions from the database
+    const [dbMatches, competitions] = await Promise.all([
+      databaseService.getMatches(),
+      databaseService.getCompetitions()
+    ]);
+
+    // Create a map of competitions for quick lookup
+    const competitionMap = new Map(competitions.map(comp => [comp.id, comp]));
+
+    // Transform matches to include populated competition data
+    const populatedMatches: PopulatedMatch[] = dbMatches.map(match => {
+      const competition = competitionMap.get(match.competition_id);
+      
+      return {
+        id: match.id.toString(),
+        homeTeam: match.home_team_name || `Home Team ${match.home_team_id}`,
+        awayTeam: match.away_team_name || `Away Team ${match.away_team_id}`,
+        venue: match.venue || '',
+        date: match.match_date,
+        status: match.status,
+        competitionId: match.competition_id.toString(),
+        homeScore: match.home_score,
+        awayScore: match.away_score,
+        competition: {
+          id: match.competition_id,
+          name: competition?.name || `Competition ${match.competition_id}`
+        }
+      };
+    });
+
     return NextResponse.json({
       success: true,
       data: populatedMatches
     });
   } catch (error) {
+    console.error('Error fetching populated matches:', error);
     return NextResponse.json(
       { 
         success: false,

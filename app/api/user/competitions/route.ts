@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Fetch competitions directly from the database service
-    const competitions = await dbService.getAllCompetitions();
+    const competitions = await dbService.getCompetitions();
     
     return NextResponse.json({
       success: true,

@@ -3,8 +3,10 @@ import { getAuth } from '@/lib/auth';
 import { dbService } from '@/lib/databaseService';
 
 // POST /api/logger/matches/[id]/events - Log match events
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{}> }) {
   try {
+    const { id: matchId } = await params as { id: string };
+
     const session = await getAuth(req);
     if (!session || !session.user) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
@@ -20,7 +22,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }, { status: 403 });
     }
 
-    const { id: matchId } = await params;
     const events = await req.json();
 
     // Validate required fields

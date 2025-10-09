@@ -5,7 +5,7 @@ import { getAuth } from '@/lib/auth';
 
 
 // GET /api/user/[id] - Get user by ID
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{}> }) {
   try {
     // Get the authentication session
     const session = await getAuth(request);
@@ -14,7 +14,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const { id } = await params as { id: string };
   
   } catch (error) {
     console.error('Error fetching user:', error);
