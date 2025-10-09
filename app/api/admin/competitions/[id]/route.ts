@@ -16,7 +16,7 @@ interface Competition {
 }
 
 // PUT /api/admin/competitions/:id - Update a competition
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     // Verify admin token
     const token = (await cookies()).get('admin_token')?.value;
@@ -44,7 +44,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const body = await request.json();
-    const { id } = await params;
+    const { id } = params;
     
     // Convert id to number
     const competitionId = parseInt(id, 10);
@@ -79,7 +79,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 // DELETE /api/admin/competitions/:id - Delete a competition
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
     // Verify admin token
     const token = (await cookies()).get('admin_token')?.value;
@@ -106,7 +106,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       }, { status: 403 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     
     // Convert id to number
     const competitionId = parseInt(id, 10);

@@ -36,9 +36,9 @@ async function forwardRequest(url: string, method: string = 'GET', body?: any) {
 }
 
 // GET /api/admin/players/[id] - Get player by ID (Admin only)
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params;
+    const { id } = params;
     
     // Check if this is a stats request
     const url = new URL(req.url);
@@ -65,9 +65,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 // PUT /api/admin/players/[id] - Update player (Admin only)
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(req: Request, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params;
+    const { id } = params;
     
     const body = await req.json();
     
@@ -96,9 +96,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 // DELETE /api/admin/players/[id] - Delete player (Admin only)
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params;
+    const { id } = params;
     
     // Check if this is a team removal request
     const url = new URL(req.url);
@@ -125,9 +125,9 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 }
 
 // POST /api/admin/players/[id]/team - Assign player to team (Admin only)
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params;
+    const { id } = params;
     
     const body = await req.json();
     
