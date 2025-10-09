@@ -4,9 +4,9 @@ import { cookies } from 'next/headers';
 import { dbService } from '@/lib/databaseService';
 
 // POST /api/admin/loggers/:id/activate - Activate a logger
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Verify admin token
     const token = (await cookies()).get('admin_token')?.value;

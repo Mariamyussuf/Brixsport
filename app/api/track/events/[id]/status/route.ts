@@ -3,7 +3,7 @@ import { getAuth } from '@/lib/auth';
 import { dbService } from '@/lib/databaseService';
 
 // PATCH /api/track/events/[id]/status - Update track event status
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getAuth(req);
     if (!session || !session.user) {
@@ -20,7 +20,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       }, { status: 403 });
     }
 
-    const { id: eventId } = params;
+    const { id: eventId } = await params;
     const { status } = await req.json();
 
     // Update event status in database

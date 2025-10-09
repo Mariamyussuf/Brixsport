@@ -3,7 +3,7 @@ import { getAuth } from '@/lib/auth';
 import { dbService } from '@/lib/databaseService';
 
 // GET /api/logger/matches/[id] - Get match details for logger
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getAuth(req);
     if (!session || !session.user) {
@@ -20,7 +20,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       }, { status: 403 });
     }
 
-    const { id: matchId } = params;
+    const { id: matchId } = await params;
 
     // Get match details
     const matches = await dbService.getMatches();
@@ -51,7 +51,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // PATCH /api/logger/matches/[id] - Update match status
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getAuth(req);
     if (!session || !session.user) {
@@ -68,7 +68,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       }, { status: 403 });
     }
 
-    const { id: matchId } = params;
+    const { id: matchId } = await params;
     const { status, currentMinute, period } = await req.json();
 
     // Update match status

@@ -172,7 +172,7 @@ export async function POST(request: Request) {
 }
 
 // PUT /api/admin/:id - Update an admin
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Verify admin token
     const token = (await cookies()).get('admin_token')?.value;
@@ -192,7 +192,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     const body = await request.json();
-    const { id } = params;
+    const { id } = await params;
     
     // Find admin to update
     const adminIndex = admins.findIndex(admin => admin.id === id);
@@ -243,7 +243,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 }
 
 // DELETE /api/admin/:id - Delete an admin
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Verify admin token
     const token = (await cookies()).get('admin_token')?.value;
@@ -270,7 +270,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       }, { status: 403 });
     }
     
-    const { id } = params;
+    const { id } = await params;
     
     // Prevent admins from deleting themselves
     if (adminUser.id === id) {

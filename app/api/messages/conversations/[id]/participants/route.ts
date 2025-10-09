@@ -3,14 +3,14 @@ import { getAuth } from '@/lib/auth';
 import MessagingService from '@/services/messagingService';
 
 // POST /api/messages/conversations/[id]/participants - Add participant to conversation
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getAuth(req);
     if (!session || !session.user) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
 
-    const { id: conversationId } = params;
+    const { id: conversationId } = await params;
     const { participantId } = await req.json();
 
     // Validate required fields

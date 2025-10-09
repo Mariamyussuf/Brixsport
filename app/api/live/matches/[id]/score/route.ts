@@ -3,7 +3,7 @@ import { getAuth } from '@/lib/auth';
 import { dbService } from '@/lib/databaseService';
 
 // PATCH /api/live/matches/[id]/score - Update live match score (Admin/Logger only)
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getAuth(req);
     if (!session || !session.user) {
@@ -20,7 +20,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       }, { status: 403 });
     }
 
-    const { id: matchId } = params;
+    const { id: matchId } = await params;
     const { homeScore, awayScore, currentMinute, period } = await req.json();
 
     // Update the specific match score

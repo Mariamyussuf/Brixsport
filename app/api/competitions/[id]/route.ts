@@ -24,9 +24,9 @@ async function forwardRequest(url: string, method: string = 'GET', body?: any) {
 }
 
 // GET /api/competitions/[id] - Get competition by ID
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     return forwardRequest(`${API_BASE_URL}/competitions/${id}`);
   } catch (error) {
     console.error('Error fetching competition:', error);

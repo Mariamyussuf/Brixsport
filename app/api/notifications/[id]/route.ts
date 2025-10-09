@@ -3,7 +3,7 @@ import { getAuth } from '@/lib/auth';
 import { NotificationService } from '@/services/notificationService';
 
 // PATCH /api/notifications/:id - Update notification status
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getAuth(req);
     if (!session || !session.user) {
@@ -11,7 +11,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     const { status } = await req.json();
-    const { id: notificationId } = params;
+    const { id: notificationId } = await params;
 
     const updatedNotification = await NotificationService.updateNotificationStatus(
       session.user.id,
@@ -43,14 +43,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 // DELETE /api/notifications/:id - Delete a notification
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getAuth(req);
     if (!session || !session.user) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
 
-    const { id: notificationId } = params;
+    const { id: notificationId } = await params;
 
     const deleted = await NotificationService.deleteNotification(
       session.user.id,
