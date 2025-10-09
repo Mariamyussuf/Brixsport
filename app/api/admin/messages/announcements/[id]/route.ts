@@ -3,7 +3,7 @@ import { getAuth } from '@/lib/auth';
 import MessagingService from '@/services/messagingService';
 
 // DELETE /api/admin/messages/announcements/[id] - Remove system announcement
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   try {
     const session = await getAuth(req);
     if (!session || !session.user) {
@@ -21,7 +21,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       }, { status: 403 });
     }
 
-    const { id: announcementId } = await params;
+    const { id: announcementId } = params;
 
     const result = await MessagingService.deleteAnnouncement(
       session.user.id,
