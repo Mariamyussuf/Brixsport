@@ -28,8 +28,8 @@
       "@controllers/*": ["src/controllers/*"],
       "@middleware/*": ["src/middleware/*"],
       "@routes/*": ["src/routes/*"],
-      "@services/*": ["src/services/*"],
       "@utils/*": ["src/utils/*"],
+      "@services/*": ["src/services/*"],
       "@types/*": ["src/types/*"]
     }
   },
