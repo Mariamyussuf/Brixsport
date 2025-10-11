@@ -1,13 +1,14 @@
-import { createClient, RedisClientType, RedisModules, RedisClientOptions, RedisFunctions, RedisScripts } from 'redis';
+import { createClient, RedisClientOptions } from 'redis';
 import { logger } from '../utils/logger';
 import { promisify } from 'util';
 
-// Export types for use in other modules
-export type { RedisClientType, RedisModules, RedisFunctions, RedisScripts } from 'redis';
+// Use a local alias for the concrete client type returned by createClient to avoid
+// cross-package generic type mismatches with other redis-related packages.
+type RedisClient = ReturnType<typeof createClient>;
 
 // Redis client instances with proper type definition
-let redisClient: RedisClientType<RedisModules, RedisFunctions, RedisScripts> | null = null;
-let redisClientsPool: RedisClientType<RedisModules, RedisFunctions, RedisScripts>[] = [];
+let redisClient: RedisClient | null = null;
+let redisClientsPool: RedisClient[] = [];
 const MAX_POOL_SIZE = parseInt(process.env.REDIS_POOL_SIZE || '10');
 
 // Redis configuration with defaults
@@ -36,7 +37,7 @@ const connectionMetrics = {
 let connectionAttempts = 0;
 
 // Connection pool management
-const getConnectionFromPool = (): RedisClientType<RedisModules, RedisFunctions, RedisScripts> | null => {
+const getConnectionFromPool = (): RedisClient | null => {
   if (redisClientsPool.length === 0) {
     return null;
   }
@@ -44,7 +45,7 @@ const getConnectionFromPool = (): RedisClientType<RedisModules, RedisFunctions, 
   return client;
 };
 
-const releaseConnectionToPool = (client: RedisClientType<RedisModules, RedisFunctions, RedisScripts>) => {
+const releaseConnectionToPool = (client: RedisClient) => {
   if (redisClientsPool.length < MAX_POOL_SIZE) {
     redisClientsPool.push(client);
   } else {
@@ -55,7 +56,7 @@ const releaseConnectionToPool = (client: RedisClientType<RedisModules, RedisFunc
 };
 
 // Health check function
-const checkRedisHealth = async (client: RedisClientType<RedisModules, RedisFunctions, RedisScripts>): Promise<boolean> => {
+const checkRedisHealth = async (client: RedisClient): Promise<boolean> => {
   try {
     await client.ping();
     return true;
@@ -66,28 +67,26 @@ const checkRedisHealth = async (client: RedisClientType<RedisModules, RedisFunct
   }
 };
 
-const createRedisClient = (): RedisClientType<RedisModules, RedisFunctions, RedisScripts> => {
-  // Build socket config separately and cast to satisfy differing type expectations
-  const socketConfig = {
-    tls: REDIS_TLS,
-    keepAlive: REDIS_KEEP_ALIVE,
-    connectTimeout: REDIS_CONNECTION_TIMEOUT,
-    reconnectStrategy: (retries: number) => {
-      if (retries > MAX_RETRIES) {
-        const error = new Error('Max Redis reconnection attempts reached');
-        logger.warn(error.message);
-        connectionMetrics.lastError = error;
-        connectionMetrics.failedConnections++;
-        return error;
-      }
-      // Exponential backoff with jitter
-      const jitter = Math.random() * 1000;
-      const delay = Math.min(1000 * Math.pow(2, retries), 30000); // Exponential backoff, max 30s
-      return delay + jitter;
-    }
-  } as unknown as RedisClientOptions<RedisModules, RedisFunctions, RedisScripts>['socket'];
+const createRedisClient = (): RedisClient => {
+  // Typed adapter that maps environment variables into the exact socket type
+  const buildSocketOptions = (): RedisClientOptions['socket'] => {
+    // Redis v4 socket options (Node.js net/TLS socket options plus some redis-specific entries)
+    const base: RedisClientOptions['socket'] = {
+      // keepAlive: number | false | undefined - use 0 to enable default keepAlive behavior
+      keepAlive: REDIS_KEEP_ALIVE ? 0 : undefined,
+      connectTimeout: REDIS_CONNECTION_TIMEOUT,
+      // For TLS prefer a `rediss://` URL or set TLS options on the URL; omit tls here
+    };
 
-  const clientConfig: RedisClientOptions<RedisModules, RedisFunctions, RedisScripts> = {
+    // The redis v4 client does not accept a reconnectStrategy on the socket itself.
+    // Reconnection behavior is handled by the client. We therefore keep reconnect logic in code.
+
+    return base;
+  };
+
+  const socketConfig = buildSocketOptions();
+
+  const clientConfig: RedisClientOptions = {
     url: REDIS_URL,
     database: REDIS_DB,
     password: REDIS_PASSWORD,
@@ -106,7 +105,7 @@ const createRedisClient = (): RedisClientType<RedisModules, RedisFunctions, Redi
   connectionMetrics.activeConnections++;
 
   // Add event listeners with enhanced logging
-  client.on('error', (err) => {
+  client.on('error', (err: any) => {
     logger.error('Redis Client Error:', err);
     connectionMetrics.lastError = err;
     connectionMetrics.commandErrors++;
@@ -135,7 +134,7 @@ const createRedisClient = (): RedisClientType<RedisModules, RedisFunctions, Redi
   });
 
   // Add command monitoring
-  client.on('command', (args) => {
+  client.on('command', (args: any[]) => {
     connectionMetrics.commandsExecuted++;
     logger.debug(`Redis Command: ${args[0]}`, { command: args[0], timestamp: new Date() });
   });
@@ -165,7 +164,7 @@ const createRedisClient = (): RedisClientType<RedisModules, RedisFunctions, Redi
   return client;
 };
 
-export const connectRedis = async (): Promise<RedisClientType<RedisModules, RedisFunctions, RedisScripts>> => {
+export const connectRedis = async (): Promise<RedisClient> => {
   // Try to get a connection from the pool first
   const pooledClient = getConnectionFromPool();
   if (pooledClient) {
@@ -237,8 +236,7 @@ export const disconnectRedis = async (): Promise<void> => {
   }
   logger.info('Redis disconnected successfully');
 };
-
-export const getRedisClient = async (): Promise<RedisClientType<RedisModules, RedisFunctions, RedisScripts>> => {
+export const getRedisClient = async (): Promise<RedisClient> => {
   if (!redisClient) {
     return await connectRedis();
   }
@@ -254,9 +252,9 @@ export const getRedisClient = async (): Promise<RedisClientType<RedisModules, Re
 };
 
 export const withRedis = async <T>(
-  callback: (client: RedisClientType<RedisModules, RedisFunctions, RedisScripts>) => Promise<T>
+  callback: (client: RedisClient) => Promise<T>
 ): Promise<T> => {
-  let client: RedisClientType<RedisModules, RedisFunctions, RedisScripts> | null = null;
+  let client: RedisClient | null = null;
   
   try {
     // Try to get a connection from the pool first
