@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React        const playerResponse = await playerService.getPlayerById(id);
+        if (playerResponse.success && playerResponse.data) {
+          setPlayer(playerResponse.data);
+        } else {
+          setError(playerResponse.error?.message || 'Failed to fetch player');
+          return;
+        }State, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Player, CareerStats } from '@/types/brixsports';
 import playerService from '@/services/playerService';
@@ -27,7 +33,7 @@ const PlayerDetailPage: React.FC<PlayerDetailPageProps> = ({ params }) => {
         // Fetch player data
         const playerResponse = await playerService.getPlayerById(id);
         if (playerResponse.success) {
-          setPlayer(playerResponse.data);
+          setPlayer(playerResponse.data || null);
         } else {
           setError(playerResponse.error?.message || 'Failed to fetch player');
           return;
@@ -36,7 +42,7 @@ const PlayerDetailPage: React.FC<PlayerDetailPageProps> = ({ params }) => {
         // Fetch player stats
         const statsResponse = await playerService.getPlayerStats(id);
         if (statsResponse.success) {
-          setStats(statsResponse.data);
+          setStats(statsResponse.data || null);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unexpected error occurred');
