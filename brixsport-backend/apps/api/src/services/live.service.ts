@@ -205,6 +205,47 @@ export const liveService = {
     }
   },
   
+  validateEvent: async (matchId: string, eventId: string) => {
+    try {
+      logger.info('Validating match event', { matchId, eventId });
+      
+      // First check if the match exists
+      const matchResult = await supabaseService.getMatch(matchId);
+      if (!matchResult.success) {
+        return {
+          success: false,
+          error: 'Match not found'
+        };
+      }
+      
+      // Then check if the event exists and belongs to this match
+      const eventsResult = await supabaseService.getMatchEventsByMatch(matchId);
+      if (!eventsResult.success) {
+        return {
+          success: false,
+          error: 'Failed to fetch match events'
+        };
+      }
+      
+      const event = eventsResult.data.find((e: any) => e.id === eventId);
+      if (!event) {
+        return {
+          success: false,
+          error: 'Event not found'
+        };
+      }
+      
+      // If we get here, the event exists and belongs to the match
+      return {
+        success: true,
+        data: event
+      };
+    } catch (error: any) {
+      logger.error('Validate event error', error);
+      throw error;
+    }
+  },
+
   // Live Stats
   getMatchStats: async (matchId: string) => {
     try {
