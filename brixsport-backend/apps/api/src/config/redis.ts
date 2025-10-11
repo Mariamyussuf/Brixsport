@@ -94,8 +94,8 @@ const createRedisClient = (): RedisClient => {
     // Command timeout is handled at the application level
     // since the newer Redis client doesn't support it directly in the config
     disableOfflineQueue: true, // Don't queue commands when offline
-    readonly: false,
-    legacyMode: false // Use new RESP3 protocol
+    readonly: false
+    // Redis v4 uses RESP3 protocol by default
   };
 
   const client = createClient(clientConfig);
