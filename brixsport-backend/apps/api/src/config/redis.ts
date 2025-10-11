@@ -16,7 +16,7 @@ const REDIS_PASSWORD = process.env.REDIS_PASSWORD || undefined;
 const REDIS_DB = parseInt(process.env.REDIS_DB || '0');
 const REDIS_CONNECTION_TIMEOUT = parseInt(process.env.REDIS_CONNECTION_TIMEOUT || '5000');
 const REDIS_COMMAND_TIMEOUT = parseInt(process.env.REDIS_COMMAND_TIMEOUT || '5000');
-const REDIS_KEEP_ALIVE = process.env.REDIS_KEEP_ALIVE === 'false' ? false : 60000; // Keep alive timeout in milliseconds (60 seconds) or false to disable
+const REDIS_KEEP_ALIVE = process.env.REDIS_KEEP_ALIVE === 'false' ? false : 60000; // keepAlive must be number (ms) or false
 const REDIS_TLS = process.env.REDIS_TLS === 'true';
 const MAX_RETRIES = parseInt(process.env.REDIS_MAX_RETRIES || '3');
 const RETRY_DELAY = parseInt(process.env.REDIS_RETRY_DELAY || '1000');
