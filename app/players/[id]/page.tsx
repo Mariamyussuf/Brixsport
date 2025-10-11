@@ -1,12 +1,6 @@
 'use client';
 
-import React        const playerResponse = await playerService.getPlayerById(id);
-        if (playerResponse.success && playerResponse.data) {
-          setPlayer(playerResponse.data);
-        } else {
-          setError(playerResponse.error?.message || 'Failed to fetch player');
-          return;
-        }State, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Player, CareerStats } from '@/types/brixsports';
 import playerService from '@/services/playerService';
@@ -114,7 +108,7 @@ const PlayerDetailPage: React.FC<PlayerDetailPageProps> = ({ params }) => {
       {/* Player Profile Content with top padding to account for fixed header */}
       <div className="pt-16 px-4 py-6">
         <div className="max-w-4xl mx-auto">
-          <PlayerProfile player={player} stats={stats} />
+          <PlayerProfile player={player} stats={stats ?? undefined} />
         </div>
       </div>
     </div>
