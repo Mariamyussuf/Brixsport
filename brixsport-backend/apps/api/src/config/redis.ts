@@ -72,8 +72,8 @@ const createRedisClient = (): RedisClient => {
   const buildSocketOptions = (): RedisClientOptions['socket'] => {
     // Redis v4 socket options (Node.js net/TLS socket options plus some redis-specific entries)
     const base: RedisClientOptions['socket'] = {
-      // keepAlive: number | false | undefined - use 0 to enable default keepAlive behavior
-      keepAlive: REDIS_KEEP_ALIVE ? 0 : undefined,
+      // keepAlive: boolean | undefined - true to enable, undefined to disable
+      keepAlive: (REDIS_KEEP_ALIVE ? true : undefined) as any,
       connectTimeout: REDIS_CONNECTION_TIMEOUT,
       // For TLS prefer a `rediss://` URL or set TLS options on the URL; omit tls here
     };
