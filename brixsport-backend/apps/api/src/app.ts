@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { logger } from './utils/logger';
-import routes from '@routes/index';
+import routes from './routes';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { errorHandler } from './middleware/errorHandler.middleware';

@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import v1Routes from '@routes/v1';
-import matchEventsRoutes from '@routes/matchEvents.routes';
-import docsRoutes from '@routes/docs.routes';
-import competitionRoutes from '@routes/competitions.routes';
-import searchRoutes from '@routes/search.routes';
+import v1Routes from './v1';
+import matchEventsRoutes from './matchEvents.routes';
+import docsRoutes from './docs.routes';
+import competitionRoutes from './competitions.routes';
+import searchRoutes from './search.routes';
 import redisInfoRoutes from './redis-info.routes';
 import { apiRateLimiter } from '../middleware/rateLimit.middleware';
 
