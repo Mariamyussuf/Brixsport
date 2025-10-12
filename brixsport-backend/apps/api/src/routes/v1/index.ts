@@ -1,6 +1,4 @@
 import { Router } from 'express';
-
-// Import all route modules
 import authRoutes from '@routes/v1/auth.routes';
 import matchesRoutes from '@routes/v1/matches.routes';
 import liveRoutes from '@routes/v1/live.routes';

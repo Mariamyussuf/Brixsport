@@ -29,6 +29,12 @@
       ],
       "@middleware/*": [
         "brixsport-backend/apps/api/src/middleware/*"
+      ],
+      "@routes/*": [
+        "brixsport-backend/apps/api/src/routes/*"
+      ],
+      "@controllers/*": [
+        "brixsport-backend/apps/api/src/controllers/*"
       ]
     },
     "plugins": [
