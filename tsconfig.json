@@ -20,6 +20,15 @@
     "paths": {
       "@/*": [
         "src/*"
+      ],
+      "@utils/*": [
+        "brixsport-backend/apps/api/src/utils/*"
+      ],
+      "@services/*": [
+        "brixsport-backend/apps/api/src/services/*"
+      ],
+      "@middleware/*": [
+        "brixsport-backend/apps/api/src/middleware/*"
       ]
     },
     "plugins": [
