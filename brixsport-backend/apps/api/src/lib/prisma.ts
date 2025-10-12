@@ -31,12 +31,12 @@ const prisma = new PrismaClient({
   ],
 });
 
-prisma.$on('query', (e) => {
+prisma.$on('query', (e: any) => {
   console.log('Query: ' + e.query);
   console.log('Duration: ' + e.duration + 'ms');
 });
 
-prisma.$on('error', (e) => {
+prisma.$on('error', (e: any) => {
   console.error('Prisma Error:', e.message);
 });
 
