@@ -25,9 +25,9 @@ const StandingsPage = () => {
   const [standings, setStandings] = useState<StandingsEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
 
   // Get competition ID from URL params or use default
-  const searchParams = new URLSearchParams(window?.location?.search || '');
   const competitionId = searchParams.get('competition') || '1';
 
   useEffect(() => {
