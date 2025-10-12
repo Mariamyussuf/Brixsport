@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { getTeamsByCompetition } from '@/lib/userTeamService';
 import { getMatchesByCompetition } from '@/lib/userMatchService';
 import { Team } from '@/types/matchEvents';
