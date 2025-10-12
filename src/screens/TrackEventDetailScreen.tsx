@@ -11,7 +11,8 @@ import { TrackEvent } from '@/types/brixsports';
 const TrackEventDetailScreen: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const eventId = searchParams.get('id');
+  // Handle case where searchParams might be null during SSR
+  const eventId = searchParams ? searchParams.get('id') : null;
   
   const { getTrackEventById, updateTrackEventStatus } = useApi();
   const [trackEvent, setTrackEvent] = useState<TrackEvent | null>(null);
@@ -21,6 +22,12 @@ const TrackEventDetailScreen: React.FC = () => {
   const [statusUpdateError, setStatusUpdateError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Don't fetch data if we're server-side rendering
+    if (typeof window === 'undefined') {
+      setLoading(false);
+      return;
+    }
+
     if (!eventId) {
       setError('No event ID provided');
       setLoading(false);
@@ -102,7 +109,8 @@ const TrackEventDetailScreen: React.FC = () => {
     }
   };
 
-  if (loading) {
+  // Show loading state during SSR or initial client load
+  if (typeof window === 'undefined' || loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">

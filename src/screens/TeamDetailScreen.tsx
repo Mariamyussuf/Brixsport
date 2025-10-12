@@ -10,7 +10,8 @@ import { ArrowLeft, Users, MapPin, Calendar } from 'lucide-react';
 export default function TeamDetailScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const teamId = searchParams.get('id');
+  // Handle case where searchParams might be null during SSR
+  const teamId = searchParams ? searchParams.get('id') : null;
   
   const { getTeamById } = useApi();
   const [teamData, setTeamData] = useState<{ team: Team; players: Player[] } | null>(null);
@@ -18,6 +19,12 @@ export default function TeamDetailScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Don't fetch data if we're server-side rendering
+    if (typeof window === 'undefined') {
+      setLoading(false);
+      return;
+    }
+
     if (!teamId) {
       setError('No team ID provided');
       setLoading(false);
@@ -67,7 +74,8 @@ export default function TeamDetailScreen() {
     return grouped;
   };
 
-  if (loading) {
+  // Show loading state during SSR or initial client load
+  if (typeof window === 'undefined' || loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
