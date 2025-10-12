@@ -38,6 +38,7 @@ export interface AuthorizationService {
   getUserPermissions(userId: string): Promise<string[]>;
   assignRole(userId: string, role: string): Promise<void>;
   removeRole(userId: string, role: string): Promise<void>;
+  isSuspiciousPermissionCheck(context: { userId: string; permission: string; ip: string; userAgent: string }): Promise<{ isSuspicious: boolean; reasons: string[] }>;
 }
 
 export interface ABACService {
@@ -291,6 +292,40 @@ export const authorizationService: AuthorizationService = {
     }
   },
   
+  isSuspiciousPermissionCheck: async (context: { userId: string; permission: string; ip: string; userAgent: string }): Promise<{ isSuspicious: boolean; reasons: string[] }> => {
+    const reasons: string[] = [];
+
+    // Get user's normal IP addresses and user agents
+    const userHistory = await redisService.getList(`user:${context.userId}:history`);
+    
+    // Check if IP is known
+    if (!userHistory.includes(context.ip)) {
+      reasons.push('Unknown IP address');
+    }
+
+    // Check if user agent is known
+    if (!userHistory.includes(context.userAgent)) {
+      reasons.push('Unknown user agent');
+    }
+
+    // Check for rapid permission checks
+    const recentChecks = await redisService.getList(`user:${context.userId}:permission_checks`);
+    if (recentChecks.length > 10) { // More than 10 checks in last minute
+      reasons.push('Rapid permission checks');
+    }
+
+    // Check for sensitive permissions
+    const sensitivePermissions = ['admin', 'delete', 'grant'];
+    if (sensitivePermissions.some(p => context.permission.includes(p))) {
+      reasons.push('Sensitive permission requested');
+    }
+
+    return {
+      isSuspicious: reasons.length > 0,
+      reasons
+    };
+  },
+
   removeRole: async (userId: string, role: string): Promise<void> => {
     try {
       logger.info('Removing role from user', { userId, role });

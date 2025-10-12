@@ -38,6 +38,7 @@ export interface RedisService {
   // Pattern operations
   keys(pattern: string): Promise<string[]>;
   flushdb(): Promise<void>;
+  getList(key: string): Promise<string[]>;
 }
 
 export const redisService: RedisService = {
@@ -242,6 +243,19 @@ export const redisService: RedisService = {
   },
   
   // List operations
+  getList: async (key: string): Promise<string[]> => {
+    try {
+      const client = await getRedisClient();
+      if (!client) {
+        throw new Error('Redis client not initialized');
+      }
+      return client.lRange(key, 0, -1);
+    } catch (error) {
+      logger.error('Redis getList error:', error);
+      return [];
+    }
+  },
+
   lpush: async (key: string, ...values: string[]): Promise<number> => {
     try {
       const client = await getRedisClient();

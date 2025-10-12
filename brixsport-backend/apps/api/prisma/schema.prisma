@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String          @id @default(uuid())
+  email                String          @unique
+  password             String
+  name                 String?
+  role                 String          @default("user")
+  avatar               String?
+  preferences          Json            @default("{}")
+  notificationSettings Json            @default("{}")
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  lastLoginAt          DateTime?
+  emailVerifiedAt      DateTime?
+  passwordChangedAt    DateTime?
+  phoneNumber          String?
+  isActive             Boolean         @default(true)
+  deactivatedAt        DateTime?
+  deletedAt            DateTime?
+  security            UserSecurity?
+  mfaSettings         MFASettings?
+  subscription        Subscription?
+  sessions            Session[]
+  securityEvents      SecurityEvent[]
+  securityAlerts      SecurityAlert[]
+}
+
+model UserSecurity {
+  id                    String    @id @default(uuid())
+  userId                String    @unique
+  user                  User      @relation(fields: [userId], references: [id])
+  isLocked             Boolean    @default(false)
+  lockedAt             DateTime?
+  lockReason           String?
+  failedLoginAttempts  Int       @default(0)
+  lastFailedLoginAt    DateTime?
+  requiresPasswordChange Boolean  @default(false)
+  passwordHistory      String[]   // Hashed passwords
+  securityQuestions    Json?      // Encrypted security questions and answers
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+}
+
+model MFASettings {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id])
+  isEnabled     Boolean   @default(false)
+  method        String    // 'totp', 'sms', 'email'
+  secret        String?   // Encrypted secret for TOTP
+  contact       String?   // Phone number or email for SMS/email MFA
+  backupCodes   String[]  // Hashed backup codes
+  lastVerified  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Session {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  token         String    @unique
+  deviceId      String?
+  userAgent     String?
+  ip            String?
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  metadata      Json      @default("{}")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model SecurityEvent {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  eventType     String
+  resource      String
+  action        String
+  severity      String
+  details       Json      @default("{}")
+  outcome       String
+  ip            String?
+  userAgent     String?
+  timestamp     DateTime  @default(now())
+}
+
+model SecurityAlert {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  type          String
+  message       String
+  severity      String
+  details       Json      @default("{}")
+  resolved      Boolean   @default(false)
+  resolvedAt    DateTime?
+  resolvedBy    String?
+  timestamp     DateTime  @default(now())
+}
+
+model Subscription {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id])
+  tier          String    @default("free") // free, basic, premium, enterprise
+  startDate     DateTime  @default(now())
+  endDate       DateTime?
+  autoRenew     Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}

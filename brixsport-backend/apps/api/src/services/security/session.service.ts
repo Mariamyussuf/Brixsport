@@ -32,6 +32,7 @@ export interface SessionService {
   revokeSession(sessionId: string): Promise<void>;
   revokeAllSessions(userId: string): Promise<void>;
   getUserSessions(userId: string): Promise<Session[]>;
+  getActiveSessions(userId: string): Promise<Session[]>;
   updateSessionActivity(sessionId: string): Promise<void>;
 }
 
@@ -324,6 +325,15 @@ export const sessionService: SessionService = {
     }
   },
   
+  getActiveSessions: async (userId: string): Promise<Session[]> => {
+    // Get all sessions and filter out expired or revoked ones
+    const sessions = await sessionService.getUserSessions(userId);
+    return sessions.filter(session => 
+      !sessionService.isSessionExpired(session) &&
+      session.lastActivity > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Active in last 30 days
+    );
+  },
+
   updateSessionActivity: async (sessionId: string): Promise<void> => {
     try {
       logger.debug('Updating session activity', { sessionId });

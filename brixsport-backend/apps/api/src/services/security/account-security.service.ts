@@ -1,188 +1,375 @@
 import { logger } from '@utils/logger';
 import * as bcrypt from 'bcryptjs';
+import zxcvbn from 'zxcvbn';
 import { supabaseService } from '../supabase.service';
 import { redisService } from '../redis.service';
+import { prisma } from '../../lib/prisma';
+import { 
+  AccountStatus,
+  IAccountSecurityService,
+  LoginRiskContext,
+  PasswordValidationResult,
+  RiskAssessment
+} from '../../types/security.types';
+import { DatabaseError } from '../../types/errors';
 
-export interface PasswordValidationResult {
-  isValid: boolean;
-  score: number; // 0-4 scale
-  feedback: {
-    warning: string;
-    suggestions: string[];
-  };
-}
+class AccountSecurityService implements IAccountSecurityService {
+  private readonly MAX_LOGIN_ATTEMPTS = 5;
+  private readonly LOCK_DURATION = 15 * 60; // 15 minutes in seconds
+  private readonly commonPasswords: Set<string>;
 
-export interface AccountSecurityService {
-  recordFailedLogin(email: string): Promise<void>;
-  resetFailedLogins(email: string): Promise<void>;
-  isAccountLocked(email: string): Promise<boolean>;
-  sendSecurityAlert(userId: string, event: string, ip: string): Promise<void>;
-  validatePasswordStrength(password: string): Promise<PasswordValidationResult>;
-}
+  constructor() {
+    // Initialize common passwords set
+    this.commonPasswords = new Set([
+      '123456', 'password', 'qwerty', 'abc123',
+      // Add more common passwords...
+    ]);
+  }
 
-export const accountSecurityService: AccountSecurityService = {
-  recordFailedLogin: async (email: string): Promise<void> => {
+  async updateUserSecurity(userId: string, securityData: { isLocked?: boolean; requiresPasswordChange?: boolean; maxSessions?: number }): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Update user's security JSON field
+    // Since the UserSecurity model is not being generated properly, we'll create/update it directly
+    await prisma.$executeRaw`INSERT INTO "UserSecurity" ("userId", "lockoutUntil") 
+      VALUES (${userId}, ${securityData.isLocked ? new Date(Date.now() + this.LOCK_DURATION * 1000) : null})
+      ON CONFLICT ("userId") 
+      DO UPDATE SET "lockoutUntil" = ${securityData.isLocked ? new Date(Date.now() + this.LOCK_DURATION * 1000) : null}`;
+  }
+
+  async checkUserExists(userId: string): Promise<boolean> {
     try {
-      logger.info('Recording failed login', { email });
-      
-      const maxAttempts = parseInt(process.env.MAX_LOGIN_ATTEMPTS || '5');
-      const lockoutDuration = parseInt(process.env.ACCOUNT_LOCKOUT_DURATION || '300'); // 5 minutes default
-      
-      // Get current failed attempts from Redis
-      const key = `failed_logins:${email}`;
-      let attempts = parseInt(await redisService.get(key) || '0');
-      
-      attempts += 1;
-      
-      // Store updated attempts with expiration
-      await redisService.set(key, attempts.toString(), lockoutDuration);
-      
-      logger.info('Failed login recorded', { 
-        email, 
-        attempts,
-        maxAttempts
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true }
       });
-    } catch (error: any) {
-      logger.error('Failed login recording error', error);
-      throw error;
-    }
-  },
-  
-  resetFailedLogins: async (email: string): Promise<void> => {
-    try {
-      logger.info('Resetting failed logins', { email });
-      
-      const key = `failed_logins:${email}`;
-      await redisService.del(key);
-      
-      logger.info('Failed logins reset', { email });
-    } catch (error: any) {
-      logger.error('Failed logins reset error', error);
-      throw error;
-    }
-  },
-  
-  isAccountLocked: async (email: string): Promise<boolean> => {
-    try {
-      const maxAttempts = parseInt(process.env.MAX_LOGIN_ATTEMPTS || '5');
-      
-      const key = `failed_logins:${email}`;
-      const attemptsStr = await redisService.get(key);
-      const attempts = attemptsStr ? parseInt(attemptsStr) : 0;
-      
-      const isLocked = attempts >= maxAttempts;
-      
-      if (isLocked) {
-        logger.warn('Account is locked', { email });
-      }
-      
-      return isLocked;
-    } catch (error: any) {
-      logger.error('Account lock check error', error);
-      return false;
-    }
-  },
-  
-  sendSecurityAlert: async (userId: string, event: string, ip: string): Promise<void> => {
-    try {
-      logger.info('Sending security alert', { userId, event, ip });
-      
-      // Create security alert record in database
-      const { error } = await (supabaseService as any).supabase
-        .from('SecurityAlert')
-        .insert({
-          id: uuidv4(),
-          userId: userId,
-          eventType: event,
-          ip: ip,
-          timestamp: new Date().toISOString(),
-          severity: 'medium',
-          details: '{}'
-        });
-      
-      if (error) {
-        logger.warn('Failed to store security alert in database', { error: error.message });
-      }
-      
-      // In a real implementation, you would send an email or notification to the user
-      // For now, we'll just log it
-      logger.warn('Security alert sent', { userId, event, ip });
-    } catch (error: any) {
-      logger.error('Security alert error', error);
-      throw error;
-    }
-  },
-  
-  validatePasswordStrength: async (password: string): Promise<PasswordValidationResult> => {
-    try {
-      logger.debug('Validating password strength');
-      
-      let score = 0;
-      const feedback = {
-        warning: '',
-        suggestions: [] as string[]
-      };
-      
-      // Length check
-      if (password.length >= 12) {
-        score += 1;
-      } else {
-        feedback.suggestions.push('Use at least 12 characters');
-      }
-      
-      // Complexity checks
-      if (/[a-z]/.test(password)) score += 1;
-      else feedback.suggestions.push('Include lowercase letters');
-      
-      if (/[A-Z]/.test(password)) score += 1;
-      else feedback.suggestions.push('Include uppercase letters');
-      
-      if (/[0-9]/.test(password)) score += 1;
-      else feedback.suggestions.push('Include numbers');
-      
-      if (/[^A-Za-z0-9]/.test(password)) score += 1;
-      else feedback.suggestions.push('Include special characters');
-      
-      // Common password check (simplified)
-      const commonPasswords = ['password', '123456', 'qwerty', 'admin'];
-      if (commonPasswords.includes(password.toLowerCase())) {
-        score = Math.min(score, 2);
-        feedback.warning = 'Password is too common';
-      }
-      
-      // Sequential characters check
-      if (/0123|1234|2345|3456|4567|5678|6789|7890|abcd|bcde|cdef|defg|efgh|fghi|ghij|hijk|ijkl|jklm|klmn|lmno|mnop|nopq|opqr|pqrs|qrst|rstu|stuv|tuvw|uvwx|vwxy|wxyz/i.test(password)) {
-        score = Math.min(score, 3);
-        if (!feedback.warning) {
-          feedback.warning = 'Password contains sequential characters';
-        }
-      }
-      
-      const isValid = score >= 4;
-      
-      if (!isValid && feedback.suggestions.length === 0) {
-        feedback.suggestions.push('Make your password stronger');
-      }
-      
-      logger.debug('Password strength validated', { score, isValid });
-      
-      return {
-        isValid,
-        score,
-        feedback
-      };
-    } catch (error: any) {
-      logger.error('Password strength validation error', error);
-      throw error;
+      return !!user;
+    } catch (error) {
+      logger.error('Error checking user existence:', error);
+      throw new DatabaseError('Failed to check user existence');
     }
   }
-};
 
-// Helper function for UUID generation
-function uuidv4() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
+  async checkAccountStatus(userId: string): Promise<AccountStatus> {
+    return this.getAccountStatus(userId);
+  }
+
+  async getAccountStatus(userId: string): Promise<AccountStatus> {
+    try {
+      // Get user with security events (this one is working)
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          securityEvents: true
+        }
+      });
+
+      if (!user) {
+        return {
+          exists: false,
+          isActive: false,
+          isLocked: false,
+          requiresPasswordChange: false,
+          requiresMFASetup: false,
+          securityRecommendations: []
+        };
+      }
+
+      // Get user security data separately since the relation is not working
+      const userSecurity: any[] = await prisma.$queryRaw`SELECT * FROM "UserSecurity" WHERE "userId" = ${userId} LIMIT 1` as any[];
+      const mfaSettings: any[] = await prisma.$queryRaw`SELECT * FROM "MFASettings" WHERE "userId" = ${userId} LIMIT 1` as any[];
+
+      const recommendations = await this.generateSecurityRecommendations(user);
+      
+      return {
+        exists: true,
+        isActive: !user.suspended,
+        isLocked: userSecurity && userSecurity[0] && userSecurity[0].lockoutUntil ? userSecurity[0].lockoutUntil > new Date() : false,
+        requiresPasswordChange: userSecurity && userSecurity[0] && userSecurity[0].requirePasswordChange || false,
+        requiresMFASetup: !mfaSettings || !mfaSettings[0] || !mfaSettings[0].enabled,
+        securityRecommendations: recommendations
+      };
+    } catch (error) {
+      logger.error('Error getting account status:', error);
+      throw new DatabaseError('Failed to get account status');
+    }
+  }
+
+  async getMaxConcurrentSessions(userId: string): Promise<number> {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          role: true
+        }
+      });
+
+      if (!user) {
+        return 1; // Default limit for non-existent users
+      }
+
+      // Get user security data separately since the relation is not working
+      const userSecurity: any[] = await prisma.$queryRaw`SELECT * FROM "UserSecurity" WHERE "userId" = ${userId} LIMIT 1` as any[];
+
+      const sessionLimits: Record<string, number> = {
+        admin: 10,
+        premium: 5,
+        basic: 3,
+        free: 1
+      };
+      
+      // Use security settings if defined, otherwise use role-based limits
+      if (userSecurity && userSecurity[0] && userSecurity[0].maxSessions !== undefined) {
+        return userSecurity[0].maxSessions;
+      }
+      
+      return sessionLimits[user.role] || 2; // Default to 2 sessions for unknown roles
+    } catch (error) {
+      logger.error('Error getting max concurrent sessions:', error);
+      throw new DatabaseError('Failed to get max concurrent sessions');
+    }
+  }
+
+  async calculateRiskScore(params: {
+    userId: string;
+    action: string;
+    ip: string;
+    userAgent: string;
+  }): Promise<number> {
+    try {
+      const { userId, action, ip, userAgent } = params;
+
+      // Get user's security history
+      const securityHistory = await prisma.securityEvent.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 50
+      });
+
+      let riskScore = 0;
+
+      // Calculate various risk factors
+      const locationRisk = await this.calculateLocationRisk(userId, ip);
+      const deviceRisk = await this.calculateDeviceRisk(userId, userAgent);
+      const timeBasedRisk = this.calculateTimeBasedRisk(securityHistory);
+      const behaviorRisk = this.calculateBehaviorRisk(securityHistory, action);
+      const sensitiveActionRisk = this.calculateSensitiveActionRisk(action);
+
+      // Weight and combine risk factors
+      riskScore += locationRisk * 0.3; // 30% weight
+      riskScore += deviceRisk * 0.2;   // 20% weight
+      riskScore += timeBasedRisk * 0.2; // 20% weight
+      riskScore += behaviorRisk * 0.2;  // 20% weight
+      riskScore += sensitiveActionRisk * 0.1; // 10% weight
+
+      // Normalize score between 0 and 1
+      return Math.min(Math.max(riskScore, 0), 1);
+    } catch (error) {
+      logger.error('Error calculating risk score:', error);
+      throw new DatabaseError('Failed to calculate risk score');
+    }
+  }
+
+  async assessLoginRisk(params: LoginRiskContext): Promise<RiskAssessment> {
+    try {
+      const { userId, ip, userAgent, timestamp } = params;
+      const riskScore = await this.calculateRiskScore({ 
+        userId, 
+        action: 'login',
+        ip,
+        userAgent 
+      });
+
+      const riskFactors = await this.identifyRiskFactors(userId, ip, userAgent);
+
+      // Determine risk level
+      let riskLevel: 'low' | 'medium' | 'high';
+      if (riskScore > 0.7) riskLevel = 'high';
+      else if (riskScore > 0.4) riskLevel = 'medium';
+      else riskLevel = 'low';
+
+      return {
+        isHighRisk: riskScore > 0.7,
+        riskLevel,
+        riskFactors,
+        requiresVerification: riskScore > 0.7 || riskFactors.length > 2,
+        score: riskScore
+      };
+    } catch (error) {
+      logger.error('Error assessing login risk:', error);
+      throw new DatabaseError('Failed to assess login risk');
+    }
+  }
+
+  async recordFailedLogin(email: string): Promise<void> {
+    try {
+      const key = `failed_login:${email}`;
+      const attempts = await redisService.incr(key);
+      
+      if (attempts === 1) {
+        await redisService.expire(key, this.LOCK_DURATION);
+      }
+      
+      if (attempts >= this.MAX_LOGIN_ATTEMPTS) {
+        await this.lockAccount(email);
+      }
+    } catch (error) {
+      logger.error('Error recording failed login:', error);
+      throw new DatabaseError('Failed to record failed login');
+    }
+  }
+
+  async resetFailedLogins(email: string): Promise<void> {
+    try {
+      await redisService.del(`failed_login:${email}`);
+    } catch (error) {
+      logger.error('Error resetting failed logins:', error);
+      throw new DatabaseError('Failed to reset failed logins');
+    }
+  }
+
+  async isAccountLocked(email: string): Promise<boolean> {
+    try {
+      const attempts = await redisService.get(`failed_login:${email}`);
+      return parseInt(attempts || '0') >= this.MAX_LOGIN_ATTEMPTS;
+    } catch (error) {
+      logger.error('Error checking account lock:', error);
+      throw new DatabaseError('Failed to check account lock status');
+    }
+  }
+
+  async isCommonPassword(password: string): Promise<boolean> {
+    return this.commonPasswords.has(password.toLowerCase());
+  }
+
+  async validatePasswordStrength(password: string): Promise<PasswordValidationResult> {
+    try {
+      // Use zxcvbn for comprehensive password strength analysis
+      const result = zxcvbn(password);
+
+      const suggestions = [...result.feedback.suggestions];
+      let warning = result.feedback.warning;
+
+      // Add custom security checks
+      if (this.commonPasswords.has(password.toLowerCase())) {
+        warning = 'This is a commonly used password';
+        suggestions.push('Choose a unique password not found in common password lists');
+      }
+
+      if (!/[A-Z]/.test(password)) {
+        suggestions.push('Add uppercase letters for stronger security');
+      }
+
+      if (!/[0-9]/.test(password)) {
+        suggestions.push('Include numbers for better security');
+      }
+
+      if (!/[^A-Za-z0-9]/.test(password)) {
+        suggestions.push('Add special characters to strengthen the password');
+      }
+
+      return {
+        isValid: result.score >= 3,
+        score: result.score,
+        feedback: {
+          warning: warning || '',
+          suggestions
+        }
+      };
+    } catch (error) {
+      logger.error('Error validating password strength:', error);
+      throw new DatabaseError('Failed to validate password strength');
+    }
+  }
+
+  async sendSecurityAlert(userId: string, event: string, ip: string): Promise<void> {
+    try {
+      // Create security alert separately since the model is not being generated
+      await prisma.$executeRaw`INSERT INTO "SecurityAlert" ("userId", "alertType", "message", "severity", "metadata")
+        VALUES (${userId}, ${event}, ${`Security event: ${event}`}, 'warning', ${JSON.stringify({ ip })})`;
+    } catch (error) {
+      logger.error('Error sending security alert:', error);
+      throw new DatabaseError('Failed to send security alert');
+    }
+  }
+
+  private async lockAccount(email: string): Promise<void> {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { email }
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Update or create userSecurity record using raw SQL since the model is not being generated
+      await prisma.$executeRaw`INSERT INTO "UserSecurity" ("userId", "lockoutUntil")
+        VALUES (${user.id}, ${new Date(Date.now() + this.LOCK_DURATION * 1000)})
+        ON CONFLICT ("userId")
+        DO UPDATE SET "lockoutUntil" = ${new Date(Date.now() + this.LOCK_DURATION * 1000)}`;
+    } catch (error) {
+      logger.error('Error locking account:', error);
+      throw new DatabaseError('Failed to lock account');
+    }
+  }
+
+  private async calculateLocationRisk(userId: string, ip: string): Promise<number> {
+    // Implementation of location-based risk calculation
+    return 0;
+  }
+
+  private async calculateDeviceRisk(userId: string, userAgent: string): Promise<number> {
+    // Implementation of device-based risk calculation
+    return 0;
+  }
+
+  private calculateTimeBasedRisk(securityHistory: any[]): number {
+    // Implementation of time-based risk calculation
+    return 0;
+  }
+
+  private calculateBehaviorRisk(securityHistory: any[], action: string): number {
+    // Implementation of behavior-based risk calculation
+    return 0;
+  }
+
+  private calculateSensitiveActionRisk(action: string): number {
+    const sensitiveActions = new Set([
+      'change_password',
+      'update_security_settings',
+      'disable_mfa',
+      'change_email',
+      'delete_account'
+    ]);
+
+    return sensitiveActions.has(action) ? 0.8 : 0;
+  }
+
+  private async identifyRiskFactors(
+    userId: string,
+    ip: string,
+    userAgent: string
+  ): Promise<string[]> {
+    const riskFactors: string[] = [];
+
+    // Implementation of risk factor identification
+    return riskFactors;
+  }
+
+  private async generateSecurityRecommendations(user: any): Promise<string[]> {
+    const recommendations: string[] = [];
+
+    // Implementation of security recommendations generation
+    return recommendations;
+  }
 }
+
+export const accountSecurityService = new AccountSecurityService();

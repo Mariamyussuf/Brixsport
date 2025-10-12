@@ -25,6 +25,7 @@ model User {
   avatar                  String?
   preferences             Json?
   notificationSettings    Json?
+  security               Json?      // Security settings and preferences
   createdAt               DateTime   @default(now())
   updatedAt               DateTime   @updatedAt
   suspended               Boolean    @default(false)
@@ -64,10 +65,76 @@ model User {
   feedback                Feedback[]
   activityLogs            UserActivityLog[] @relation("UserActivityLogs")
   chatMessages            ChatMessage[] @relation("ChatMessages")
+  
+  // Security relationships
+  userSecurity          UserSecurity?
+  mfaSettings          MFASettings?
+  securityAlerts       SecurityAlert[]
 
   @@index([name])
   @@index([email])
   @@index([deleted])
+}
+
+// =============================================================================
+// SECURITY MODELS
+// =============================================================================
+
+model UserSecurity {
+  id                String    @id @default(uuid())
+  userId           String    @unique
+  failedLoginCount Int       @default(0)
+  lastFailedLogin  DateTime?
+  lockoutUntil     DateTime?
+  passwordHistory  String[]  // Store hashed passwords
+  securityQuestions Json?
+  user             User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model MFASettings {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  enabled         Boolean   @default(false)
+  method          String    @default("app") // "app", "sms", "email"
+  secret          String?   // For TOTP
+  backupCodes     String[]
+  verifiedAt      DateTime?
+  user            User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model SecurityEvent {
+  id        String   @id @default(uuid())
+  userId    String
+  eventType String   // "login", "password_change", "mfa_enabled", etc.
+  ip        String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
+model SecurityAlert {
+  id          String   @id @default(uuid())
+  userId      String
+  alertType   String
+  message     String
+  severity    String   @default("info") // "info", "warning", "critical"
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([alertType])
+  @@index([createdAt])
 }
 
 // Session model with enhanced security
@@ -941,30 +1008,6 @@ model AuditLog {
   @@index([entity, entityId])
   @@index([action])
   @@index([timestamp]) // For partitioning
-}
-
-// Security events tracking
-model SecurityEvent {
-  id          String   @id @default(uuid())
-  type        String   // "FAILED_LOGIN", "SUSPICIOUS_ACTIVITY", "DATA_BREACH", "UNAUTHORIZED_ACCESS"
-  severity    String   // "LOW", "MEDIUM", "HIGH", "CRITICAL"
-  userId      String?
-  ipAddress   String?
-  userAgent   String?
-  description String
-  metadata    Json?
-  resolved    Boolean  @default(false)
-  resolvedAt  DateTime?
-  resolvedBy  String?
-  createdAt   DateTime @default(now())
-  
-  // Relationship
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([type, severity])
-  @@index([resolved])
-  @@index([createdAt])
-  @@index([ipAddress])
 }
 
 // =============================================================================

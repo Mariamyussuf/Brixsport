@@ -9,6 +9,7 @@ export interface MFASetup {
   secret: string;
   qrCode: string;
   backupCodes: string[];
+  method: 'totp' | 'sms' | 'email';
 }
 
 export interface MFAService {
@@ -17,9 +18,30 @@ export interface MFAService {
   disableMFA(userId: string): Promise<void>;
   generateBackupCodes(userId: string): Promise<string[]>;
   validateBackupCode(userId: string, code: string): Promise<boolean>;
+  getMFASettings(userId: string): Promise<{ enabled: boolean; method?: 'totp' | 'sms' | 'email' }>;
+  isMFARequired(userId: string): Promise<boolean>;
+  setMFARequired(userId: string, required: boolean): Promise<void>;
 }
 
 export const mfaService: MFAService = {
+  async getMFASettings(userId: string) {
+    const settings = await supabaseService.getUserById(userId);
+    return {
+      enabled: Boolean(settings?.mfaEnabled),
+      method: settings?.mfaMethod as 'totp' | 'sms' | 'email'
+    };
+  },
+
+  async isMFARequired(userId: string) {
+    const user = await supabaseService.getUserById(userId);
+    return Boolean(user?.mfaRequired);
+  },
+
+  async setMFARequired(userId: string, required: boolean) {
+    await supabaseService.updateUser(userId, { mfaRequired: required });
+  },
+
+  // Existing methods
   enableMFA: async (userId: string, method: 'totp' | 'sms' | 'email' = 'totp'): Promise<MFASetup> => {
     try {
       logger.info('Enabling MFA', { userId, method });

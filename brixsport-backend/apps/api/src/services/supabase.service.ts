@@ -150,26 +150,18 @@ const normalizeMatchRecord = (match: Record<string, any>) => {
   return {
     id: match.id,
     competition_id: competitionId,
-    competitionId,
     competition_name: match.competition?.name,
     competition_logo: competitionLogo,
     competition_country: match.competition?.country,
     home_team_id: homeTeamId,
-    homeTeamId,
     away_team_id: awayTeamId,
-    awayTeamId,
     match_date: scheduledAt,
-    startTime: scheduledAt,
-    scheduled_at: scheduledAt,
     venue: match.venue,
     status: normalizedStatus,
     status_raw: statusRaw,
     home_score: homeScore,
-    homeScore,
     away_score: awayScore,
-    awayScore,
     current_minute: currentMinute || 0,
-    currentMinute: currentMinute,
     period,
     home_team_name: match.homeTeam?.name,
     home_team_short_name: match.homeTeam?.shortName || match.homeTeam?.name?.substring(0, 3).toUpperCase(),
@@ -1377,26 +1369,38 @@ export const supabaseService = {
       const matches = (data || []).map(match => ({
         id: match.id,
         competition_id: match.competitionId,
+        competitionId: match.competitionId,
         competition_name: match.competition?.name,
         competition_logo: match.competition?.logo,
         competition_country: match.competition?.country,
         home_team_id: match.homeTeamId,
+        homeTeamId: match.homeTeamId,
         away_team_id: match.awayTeamId,
+        awayTeamId: match.awayTeamId,
         match_date: match.startTime,
+        startTime: match.startTime,
+        scheduled_at: match.startTime,
         venue: match.venue,
-        status: match.status === 'in_progress' ? 'live' : 
-                match.status === 'scheduled' ? 'upcoming' : 'finished',
+        status: match.status === 'in_progress' || match.status === 'live'
+          ? 'live'
+          : match.status === 'scheduled'
+            ? 'upcoming'
+            : match.status,
+        status_raw: match.status,
         home_score: match.homeScore,
+        homeScore: match.homeScore,
         away_score: match.awayScore,
+        awayScore: match.awayScore,
         current_minute: match.currentMinute || 0,
+        currentMinute: match.currentMinute,
         period: match.period,
         home_team_name: match.homeTeam?.name,
         home_team_short_name: match.homeTeam?.shortName || match.homeTeam?.name?.substring(0, 3).toUpperCase(),
-        home_team_logo: match.homeTeam?.logo,
+        home_team_logo: match.homeTeam?.logo_url || match.homeTeam?.logo,
         away_team_name: match.awayTeam?.name,
         away_team_short_name: match.awayTeam?.shortName || match.awayTeam?.name?.substring(0, 3).toUpperCase(),
-        away_team_logo: match.awayTeam?.logo,
-        timestamp: new Date(match.startTime).getTime()
+        away_team_logo: match.awayTeam?.logo_url || match.awayTeam?.logo,
+        timestamp: match.startTime ? new Date(match.startTime).getTime() : undefined
       }));
       
       // Cache the results (5 minutes TTL)
@@ -1417,7 +1421,7 @@ export const supabaseService = {
       throw error;
     }
   },
-  
+
   // User Analytics
   getUserOverview: async () => {
     try {
@@ -2074,6 +2078,8 @@ export const supabaseService = {
     }
   },
   
+
+
   // Reports
   listReports: async (filters: any = {}) => {
     try {
@@ -2100,7 +2106,7 @@ export const supabaseService = {
       
       return {
         success: true,
-        data: data || []
+        data: data || [] as any[]  // Explicitly type as array
       };
     } catch (error: any) {
       logger.error('List reports error', error);
@@ -2238,7 +2244,7 @@ export const supabaseService = {
       
       return {
         success: true,
-        data: data || []
+        data: data || [] as any[]  // Explicitly type as array
       };
     } catch (error: any) {
       logger.error('List dashboards error', error);

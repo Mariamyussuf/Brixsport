@@ -1,6 +1,7 @@
-// ==================================================
-// QUERY OPTIMIZATION IMPROVEMENTS
-// ==================================================
+
+
+import { supabase } from "../services/supabase.service";
+import { logger } from "../utils/logger";
 
 // Optimized: Replace multiple individual queries with batch operations
 export const getOptimizedUserAnalytics = async () => {
@@ -185,12 +186,21 @@ const createOptimizedSupabaseClient = () => {
     },
   };
 
-  return createClient(supabaseUrl, supabaseKey, clientConfig);
+  // Since we're using the already configured supabase client from supabase.service.ts,
+  // we don't need to create a new client here. The configuration is already applied.
+  return supabase;
 };
 
 // ==================================================
 // ENHANCED CACHE STRATEGY
 // ==================================================
+
+// Define CachedItem interface
+interface CachedItem<T> {
+  value: T;
+  timestamp: number;
+  ttl: number;
+}
 
 // Improved cache with better invalidation and metrics
 class OptimizedCacheService {

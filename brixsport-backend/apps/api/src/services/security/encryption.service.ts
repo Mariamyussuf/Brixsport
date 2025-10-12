@@ -8,6 +8,7 @@ export interface EncryptedData {
   iv: string;
   authTag?: string;
   algorithm: string;
+  keyId?: string;
 }
 
 export interface EncryptionKey {
@@ -74,7 +75,8 @@ export const encryptionService: EncryptionService = {
       return {
         data: encrypted,
         iv: iv.toString('hex'),
-        algorithm
+        algorithm,
+        keyId: keyId || 'default'
       };
     } catch (error: any) {
       logger.error('Encryption error', error);
