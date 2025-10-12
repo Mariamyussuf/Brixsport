@@ -35,6 +35,9 @@
       ],
       "@controllers/*": [
         "brixsport-backend/apps/api/src/controllers/*"
+      ],
+      "@config/*": [
+        "brixsport-backend/apps/api/src/config/*"
       ]
     },
     "plugins": [
