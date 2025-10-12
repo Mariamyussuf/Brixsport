@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getTeamsByCompetition } from '@/lib/userTeamService';
 import { getMatchesByCompetition } from '@/lib/userMatchService';
@@ -21,7 +21,7 @@ interface StandingsEntry {
   points: number;
 }
 
-const StandingsPage = () => {
+const StandingsContent = () => {
   const [standings, setStandings] = useState<StandingsEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -157,6 +157,14 @@ const StandingsPage = () => {
         </table>
       </div>
     </div>
+  );
+};
+
+const StandingsPage = () => {
+  return (
+    <Suspense fallback={<div className="text-center p-8">Loading standings...</div>}>
+      <StandingsContent />
+    </Suspense>
   );
 };
 
