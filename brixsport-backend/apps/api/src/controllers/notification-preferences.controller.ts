@@ -7,9 +7,10 @@ import {
 } from '../types/notification.types';
 
 // Extend the Express Request type to include user
+// Made the id property optional to match the global Express type definition
 interface AuthenticatedRequest extends Request {
   user?: {
-    id: string;
+    id?: string;  // Made optional to match JWT payload structure
     [key: string]: any;
   };
 }

@@ -106,16 +106,23 @@ describe('Supabase Service', () => {
         { id: 'match2', homeTeamId: 'team3', awayTeamId: 'team1' }
       ];
       
-      // Mock the Supabase client response
+      // Mock the Supabase client response - match the actual return structure
       mockOr.mockResolvedValueOnce({
         data: mockMatches,
-        error: null
+        error: null,
+        meta: {
+          total: 2,
+          page: 1,
+          limit: 50,
+          pages: 1
+        }
       });
       
       const result = await supabaseService.getTeamMatches('team1');
       
       expect(result.success).toBe(true);
-      expect(result.data.length).toBe(2);
+      // Type assertion to tell TypeScript that result.data is an array
+      expect((result.data as any[]).length).toBe(2);
       expect(mockFrom).toHaveBeenCalledWith('Match');
       expect(mockSelect).toHaveBeenCalled();
       expect(mockOr).toHaveBeenCalled();

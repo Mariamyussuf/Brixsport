@@ -4,13 +4,7 @@ import { authenticator } from 'otplib';
 import QRCode from 'qrcode';
 import { supabaseService } from '../supabase.service';
 import { redisService } from '../redis.service';
-
-export interface MFASetup {
-  secret: string;
-  qrCode: string;
-  backupCodes: string[];
-  method: 'totp' | 'sms' | 'email';
-}
+import { MFASetup } from '../../types/security.types'; // Import the MFASetup interface from types
 
 export interface MFAService {
   enableMFA(userId: string, method: 'totp' | 'sms' | 'email'): Promise<MFASetup>;
@@ -21,6 +15,11 @@ export interface MFAService {
   getMFASettings(userId: string): Promise<{ enabled: boolean; method?: 'totp' | 'sms' | 'email' }>;
   isMFARequired(userId: string): Promise<boolean>;
   setMFARequired(userId: string, required: boolean): Promise<void>;
+}
+
+// Extended interface that includes backup codes for internal use
+export interface MFASetupWithBackupCodes extends MFASetup {
+  backupCodes?: string[];
 }
 
 export const mfaService: MFAService = {
@@ -89,10 +88,13 @@ export const mfaService: MFAService = {
       
       logger.info('MFA enabled', { userId, method });
       
+      // Return MFASetup object that matches the interface from types
       return {
+        id: userId, // Use userId as the id
+        method,
         secret,
         qrCode,
-        backupCodes: codes
+        isVerified: false // Set to false initially, will be verified when user enters code
       };
     } catch (error: any) {
       logger.error('MFA enable error', error);

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
-import RedisStore from 'rate-limit-redis';
+import RedisStore, { RedisReply } from 'rate-limit-redis';
 import Redis from 'ioredis';
 import { RateLimitError } from '../types/errors';
 import { logger } from '@utils/logger';
@@ -27,7 +27,11 @@ const rateLimitOptions = {
   standardHeaders: true,
   legacyHeaders: false,
   store: new RedisStore({
-    sendCommand: (command: string, args: string[]) => redisClient.sendCommand(command, args),
+    sendCommand: async (...args: string[]) => {
+      // Fix the type issue by properly typing the return value
+      const result = await redisClient.call(args[0], ...args.slice(1));
+      return result as RedisReply;
+    },
   }),
   handler: (req: Request, res: Response) => {
     throw new RateLimitError('Too many requests from this IP, please try again later');

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { notificationPreferencesController } from '../../controllers/notification-preferences.controller';
 import { authenticate } from '../../middleware/auth.middleware';
 import { validate } from '../../middleware/validation.middleware';
@@ -33,7 +33,9 @@ router.use(authenticate);
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.get('/', notificationPreferencesController.getPreferences.bind(notificationPreferencesController));
+router.get('/', (req: Request, res: Response) => {
+  return notificationPreferencesController.getPreferences(req, res);
+});
 
 /**
  * @openapi
@@ -68,7 +70,9 @@ router.get('/', notificationPreferencesController.getPreferences.bind(notificati
 router.put(
   '/', 
   validate(updateNotificationPreferencesSchema),
-  notificationPreferencesController.updatePreferences.bind(notificationPreferencesController)
+  (req: Request, res: Response) => {
+    return notificationPreferencesController.updatePreferences(req, res);
+  }
 );
 
 export { router as notificationPreferencesRoutes };
