@@ -27,7 +27,7 @@ export const hasRole = (requiredRole: UserRole) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     try {
       // Get user from request (added by auth middleware)
-      const user = (req as any).user;
+      const user = req.user;
       
       if (!user) {
         res.status(401).json({ error: 'Authentication required' });
@@ -67,7 +67,7 @@ export const hasPermission = (permission: string) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     try {
       // Get user from request (added by auth middleware)
-      const user = (req as any).user;
+      const user = req.user;
       
       if (!user) {
         res.status(401).json({ error: 'Authentication required' });

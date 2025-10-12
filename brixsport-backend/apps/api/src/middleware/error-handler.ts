@@ -22,9 +22,15 @@ export const errorHandler = async (
   if (error instanceof BaseError) {
     // Log security-related errors
     if (error.statusCode >= 400 && error.statusCode < 500) {
+      // Extract user ID from request user object (handling different possible structures)
+      let userId = 'anonymous';
+      if (req.user) {
+        userId = req.user.id || req.user.userId || 'anonymous';
+      }
+
       await auditService.logSecurityEvent({
         id: `error-${Date.now()}`,
-        userId: req.user?.id || 'anonymous',
+        userId: userId,
         eventType: 'security_error',
         resource: req.path,
         action: req.method,

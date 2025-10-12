@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import { logger } from '@utils/logger';
 
 const verifyToken = (token: string) => {
@@ -33,9 +33,11 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
     const decoded = verifyToken(token);
     
     // Add user info to request
-    (req as any).user = decoded;
+    req.user = decoded as any;
     
-    logger.info('User authenticated', { userId: (decoded as any).userId });
+    // Log user authentication
+    const userId = (decoded as any).userId || (decoded as any).id || 'unknown';
+    logger.info('User authenticated', { userId });
     
     next();
   } catch (error: any) {
@@ -52,8 +54,7 @@ export const authorize = (roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     try {
       // Check if user is authenticated
-      const user = (req as any).user;
-      if (!user) {
+      if (!req.user) {
         res.status(401).json({ 
           success: false,
           error: 'Authentication required' 
@@ -62,10 +63,11 @@ export const authorize = (roles: string[]) => {
       }
       
       // Check if user has required role
-      const userRole = user.role || 'user';
+      const userRole = req.user.role || 'user';
       if (!roles.includes(userRole)) {
+        const userId = req.user.userId || req.user.id || 'unknown';
         logger.warn('Authorization failed', { 
-          userId: user.userId, 
+          userId, 
           userRole, 
           requiredRoles: roles 
         });
@@ -77,8 +79,9 @@ export const authorize = (roles: string[]) => {
         return;
       }
       
+      const userId = req.user.userId || req.user.id || 'unknown';
       logger.info('User authorized', { 
-        userId: user.userId, 
+        userId, 
         userRole, 
         requiredRoles: roles 
       });
