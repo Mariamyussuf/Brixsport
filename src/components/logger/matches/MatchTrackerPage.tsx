@@ -495,7 +495,7 @@ export default function MatchTrackerPage() {
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${
               selectedMatch.status === 'scheduled' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
               selectedMatch.status === 'live' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-              'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+              'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-500'
             }`}>
               {selectedMatch.status.toUpperCase()}
             </span>
@@ -667,8 +667,9 @@ export default function MatchTrackerPage() {
             <div className="space-y-4">
               {events.map(event => {
                 const eventDisplay = getEventDisplay(event);
-                const team = teams.find(t => t.id === event.teamId);
-                const player = team?.players.find(p => p.id === event.playerId);
+                // Add null checks for team and player
+                const team = event.teamId ? teams.find(t => t.id === event.teamId) : undefined;
+                const player = team && event.playerId ? team.players.find((p: any) => p.id === event.playerId) : undefined;
                 
                 return (
                   <div key={event.id} className="flex items-center justify-between">
@@ -687,7 +688,7 @@ export default function MatchTrackerPage() {
                               {eventDisplay.text}
                             </p>
                             <p className="text-gray-400 text-sm">
-                              {team?.name} {player ? `• ${player.name}` : ''}
+                              {team?.name || 'Unknown Team'} {player ? `• ${player.name || 'Unknown Player'}` : ''}
                             </p>
                             {event.description && (
                               <p className="text-gray-400 text-sm">{event.description}</p>
@@ -1017,7 +1018,7 @@ export default function MatchTrackerPage() {
                       <option value="">Select player</option>
                       {teams
                         .find(t => t.id === currentEvent?.teamId)
-                        ?.players.map(player => (
+                        ?.players.map((player: any) => (
                           <option key={player.id} value={player.id}>
                             {player.name} (#{player.jerseyNumber})
                           </option>

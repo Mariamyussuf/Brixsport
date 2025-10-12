@@ -2,10 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 
-interface AnalyticsReportsProps {
-  className?: string;
-}
-
+// Define proper TypeScript interfaces
 interface Report {
   id: string;
   name: string;
@@ -17,6 +14,10 @@ interface Report {
   expiresAt: Date;
   size?: string;
   status: 'generating' | 'ready' | 'expired' | 'failed';
+}
+
+interface AnalyticsReportsProps {
+  className?: string;
 }
 
 const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ className = '' }) => {
@@ -34,60 +35,14 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ className = '' }) =
   });
 
   useEffect(() => {
-    // Simulate loading reports
+    // Load reports from API
     const loadReports = async () => {
       try {
-        const mockReports: Report[] = [
-          {
-            id: 'rpt_001',
-            name: 'User Engagement Report',
-            type: 'user',
-            description: 'Comprehensive analysis of user engagement metrics for the past month',
-            parameters: { timeframe: '30d', includeCharts: true },
-            format: 'pdf',
-            generatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-            expiresAt: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000),
-            size: '2.4 MB',
-            status: 'ready'
-          },
-          {
-            id: 'rpt_002',
-            name: 'System Performance Analysis',
-            type: 'system',
-            description: 'Detailed system performance metrics and optimization recommendations',
-            parameters: { timeframe: '7d', includeAlerts: true },
-            format: 'xlsx',
-            generatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-            expiresAt: new Date(Date.now() + 29 * 24 * 60 * 60 * 1000),
-            size: '1.8 MB',
-            status: 'ready'
-          },
-          {
-            id: 'rpt_003',
-            name: 'Revenue Analytics Report',
-            type: 'business',
-            description: 'Business intelligence report with revenue trends and projections',
-            parameters: { timeframe: '90d', includeForecasts: true },
-            format: 'pdf',
-            generatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-            expiresAt: new Date(Date.now() + 27 * 24 * 60 * 60 * 1000),
-            size: '3.2 MB',
-            status: 'ready'
-          },
-          {
-            id: 'rpt_004',
-            name: 'Custom User Segmentation',
-            type: 'custom',
-            description: 'Advanced user segmentation analysis with custom parameters',
-            parameters: { segments: ['premium', 'active', 'new'], metrics: ['engagement', 'revenue'] },
-            format: 'csv',
-            generatedAt: new Date(),
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            status: 'generating'
-          }
-        ];
-
-        setReports(mockReports);
+        setLoading(true);
+        
+        // TODO: Replace with actual API calls to fetch real reports data
+        // For now, we'll initialize with empty values
+        setReports([]);
         setLoading(false);
       } catch (error) {
         console.error('Error loading reports:', error);

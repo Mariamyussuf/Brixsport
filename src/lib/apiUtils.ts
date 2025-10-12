@@ -42,7 +42,7 @@ export const filterCompetitionsByType = (
   competitions: Competition[],
   type: string
 ): Competition[] => {
-  return competitions.filter(comp => comp.type.toLowerCase() === type.toLowerCase());
+  return competitions.filter(comp => comp.type && comp.type.toLowerCase() === type.toLowerCase());
 };
 
 /**
@@ -55,7 +55,7 @@ export const filterCompetitionsByCategory = (
   competitions: Competition[],
   category: string
 ): Competition[] => {
-  return competitions.filter(comp => comp.category.toLowerCase() === category.toLowerCase());
+  return competitions.filter(comp => comp.category && comp.category.toLowerCase() === category.toLowerCase());
 };
 
 /**
@@ -68,7 +68,7 @@ export const filterCompetitionsByStatus = (
   competitions: Competition[],
   status: string
 ): Competition[] => {
-  return competitions.filter(comp => comp.status.toLowerCase() === status.toLowerCase());
+  return competitions.filter(comp => comp.status && comp.status.toLowerCase() === status.toLowerCase());
 };
 
 /**
@@ -80,7 +80,10 @@ export const sortCompetitionsByNewest = (
   competitions: Competition[]
 ): Competition[] => {
   return [...competitions].sort((a, b) => {
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    // Handle case where created_at might be undefined
+    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return dateB - dateA;
   });
 };
 
@@ -93,7 +96,8 @@ export const groupCompetitionsByType = (
   competitions: Competition[]
 ): Record<string, Competition[]> => {
   return competitions.reduce((groups, comp) => {
-    const type = comp.type.toLowerCase();
+    // Handle case where type might be undefined
+    const type = comp.type ? comp.type.toLowerCase() : 'unknown';
     if (!groups[type]) {
       groups[type] = [];
     }
@@ -196,8 +200,8 @@ export const filterCompetitionsBySearch = (
   
   const term = searchTerm.toLowerCase();
   return competitions.filter(comp => 
-    comp.name.toLowerCase().includes(term) ||
-    comp.type.toLowerCase().includes(term) ||
+    (comp.name && comp.name.toLowerCase().includes(term)) ||
+    (comp.type && comp.type.toLowerCase().includes(term)) ||
     (comp.category && comp.category.toLowerCase().includes(term))
   );
 };
@@ -234,7 +238,7 @@ export const getActiveCompetitions = (
 ): Competition[] => {
   const now = new Date();
   return competitions.filter(comp => {
-    if (comp.status.toLowerCase() === 'completed') return false;
+    if (comp.status && comp.status.toLowerCase() === 'completed') return false;
     
     // If no end date, consider it active
     if (!comp.end_date) return true;
@@ -254,7 +258,7 @@ export const getCompletedCompetitions = (
 ): Competition[] => {
   const now = new Date();
   return competitions.filter(comp => {
-    if (comp.status.toLowerCase() === 'completed') return true;
+    if (comp.status && comp.status.toLowerCase() === 'completed') return true;
     
     // If has end date and it's in the past
     return !!(comp.end_date && new Date(comp.end_date) < now);

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertCircle, Calendar, Clock } from 'lucide-react';
-import { Competition } from '@/lib/competitionService';
+import { Competition } from '@/lib/userCompetitionService';
 
 interface CreateTrackEventPayload {
   competition_id: number;

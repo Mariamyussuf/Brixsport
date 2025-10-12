@@ -10,10 +10,8 @@ import { databaseService } from '@/lib/databaseService';
 
 // Zod schemas for runtime validation
 export const NotificationTypeSchema = z.enum([
-  'match', 'event', 'system', 'update', 'goal', 'assist', 'player',
-  'kickoff', 'half-time', 'full-time', 'substitution', 'card',
-  'lineup', 'preview', 'result', 'highlight', 'standing', 'qualification',
-  'fixture', 'news', 'transfer', 'injury'
+  'MATCH_UPDATE', 'SCORE_ALERT', 'FAVORITE_TEAM', 'COMPETITION_NEWS', 
+  'SYSTEM_ALERT', 'REMINDER', 'ACHIEVEMENT', 'ADMIN_NOTICE', 'LOG_ALERT'
 ]);
 
 export const NotificationCategorySchema = z.enum([
@@ -21,7 +19,7 @@ export const NotificationCategorySchema = z.enum([
 ]);
 
 export const NotificationPrioritySchema = z.enum([
-  'high', 'normal', 'low'
+  'LOW', 'NORMAL', 'HIGH', 'URGENT', 'CRITICAL'
 ]);
 
 export const NotificationSoundSchema = z.enum([
@@ -45,12 +43,22 @@ export const NotificationSchema = z.object({
   category: NotificationCategorySchema.optional(),
   scheduledTime: z.number().optional(),
   isPushNotification: z.boolean().optional(),
+  userId: z.string(),
+  status: z.enum(['UNREAD', 'READ', 'ARCHIVED', 'DELETED']),
+  source: z.enum(['SYSTEM', 'ADMIN', 'USER', 'LOGGER']),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 });
 
 export const NotificationCreateSchema = NotificationSchema.omit({
   id: true,
   timestamp: true,
   isRead: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  priority: NotificationPrioritySchema.default('NORMAL'),
 });
 
 export type NotificationCreate = z.infer<typeof NotificationCreateSchema>;
@@ -92,7 +100,6 @@ export async function sendNotification(
       isRead: false,
       type: payload.type,
       actionId: payload.actionId,
-      sound: payload.sound,
       priority: payload.priority,
       relatedTeamId: payload.relatedTeamId,
       relatedPlayerId: payload.relatedPlayerId,
@@ -101,7 +108,12 @@ export async function sendNotification(
       category: payload.category,
       scheduledTime: payload.scheduledTime,
       isPushNotification: payload.isPushNotification,
-    }
+      userId: payload.userId,
+      status: 'UNREAD',
+      source: payload.source,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } as unknown as Notification
   };
 }
 
@@ -111,10 +123,14 @@ export function createKickoffNotification(match: Match, minutesBefore: number = 
   return NotificationCreateSchema.parse({
     title,
     message,
-    type: 'kickoff',
+    type: 'REMINDER', // Changed to match the enum
     category: 'match',
-    priority: 'high',
+    priority: 'HIGH',
     sound: 'default',
+    userId: '',
+    source: 'SYSTEM',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   });
 }
 
@@ -124,12 +140,16 @@ export function createGoalNotification(event: any, match: Match, player?: any): 
   return NotificationCreateSchema.parse({
     title,
     message,
-    type: 'goal',
+    type: 'SCORE_ALERT', // Changed to match the enum
     category: 'player',
-    priority: 'high',
+    priority: 'HIGH',
     sound: 'success',
     relatedPlayerId: player?.id,
     relatedTeamId: match.homeTeam, // Using team name as ID since it's a string
+    userId: '',
+    source: 'SYSTEM',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   });
 }
 
@@ -137,11 +157,15 @@ export function createCardNotification(event: any, match: Match, player?: any): 
   return NotificationCreateSchema.parse({
     title: 'Card',
     message: `${player?.name ?? 'Player'} received a card`,
-    type: 'card',
+    type: 'MATCH_UPDATE', // Changed to match the enum
     category: 'match',
-    priority: 'normal',
+    priority: 'NORMAL',
     relatedPlayerId: player?.id,
     relatedTeamId: match.homeTeam, // Using team name as ID since it's a string
+    userId: '',
+    source: 'SYSTEM',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   });
 }
 
@@ -149,10 +173,14 @@ export function createSubstitutionNotification(event: any, match: Match, playerO
   return NotificationCreateSchema.parse({
     title: 'Substitution',
     message: `${playerOut?.name ?? 'Player'} → ${playerIn?.name ?? 'Player'}`,
-    type: 'substitution',
+    type: 'MATCH_UPDATE', // Changed to match the enum
     category: 'match',
-    priority: 'normal',
+    priority: 'NORMAL',
     relatedTeamId: match.homeTeam, // Using team name as ID since it's a string
+    userId: '',
+    source: 'SYSTEM',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   });
 }
 
@@ -160,9 +188,13 @@ export function createHalfTimeNotification(match: Match): NotificationCreate {
   return NotificationCreateSchema.parse({
     title: 'Half-time',
     message: `${match.homeTeam} vs ${match.awayTeam} is at half-time`,
-    type: 'half-time',
+    type: 'MATCH_UPDATE', // Changed to match the enum
     category: 'match',
-    priority: 'normal',
+    priority: 'NORMAL',
+    userId: '',
+    source: 'SYSTEM',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   });
 }
 
@@ -170,9 +202,13 @@ export function createFullTimeNotification(match: Match): NotificationCreate {
   return NotificationCreateSchema.parse({
     title: 'Full-time',
     message: `${match.homeTeam} vs ${match.awayTeam} has finished`,
-    type: 'full-time',
+    type: 'MATCH_UPDATE', // Changed to match the enum
     category: 'match',
-    priority: 'normal',
+    priority: 'NORMAL',
+    userId: '',
+    source: 'SYSTEM',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   });
 }
 
@@ -180,9 +216,13 @@ export function createLineupNotification(match: Match): NotificationCreate {
   return NotificationCreateSchema.parse({
     title: 'Lineup',
     message: `${match.homeTeam} vs ${match.awayTeam} lineup announced`,
-    type: 'lineup',
+    type: 'MATCH_UPDATE', // Changed to match the enum
     category: 'match',
-    priority: 'normal',
+    priority: 'NORMAL',
+    userId: '',
+    source: 'SYSTEM',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   });
 }
 
@@ -190,9 +230,13 @@ export function createPreviewNotification(match: Match): NotificationCreate {
   return NotificationCreateSchema.parse({
     title: 'Preview',
     message: `${match.homeTeam} vs ${match.awayTeam} preview available`,
-    type: 'preview',
+    type: 'MATCH_UPDATE', // Changed to match the enum
     category: 'match',
-    priority: 'low',
+    priority: 'LOW',
+    userId: '',
+    source: 'SYSTEM',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   });
 }
 
@@ -200,9 +244,13 @@ export function createResultNotification(match: Match): NotificationCreate {
   return NotificationCreateSchema.parse({
     title: 'Result',
     message: `${match.homeTeam} vs ${match.awayTeam} result available`,
-    type: 'result',
+    type: 'MATCH_UPDATE', // Changed to match the enum
     category: 'match',
-    priority: 'normal',
+    priority: 'NORMAL',
+    userId: '',
+    source: 'SYSTEM',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   });
 }
 
@@ -215,10 +263,14 @@ export function createPlayerNotification(
   return NotificationCreateSchema.parse({
     title: 'Player update',
     message: additionalInfo || `${player?.name ?? 'Player'} update`,
-    type: eventType,
+    type: 'PLAYER', // Changed to match the enum
     category: 'player',
-    priority: 'normal',
+    priority: 'NORMAL',
     relatedPlayerId: player?.id,
     relatedTeamId: match?.homeTeam, // Using team name as ID since it's a string
+    userId: '',
+    source: 'SYSTEM',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   });
 }

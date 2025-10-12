@@ -1,5 +1,6 @@
 "use client";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Trophy, Clock, Play, CheckCircle, Users, Target, Medal } from "lucide-react";
 import { getTeamsByCompetition } from '@/lib/userTeamService';
 import { getMatchesByCompetition } from '@/lib/userMatchService';
@@ -131,8 +132,8 @@ const GroupTable = ({
     group.matches.forEach(match => {
       if (match.state === MATCH_STATES.DONE) {
         const [p1, p2] = match.participants;
-        const score1 = parseInt(p1.resultText) || 0;
-        const score2 = parseInt(p2.resultText) || 0;
+        const score1 = parseInt(p1.resultText || '0') || 0;
+        const score2 = parseInt(p2.resultText || '0') || 0;
         
         teams[p1.id].played++;
         teams[p2.id].played++;
@@ -175,7 +176,7 @@ const GroupTable = ({
          style={{ borderColor: colors.border }}>
       {/* Group Header */}
       <div className="p-4 text-white font-bold text-center"
-           style={{ backgroundColor: groupColors[group.name] || colors.accent }}>
+           style={{ backgroundColor: groupColors[group.name as 'A' | 'B' | 'C' | 'D'] || colors.accent }}>
         <div className="flex items-center justify-center gap-2">
           <Users className="w-5 h-5" />
           <span>Group {group.name}</span>
@@ -221,7 +222,7 @@ const GroupTable = ({
                 <td className="p-2 text-center" style={{ color: colors.textSecondary }}>{team.won}</td>
                 <td className="p-2 text-center" style={{ color: colors.textSecondary }}>{team.drawn}</td>
                 <td className="p-2 text-center" style={{ color: colors.textSecondary }}>{team.lost}</td>
-                <td className={`p-2 text-center font-mono ${team.goalDifference > 0 ? 'font-bold' : ''}`}
+                <td className="p-2 text-center font-mono" 
                     style={{ color: team.goalDifference > 0 ? colors.winner : 
                                    team.goalDifference < 0 ? colors.eliminated : colors.textSecondary }}>
                   {team.goalDifference > 0 ? '+' : ''}{team.goalDifference}
@@ -265,7 +266,12 @@ const GroupTable = ({
 };
 
 // Knockout Match Component (reusing from previous)
-const Match = ({ match, onMatchClick, onPartyClick, style = {} }) => {
+const Match = ({ match, onMatchClick, onPartyClick, style = {} }: {
+  match: any;
+  onMatchClick?: (match: any) => void;
+  onPartyClick?: (party: any, match: any) => void;
+  style?: React.CSSProperties;
+}) => {
   const colors = useThemeColors();
   
   const getStatusIcon = () => {
@@ -322,7 +328,7 @@ const Match = ({ match, onMatchClick, onPartyClick, style = {} }) => {
         </div>
 
         <div className="p-3 space-y-2">
-          {match.participants.map((participant, index) => (
+          {match.participants.map((participant: { id: string; name: string; resultText?: string; isWinner?: boolean; qualified?: boolean; }, index: number) => (
             <div 
               key={participant.id || index}
               className={`flex justify-between items-center p-2 rounded transition-all duration-200 ${
@@ -378,11 +384,11 @@ const Match = ({ match, onMatchClick, onPartyClick, style = {} }) => {
 };
 
 // Bracket layout calculation (same as before)
-const calculateBracketLayout = (matches) => {
+const calculateBracketLayout = (matches: { id: string; nextMatchId?: string }[]) => {
   const matchMap = new Map();
   const children = new Map();
   
-  matches.forEach(match => {
+  matches.forEach((match: { id: string; nextMatchId?: string }) => {
     matchMap.set(match.id, match);
     if (match.nextMatchId) {
       if (!children.has(match.nextMatchId)) {
@@ -392,16 +398,16 @@ const calculateBracketLayout = (matches) => {
     }
   });
 
-  const rounds = [];
+  const rounds: any[][] = [];
   const visited = new Set();
-  const finals = matches.filter(m => !m.nextMatchId);
+  const finals = matches.filter((m: { nextMatchId?: string }) => !m.nextMatchId);
   
-  const buildRounds = (matchIds, roundIndex = 0) => {
+  const buildRounds = (matchIds: string[], roundIndex = 0) => {
     if (!matchIds.length) return;
     
     const currentMatches = matchIds
-      .filter(id => !visited.has(id))
-      .map(id => matchMap.get(id))
+      .filter((id: string) => !visited.has(id))
+      .map((id: string) => matchMap.get(id))
       .filter(Boolean);
     
     if (!currentMatches.length) return;
@@ -419,7 +425,7 @@ const calculateBracketLayout = (matches) => {
     }
   };
 
-  buildRounds(finals.map(f => f.id));
+  buildRounds(finals.map((f: { id: string }) => f.id));
   rounds.reverse();
 
   const MATCH_WIDTH = 240;
@@ -429,7 +435,7 @@ const calculateBracketLayout = (matches) => {
 
   const layout = {
     matches: new Map(),
-    connections: [],
+    connections: [] as any[],
     totalWidth: 0,
     totalHeight: 0
   };
@@ -471,7 +477,7 @@ const calculateBracketLayout = (matches) => {
           path: `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`,
           fromMatch: match.id,
           toMatch: match.nextMatchId
-        });
+        } as any);
       }
     });
   });
@@ -613,7 +619,7 @@ export default function TournamentView({ competitionId }: { competitionId: strin
 
   // Handle scroll events
   useEffect(() => {
-    const container = containerRef.current;
+    const container = containerRef.current as HTMLDivElement | null;
     if (!container) return;
 
     const updateScrollButtons = () => {
@@ -629,11 +635,11 @@ export default function TournamentView({ competitionId }: { competitionId: strin
   }, []);
 
   const scrollLeft = () => {
-    containerRef.current?.scrollBy({ left: -300, behavior: 'smooth' });
+    (containerRef.current as HTMLDivElement | null)?.scrollBy({ left: -300, behavior: 'smooth' });
   };
 
   const scrollRight = () => {
-    containerRef.current?.scrollBy({ left: 300, behavior: 'smooth' });
+    (containerRef.current as HTMLDivElement | null)?.scrollBy({ left: 300, behavior: 'smooth' });
   };
 
   if (loading) {
@@ -764,8 +770,8 @@ export default function TournamentView({ competitionId }: { competitionId: strin
                 >
                   {knockoutLayout.connections.map((connection) => (
                     <path
-                      key={connection.id}
-                      d={connection.path}
+                      key={(connection as any).id}
+                      d={(connection as any).path}
                       stroke={colors.line}
                       strokeWidth="2"
                       fill="none"
@@ -800,7 +806,7 @@ export default function TournamentView({ competitionId }: { competitionId: strin
                color: colors.text 
              }}>
           <div className="flex justify-between items-start mb-3">
-            <h3 className="font-bold text-lg">{selectedMatch.name}</h3>
+            <h3 className="font-bold text-lg">{(selectedMatch as any).name}</h3>
             <button 
               onClick={() => setSelectedMatch(null)}
               className="text-xl hover:scale-110 transition-transform"
@@ -812,16 +818,16 @@ export default function TournamentView({ competitionId }: { competitionId: strin
           
           <div className="space-y-2 mb-3">
             <p className="text-sm" style={{ color: colors.textSecondary }}>
-              <strong>Round:</strong> {selectedMatch.tournamentRoundText || 'Group Stage'}
+              <strong>Round:</strong> {(selectedMatch as any).tournamentRoundText || 'Group Stage'}
             </p>
             <p className="text-sm" style={{ color: colors.textSecondary }}>
-              <strong>Status:</strong> {selectedMatch.state?.replace('_', ' ') || 'Completed'}
+              <strong>Status:</strong> {(selectedMatch as any).state?.replace('_', ' ') || 'Completed'}
             </p>
           </div>
 
           <div className="space-y-2">
             <h4 className="font-semibold text-sm">Participants:</h4>
-            {selectedMatch.participants.map((p, i) => (
+            {selectedMatch && (selectedMatch as any).participants && (selectedMatch as any).participants.map((p: any, i: number) => (
               <div key={i} className="flex justify-between items-center text-sm p-2 rounded"
                    style={{ backgroundColor: colors.surface }}>
                 <span className={p.isWinner ? 'font-bold' : ''}>

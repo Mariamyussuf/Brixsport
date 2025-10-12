@@ -69,8 +69,8 @@ const LiveLoggerMonitoring = () => {
 
   const filteredLoggers = loggers.filter(logger => {
     const matchesFilter = filter === 'all' || logger.status === filter;
-    const matchesSearch = logger.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          logger.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = (logger.name && logger.name.toLowerCase().includes(searchTerm.toLowerCase())) || 
+                          (logger.email && logger.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
                           (logger.currentMatch && logger.currentMatch.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchesFilter && matchesSearch;
   });
@@ -256,7 +256,7 @@ const LiveLoggerMonitoring = () => {
               <div className="mt-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500 dark:text-gray-400">Last Active</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{formatLastActive(logger.lastActive)}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{logger.lastActive ? formatLastActive(logger.lastActive) : 'Never'}</span>
                 </div>
                 
                 <div className="flex justify-between text-sm">

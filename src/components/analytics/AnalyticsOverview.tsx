@@ -7,12 +7,36 @@ import BarChart from '@/components/analytics/charts/BarChart';
 import PieChart from '@/components/analytics/charts/PieChart';
 import AreaChart from '@/components/analytics/charts/AreaChart';
 
+// Define proper TypeScript interfaces
+interface Metrics {
+  totalUsers: number;
+  activeUsers: number;
+  totalMatches: number;
+  liveMatches: number;
+  totalRevenue: number;
+  systemUptime: number;
+  responseTime: number;
+  errorRate: number;
+}
+
+interface ChartDataPoint {
+  date: string;
+  [key: string]: string | number;
+}
+
+interface ChartData {
+  userGrowth: ChartDataPoint[];
+  matchActivity: ChartDataPoint[];
+  revenue: ChartDataPoint[];
+  performance: ChartDataPoint[];
+}
+
 interface AnalyticsOverviewProps {
   className?: string;
 }
 
 const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({ className = '' }) => {
-  const [metrics, setMetrics] = useState({
+  const [metrics, setMetrics] = useState<Metrics>({
     totalUsers: 0,
     activeUsers: 0,
     totalMatches: 0,
@@ -23,7 +47,7 @@ const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({ className = '' })
     errorRate: 0
   });
 
-  const [chartData, setChartData] = useState({
+  const [chartData, setChartData] = useState<ChartData>({
     userGrowth: [],
     matchActivity: [],
     revenue: [],
@@ -33,50 +57,29 @@ const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({ className = '' })
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading analytics data
+    // Load analytics data from API
     const loadData = async () => {
       try {
-        // This would typically fetch from your analytics API
+        setLoading(true);
+        
+        // TODO: Replace with actual API calls to fetch real analytics data
+        // For now, we'll initialize with empty/default values
         setMetrics({
-          totalUsers: 12543,
-          activeUsers: 2847,
-          totalMatches: 1567,
-          liveMatches: 23,
-          totalRevenue: 45678,
-          systemUptime: 99.8,
-          responseTime: 145,
-          errorRate: 0.02
+          totalUsers: 0,
+          activeUsers: 0,
+          totalMatches: 0,
+          liveMatches: 0,
+          totalRevenue: 0,
+          systemUptime: 0,
+          responseTime: 0,
+          errorRate: 0
         });
 
         setChartData({
-          userGrowth: [
-            { date: '2024-01', users: 8500 },
-            { date: '2024-02', users: 9200 },
-            { date: '2024-03', users: 10100 },
-            { date: '2024-04', users: 11200 },
-            { date: '2024-05', users: 12543 }
-          ],
-          matchActivity: [
-            { date: '2024-01', matches: 120 },
-            { date: '2024-02', matches: 145 },
-            { date: '2024-03', matches: 168 },
-            { date: '2024-04', matches: 189 },
-            { date: '2024-05', matches: 203 }
-          ],
-          revenue: [
-            { date: '2024-01', revenue: 32000 },
-            { date: '2024-02', revenue: 35000 },
-            { date: '2024-03', revenue: 38900 },
-            { date: '2024-04', revenue: 42100 },
-            { date: '2024-05', revenue: 45678 }
-          ],
-          performance: [
-            { date: '2024-01', responseTime: 180 },
-            { date: '2024-02', responseTime: 165 },
-            { date: '2024-03', responseTime: 155 },
-            { date: '2024-04', responseTime: 150 },
-            { date: '2024-05', responseTime: 145 }
-          ]
+          userGrowth: [],
+          matchActivity: [],
+          revenue: [],
+          performance: []
         });
 
         setLoading(false);

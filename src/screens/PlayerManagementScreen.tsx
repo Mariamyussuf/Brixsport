@@ -48,7 +48,7 @@ const PlayerManagementScreen: React.FC = () => {
     try {
       const response = await playerService.updatePlayer(id, playerData);
       
-      if (response.success) {
+      if (response.success && response.data) {
         setSuccess('Player updated successfully');
         setSelectedPlayer(response.data);
         // Refresh the player list

@@ -3,6 +3,25 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import styled, { ThemeProvider as SCThemeProvider, createGlobalStyle } from "styled-components";
 import { useTheme } from "@/components/shared/ThemeProvider";
 
+// Define TypeScript interfaces for the bracket data
+interface Participant {
+  id: string;
+  name: string;
+  resultText?: string;
+  isWinner: boolean;
+  status?: string;
+}
+
+interface BracketMatch {
+  id: number;
+  name: string;
+  nextMatchId?: number;
+  tournamentRoundText: string;
+  startTime: string;
+  state: string;
+  participants: Participant[];
+}
+
 // Match states that combine both implementations
 const MATCH_STATES = {
   DONE: 'SCORE_DONE',
@@ -90,7 +109,11 @@ const GlobalLines = createGlobalStyle`
 `;
 
 // Enhanced Match component combining both styles
-const Match = ({ match, onMatchClick, onPartyClick }) => {
+const Match = ({ match, onMatchClick, onPartyClick }: {
+  match: BracketMatch;
+  onMatchClick?: (match: BracketMatch) => void;
+  onPartyClick?: (party: Participant, match: BracketMatch) => void;
+}) => {
   const theme = useBracketTheme();
   
   return (
@@ -106,7 +129,7 @@ const Match = ({ match, onMatchClick, onPartyClick }) => {
 
       {/* Participants */}
       <div className="p-3">
-        {match.participants.map((participant, index) => (
+        {match.participants.map((participant: Participant, index: number) => (
           <div 
             key={participant.id}
             className={`flex justify-between items-center p-2 mb-1 rounded transition-colors ${
@@ -147,7 +170,12 @@ const Match = ({ match, onMatchClick, onPartyClick }) => {
 };
 
 // SVG Viewer with responsive handling
-const SVGViewer = ({ children, width, height, background = 'transparent' }) => {
+const SVGViewer = ({ children, width, height, background = 'transparent' }: {
+  children: React.ReactNode;
+  width: number;
+  height: number;
+  background?: string;
+}) => {
   return (
     <div className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden shadow-inner">
       <svg width={width} height={height} style={{ background }}>
@@ -163,7 +191,7 @@ export default function EnhancedBracketView() {
   const [dims, setDims] = useState({ width: 1200, height: 600 });
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-  const [selectedMatch, setSelectedMatch] = useState(null);
+  const [selectedMatch, setSelectedMatch] = useState<BracketMatch | null>(null);
 
   // Observe container resize to keep SVG responsive
   useEffect(() => {
@@ -189,7 +217,7 @@ export default function EnhancedBracketView() {
   }, []);
 
   // Enhanced tournament data with your existing matches
-  const matches = useMemo(() => [
+  const matches: BracketMatch[] = useMemo(() => [
     {
       id: 1,
       name: "QF1",
@@ -206,14 +234,14 @@ export default function EnhancedBracketView() {
   ], []);
 
   // Group matches by rounds
-  const rounds = useMemo(() => {
-    const roundMap = new Map();
+  const rounds: { title: string; matches: BracketMatch[] }[] = useMemo(() => {
+    const roundMap = new Map<string, BracketMatch[]>();
     matches.forEach(match => {
       const round = match.tournamentRoundText;
       if (!roundMap.has(round)) {
         roundMap.set(round, []);
       }
-      roundMap.get(round).push(match);
+      roundMap.get(round)?.push(match);
     });
     return Array.from(roundMap.entries()).map(([title, matches]) => ({
       title,
@@ -261,7 +289,7 @@ export default function EnhancedBracketView() {
             {rounds.map((round, roundIndex) => {
               if (roundIndex >= rounds.length - 1) return null;
               
-              return round.matches.map((match, matchIndex) => {
+              return round.matches.map((match: BracketMatch, matchIndex: number) => {
                 const currentRoundX = roundIndex * (250 + 64) + 250;
                 const nextRoundX = currentRoundX + 64;
                 const matchHeight = 200;
@@ -312,7 +340,7 @@ export default function EnhancedBracketView() {
           <h3 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">{selectedMatch.name}</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Status: {selectedMatch.state}</p>
           <div className="space-y-1">
-            {selectedMatch.participants.map(p => (
+            {selectedMatch.participants && selectedMatch.participants.map((p: Participant) => (
               <div key={p.id} className="flex justify-between text-sm">
                 <span className={`${p.isWinner ? 'font-bold text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
                   {p.name}

@@ -7,6 +7,8 @@ import * as notificationService from '../lib/notificationService';
 // Update the import path to the correct relative location
 import { Player, Team, Competition, LiveEvent } from '../lib/api';
 import type { Match } from '@/lib/userMatchService';
+import { NotificationTypeSchema } from '../lib/notificationService';
+import { z } from 'zod';
 
 export const useSportsNotifications = () => {
   const { addNotification, scheduleNotification } = useNotificationContext();
@@ -85,31 +87,81 @@ export const useSportsNotifications = () => {
     match?: Match,
     additionalInfo?: string
   ) => {
-    const notification = notificationService.createPlayerNotification(eventType, player, match, additionalInfo);
-  addNotification(notification as any);
+    // Map the eventType to the correct enum value
+    let mappedEventType: z.infer<typeof NotificationTypeSchema>;
+    switch (eventType) {
+      case 'goal':
+        mappedEventType = 'SCORE_ALERT';
+        break;
+      case 'assist':
+        mappedEventType = 'MATCH_UPDATE';
+        break;
+      case 'card':
+        mappedEventType = 'MATCH_UPDATE';
+        break;
+      case 'injury':
+        mappedEventType = 'SYSTEM_ALERT';
+        break;
+      case 'transfer':
+        mappedEventType = 'COMPETITION_NEWS';
+        break;
+      default:
+        mappedEventType = 'MATCH_UPDATE';
+    }
+    
+    const notification = notificationService.createPlayerNotification(mappedEventType, player, match, additionalInfo);
+    addNotification(notification as any);
   }, [addNotification]);
 
   // Send a standing notification
   const sendStandingNotification = useCallback((competition: Competition) => {
-    const notification = notificationService.createStandingNotification(competition);
-  addNotification(notification as any);
+    // Create a simple notification since the function doesn't exist in notificationService
+    const notification = {
+      title: 'Standings Updated',
+      message: `Standings for ${competition.name} have been updated`,
+      type: 'MATCH_UPDATE' as const,
+      category: 'competition' as const,
+      priority: 'NORMAL' as const,
+    };
+    addNotification(notification as any);
   }, [addNotification]);
 
   // Send a qualification notification
   const sendQualificationNotification = useCallback((team: Team, competition: Competition) => {
-    const notification = notificationService.createQualificationNotification(team, competition);
-  addNotification(notification as any);
+    // Create a simple notification since the function doesn't exist in notificationService
+    const notification = {
+      title: 'Qualification Update',
+      message: `${team.name} has qualified in ${competition.name}`,
+      type: 'MATCH_UPDATE' as const,
+      category: 'competition' as const,
+      priority: 'HIGH' as const,
+    };
+    addNotification(notification as any);
   }, [addNotification]);
 
   // Send a fixture notification
   const sendFixtureNotification = useCallback((match: Match, competition: Competition) => {
-    const notification = notificationService.createFixtureNotification(match, competition);
-  addNotification(notification as any);
+    // Create a simple notification since the function doesn't exist in notificationService
+    const notification = {
+      title: 'Fixture Update',
+      message: `New fixture for ${match.homeTeam} vs ${match.awayTeam} in ${competition.name}`,
+      type: 'MATCH_UPDATE' as const,
+      category: 'match' as const,
+      priority: 'NORMAL' as const,
+    };
+    addNotification(notification as any);
   }, [addNotification]);
 
   // Send a news notification
   const sendNewsNotification = useCallback((title: string, message: string) => {
-    const notification = notificationService.createNewsNotification(title, message);
+    // Create a simple notification since the function doesn't exist in notificationService
+    const notification = {
+      title,
+      message,
+      type: 'SYSTEM_ALERT' as const,
+      category: 'news' as const,
+      priority: 'NORMAL' as const,
+    };
     addNotification(notification as any);
   }, [addNotification]);
 

@@ -53,12 +53,21 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
     }
   }, [match.homeScore, match.score1, match.awayScore, match.score2, displayHomeScore, displayAwayScore]);
 
-  const getTeamIcon = (team: string, color?: string) => {
+  const getTeamIcon = (team: string | undefined, color?: string) => {
+    // Handle case where team is undefined
+    if (!team) {
+      return (
+        <div className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 bg-gray-300 dark:bg-gray-600">
+          <div className="w-5 h-5 bg-white dark:bg-gray-800 rounded-sm opacity-80"></div>
+        </div>
+      );
+    }
+    
     const baseClasses = "w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0";
     
     // Use provided color or fallback to team-based color
     const bgColor = color ? color : 
-      (team?.includes('Pirates') || team?.includes('Los Blancos') || team?.includes('Phoenix') || team?.includes('Kings')) 
+      (team.includes('Pirates') || team.includes('Los Blancos') || team.includes('Phoenix') || team.includes('Kings')) 
         ? 'bg-blue-600' 
         : 'bg-red-600';
     
@@ -130,7 +139,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
         <div className="flex items-center space-x-3 flex-1 min-w-0">
           {getTeamIcon(match.homeTeam || match.team1, match.team1Color)}
           <span className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate">
-            {match.homeTeam || match.team1}
+            {match.homeTeam || match.team1 || 'Home Team'}
           </span>
         </div>
         
@@ -157,7 +166,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
         
         <div className="flex items-center space-x-3 justify-end flex-1 min-w-0">
           <span className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate text-right">
-            {match.awayTeam || match.team2}
+            {match.awayTeam || match.team2 || 'Away Team'}
           </span>
           {getTeamIcon(match.awayTeam || match.team2, match.team2Color)}
         </div>

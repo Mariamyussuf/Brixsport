@@ -10,8 +10,8 @@ export interface Competition {
   type: string;
   category: string;
   status: string;
-  start_date: string; // ISO date
-  end_date: string;   // ISO date
+  start_date: string; // Changed from string | null to string
+  end_date: string;   // Changed from string | null to string
 }
 
 // New Match interface to match backend specification
@@ -59,7 +59,12 @@ export async function getCompetitions(): Promise<Competition[]> {
   try {
     // Try to get from database service first (Supabase)
     const competitions = await databaseService.getCompetitions();
-    return competitions;
+    // Convert nullable dates to empty strings to match the interface
+    return competitions.map(competition => ({
+      ...competition,
+      start_date: competition.start_date || '',
+      end_date: competition.end_date || ''
+    }));
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -75,7 +80,11 @@ export async function getCompetitionById(id: number): Promise<CompetitionDetails
     
     if (competition) {
       return {
-        competition,
+        competition: {
+          ...competition,
+          start_date: competition.start_date || '',
+          end_date: competition.end_date || ''
+        },
         matches
       };
     }

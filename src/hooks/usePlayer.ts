@@ -32,7 +32,7 @@ export const usePlayer = (): UsePlayerResult => {
       const response = await playerService.getPlayerById(id);
       
       if (response.success) {
-        setPlayer(response.data);
+        setPlayer(response.data || null);
       } else {
         setError(response.error?.message || 'Failed to fetch player');
       }
@@ -51,8 +51,8 @@ export const usePlayer = (): UsePlayerResult => {
       const response = await playerService.updatePlayer(id, data);
       
       if (response.success) {
-        setPlayer(response.data);
-        return response.data;
+        setPlayer(response.data || null);
+        return response.data || null;
       } else {
         setError(response.error?.message || 'Failed to update player');
         return null;
@@ -110,7 +110,7 @@ export const usePlayerStats = (): UsePlayerStatsResult => {
       const response = await playerService.getPlayerStats(id);
       
       if (response.success) {
-        setStats(response.data);
+        setStats(response.data || null);
       } else {
         setError(response.error?.message || 'Failed to fetch player stats');
       }
@@ -129,8 +129,8 @@ export const usePlayerStats = (): UsePlayerStatsResult => {
       const response = await playerService.updatePlayerStats(id, { stats: statsData });
       
       if (response.success) {
-        setStats(response.data);
-        return response.data;
+        setStats(response.data || null);
+        return response.data || null;
       } else {
         setError(response.error?.message || 'Failed to update player stats');
         return null;

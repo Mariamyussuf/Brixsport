@@ -22,7 +22,7 @@ export const useSearch = (): UseSearchResult => {
       const response = await searchService.globalSearch(params);
       
       if (response.success) {
-        setResults(response.data);
+        setResults(response.data || null);
       } else {
         setError(response.error?.message || 'Failed to perform search');
       }

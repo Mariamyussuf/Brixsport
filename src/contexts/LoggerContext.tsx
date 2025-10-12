@@ -188,11 +188,12 @@ export const LoggerProvider: React.FC<LoggerProviderProps> = ({ children }) => {
             addNotification({
               title: 'New Competition Assigned',
               message: `You have been assigned to log events for ${competition.name}`,
-              type: 'system',
+              type: 'SYSTEM_ALERT',
               category: 'match',
-              priority: 'normal',
-              sound: 'default'
-            });
+              priority: 'NORMAL',
+              source: 'SYSTEM',
+              userId: user?.id || '',
+            } as any);
           }
         });
       } else {
@@ -204,11 +205,12 @@ export const LoggerProvider: React.FC<LoggerProviderProps> = ({ children }) => {
       addNotification({
         title: 'Sync Failed',
         message: `Failed to load competitions: ${message}.`,
-        type: 'system',
+        type: 'SYSTEM_ALERT',
         category: 'match',
-        priority: 'high',
-        sound: 'error'
-      });
+        priority: 'HIGH',
+        source: 'SYSTEM',
+        userId: user?.id || '',
+      } as any);
     } finally {
       dispatch({ type: 'SET_LOADING', payload: { key: 'competitions', value: false } });
     }

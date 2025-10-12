@@ -33,15 +33,27 @@ export default function SettingsSheet({ open, onClose }: SettingsSheetProps) {
   if (!open) return null;
 
   const handleToggleEnabled = () => {
-    updatePreferences({ enabled: !preferences.enabled });
-    setNotifications(!preferences.enabled);
+    updatePreferences({ 
+      deliveryMethods: {
+        ...preferences.deliveryMethods,
+        inApp: !preferences.deliveryMethods.inApp
+      }
+    });
+    setNotifications(!preferences.deliveryMethods.inApp);
   };
 
   const handleToggleImportantOnly = () => {
-    updatePreferences({ importantOnly: !preferences.importantOnly });
+    // This setting doesn't exist in the new preferences structure
+    // We'll just toggle the score alerts category instead
+    updatePreferences({ 
+      categories: {
+        ...preferences.categories,
+        scoreAlerts: !preferences.categories.scoreAlerts
+      }
+    });
   };
 
-  const handleToggleDeliveryMethod = (method: 'push' | 'inApp' | 'email') => {
+  const handleToggleDeliveryMethod = (method: 'push' | 'inApp' | 'email' | 'sms') => {
     updatePreferences({
       deliveryMethods: {
         ...preferences.deliveryMethods,
@@ -53,6 +65,7 @@ export default function SettingsSheet({ open, onClose }: SettingsSheetProps) {
   const handleQuietHoursChange = () => {
     updatePreferences({
       quietHours: {
+        enabled: true, // Add the missing enabled property
         start: quietHoursStart,
         end: quietHoursEnd
       }
@@ -173,11 +186,11 @@ export default function SettingsSheet({ open, onClose }: SettingsSheetProps) {
               </div>
               <button
                 role="switch"
-                aria-checked={preferences.enabled}
+                aria-checked={preferences.deliveryMethods.inApp}
                 onClick={handleToggleEnabled}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${preferences.enabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'}`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${preferences.deliveryMethods.inApp ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'}`}
               >
-                <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${preferences.enabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${preferences.deliveryMethods.inApp ? 'translate-x-5' : 'translate-x-1'}`} />
               </button>
             </div>
             
@@ -189,9 +202,9 @@ export default function SettingsSheet({ open, onClose }: SettingsSheetProps) {
               </div>
               <button
                 onClick={handleToggleImportantOnly}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${preferences.importantOnly ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'}`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${preferences.categories.scoreAlerts ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'}`}
               >
-                <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${preferences.importantOnly ? 'translate-x-5' : 'translate-x-1'}`} />
+                <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${preferences.categories.scoreAlerts ? 'translate-x-5' : 'translate-x-1'}`} />
               </button>
             </div>
           </div>

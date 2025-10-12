@@ -22,7 +22,7 @@ const LoggerNotifications: React.FC = () => {
   // Filter to show only logger-related notifications
   const loggerNotifications = notifications.filter(notification => 
     notification.category === 'match' || 
-    notification.type === 'system'
+    notification.type === 'SYSTEM_ALERT'
   );
   
   const toggleNotifications = useCallback(() => {
@@ -42,8 +42,13 @@ const LoggerNotifications: React.FC = () => {
   }, [clearNotifications]);
   
   const toggleNotificationsEnabled = useCallback(() => {
-    updatePreferences({ enabled: !preferences.enabled });
-  }, [preferences.enabled, updatePreferences]);
+    updatePreferences({ 
+      deliveryMethods: {
+        ...preferences.deliveryMethods,
+        inApp: !preferences.deliveryMethods.inApp
+      }
+    });
+  }, [preferences.deliveryMethods, updatePreferences]);
   
   // Render notification item
   const renderNotificationItem = (notification: any) => (
@@ -88,7 +93,7 @@ const LoggerNotifications: React.FC = () => {
         className="relative p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
         aria-label="Logger notifications"
       >
-        {preferences.enabled ? (
+        {preferences.deliveryMethods.inApp ? (
           <Bell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
         ) : (
           <BellOff className="w-5 h-5 text-gray-700 dark:text-gray-300" />
@@ -109,9 +114,9 @@ const LoggerNotifications: React.FC = () => {
                 <button
                   onClick={toggleNotificationsEnabled}
                   className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                  aria-label={preferences.enabled ? "Disable notifications" : "Enable notifications"}
+                  aria-label={preferences.deliveryMethods.inApp ? "Disable notifications" : "Enable notifications"}
                 >
-                  {preferences.enabled ? (
+                  {preferences.deliveryMethods.inApp ? (
                     <Bell className="w-4 h-4" />
                   ) : (
                     <BellOff className="w-4 h-4" />

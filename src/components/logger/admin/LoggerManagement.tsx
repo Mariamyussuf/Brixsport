@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useState, useEffect } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Logger } from '@/lib/adminService';
 
@@ -105,9 +106,9 @@ const LoggerManagement = () => {
   const startEditing = (logger: Logger) => {
     setEditingLogger(logger);
     setFormData({
-      name: logger.name,
-      email: logger.email,
-      role: logger.role
+      name: logger.name || '',
+      email: logger.email || '',
+      role: logger.role || 'logger'
     });
     setShowCreateForm(true);
   };
@@ -281,8 +282,8 @@ const LoggerManagement = () => {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[logger.status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'}`}>
-                    {statusLabels[logger.status] || logger.status}
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[logger.status || ''] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'}`}>
+                    {statusLabels[logger.status || ''] || logger.status}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

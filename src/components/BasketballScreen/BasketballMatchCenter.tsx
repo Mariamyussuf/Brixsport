@@ -5,10 +5,79 @@ import {
   Star, ChevronRight, Award, Target, Zap, Eye, Info,
   AlertCircle, ChevronDown, ChevronUp, Flame, Wind
 } from 'lucide-react';
-import { getMatchById } from '@/lib/userMatchService';
+import { getMatchById, Match } from '@/lib/userMatchService';
+
+// Define TypeScript interfaces for the basketball match data
+interface QuarterData {
+  name: string;
+  q1: number;
+  q2: number;
+  q3: number;
+  q4: number;
+  ot?: number | null;
+  total: number;
+}
+
+interface TeamStatsData {
+  fgMade: { home: number; away: number };
+  fgPercent: { home: number; away: number };
+  threePtMade: { home: number; away: number };
+  threePtPercent: { home: number; away: number };
+  ftMade: { home: number; away: number };
+  ftPercent: { home: number; away: number };
+  rebounds: { home: number; away: number };
+  offRebounds: { home: number; away: number };
+  assists: { home: number; away: number };
+  steals: { home: number; away: number };
+  blocks: { home: number; away: number };
+  turnovers: { home: number; away: number };
+  fouls: { home: number; away: number };
+  fastBreak: { home: number; away: number };
+  pointsInPaint: { home: number; away: number };
+  benchPoints: { home: number; away: number };
+}
+
+interface PlayerData {
+  number: number;
+  name: string;
+  position: string;
+  starter: boolean;
+  points: number;
+  rebounds: number;
+  assists: number;
+  minutes: string;
+  fgMade: number;
+  fgAttempts: number;
+  threePtMade: number;
+  threePtAttempts: number;
+  ftMade: number;
+  ftAttempts: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fouls: number;
+  plusMinus: number;
+}
+
+interface PlayData {
+  time: string;
+  type: string;
+  description: string;
+  score?: string;
+}
 
 // Match Header Component
-const MatchHeader = ({ homeTeam, awayTeam, homeScore, awayScore, quarter, timeRemaining, date, venue, league }) => {
+const MatchHeader = ({ homeTeam, awayTeam, homeScore, awayScore, quarter, timeRemaining, date, venue, league }: {
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number;
+  awayScore: number;
+  quarter: string;
+  timeRemaining: string | null;
+  date: string;
+  venue: string;
+  league: string;
+}) => {
   const winner = homeScore > awayScore ? 'home' : awayScore > homeScore ? 'away' : null;
   
   return (
@@ -80,7 +149,7 @@ const MatchHeader = ({ homeTeam, awayTeam, homeScore, awayScore, quarter, timeRe
 };
 
 // Quarter Breakdown Component
-const QuarterBreakdown = ({ quarters }) => {
+const QuarterBreakdown = ({ quarters }: { quarters: QuarterData[] }) => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 overflow-hidden">
       <div className="p-4 bg-slate-50 dark:bg-gray-700">
@@ -103,7 +172,7 @@ const QuarterBreakdown = ({ quarters }) => {
             </tr>
           </thead>
           <tbody>
-            {quarters.map((team, index) => (
+            {quarters.map((team: QuarterData, index: number) => (
               <tr key={index} className="border-t dark:border-gray-700">
                 <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{team.name}</td>
                 <td className="px-4 py-3 text-center font-semibold">{team.q1}</td>
@@ -122,8 +191,13 @@ const QuarterBreakdown = ({ quarters }) => {
 };
 
 // Team Stats Component
-const TeamStats = ({ stats }) => {
-  const StatBar = ({ label, home, away, reverse = false }) => {
+const TeamStats = ({ stats }: { stats: TeamStatsData }) => {
+  const StatBar = ({ label, home, away, reverse = false }: {
+    label: string;
+    home: number;
+    away: number;
+    reverse?: boolean;
+  }) => {
     const total = home + away;
     const homePercent = total > 0 ? (home / total) * 100 : 50;
     const awayPercent = total > 0 ? (away / total) * 100 : 50;
@@ -181,11 +255,23 @@ const TeamStats = ({ stats }) => {
 };
 
 // Player Stats Component
-const PlayerStats = ({ players, team }) => {
-  const [sortBy, setSortBy] = useState('points');
-  const [expandedPlayer, setExpandedPlayer] = useState(null);
+const PlayerStats = ({ players, team }: { players: PlayerData[]; team: string }) => {
+  const [sortBy, setSortBy] = useState<'points' | 'rebounds' | 'assists' | 'minutes'>('points');
+  const [expandedPlayer, setExpandedPlayer] = useState<number | null>(null);
   
-  const sortedPlayers = [...players].sort((a, b) => b[sortBy] - a[sortBy]);
+  const sortedPlayers = [...players].sort((a, b) => {
+    // For minutes, we need special handling since it's a string
+    if (sortBy === 'minutes') {
+      // Convert time strings like "38:22" to total seconds for comparison
+      const convertTimeToSeconds = (time: string): number => {
+        const [minutes, seconds] = time.split(':').map(Number);
+        return (minutes || 0) * 60 + (seconds || 0);
+      };
+      return convertTimeToSeconds(b.minutes) - convertTimeToSeconds(a.minutes);
+    }
+    // For numeric properties
+    return (b[sortBy] as number) - (a[sortBy] as number);
+  });
   
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700">
@@ -202,7 +288,7 @@ const PlayerStats = ({ players, team }) => {
           {['points', 'rebounds', 'assists', 'minutes'].map(stat => (
             <button
               key={stat}
-              onClick={() => setSortBy(stat)}
+              onClick={() => setSortBy(stat as 'points' | 'rebounds' | 'assists' | 'minutes')}
               className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                 sortBy === stat 
                   ? 'bg-blue-500 text-white' 
@@ -217,7 +303,7 @@ const PlayerStats = ({ players, team }) => {
       
       {/* Players List */}
       <div className="divide-y dark:divide-gray-700">
-        {sortedPlayers.map((player, index) => (
+        {sortedPlayers.map((player: PlayerData, index: number) => (
           <div key={index} className="p-4 hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors">
             <div 
               className="flex items-center justify-between cursor-pointer"
@@ -296,8 +382,8 @@ const PlayerStats = ({ players, team }) => {
 };
 
 // Play by Play Component
-const PlayByPlay = ({ plays }) => {
-  const getPlayIcon = (type) => {
+const PlayByPlay = ({ plays }: { plays: PlayData[] }) => {
+  const getPlayIcon = (type: string) => {
     switch(type) {
       case 'score': return <Target className="w-4 h-4 text-green-500" />;
       case 'three': return <Flame className="w-4 h-4 text-orange-500" />;
@@ -317,7 +403,7 @@ const PlayByPlay = ({ plays }) => {
         </h3>
       </div>
       <div className="max-h-96 overflow-y-auto">
-        {plays.map((play, index) => (
+        {plays.map((play: PlayData, index: number) => (
           <div key={index} className="p-4 border-b dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors">
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0 mt-1">
@@ -346,8 +432,8 @@ const PlayByPlay = ({ plays }) => {
 
 // Main Basketball Match Center Component
 const BasketballMatchCenter = ({ matchId }: { matchId: string }) => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [matchData, setMatchData] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'stats' | 'players' | 'playbyplay'>('overview');
+  const [matchData, setMatchData] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -371,17 +457,7 @@ const BasketballMatchCenter = ({ matchId }: { matchId: string }) => {
         }
         
         // Transform match data to the format expected by the UI
-        setMatchData({
-          homeTeam: match.homeTeam,
-          awayTeam: match.awayTeam,
-          homeScore: match.homeScore || 0,
-          awayScore: match.awayScore || 0,
-          quarter: match.status || 'Final',
-          timeRemaining: null,
-          date: match.date ? new Date(match.date).toLocaleDateString() : 'Unknown Date',
-          venue: match.venue || 'Unknown Venue',
-          league: match.competitionId || 'Basketball League'
-        });
+        setMatchData(match);
       } catch (err: any) {
         console.error('Error fetching match data:', err);
         setError(err.message || 'Failed to load match data');
@@ -394,12 +470,12 @@ const BasketballMatchCenter = ({ matchId }: { matchId: string }) => {
   }, [matchId]);
   
   // Sample data - would come from API in real app
-  const quarters = matchData ? [
-    { name: matchData.homeTeam, q1: 28, q2: 32, q3: 30, q4: 28, ot: null, total: matchData.homeScore },
-    { name: matchData.awayTeam, q1: 30, q2: 28, q3: 29, q4: 27, ot: null, total: matchData.awayScore }
+  const quarters: QuarterData[] = matchData ? [
+    { name: matchData.homeTeam, q1: 28, q2: 32, q3: 30, q4: 28, ot: null, total: matchData.homeScore || 0 },
+    { name: matchData.awayTeam, q1: 30, q2: 28, q3: 29, q4: 27, ot: null, total: matchData.awayScore || 0 }
   ] : [];
   
-  const teamStats = {
+  const teamStats: TeamStatsData = {
     fgMade: { home: 45, away: 42 },
     fgPercent: { home: 52, away: 48 },
     threePtMade: { home: 12, away: 15 },
@@ -418,7 +494,7 @@ const BasketballMatchCenter = ({ matchId }: { matchId: string }) => {
     benchPoints: { home: 35, away: 28 }
   };
   
-  const homePlayers = [
+  const homePlayers: PlayerData[] = [
     { number: 23, name: 'L. James', position: 'SF', starter: true, points: 28, rebounds: 10, assists: 11, 
       minutes: '38:22', fgMade: 11, fgAttempts: 19, threePtMade: 2, threePtAttempts: 5, 
       ftMade: 4, ftAttempts: 5, steals: 2, blocks: 1, turnovers: 3, fouls: 2, plusMinus: 8 },
@@ -430,7 +506,7 @@ const BasketballMatchCenter = ({ matchId }: { matchId: string }) => {
       ftMade: 2, ftAttempts: 2, steals: 2, blocks: 0, turnovers: 4, fouls: 3, plusMinus: -2 }
   ];
   
-  const awayPlayers = [
+  const awayPlayers: PlayerData[] = [
     { number: 30, name: 'S. Curry', position: 'PG', starter: true, points: 31, rebounds: 4, assists: 8,
       minutes: '37:12', fgMade: 10, fgAttempts: 22, threePtMade: 7, threePtAttempts: 14,
       ftMade: 4, ftAttempts: 4, steals: 1, blocks: 0, turnovers: 3, fouls: 2, plusMinus: -2 },
@@ -442,7 +518,7 @@ const BasketballMatchCenter = ({ matchId }: { matchId: string }) => {
       ftMade: 1, ftAttempts: 2, steals: 2, blocks: 2, turnovers: 4, fouls: 4, plusMinus: -3 }
   ];
   
-  const plays = [
+  const plays: PlayData[] = [
     { time: 'Q4 0:15', type: 'score', description: 'LeBron James makes driving layup', score: '118-114' },
     { time: 'Q4 0:28', type: 'three', description: 'Stephen Curry misses 28-foot three point jumper', score: '116-114' },
     { time: 'Q4 0:45', type: 'timeout', description: 'Warriors Full Timeout', score: '116-114' },
@@ -502,11 +578,24 @@ const BasketballMatchCenter = ({ matchId }: { matchId: string }) => {
     );
   }
   
+  // Transform match data for header
+  const headerData = {
+    homeTeam: matchData.homeTeam,
+    awayTeam: matchData.awayTeam,
+    homeScore: matchData.homeScore || 0,
+    awayScore: matchData.awayScore || 0,
+    quarter: matchData.status || 'Final',
+    timeRemaining: null,
+    date: matchData.date ? new Date(matchData.date).toLocaleDateString() : 'Unknown Date',
+    venue: matchData.venue || 'Unknown Venue',
+    league: matchData.competitionId || 'Basketball League'
+  };
+  
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-gray-900 p-2 sm:p-3 md:p-4">
       <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4 md:space-y-6">
         {/* Match Header */}
-        <MatchHeader {...matchData} />
+        <MatchHeader {...headerData} />
         
         {/* Navigation Tabs - Compact and Cute Design */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-1.5">
@@ -514,7 +603,7 @@ const BasketballMatchCenter = ({ matchId }: { matchId: string }) => {
             {tabs.map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => setActiveTab(tab.id as 'overview' | 'stats' | 'players' | 'playbyplay')}
                 className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg font-medium transition-all duration-200 text-xs ${
                   activeTab === tab.id
                     ? 'bg-blue-500 text-white shadow-sm'

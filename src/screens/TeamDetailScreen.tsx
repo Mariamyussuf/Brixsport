@@ -56,10 +56,12 @@ export default function TeamDetailScreen() {
     const grouped: Record<string, Player[]> = {};
     
     players.forEach(player => {
-      if (!grouped[player.position]) {
-        grouped[player.position] = [];
+      // Handle case where position is undefined
+      const position = player.position || 'Unknown';
+      if (!grouped[position]) {
+        grouped[position] = [];
       }
-      grouped[player.position].push(player);
+      grouped[position].push(player);
     });
     
     return grouped;
@@ -229,10 +231,10 @@ export default function TeamDetailScreen() {
                         className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                       >
                         <div className="flex items-start gap-4">
-                          {player.photo_url ? (
+                          {player.profilePictureUrl ? (
                             <img 
-                              src={player.photo_url} 
-                              alt={player.name} 
+                              src={player.profilePictureUrl} 
+                              alt={player.displayName || `${player.firstName} ${player.lastName}`} 
                               className="w-16 h-16 rounded-lg object-cover"
                             />
                           ) : (
@@ -242,13 +244,20 @@ export default function TeamDetailScreen() {
                           )}
                           
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-gray-900 dark:text-white truncate">{player.name}</h4>
+                            <h4 className="font-medium text-gray-900 dark:text-white truncate">
+                              {player.displayName || `${player.firstName} ${player.lastName}` || 'Unknown Player'}
+                            </h4>
                             <div className="mt-1 space-y-1">
                               <p className="text-sm text-gray-600 dark:text-gray-400">
-                                #{player.jersey_number} • {player.position}
+                                Position: {player.position || 'Unknown'}
                               </p>
+                              {player.dateOfBirth && (
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  DOB: {new Date(player.dateOfBirth).toLocaleDateString()}
+                                </p>
+                              )}
                               <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Age: {player.age} • {player.nationality}
+                                Nationality: {player.nationality || 'Unknown'}
                               </p>
                               {player.height && (
                                 <p className="text-sm text-gray-600 dark:text-gray-400">

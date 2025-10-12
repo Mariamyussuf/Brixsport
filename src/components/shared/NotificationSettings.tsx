@@ -11,14 +11,26 @@ const NotificationSettings: React.FC = () => {
   const [quietHoursEnd, setQuietHoursEnd] = useState(preferences.quietHours?.end || '08:00');
 
   const handleToggleEnabled = () => {
-    updatePreferences({ enabled: !preferences.enabled });
+    updatePreferences({ 
+      deliveryMethods: {
+        ...preferences.deliveryMethods,
+        inApp: !preferences.deliveryMethods.inApp
+      }
+    });
   };
 
   const handleToggleImportantOnly = () => {
-    updatePreferences({ importantOnly: !preferences.importantOnly });
+    // This setting doesn't exist in the new preferences structure
+    // We'll just toggle the score alerts category instead
+    updatePreferences({ 
+      categories: {
+        ...preferences.categories,
+        scoreAlerts: !preferences.categories.scoreAlerts
+      }
+    });
   };
 
-  const handleToggleDeliveryMethod = (method: 'push' | 'inApp' | 'email') => {
+  const handleToggleDeliveryMethod = (method: 'push' | 'inApp' | 'email' | 'sms') => {
     updatePreferences({
       deliveryMethods: {
         ...preferences.deliveryMethods,
@@ -30,6 +42,7 @@ const NotificationSettings: React.FC = () => {
   const handleQuietHoursChange = () => {
     updatePreferences({
       quietHours: {
+        enabled: true, // Add the missing enabled property
         start: quietHoursStart,
         end: quietHoursEnd
       }
@@ -80,9 +93,9 @@ const NotificationSettings: React.FC = () => {
             </div>
             <button
               onClick={handleToggleEnabled}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${preferences.enabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${preferences.deliveryMethods.inApp ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
             >
-              <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${preferences.enabled ? 'translate-x-5' : 'translate-x-1'}`} />
+              <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${preferences.deliveryMethods.inApp ? 'translate-x-5' : 'translate-x-1'}`} />
             </button>
           </div>
           
@@ -94,9 +107,9 @@ const NotificationSettings: React.FC = () => {
             </div>
             <button
               onClick={handleToggleImportantOnly}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${preferences.importantOnly ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${preferences.categories.scoreAlerts ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
             >
-              <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${preferences.importantOnly ? 'translate-x-5' : 'translate-x-1'}`} />
+              <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${preferences.categories.scoreAlerts ? 'translate-x-5' : 'translate-x-1'}`} />
             </button>
           </div>
         </div>

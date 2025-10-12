@@ -1,6 +1,5 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useState, useEffect } from 'react';
 import MetricCard from '@/components/analytics/charts/MetricCard';
 import LineChart from '@/components/analytics/charts/LineChart';
 import BarChart from '@/components/analytics/charts/BarChart';
@@ -11,8 +10,34 @@ interface BusinessIntelligenceProps {
   className?: string;
 }
 
+// Define interfaces for our data structures
+interface BusinessMetrics {
+  totalRevenue: number;
+  monthlyRecurringRevenue: number;
+  averageRevenuePerUser: number;
+  customerLifetimeValue: number;
+  churnRate: number;
+  customerAcquisitionCost: number;
+  conversionRate: number;
+  engagementScore: number;
+}
+
+interface RevenueData {
+  monthlyRevenue: { month: string; revenue: number }[];
+  revenueBySource: { source: string; amount: number }[];
+  customerSegments: { segment: string; value: number; percentage: number }[];
+  growthMetrics: { metric: string; value: number; trend: 'up' | 'down' }[];
+}
+
+interface EngagementData {
+  userEngagement: { date: string; sessions: number; pageViews: number }[];
+  contentPerformance: { content: string; views: number; engagement: number }[];
+  featureUsage: { feature: string; usage: number }[];
+  retentionCohorts: { cohort: string; retention: number }[];
+}
+
 const BusinessIntelligence: React.FC<BusinessIntelligenceProps> = ({ className = '' }) => {
-  const [businessMetrics, setBusinessMetrics] = useState({
+  const [businessMetrics, setBusinessMetrics] = useState<BusinessMetrics>({
     totalRevenue: 0,
     monthlyRecurringRevenue: 0,
     averageRevenuePerUser: 0,
@@ -23,14 +48,14 @@ const BusinessIntelligence: React.FC<BusinessIntelligenceProps> = ({ className =
     engagementScore: 0
   });
 
-  const [revenueData, setRevenueData] = useState({
+  const [revenueData, setRevenueData] = useState<RevenueData>({
     monthlyRevenue: [],
     revenueBySource: [],
     customerSegments: [],
     growthMetrics: []
   });
 
-  const [engagementData, setEngagementData] = useState({
+  const [engagementData, setEngagementData] = useState<EngagementData>({
     userEngagement: [],
     contentPerformance: [],
     featureUsage: [],
@@ -40,80 +65,36 @@ const BusinessIntelligence: React.FC<BusinessIntelligenceProps> = ({ className =
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading business intelligence data
+    // Load business intelligence data from API
     const loadData = async () => {
       try {
-        // Mock business metrics
+        setLoading(true);
+        
+        // TODO: Replace with actual API calls to fetch real business intelligence data
+        // For now, we'll initialize with empty/default values
         setBusinessMetrics({
-          totalRevenue: 456780,
-          monthlyRecurringRevenue: 23450,
-          averageRevenuePerUser: 36.50,
-          customerLifetimeValue: 184.20,
-          churnRate: 5.3,
-          customerAcquisitionCost: 28.40,
-          conversionRate: 12.8,
-          engagementScore: 78.5
+          totalRevenue: 0,
+          monthlyRecurringRevenue: 0,
+          averageRevenuePerUser: 0,
+          customerLifetimeValue: 0,
+          churnRate: 0,
+          customerAcquisitionCost: 0,
+          conversionRate: 0,
+          engagementScore: 0
         });
 
-        // Mock revenue data
         setRevenueData({
-          monthlyRevenue: [
-            { month: 'Jan', revenue: 34500 },
-            { month: 'Feb', revenue: 38200 },
-            { month: 'Mar', revenue: 42100 },
-            { month: 'Apr', revenue: 39800 },
-            { month: 'May', revenue: 45600 },
-            { month: 'Jun', revenue: 47800 }
-          ],
-          revenueBySource: [
-            { source: 'Subscriptions', amount: 234500 },
-            { source: 'Premium Features', amount: 123400 },
-            { source: 'In-app Purchases', amount: 67200 },
-            { source: 'Advertisements', amount: 31680 }
-          ],
-          customerSegments: [
-            { segment: 'Premium Users', value: 2847, percentage: 22.8 },
-            { segment: 'Regular Users', value: 6872, percentage: 55.0 },
-            { segment: 'Free Users', value: 2824, percentage: 22.2 }
-          ],
-          growthMetrics: [
-            { metric: 'User Growth', value: 15.2, trend: 'up' },
-            { metric: 'Revenue Growth', value: 18.7, trend: 'up' },
-            { metric: 'Engagement Growth', value: 12.3, trend: 'up' },
-            { metric: 'Retention Rate', value: 78.5, trend: 'up' }
-          ]
+          monthlyRevenue: [],
+          revenueBySource: [],
+          customerSegments: [],
+          growthMetrics: []
         });
 
-        // Mock engagement data
         setEngagementData({
-          userEngagement: [
-            { date: '2024-01', sessions: 28400, pageViews: 142000 },
-            { date: '2024-02', sessions: 31200, pageViews: 156000 },
-            { date: '2024-03', sessions: 34600, pageViews: 173000 },
-            { date: '2024-04', sessions: 32100, pageViews: 160500 },
-            { date: '2024-05', sessions: 35800, pageViews: 179000 }
-          ],
-          contentPerformance: [
-            { content: 'Live Matches', views: 45230, engagement: 89.2 },
-            { content: 'Player Profiles', views: 32150, engagement: 76.8 },
-            { content: 'Team Stats', views: 28340, engagement: 82.1 },
-            { content: 'Tournament Info', views: 19870, engagement: 71.5 },
-            { content: 'News Articles', views: 15620, engagement: 65.3 }
-          ],
-          featureUsage: [
-            { feature: 'Live Scoring', usage: 89.2 },
-            { feature: 'Match Notifications', usage: 76.5 },
-            { feature: 'Player Statistics', usage: 68.9 },
-            { feature: 'Team Comparisons', usage: 54.3 },
-            { feature: 'Tournament Tracking', usage: 45.7 }
-          ],
-          retentionCohorts: [
-            { cohort: 'Week 1', retention: 85 },
-            { cohort: 'Week 2', retention: 72 },
-            { cohort: 'Week 4', retention: 58 },
-            { cohort: 'Week 8', retention: 45 },
-            { cohort: 'Week 12', retention: 38 }
-          ]
+          userEngagement: [],
+          contentPerformance: [],
+          featureUsage: [],
+          retentionCohorts: []
         });
 
         setLoading(false);

@@ -6,12 +6,63 @@ import LineChart from '@/components/analytics/charts/LineChart';
 import BarChart from '@/components/analytics/charts/BarChart';
 import AreaChart from '@/components/analytics/charts/AreaChart';
 
+// Define proper TypeScript interfaces
+interface SystemMetrics {
+  cpuUsage: number;
+  memoryUsage: number;
+  diskUsage: number;
+  networkLatency: number;
+  responseTime: number;
+  throughput: number;
+  errorRate: number;
+  uptime: number;
+}
+
+interface HistoryDataPoint {
+  time: string;
+  [key: string]: string | number;
+}
+
+interface PerformanceData {
+  cpuHistory: HistoryDataPoint[];
+  memoryHistory: HistoryDataPoint[];
+  responseTimeHistory: HistoryDataPoint[];
+  throughputHistory: HistoryDataPoint[];
+  errorHistory: HistoryDataPoint[];
+}
+
+interface ServiceStatus {
+  name: string;
+  status: string;
+  uptime: string;
+  responseTime: string;
+}
+
+interface Alert {
+  level: string;
+  message: string;
+  time: string;
+}
+
+interface Incident {
+  severity: string;
+  title: string;
+  duration: string;
+  resolved: boolean;
+}
+
+interface SystemHealth {
+  services: ServiceStatus[];
+  alerts: Alert[];
+  incidents: Incident[];
+}
+
 interface SystemAnalyticsProps {
   className?: string;
 }
 
 const SystemAnalytics: React.FC<SystemAnalyticsProps> = ({ className = '' }) => {
-  const [systemMetrics, setSystemMetrics] = useState({
+  const [systemMetrics, setSystemMetrics] = useState<SystemMetrics>({
     cpuUsage: 0,
     memoryUsage: 0,
     diskUsage: 0,
@@ -22,7 +73,7 @@ const SystemAnalytics: React.FC<SystemAnalyticsProps> = ({ className = '' }) => 
     uptime: 0
   });
 
-  const [performanceData, setPerformanceData] = useState({
+  const [performanceData, setPerformanceData] = useState<PerformanceData>({
     cpuHistory: [],
     memoryHistory: [],
     responseTimeHistory: [],
@@ -30,7 +81,7 @@ const SystemAnalytics: React.FC<SystemAnalyticsProps> = ({ className = '' }) => 
     errorHistory: []
   });
 
-  const [systemHealth, setSystemHealth] = useState({
+  const [systemHealth, setSystemHealth] = useState<SystemHealth>({
     services: [],
     alerts: [],
     incidents: []
@@ -39,84 +90,36 @@ const SystemAnalytics: React.FC<SystemAnalyticsProps> = ({ className = '' }) => 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading system analytics data
+    // Load system analytics data from API
     const loadData = async () => {
       try {
-        // Mock current system metrics
+        setLoading(true);
+        
+        // TODO: Replace with actual API calls to fetch real system analytics data
+        // For now, we'll initialize with empty/default values
         setSystemMetrics({
-          cpuUsage: 45.2,
-          memoryUsage: 68.7,
-          diskUsage: 42.1,
-          networkLatency: 23.4,
-          responseTime: 145,
-          throughput: 1247,
-          errorRate: 0.02,
-          uptime: 99.8
+          cpuUsage: 0,
+          memoryUsage: 0,
+          diskUsage: 0,
+          networkLatency: 0,
+          responseTime: 0,
+          throughput: 0,
+          errorRate: 0,
+          uptime: 0
         });
 
-        // Mock performance history data
         setPerformanceData({
-          cpuHistory: [
-            { time: '00:00', usage: 32.1 },
-            { time: '04:00', usage: 28.4 },
-            { time: '08:00', usage: 45.2 },
-            { time: '12:00', usage: 52.8 },
-            { time: '16:00', usage: 48.9 },
-            { time: '20:00', usage: 38.7 }
-          ],
-          memoryHistory: [
-            { time: '00:00', usage: 45.2 },
-            { time: '04:00', usage: 42.8 },
-            { time: '08:00', usage: 58.3 },
-            { time: '12:00', usage: 68.7 },
-            { time: '16:00', usage: 62.1 },
-            { time: '20:00', usage: 55.9 }
-          ],
-          responseTimeHistory: [
-            { time: '00:00', responseTime: 120 },
-            { time: '04:00', responseTime: 115 },
-            { time: '08:00', responseTime: 145 },
-            { time: '12:00', responseTime: 165 },
-            { time: '16:00', responseTime: 155 },
-            { time: '20:00', responseTime: 135 }
-          ],
-          throughputHistory: [
-            { time: '00:00', requests: 890 },
-            { time: '04:00', requests: 756 },
-            { time: '08:00', requests: 1247 },
-            { time: '12:00', requests: 1456 },
-            { time: '16:00', requests: 1321 },
-            { time: '20:00', requests: 1098 }
-          ],
-          errorHistory: [
-            { time: '00:00', errors: 2 },
-            { time: '04:00', errors: 1 },
-            { time: '08:00', errors: 3 },
-            { time: '12:00', errors: 5 },
-            { time: '16:00', errors: 2 },
-            { time: '20:00', errors: 1 }
-          ]
+          cpuHistory: [],
+          memoryHistory: [],
+          responseTimeHistory: [],
+          throughputHistory: [],
+          errorHistory: []
         });
 
-        // Mock system health data
         setSystemHealth({
-          services: [
-            { name: 'API Server', status: 'healthy', uptime: '99.9%', responseTime: '145ms' },
-            { name: 'Database', status: 'healthy', uptime: '99.8%', responseTime: '23ms' },
-            { name: 'Redis Cache', status: 'healthy', uptime: '99.7%', responseTime: '2ms' },
-            { name: 'WebSocket', status: 'healthy', uptime: '99.9%', responseTime: '15ms' },
-            { name: 'CDN', status: 'warning', uptime: '98.5%', responseTime: '45ms' },
-            { name: 'Auth Service', status: 'healthy', uptime: '99.9%', responseTime: '89ms' }
-          ],
-          alerts: [
-            { level: 'warning', message: 'CDN response time increased', time: '2 hours ago' },
-            { level: 'info', message: 'Database backup completed', time: '4 hours ago' },
-            { level: 'info', message: 'Cache cleared automatically', time: '6 hours ago' }
-          ],
-          incidents: [
-            { severity: 'low', title: 'Brief API slowdown', duration: '5 minutes', resolved: true },
-            { severity: 'medium', title: 'Database connection pool exhausted', duration: '12 minutes', resolved: true }
-          ]
+          services: [],
+          alerts: [],
+          incidents: []
         });
 
         setLoading(false);

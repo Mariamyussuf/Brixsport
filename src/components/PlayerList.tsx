@@ -39,9 +39,9 @@ const PlayerList: React.FC<PlayerListProps> = ({ sport, teamId, status }) => {
       
       const response = await playerService.getPlayers(params);
       
-      if (response.success) {
-        setPlayers(response.data.players);
-        setTotalPages(response.data.pagination.totalPages);
+      if (response.success && response.data) {
+        setPlayers(response.data.players || []);
+        setTotalPages(response.data.pagination?.totalPages || 1);
       } else {
         setError(response.error?.message || 'Failed to fetch players');
       }

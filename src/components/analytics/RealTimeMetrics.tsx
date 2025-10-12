@@ -4,12 +4,41 @@ import React, { useState, useEffect } from 'react';
 import MetricCard from '@/components/analytics/charts/MetricCard';
 import LineChart from '@/components/analytics/charts/LineChart';
 
+// Define proper TypeScript interfaces
+interface LiveMetrics {
+  activeUsers: number;
+  liveMatches: number;
+  concurrentConnections: number;
+  apiRequestsPerSecond: number;
+  dataTransferRate: number;
+  serverResponseTime: number;
+}
+
+interface HistoryDataPoint {
+  time: string;
+  [key: string]: string | number;
+}
+
+interface RealTimeData {
+  activeUsersHistory: HistoryDataPoint[];
+  liveMatchesHistory: HistoryDataPoint[];
+  apiRequestsHistory: HistoryDataPoint[];
+  responseTimeHistory: HistoryDataPoint[];
+}
+
+interface Alert {
+  id: string;
+  type: 'info' | 'warning' | 'error';
+  message: string;
+  timestamp: string;
+}
+
 interface RealTimeMetricsProps {
   className?: string;
 }
 
 const RealTimeMetrics: React.FC<RealTimeMetricsProps> = ({ className = '' }) => {
-  const [liveMetrics, setLiveMetrics] = useState({
+  const [liveMetrics, setLiveMetrics] = useState<LiveMetrics>({
     activeUsers: 0,
     liveMatches: 0,
     concurrentConnections: 0,
@@ -18,117 +47,49 @@ const RealTimeMetrics: React.FC<RealTimeMetricsProps> = ({ className = '' }) => 
     serverResponseTime: 0
   });
 
-  const [realTimeData, setRealTimeData] = useState({
-    activeUsersHistory: [] as Array<{ time: string; users: number }>,
-    liveMatchesHistory: [] as Array<{ time: string; matches: number }>,
-    apiRequestsHistory: [] as Array<{ time: string; requests: number }>,
-    responseTimeHistory: [] as Array<{ time: string; responseTime: number }>
+  const [realTimeData, setRealTimeData] = useState<RealTimeData>({
+    activeUsersHistory: [],
+    liveMatchesHistory: [],
+    apiRequestsHistory: [],
+    responseTimeHistory: []
   });
 
-  const [alerts, setAlerts] = useState<Array<{
-    id: string;
-    type: 'info' | 'warning' | 'error';
-    message: string;
-    timestamp: string;
-  }>>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
 
   const [loading, setLoading] = useState(true);
 
-  // Simulate real-time data updates
+  // Load real-time data from API
   useEffect(() => {
-    const initialLoad = () => {
-      setLiveMetrics({
-        activeUsers: 2847,
-        liveMatches: 23,
-        concurrentConnections: 12543,
-        apiRequestsPerSecond: 1456,
-        dataTransferRate: 2.3,
-        serverResponseTime: 145
-      });
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        
+        // TODO: Replace with actual API calls to fetch real-time metrics data
+        // For now, we'll initialize with empty/default values
+        setLiveMetrics({
+          activeUsers: 0,
+          liveMatches: 0,
+          concurrentConnections: 0,
+          apiRequestsPerSecond: 0,
+          dataTransferRate: 0,
+          serverResponseTime: 0
+        });
 
-      // Initialize with some historical data
-      const now = new Date();
-      const historyData = Array.from({ length: 20 }, (_, i) => {
-        const time = new Date(now.getTime() - (19 - i) * 30000); // 30 second intervals
-        return {
-          time: time.toLocaleTimeString(),
-          users: Math.floor(Math.random() * 500) + 2500,
-          matches: Math.floor(Math.random() * 10) + 15,
-          requests: Math.floor(Math.random() * 300) + 1200,
-          responseTime: Math.floor(Math.random() * 50) + 120
-        };
-      });
+        setRealTimeData({
+          activeUsersHistory: [],
+          liveMatchesHistory: [],
+          apiRequestsHistory: [],
+          responseTimeHistory: []
+        });
 
-      setRealTimeData({
-        activeUsersHistory: historyData.map(d => ({ time: d.time, users: d.users })),
-        liveMatchesHistory: historyData.map(d => ({ time: d.time, matches: d.matches })),
-        apiRequestsHistory: historyData.map(d => ({ time: d.time, requests: d.requests })),
-        responseTimeHistory: historyData.map(d => ({ time: d.time, responseTime: d.responseTime }))
-      });
-
-      setLoading(false);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error loading real-time metrics data:', error);
+        setLoading(false);
+      }
     };
 
-    initialLoad();
-
-    // Set up real-time updates every 30 seconds
-    const interval = setInterval(() => {
-      setLiveMetrics(prev => ({
-        activeUsers: prev.activeUsers + Math.floor(Math.random() * 100) - 50,
-        liveMatches: Math.max(0, prev.liveMatches + Math.floor(Math.random() * 4) - 2),
-        concurrentConnections: prev.concurrentConnections + Math.floor(Math.random() * 200) - 100,
-        apiRequestsPerSecond: prev.apiRequestsPerSecond + Math.floor(Math.random() * 100) - 50,
-        dataTransferRate: Math.max(0, prev.dataTransferRate + (Math.random() - 0.5) * 0.5),
-        serverResponseTime: Math.max(50, prev.serverResponseTime + Math.floor(Math.random() * 20) - 10)
-      }));
-
-      // Update history data
-      const now = new Date().toLocaleTimeString();
-      setRealTimeData(prev => ({
-        activeUsersHistory: [
-          ...prev.activeUsersHistory.slice(1),
-          { time: now, users: liveMetrics.activeUsers }
-        ],
-        liveMatchesHistory: [
-          ...prev.liveMatchesHistory.slice(1),
-          { time: now, matches: liveMetrics.liveMatches }
-        ],
-        apiRequestsHistory: [
-          ...prev.apiRequestsHistory.slice(1),
-          { time: now, requests: liveMetrics.apiRequestsPerSecond }
-        ],
-        responseTimeHistory: [
-          ...prev.responseTimeHistory.slice(1),
-          { time: now, responseTime: liveMetrics.serverResponseTime }
-        ]
-      }));
-
-      // Generate random alerts occasionally
-      if (Math.random() < 0.1) { // 10% chance
-        const alertTypes = ['info', 'warning', 'error'] as const;
-        const messages = [
-          'New user registration spike detected',
-          'API response time increased by 15%',
-          'Live match started: Premier League Final',
-          'Server CPU usage above 80%',
-          'Database connection pool at 90% capacity',
-          'Cache hit rate dropped below 90%',
-          'New feature deployment completed',
-          'Security scan completed successfully'
-        ];
-
-        const newAlert = {
-          id: Date.now().toString(),
-          type: alertTypes[Math.floor(Math.random() * alertTypes.length)],
-          message: messages[Math.floor(Math.random() * messages.length)],
-          timestamp: new Date().toLocaleTimeString()
-        };
-
-        setAlerts(prev => [newAlert, ...prev.slice(0, 9)]); // Keep last 10 alerts
-      }
-    }, 30000); // Update every 30 seconds
-
-    return () => clearInterval(interval);
+    loadData();
   }, []);
 
   if (loading) {
