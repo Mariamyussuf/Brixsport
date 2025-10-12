@@ -36,7 +36,8 @@
     "tailwind-merge": "^3.3.1",
     "web-vitals": "^5.1.0",
     "winston": "^3.17.0",
-    "zod": "^4.1.9"
+    "zod": "^4.1.9",
+    "uuid": "^10.0.0"
   },
   "scripts": {
     "dev": "next dev",
@@ -53,8 +54,9 @@
     "analyze": "cross-env ANALYZE=true next build",
     "generate-pwa-assets": "npm install canvas && node generate-pwa-icons.js && node generate-ios-splash-screens.js",
     "generate-logger-assets": "node generate-all-logger-assets.js",
-    "postinstall": "npm run install:web-vitals",
+    "postinstall": "npm run install:web-vitals && npm run install:backend-deps",
     "install:web-vitals": "npm install web-vitals --save",
+    "install:backend-deps": "cd brixsport-backend && npm install",
     "setup": "node -e \"console.log('Run setup-environment.bat (Windows) or ./setup-environment.sh (Linux/Mac) to configure environment')\"",
     "check-env": "node -e \"const fs=require('fs'); if(!fs.existsSync('.env.local')){console.error('❌ .env.local not found. Run setup script first.'); process.exit(1);} console.log('✅ Environment configured');\"",
     "prepare": "husky install",
@@ -78,6 +80,7 @@
     "@types/react-window": "^1.8.8",
     "@types/styled-components": "^5.1.34",
     "@types/supertest": "^6.0.3",
+    "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.4.21",
     "cross-env": "^10.0.0",
     "husky": "^9.1.7",
