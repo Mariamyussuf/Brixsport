@@ -1,7 +1,6 @@
 import { withRedis } from '../config/redis';
 import { logger } from '../utils/logger';
-import { RedisClientType } from 'redis';
-import { RedisModules, RedisFunctions, RedisScripts } from '../config/redis';
+import { RedisClientType, RedisModules, RedisFunctions, RedisScripts } from 'redis';
 
 type RedisClient = RedisClientType<RedisModules, RedisFunctions, RedisScripts>;
 
@@ -372,7 +371,7 @@ export class RedisCacheService {
         const counts = await Promise.all(
           tagKeys.map(tag => client.sCard(tag).catch(() => 0))
         );
-        totalTaggedKeys = counts.reduce((sum, count) => sum + count, 0);
+        totalTaggedKeys = counts.reduce((sum: number, count: number) => sum + count, 0);
       }
       
       return {
@@ -415,7 +414,7 @@ export class RedisCacheService {
                 client.ttl(key).catch(() => -2) // Return -2 on error to indicate key doesn't exist
               )
             );
-            count += ttls.filter(ttl => ttl === -1 || ttl > 0).length;
+            count += ttls.filter((ttl: number) => ttl === -1 || ttl > 0).length;
           } else {
             count += keys.length;
           }
