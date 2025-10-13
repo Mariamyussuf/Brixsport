@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 
 const LoginFormClient = () => {
-  const { login, demoLogin, loading } = useAuth();
+  const { login, loading } = useAuth();
   const { loggingIn } = loading || {};
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -25,16 +25,6 @@ const LoginFormClient = () => {
     }
   };
 
-  const handleDemoLogin = async () => {
-    try {
-      await demoLogin();
-      const next = searchParams?.get('next');
-      router.push(next || '/');
-    } catch (err) {
-      setError('Failed to login with demo account');
-      console.error('Demo login error:', err);
-    }
-  };
   const UserLoginForm = () => {
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
@@ -102,21 +92,6 @@ const LoginFormClient = () => {
           Sign in
         </button>
       </div>
-      <div className="relative my-4">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-600"></div>
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-gray-800 text-gray-400">Or continue with</span>
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={handleDemoLogin}
-        className="w-full flex justify-center py-2 px-4 border border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-      >
-        Use Demo Account
-      </button>
       </form>
     );
   };

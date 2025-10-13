@@ -263,7 +263,7 @@ export const EventLoggerForm: React.FC<EventLoggerFormProps> = ({
   const handleBatchDelete = handleBatchUndo; // For now, same as undo
 
   const handleBatchEdit = () => {
-    // For demo: just edit the first selected event
+    // Edit the first selected event
     const firstId = Array.from(selectedEventIds)[0];
     const ev = eventQueue.find(ev => ev.id === firstId);
     if (ev) {

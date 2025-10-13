@@ -69,20 +69,8 @@ export async function POST(req: Request) {
       }, { status: 401 });
     }
     
-    // Special case for demo credentials - the password in the database is hashed
-    // but the demo form sends the plain text password
-    let passwordValid = false;
-    const demoEmail = process.env.NEXT_PUBLIC_ADMIN_DEMO_EMAIL || 'john.admin@example.com';
-    const demoPassword = process.env.NEXT_PUBLIC_ADMIN_DEMO_PASSWORD || 'admin_password_123';
-    if (body.email === demoEmail && body.password === demoPassword) {
-      // Demo credentials - accept them directly
-      passwordValid = true;
-    } else {
-      // Normal password verification
-      passwordValid = verifyPassword(body.password, admin.password);
-    }
-    
     // Verify password
+    const passwordValid = verifyPassword(body.password, admin.password);
     if (!passwordValid) {
       return NextResponse.json({ 
         success: false, 
@@ -133,7 +121,7 @@ export async function POST(req: Request) {
     });
     
     // Return admin without password
-    const { password, ...adminWithoutPassword } = admin;
+    const { password: _, ...adminWithoutPassword } = admin;
     
     return NextResponse.json({ 
       success: true, 

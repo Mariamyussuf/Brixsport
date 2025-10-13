@@ -58,6 +58,7 @@ import { initSocket } from './sockets';
 import { logger } from '@utils/logger';
 import { connectRedis } from '@config/redis';
 import { connectDatabase } from '@config/database';
+import { systemMonitorService } from './services/system-monitor.service';
 
 // Log environment variables for debugging
 logger.info('Environment variables loaded:', {
@@ -91,9 +92,23 @@ Promise.all([
       
       // Initialize socket connections
       initSocket(io);
+      
+      // Start system monitor service
+      systemMonitorService.startMonitoring();
     });
   })
   .catch((error: any) => {
     logger.error('Startup failed:', error);
     process.exit(1);
   });
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received, shutting down gracefully');
+  systemMonitorService.stopMonitoring();
+});
+
+process.on('SIGINT', () => {
+  logger.info('SIGINT received, shutting down gracefully');
+  systemMonitorService.stopMonitoring();
+});

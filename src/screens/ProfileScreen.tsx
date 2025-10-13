@@ -34,7 +34,7 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 
 const ProfileScreen = () => {
-  const { user, logout, loading: authLoading, error, demoLogin } = useAuth();
+  const { user, logout, loading: authLoading, error } = useAuth();
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { resolvedTheme } = useTheme();
@@ -258,19 +258,6 @@ const ProfileScreen = () => {
                       Log In
                     </Button>
                   </div>
-                  <Button 
-                    onClick={async () => {
-                      try {
-                        await demoLogin();
-                      } catch (error) {
-                        console.error('Demo login failed:', error);
-                      }
-                    }}
-                    variant="ghost"
-                    className="mt-4 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                  >
-                    Try Demo Account
-                  </Button>
                 </>
               )}
             </div>

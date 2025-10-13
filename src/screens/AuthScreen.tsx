@@ -1,5 +1,7 @@
 "use client";
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
 function validateEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -27,6 +29,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotError, setForgotError] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const router = useRouter();
+  const { login } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -52,16 +58,62 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
     return errs;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
     setErrors(errs);
     setSubmitError('');
     if (Object.keys(errs).length > 0) return;
-    setSubmitError('This is a demo. Backend not connected.');
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Signup failed');
+      }
+
+      // After successful signup, automatically log the user in
+      await login({ email: form.email, password: form.password });
+      router.push('/onboarding');
+    } catch (err: any) {
+      setSubmitError(err.message || 'Failed to sign up. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleForgotSubmit = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const errs = validate();
+    setErrors(errs);
+    setSubmitError('');
+    if (Object.keys(errs).length > 0) return;
+
+    setIsLoading(true);
+    try {
+      await login({ email: form.email, password: form.password });
+      router.push('/');
+    } catch (err: any) {
+      setSubmitError(err.message || 'Invalid email or password');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setForgotError('');
     setForgotSuccess(false);
@@ -73,7 +125,29 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
       setForgotError('Enter a valid email address.');
       return;
     }
-    setForgotSuccess(true);
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Failed to send reset instructions');
+      }
+
+      setForgotSuccess(true);
+    } catch (err: any) {
+      setForgotError(err.message || 'Failed to send reset instructions. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -115,7 +189,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
         {!showForgot ? (
           <form
             className="w-full max-w-md flex flex-col gap-8"
-            onSubmit={handleSubmit}
+            onSubmit={tab === 'signup' ? handleSignup : handleLogin}
             id={tab === 'signup' ? 'signup-panel' : 'login-panel'}
             aria-labelledby={tab === 'signup' ? 'Sign Up' : 'Log in'}
             noValidate
@@ -136,6 +210,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
                     required
                     aria-invalid={!!errors.name}
                     aria-describedby={errors.name ? 'name-error' : undefined}
+                    disabled={isLoading}
                   />
                   {errors.name && <span id="name-error" className="text-red-400 text-sm mt-1">{errors.name}</span>}
                 </div>
@@ -155,6 +230,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
                 required
                 aria-invalid={!!errors.email}
                 aria-describedby={errors.email ? 'email-error' : undefined}
+                disabled={isLoading}
               />
               {errors.email && <span id="email-error" className="text-red-400 text-sm mt-1">{errors.email}</span>}
             </div>
@@ -172,6 +248,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
                 required
                 aria-invalid={!!errors.password}
                 aria-describedby={errors.password ? 'password-error' : undefined}
+                disabled={isLoading}
               />
               <button
                 type="button"
@@ -179,6 +256,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
                 tabIndex={0}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
                 onClick={() => setShowPassword(v => !v)}
+                disabled={isLoading}
               >
                 {showPassword ? (
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
@@ -207,6 +285,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
                   required
                   aria-invalid={!!errors.confirmPassword}
                   aria-describedby={errors.confirmPassword ? 'confirmPassword-error' : undefined}
+                  disabled={isLoading}
                 />
                 {errors.confirmPassword && <span id="confirmPassword-error" className="text-red-400 text-sm mt-1">{errors.confirmPassword}</span>}
               </div>
@@ -219,6 +298,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
                   className="text-blue-400 text-sm hover:underline focus:outline-none"
                   onClick={() => { setShowForgot(true); setForgotEmail(''); setForgotError(''); setForgotSuccess(false); }}
                   tabIndex={0}
+                  disabled={isLoading}
                 >
                   Forgot password?
                 </button>
@@ -226,10 +306,19 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
             )}
             <button
               type="submit"
-              className="w-full py-4 rounded-full bg-white/20 backdrop-blur-sm border border-white/60 text-white text-xl font-semibold mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:bg-white/30 shadow-md hover:shadow-lg active:scale-98 mt-8"
+              className="w-full py-4 rounded-full bg-white/20 backdrop-blur-sm border border-white/60 text-white text-xl font-semibold mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:bg-white/30 shadow-md hover:shadow-lg active:scale-98 mt-8 disabled:opacity-50"
               aria-label={tab === 'signup' ? 'Sign Up' : 'Log in'}
+              disabled={isLoading}
             >
-              {tab === 'signup' ? 'Sign Up' : 'Log in'}
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </div>
+              ) : tab === 'signup' ? 'Sign Up' : 'Log in'}
             </button>
           </form>
         ) : (
@@ -248,6 +337,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
                 required
                 aria-invalid={!!forgotError}
                 aria-describedby={forgotError ? 'forgotEmail-error' : undefined}
+                disabled={isLoading}
               />
               {forgotError && <span id="forgotEmail-error" className="text-red-400 text-sm mt-1">{forgotError}</span>}
             </div>
@@ -255,16 +345,26 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
             <div className="flex gap-4">
               <button
                 type="button"
-                className="flex-1 py-3 rounded-full bg-white/20 backdrop-blur-sm border border-white/60 text-white text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:bg-white/30 shadow-md"
+                className="flex-1 py-3 rounded-full bg-white/20 backdrop-blur-sm border border-white/60 text-white text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:bg-white/30 shadow-md disabled:opacity-50"
                 onClick={() => setShowForgot(false)}
+                disabled={isLoading}
               >
                 Back to Log in
               </button>
               <button
                 type="submit"
-                className="flex-1 py-3 rounded-full bg-blue-500/80 backdrop-blur-sm border border-blue-400 text-white text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:bg-blue-600 shadow-md"
+                className="flex-1 py-3 rounded-full bg-blue-500/80 backdrop-blur-sm border border-blue-400 text-white text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all hover:bg-blue-600 shadow-md disabled:opacity-50"
+                disabled={isLoading}
               >
-                Recover password
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Sending...
+                  </div>
+                ) : 'Recover password'}
               </button>
             </div>
           </form>
@@ -272,4 +372,4 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
       </div>
     </div>
   );
-}; 
+};

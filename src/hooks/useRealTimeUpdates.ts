@@ -18,13 +18,11 @@ export const useRealTimeUpdates = () => {
     // In a real implementation, we would connect to a WebSocket server:
     // const ws = new WebSocket('wss://api.brixsports.com/live/updates');
     
-    // For demo purposes, we'll simulate updates
     const connect = () => {
       setIsConnected(true);
       
       // Simulate receiving updates every 10 seconds
       const interval = setInterval(() => {
-        // Generate random updates for demo
         const matchIds = Object.keys(liveMatches).map(Number);
         if (matchIds.length > 0) {
           const randomMatchId = matchIds[Math.floor(Math.random() * matchIds.length)];
@@ -58,7 +56,6 @@ export const useRealTimeUpdates = () => {
     // In a real implementation, we would send a subscription message to the WebSocket server:
     // ws.send(JSON.stringify({ type: 'subscribe', matchId }));
     
-    // For demo, we'll just add the match to our tracking
     setLiveMatches(prev => ({
       ...prev,
       [matchId]: {
@@ -75,7 +72,6 @@ export const useRealTimeUpdates = () => {
     // In a real implementation, we would send an unsubscribe message to the WebSocket server:
     // ws.send(JSON.stringify({ type: 'unsubscribe', matchId }));
     
-    // For demo, we'll just remove the match from our tracking
     setLiveMatches(prev => {
       const newMatches = { ...prev };
       delete newMatches[matchId];

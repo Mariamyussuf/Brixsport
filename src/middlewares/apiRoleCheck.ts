@@ -77,7 +77,7 @@ function getUserRole(request: NextRequest): UserRole | null {
   const authHeader = request.headers.get('authorization');
   const token = authHeader ? authHeader.split(' ')[1] : null;
   
-  // For demo purposes, we're checking tokens directly
+  // Check tokens directly
   // In production, you should verify the JWT token and extract the role
   if (token) {
     if (token.startsWith('admin_')) return 'admin';

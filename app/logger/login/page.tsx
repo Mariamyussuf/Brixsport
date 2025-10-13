@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import LoggerLoginForm from '@/components/logger/shared/LoggerLoginForm';
+import { LoggerLoginForm } from '@/components/logger/shared/LoggerLoginForm';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 
 export default function LoggerLoginPage() {
-  const { login, demoLogin } = useAuth();
+  const { login } = useAuth();
   const router = useRouter();
 
   const handleLogin = async (credentials: { email: string; password: string }) => {
@@ -15,20 +15,6 @@ export default function LoggerLoginPage() {
       router.push('/logger');
     } catch (error) {
       console.error('Login failed:', error);
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    try {
-      // Set URL params to indicate the logger role for demo login
-      const url = new URL(window.location.href);
-      url.searchParams.set('role', 'logger');
-      window.history.replaceState({}, '', url.toString());
-      
-      await demoLogin();
-      router.push('/logger');
-    } catch (error) {
-      console.error('Demo login failed:', error);
     }
   };
 
@@ -45,7 +31,7 @@ export default function LoggerLoginPage() {
             <h1 className="text-2xl font-bold text-white">{process.env.NEXT_PUBLIC_LOGGER_APP_NAME || 'Logger Access'}</h1>
             <p className="text-gray-400 mt-2">{process.env.NEXT_PUBLIC_LOGGER_APP_DESCRIPTION || 'Secure logging platform'}</p>
           </div>
-          <LoggerLoginForm onLogin={handleLogin} onDemoLogin={handleDemoLogin} />
+          <LoggerLoginForm onLoginSuccess={() => router.push('/logger')} />
         </div>
       </div>
     </div>

@@ -3,11 +3,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
-import AdminLoginForm from '@/components/admin/shared/AdminLoginForm';
-import LoggerLoginForm from '@/components/logger/shared/LoggerLoginForm';
+import { AdminLoginForm } from '@/components/admin/shared/AdminLoginForm';
+import { LoggerLoginForm } from '@/components/logger/shared/LoggerLoginForm';
 
 export default function AdminLoggerLoginPage() {
-  const { login, demoLogin } = useAuth();
+  const { login } = useAuth();
   const router = useRouter();
   const [userType, setUserType] = useState<'admin' | 'logger'>('admin');
 
@@ -23,26 +23,6 @@ export default function AdminLoggerLoginPage() {
       }
     } catch (error) {
       console.error('Login failed:', error);
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    try {
-      // Set URL params to indicate the role for demo login
-      const url = new URL(window.location.href);
-      url.searchParams.set('role', userType);
-      window.history.replaceState({}, '', url.toString());
-      
-      await demoLogin();
-      
-      // Redirect based on user type selection
-      if (userType === 'admin') {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/logger');
-      }
-    } catch (error) {
-      console.error('Demo login failed:', error);
     }
   };
 
@@ -90,9 +70,17 @@ export default function AdminLoggerLoginPage() {
 
           {/* Login Forms */}
           {userType === 'admin' ? (
-            <AdminLoginForm onLogin={handleLogin} onDemoLogin={handleDemoLogin} />
+            <AdminLoginForm onLoginSuccess={() => {
+              // The component handles its own login logic
+              // We just need to trigger navigation after successful login
+              router.push('/admin/dashboard');
+            }} />
           ) : (
-            <LoggerLoginForm onLogin={handleLogin} onDemoLogin={handleDemoLogin} />
+            <LoggerLoginForm onLoginSuccess={() => {
+              // The component handles its own login logic
+              // We just need to trigger navigation after successful login
+              router.push('/logger');
+            }} />
           )}
 
           <div className="mt-6 text-center text-sm text-gray-500">

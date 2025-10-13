@@ -87,71 +87,20 @@ const AdminLoginForm: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // For admin login, we might want to add additional verification
-      // This could include checking for admin-specific credentials or 2FA
-      const expectedTwoFactorCode = process.env.NEXT_PUBLIC_ADMIN_TWO_FACTOR_CODE || '123456';
-      if (showTwoFactor && form.twoFactorCode !== expectedTwoFactorCode) {
-        throw new Error('INVALID_TWO_FACTOR');
-      }
-
-      // Pass the form credentials to the login function
+      // Handle regular login
       const result = await AdminService.login(form.email, form.password);
       
       if (!result.success) {
-        throw new Error(result.error || 'Login failed');
+        setSubmitError(result.error || 'Login failed');
+        return;
       }
-
+      
       // Redirect to admin dashboard
       router.push('/admin/dashboard');
     } catch (error: any) {
-      if (error.message === 'INVALID_TWO_FACTOR') {
-        setSubmitError('Invalid two-factor code. Please try again.');
-      } else {
-        setSubmitError('Login failed. Please check your credentials and try again.');
-      }
+      setSubmitError('Login failed. Please check your credentials and try again.');
       console.error('Admin login error:', error);
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle demo login
-  const handleDemoLogin = async () => {
-    setIsLoading(true);
-    setSubmitError('');
-    
-    try {
-      // Set demo credentials from environment variables
-      const demoEmail = process.env.NEXT_PUBLIC_ADMIN_DEMO_EMAIL || 'john.admin@example.com';
-      const demoPassword = process.env.NEXT_PUBLIC_ADMIN_DEMO_PASSWORD || 'admin_password_123';
-      
-      setForm({
-        email: demoEmail,
-        password: demoPassword
-      });
-      
-      // Small delay to allow state to update
-      setTimeout(async () => {
-        try {
-          // Submit the form with demo credentials
-          const result = await AdminService.login(demoEmail, demoPassword);
-          
-          if (!result.success) {
-            throw new Error(result.error || 'Login failed');
-          }
-
-          // Redirect to admin dashboard
-          router.push('/admin/dashboard');
-        } catch (error: any) {
-          setSubmitError('Demo login failed. Please try again.');
-          console.error('Demo login error:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      }, 100);
-    } catch (error) {
-      setSubmitError('Demo login failed. Please try again.');
-      console.error('Demo login error:', error);
       setIsLoading(false);
     }
   };
@@ -309,7 +258,7 @@ const AdminLoginForm: React.FC = () => {
       {submitError && (
         <div className="p-4 rounded-lg bg-red-900/30 border border-red-500/30 text-red-200 text-sm flex items-start gap-3">
           <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            <path fillRule="evenodd" d="M10 18a8 8 0 11-16 0 8 8 0 0116 0zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
           </svg>
           <span>{submitError}</span>
         </div>
@@ -319,54 +268,20 @@ const AdminLoginForm: React.FC = () => {
       <button
         type="submit"
         disabled={isLoading}
-        className={`w-full py-3.5 px-4 rounded-lg font-medium text-white transition-all duration-200 flex items-center justify-center gap-2 shadow-lg ${
-          isLoading 
-            ? 'bg-red-700 cursor-not-allowed' 
-            : 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900 transform hover:-translate-y-0.5'
-        }`}
+        className="relative w-full py-3 rounded-lg bg-gradient-to-r from-red-600 to-red-700 text-white font-medium text-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed hover:from-red-700 hover:to-red-800 transform hover:scale-[1.02] active:scale-[0.98]"
       >
         {isLoading ? (
-          <div className="flex items-center gap-2">
-            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <div className="flex items-center justify-center gap-2">
+            <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
             <span>Authenticating...</span>
           </div>
         ) : (
-          <>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h6a3 3 0 013 3v1" />
-            </svg>
-            <span>Access Admin Platform</span>
-          </>
+          'Access Admin Dashboard'
         )}
       </button>
-
-      {/* Demo Login Button */}
-      <button
-        type="button"
-        onClick={handleDemoLogin}
-        className="w-full py-3 px-4 rounded-lg font-medium text-gray-300 border border-gray-600 hover:border-gray-500 hover:text-white transition-all duration-200 flex items-center justify-center gap-2 bg-gray-800/50 hover:bg-gray-700/50"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-        </svg>
-        <span>Use Demo Credentials</span>
-      </button>
-
-      {/* Security Notice */}
-      <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-gray-800/50 to-gray-900/50 border border-gray-700/50 text-gray-300 text-sm">
-        <div className="flex items-start gap-3">
-          <svg className="w-5 h-5 mt-0.5 flex-shrink-0 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5v3a.75.75 0 001.5 0v-3A.75.75 0 009 9z" clipRule="evenodd" />
-          </svg>
-          <div>
-            <p className="font-medium mb-1 text-gray-200">Secure Access Only</p>
-            <p className="text-gray-400">This platform is restricted to authorized administrators only. All actions are logged and monitored.</p>
-          </div>
-        </div>
-      </div>
     </form>
   );
 };

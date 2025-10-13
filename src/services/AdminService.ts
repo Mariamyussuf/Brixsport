@@ -1,6 +1,30 @@
 import { APIEndpoint } from '@/types/api';
 import { AdminUser } from '@/types/admin';
-import { databaseService } from '@/lib/databaseService';
+
+// Backend API configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
+const API_V1_URL = `${API_BASE_URL}/v1`;
+
+// Helper function to make authenticated API calls
+const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+  
+  const response = await fetch(`${API_V1_URL}${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `API call failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+};
 
 const adminEndpoints = {
   login: {
@@ -31,76 +55,84 @@ const adminEndpoints = {
 
 class AdminService {
   async login(email: string, password: string):Promise<any> {
-    // For now, return a mock response as this needs backend implementation
-    // In a real implementation, this would authenticate with the database service
-    return {
-      success: true,
-      data: {
-        token: 'mock-jwt-token',
-        user: {
-          id: '1',
-          email,
-          name: 'Admin User',
-          role: 'admin'
-        }
-      }
-    };
+    try {
+      const response = await apiCall(adminEndpoints.login.url, {
+        method: adminEndpoints.login.method,
+        body: JSON.stringify({ email, password })
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Admin login error:', error);
+      throw error;
+    }
   }
 
   async getProfile(): Promise<any> {
-    // For now, return a mock response as this needs backend implementation
-    // In a real implementation, this would fetch from the database service
-    return {
-      success: true,
-      data: {
-        id: '1',
-        email: 'admin@example.com',
-        name: 'Admin User',
-        role: 'admin'
-      }
-    };
+    try {
+      const response = await apiCall(adminEndpoints.getProfile.url, {
+        method: adminEndpoints.getProfile.method
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Get admin profile error:', error);
+      throw error;
+    }
   }
 
   async getAll(): Promise<any> {
-    // For now, return a mock response as this needs backend implementation
-    // In a real implementation, this would fetch from the database service
-    return {
-      success: true,
-      data: []
-    };
+    try {
+      const response = await apiCall(adminEndpoints.getAll.url, {
+        method: adminEndpoints.getAll.method
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Get all admins error:', error);
+      throw error;
+    }
   }
 
   async create(data: Omit<AdminUser, 'id'>): Promise<any> {
-    // For now, return a mock response as this needs backend implementation
-    // In a real implementation, this would save to the database service
-    return {
-      success: true,
-      data: {
-        id: Date.now().toString(),
-        ...data
-      }
-    };
+    try {
+      const response = await apiCall(adminEndpoints.create.url, {
+        method: adminEndpoints.create.method,
+        body: JSON.stringify(data)
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Create admin error:', error);
+      throw error;
+    }
   }
 
   async update(id: string, data: Partial<AdminUser>): Promise<any> {
-    // For now, return a mock response as this needs backend implementation
-    // In a real implementation, this would update in the database service
-    return {
-      success: true,
-      data: {
-        id,
-        ...data
-      }
-    };
+    try {
+      const response = await apiCall(adminEndpoints.update(id).url, {
+        method: adminEndpoints.update(id).method,
+        body: JSON.stringify(data)
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Update admin error:', error);
+      throw error;
+    }
   }
 
   async delete(id: string): Promise<any> {
-    // For now, return a mock response as this needs backend implementation
-    // In a real implementation, this would delete from the database service
-    return {
-      success: true,
-      data: null
-    };
+    try {
+      const response = await apiCall(adminEndpoints.delete(id).url, {
+        method: adminEndpoints.delete(id).method
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Delete admin error:', error);
+      throw error;
+    }
   }
 
   // Check if a user has admin permissions

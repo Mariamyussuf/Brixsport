@@ -15,10 +15,9 @@ import { Button } from '@/components/ui/button';
 interface CompetitionsAuthDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onDemoAccount?: () => void;
 }
 
-export const CompetitionsAuthDialog: React.FC<CompetitionsAuthDialogProps> = ({ isOpen, onClose, onDemoAccount }) => {
+export const CompetitionsAuthDialog: React.FC<CompetitionsAuthDialogProps> = ({ isOpen, onClose }) => {
   const router = useRouter();
 
   const handleSignIn = () => {
@@ -28,13 +27,6 @@ export const CompetitionsAuthDialog: React.FC<CompetitionsAuthDialogProps> = ({ 
 
   const handleSignUp = () => {
     router.push('/auth/signup');
-    onClose();
-  };
-
-  const handleDemoAccount = () => {
-    if (onDemoAccount) {
-      onDemoAccount();
-    }
     onClose();
   };
 
@@ -57,11 +49,6 @@ export const CompetitionsAuthDialog: React.FC<CompetitionsAuthDialogProps> = ({ 
           <Button onClick={handleSignIn}>
             Sign In
           </Button>
-          {onDemoAccount && (
-            <Button variant="outline" onClick={handleDemoAccount}>
-              Demo Account
-            </Button>
-          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

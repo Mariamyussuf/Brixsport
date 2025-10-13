@@ -1,36 +1,64 @@
-import { databaseService } from '@/lib/databaseService';
 import { Match, MatchEvent, Team as MatchTeam } from '@/types/matchTracker';
+
+// Backend API configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
+const API_V1_URL = `${API_BASE_URL}/v1`;
+
+// Helper function to make authenticated API calls
+const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+  
+  const response = await fetch(`${API_V1_URL}${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `API call failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+};
 
 class MatchTrackerService {
   async getMatches(): Promise<Match[]> {
     try {
-      // Fetch matches from database service
-      const dbMatches = await databaseService.getMatches();
+      // Fetch matches from backend API
+      const response = await apiCall('/matches');
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to fetch matches');
+      }
       
       // Transform to Match type
-      return dbMatches.map(match => ({
+      return response.data.map((match: any) => ({
         id: match.id.toString(),
-        name: `Match ${match.id}`,
-        competitionId: match.competition_id.toString(),
+        name: match.name || `Match ${match.id}`,
+        competitionId: match.competition_id?.toString() || match.competitionId?.toString() || '',
         homeTeam: {
-          id: match.home_team_id.toString(),
-          name: match.home_team_name || `Home Team ${match.home_team_id}`,
-          players: []
+          id: match.home_team_id?.toString() || match.homeTeam?.id?.toString() || '1',
+          name: match.home_team_name || match.homeTeam?.name || `Home Team`,
+          players: match.homeTeam?.players || []
         },
         awayTeam: {
-          id: match.away_team_id.toString(),
-          name: match.away_team_name || `Away Team ${match.away_team_id}`,
-          players: []
+          id: match.away_team_id?.toString() || match.awayTeam?.id?.toString() || '2',
+          name: match.away_team_name || match.awayTeam?.name || `Away Team`,
+          players: match.awayTeam?.players || []
         },
-        startTime: match.match_date,
-        venue: match.venue || '',
-        status: match.status as 'scheduled' | 'live' | 'completed',
-        events: [],
-        sportType: match.sport || 'football',
-        homeScore: match.home_score,
-        awayScore: match.away_score,
-        date: match.match_date,
-        location: match.venue || ''
+        startTime: match.match_date || match.startTime || new Date().toISOString(),
+        venue: match.venue || match.location || '',
+        status: match.status as 'scheduled' | 'live' | 'completed' || 'scheduled',
+        events: match.events || [],
+        sportType: match.sport || match.sportType || 'football',
+        homeScore: match.home_score || match.homeScore || 0,
+        awayScore: match.away_score || match.awayScore || 0,
+        date: match.match_date || match.date || match.startTime || new Date().toISOString(),
+        location: match.venue || match.location || ''
       }));
     } catch (error) {
       console.error('Failed to fetch matches:', error);
@@ -40,38 +68,39 @@ class MatchTrackerService {
 
   async getMatch(id: string): Promise<Match> {
     try {
-      // Fetch matches from database service
-      const dbMatches = await databaseService.getMatches();
-      const dbMatch = dbMatches.find(m => m.id.toString() === id);
+      // Fetch match from backend API
+      const response = await apiCall(`/matches/${id}`);
       
-      if (!dbMatch) {
-        throw new Error('Match not found');
+      if (!response.success) {
+        throw new Error(response.message || 'Match not found');
       }
+      
+      const match = response.data;
       
       // Transform to Match type
       return {
-        id: dbMatch.id.toString(),
-        name: `Match ${dbMatch.id}`,
-        competitionId: dbMatch.competition_id.toString(),
+        id: match.id.toString(),
+        name: match.name || `Match ${match.id}`,
+        competitionId: match.competition_id?.toString() || match.competitionId?.toString() || '',
         homeTeam: {
-          id: dbMatch.home_team_id.toString(),
-          name: dbMatch.home_team_name || `Home Team ${dbMatch.home_team_id}`,
-          players: []
+          id: match.home_team_id?.toString() || match.homeTeam?.id?.toString() || '1',
+          name: match.home_team_name || match.homeTeam?.name || `Home Team`,
+          players: match.homeTeam?.players || []
         },
         awayTeam: {
-          id: dbMatch.away_team_id.toString(),
-          name: dbMatch.away_team_name || `Away Team ${dbMatch.away_team_id}`,
-          players: []
+          id: match.away_team_id?.toString() || match.awayTeam?.id?.toString() || '2',
+          name: match.away_team_name || match.awayTeam?.name || `Away Team`,
+          players: match.awayTeam?.players || []
         },
-        startTime: dbMatch.match_date,
-        venue: dbMatch.venue || '',
-        status: dbMatch.status as 'scheduled' | 'live' | 'completed',
-        events: [],
-        sportType: dbMatch.sport || 'football',
-        homeScore: dbMatch.home_score,
-        awayScore: dbMatch.away_score,
-        date: dbMatch.match_date,
-        location: dbMatch.venue || ''
+        startTime: match.match_date || match.startTime || new Date().toISOString(),
+        venue: match.venue || match.location || '',
+        status: match.status as 'scheduled' | 'live' | 'completed' || 'scheduled',
+        events: match.events || [],
+        sportType: match.sport || match.sportType || 'football',
+        homeScore: match.home_score || match.homeScore || 0,
+        awayScore: match.away_score || match.awayScore || 0,
+        date: match.match_date || match.date || match.startTime || new Date().toISOString(),
+        location: match.venue || match.location || ''
       };
     } catch (error) {
       console.error(`Failed to fetch match with id ${id}:`, error);
@@ -80,116 +109,180 @@ class MatchTrackerService {
   }
 
   async createMatch(data: Partial<Omit<Match, 'id' | 'events' | 'homeTeam' | 'awayTeam'>>): Promise<Match> {
-    // For now, return a mock response as this needs backend implementation
-    // In a real implementation, this would save to the database service
-    return {
-      id: Date.now().toString(),
-      name: data.name || 'New Match',
-      competitionId: data.competitionId || '1',
-      homeTeam: {
-        id: '1',
-        name: 'Home Team',
-        players: []
-      },
-      awayTeam: {
-        id: '2',
-        name: 'Away Team',
-        players: []
-      },
-      startTime: data.startTime || data.date || new Date().toISOString(),
-      venue: data.venue || data.location || '',
-      status: data.status || 'scheduled',
-      events: [],
-      sportType: 'football',
-      homeScore: data.homeScore || 0,
-      awayScore: data.awayScore || 0,
-      date: data.date || data.startTime || new Date().toISOString(),
-      location: data.location || data.venue || ''
-    };
+    try {
+      const response = await apiCall('/admin/matches', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to create match');
+      }
+      
+      const match = response.data;
+      
+      return {
+        id: match.id.toString(),
+        name: match.name || 'New Match',
+        competitionId: match.competition_id?.toString() || match.competitionId?.toString() || '1',
+        homeTeam: {
+          id: match.home_team_id?.toString() || match.homeTeam?.id?.toString() || '1',
+          name: match.home_team_name || match.homeTeam?.name || 'Home Team',
+          players: match.homeTeam?.players || []
+        },
+        awayTeam: {
+          id: match.away_team_id?.toString() || match.awayTeam?.id?.toString() || '2',
+          name: match.away_team_name || match.awayTeam?.name || 'Away Team',
+          players: match.awayTeam?.players || []
+        },
+        startTime: match.match_date || match.startTime || new Date().toISOString(),
+        venue: match.venue || match.location || '',
+        status: match.status as 'scheduled' | 'live' | 'completed' || 'scheduled',
+        events: match.events || [],
+        sportType: match.sport || match.sportType || 'football',
+        homeScore: match.home_score || match.homeScore || 0,
+        awayScore: match.away_score || match.awayScore || 0,
+        date: match.match_date || match.date || match.startTime || new Date().toISOString(),
+        location: match.venue || match.location || ''
+      };
+    } catch (error) {
+      console.error('Create match error:', error);
+      throw error;
+    }
   }
 
   async updateMatch(id: string, data: Partial<Omit<Match, 'id' | 'events' | 'homeTeam' | 'awayTeam'>>): Promise<Match> {
-    // For now, return a mock response as this needs backend implementation
-    // In a real implementation, this would update in the database service
-    return {
-      id,
-      name: data.name || 'Updated Match',
-      competitionId: data.competitionId || '1',
-      homeTeam: {
-        id: '1',
-        name: 'Home Team',
-        players: []
-      },
-      awayTeam: {
-        id: '2',
-        name: 'Away Team',
-        players: []
-      },
-      startTime: data.startTime || data.date || new Date().toISOString(),
-      venue: data.venue || data.location || '',
-      status: data.status || 'scheduled',
-      events: [],
-      sportType: 'football',
-      homeScore: data.homeScore || 0,
-      awayScore: data.awayScore || 0,
-      date: data.date || data.startTime || new Date().toISOString(),
-      location: data.location || data.venue || ''
-    };
+    try {
+      const response = await apiCall(`/admin/matches/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to update match');
+      }
+      
+      const match = response.data;
+      
+      return {
+        id: match.id.toString(),
+        name: match.name || 'Updated Match',
+        competitionId: match.competition_id?.toString() || match.competitionId?.toString() || '1',
+        homeTeam: {
+          id: match.home_team_id?.toString() || match.homeTeam?.id?.toString() || '1',
+          name: match.home_team_name || match.homeTeam?.name || 'Home Team',
+          players: match.homeTeam?.players || []
+        },
+        awayTeam: {
+          id: match.away_team_id?.toString() || match.awayTeam?.id?.toString() || '2',
+          name: match.away_team_name || match.awayTeam?.name || 'Away Team',
+          players: match.awayTeam?.players || []
+        },
+        startTime: match.match_date || match.startTime || new Date().toISOString(),
+        venue: match.venue || match.location || '',
+        status: match.status as 'scheduled' | 'live' | 'completed' || 'scheduled',
+        events: match.events || [],
+        sportType: match.sport || match.sportType || 'football',
+        homeScore: match.home_score || match.homeScore || 0,
+        awayScore: match.away_score || match.awayScore || 0,
+        date: match.match_date || match.date || match.startTime || new Date().toISOString(),
+        location: match.venue || match.location || ''
+      };
+    } catch (error) {
+      console.error('Update match error:', error);
+      throw error;
+    }
   }
 
   async addEvent(matchId: string, data: Partial<Omit<MatchEvent, 'id'>>): Promise<MatchEvent> {
-    // For now, return a mock response as this needs backend implementation
-    // In a real implementation, this would save to the database service
-    return {
-      id: Date.now().toString(),
-      type: data.type || 'goal',
-      time: new Date().toISOString(),
-      teamId: data.teamId || '1',
-      playerId: data.playerId || '1',
-      period: data.period || 1,
-      description: data.description || ''
-    };
+    try {
+      const response = await apiCall(`/matches/${matchId}/events`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to add event');
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Add event error:', error);
+      throw error;
+    }
   }
 
   async updateEvent(matchId: string, eventId: string, data: Partial<MatchEvent>): Promise<MatchEvent> {
-    // For now, return a mock response as this needs backend implementation
-    // In a real implementation, this would update in the database service
-    return {
-      id: eventId,
-      type: data.type || 'goal',
-      time: new Date().toISOString(),
-      teamId: data.teamId || '1',
-      playerId: data.playerId || '1',
-      period: data.period || 1,
-      description: data.description || ''
-    };
+    try {
+      const response = await apiCall(`/matches/${matchId}/events/${eventId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to update event');
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Update event error:', error);
+      throw error;
+    }
   }
 
   async deleteEvent(matchId: string, eventId: string): Promise<void> {
-    // For now, return a mock response as this needs backend implementation
-    // In a real implementation, this would delete from the database service
-    console.log(`Deleted event ${eventId} from match ${matchId}`);
+    try {
+      const response = await apiCall(`/matches/${matchId}/events/${eventId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to delete event');
+      }
+    } catch (error) {
+      console.error('Delete event error:', error);
+      throw error;
+    }
   }
 
   subscribeToMatch(matchId: string, callback: (message: any) => void): WebSocket {
-    // For now, return a mock WebSocket as this needs backend implementation
-    // In a real implementation, this would connect to a WebSocket server
-    console.log(`Subscribed to match ${matchId}`);
-    
-    // Create a mock WebSocket object
-    return {
-      close: () => console.log('WebSocket closed'),
-      send: (data: string) => console.log('WebSocket send:', data),
-      onopen: null,
-      onerror: null,
-      onclose: null,
-      onmessage: null,
-      readyState: 0,
-      url: '',
-      extensions: '',
-      protocol: '',
-      binaryType: 'blob'
-    } as unknown as WebSocket;
+    try {
+      // Create WebSocket connection to backend
+      const wsUrl = `${API_V1_URL.replace('http', 'ws')}/live/${matchId}`;
+      const ws = new WebSocket(wsUrl);
+      
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          callback(message);
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      };
+      
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        callback({ type: 'error', data: error });
+      };
+      
+      return ws;
+    } catch (error) {
+      console.error('WebSocket connection error:', error);
+      // Return a mock WebSocket object as fallback
+      return {
+        close: () => console.log('WebSocket closed'),
+        send: (data: string) => console.log('WebSocket send:', data),
+        onopen: null,
+        onerror: null,
+        onclose: null,
+        onmessage: null,
+        readyState: 0,
+        url: '',
+        extensions: '',
+        protocol: '',
+        binaryType: 'blob'
+      } as unknown as WebSocket;
+    }
   }
 }
 

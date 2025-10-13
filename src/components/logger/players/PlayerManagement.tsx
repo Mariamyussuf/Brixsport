@@ -73,7 +73,7 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({ team, onPlay
   const [stats, setStats] = useState<PlayerStats[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Initialize with sample stats for demo
+  // Initialize with sample stats
   useEffect(() => {
     const sampleStats: PlayerStats[] = players.map(player => ({
       playerId: player.id,

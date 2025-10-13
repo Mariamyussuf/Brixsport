@@ -15,10 +15,9 @@ import { Button } from '@/components/ui/button';
 interface FavoritesAuthDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onDemoAccount?: () => void;
 }
 
-export const FavoritesAuthDialog: React.FC<FavoritesAuthDialogProps> = ({ isOpen, onClose, onDemoAccount }) => {
+export const FavoritesAuthDialog: React.FC<FavoritesAuthDialogProps> = ({ isOpen, onClose }) => {
   const router = useRouter();
 
   const handleSignIn = () => {
@@ -28,13 +27,6 @@ export const FavoritesAuthDialog: React.FC<FavoritesAuthDialogProps> = ({ isOpen
 
   const handleSignUp = () => {
     router.push('/auth/signup');
-    onClose();
-  };
-
-  const handleDemoAccount = () => {
-    if (onDemoAccount) {
-      onDemoAccount();
-    }
     onClose();
   };
 
@@ -51,11 +43,6 @@ export const FavoritesAuthDialog: React.FC<FavoritesAuthDialogProps> = ({ isOpen
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          {onDemoAccount && (
-            <Button variant="outline" onClick={handleDemoAccount}>
-              Demo Account
-            </Button>
-          )}
           <Button variant="outline" onClick={handleSignUp}>
             Sign Up
           </Button>

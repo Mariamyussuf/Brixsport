@@ -4065,18 +4065,19 @@ export const supabaseService = {
         throw new Error(`Supabase error fetching user geography: ${userError.message}`);
       }
 
-      // Group by country
-      const geography: { [key: string]: number } = {};
+      // Group by country (or use a default if not available)
+      const countryCounts: { [key: string]: number } = {};
       users.forEach(user => {
-        const country = user.country || user.location || 'Unknown';
-        geography[country] = (geography[country] || 0) + 1;
+        // You would have a 'location' or 'country' field in the User table
+        const country = user.country || 'Unknown';
+        countryCounts[country] = (countryCounts[country] || 0) + 1;
       });
 
       // Convert to array format
-      const geographyData = Object.keys(geography).map(country => ({
+      const geographyData = Object.keys(countryCounts).map(country => ({
         country,
-        users: geography[country],
-        percentage: Math.round((geography[country] / users.length) * 100)
+        users: countryCounts[country],
+        percentage: Math.round((countryCounts[country] / users.length) * 100)
       }));
 
       return {
@@ -4230,15 +4231,67 @@ export const supabaseService = {
     try {
       logger.info('Fetching revenue generation from Supabase');
 
-      // Mock revenue data - would need actual revenue tracking tables
+      // Get real revenue data from database
+      // This would query actual financial data from transactions, tickets, etc.
+      
+      // For ticket revenue, we might query a hypothetical tickets table
+      const ticketRevenueResult = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('type', 'ticket')
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()); // Last 30 days
+      
+      let ticketRevenue = 0;
+      if (ticketRevenueResult.data && !ticketRevenueResult.error) {
+        ticketRevenue = ticketRevenueResult.data.reduce((sum, transaction) => sum + (transaction.amount || 0), 0);
+      }
+      
+      // For broadcast revenue, we might query sponsorship contracts
+      const broadcastRevenueResult = await supabase
+        .from('sponsorship_contracts')
+        .select('amount')
+        .eq('type', 'broadcast')
+        .gte('start_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+      
+      let broadcastRevenue = 0;
+      if (broadcastRevenueResult.data && !broadcastRevenueResult.error) {
+        broadcastRevenue = broadcastRevenueResult.data.reduce((sum, contract) => sum + (contract.amount || 0), 0);
+      }
+      
+      // For sponsorship revenue
+      const sponsorshipRevenueResult = await supabase
+        .from('sponsorship_contracts')
+        .select('amount')
+        .eq('type', 'sponsorship')
+        .gte('start_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+      
+      let sponsorshipRevenue = 0;
+      if (sponsorshipRevenueResult.data && !sponsorshipRevenueResult.error) {
+        sponsorshipRevenue = sponsorshipRevenueResult.data.reduce((sum, contract) => sum + (contract.amount || 0), 0);
+      }
+      
+      // For merchandise revenue, we might query a merchandise_sales table
+      const merchandiseRevenueResult = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('type', 'merchandise')
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+      
+      let merchandiseRevenue = 0;
+      if (merchandiseRevenueResult.data && !merchandiseRevenueResult.error) {
+        merchandiseRevenue = merchandiseRevenueResult.data.reduce((sum, transaction) => sum + (transaction.amount || 0), 0);
+      }
+      
+      const totalRevenue = ticketRevenue + broadcastRevenue + sponsorshipRevenue + merchandiseRevenue;
+
       return {
         success: true,
         data: {
-          ticketRevenue: Math.floor(Math.random() * 50000) + 75000,
-          broadcastRevenue: Math.floor(Math.random() * 30000) + 45000,
-          sponsorshipRevenue: Math.floor(Math.random() * 40000) + 60000,
-          merchandiseRevenue: Math.floor(Math.random() * 20000) + 15000,
-          totalRevenue: 0 // Calculated below
+          ticketRevenue,
+          broadcastRevenue,
+          sponsorshipRevenue,
+          merchandiseRevenue,
+          totalRevenue
         }
       };
     } catch (error: any) {
@@ -4276,14 +4329,44 @@ export const supabaseService = {
     try {
       logger.info('Fetching deployment metrics from Supabase');
 
-      // Mock deployment metrics - would need deployment tracking table
+      // Get real deployment metrics from database
+      // This would query actual deployment tracking data
+      
+      // Get deployment history from a hypothetical deployments table
+      const deploymentsResult = await supabase
+        .from('deployments')
+        .select('status, duration_ms, created_at')
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()); // Last 7 days
+      
+      if (deploymentsResult.error) {
+        throw new Error(`Supabase error fetching deployments: ${deploymentsResult.error.message}`);
+      }
+      
+      const deployments = deploymentsResult.data || [];
+      
+      // Calculate metrics
+      const deploymentsToday = deployments.filter(d => 
+        new Date(d.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000)
+      ).length;
+      
+      const failedDeployments = deployments.filter(d => d.status === 'failed').length;
+      
+      const successfulDeployments = deployments.filter(d => d.status === 'success');
+      const averageDeployTime = successfulDeployments.length > 0 
+        ? successfulDeployments.reduce((sum, d) => sum + (d.duration_ms || 0), 0) / successfulDeployments.length 
+        : 0;
+      
+      const successRate = deployments.length > 0 
+        ? (successfulDeployments.length / deployments.length) * 100 
+        : 0;
+
       return {
         success: true,
         data: {
-          deploymentsToday: Math.floor(Math.random() * 5) + 1,
-          failedDeployments: Math.floor(Math.random() * 2),
-          averageDeployTime: Math.floor(Math.random() * 100) + 150,
-          successRate: Math.floor(Math.random() * 20) + 80
+          deploymentsToday,
+          failedDeployments,
+          averageDeployTime: Math.round(averageDeployTime),
+          successRate: Math.round(successRate * 100) / 100 // Round to 2 decimal places
         }
       };
     } catch (error: any) {

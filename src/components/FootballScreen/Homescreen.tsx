@@ -365,16 +365,6 @@ const Homescreen: React.FC = () => {
     setMobileMenuOpen(false); 
   };
 
-  const handleDemoAccount = () => {
-    setShowFavoritesDialog(false);
-    setActiveTab('Favourites');
-  };
-
-  const handleCompetitionsDemoAccount = () => {
-    setShowCompetitionsDialog(false);
-    setActiveTab('Competition');
-  };
-
   const handleSportClick = (sport: SportType | 'all'): void => {
     setActiveSport(sport);
   };
@@ -449,14 +439,12 @@ const Homescreen: React.FC = () => {
       <FavoritesAuthDialog 
         isOpen={showFavoritesDialog} 
         onClose={() => setShowFavoritesDialog(false)} 
-        onDemoAccount={handleDemoAccount}
       />
       
       {/* Competitions Auth Dialog */}
       <CompetitionsAuthDialog 
         isOpen={showCompetitionsDialog} 
         onClose={() => setShowCompetitionsDialog(false)} 
-        onDemoAccount={handleCompetitionsDemoAccount}
       />
       
       {/* Enhanced Mobile Header - keeping File A's structure but adding File B's features */}
@@ -675,7 +663,6 @@ const Homescreen: React.FC = () => {
           </div>
         )}
 
-        {/* Competition Tab */}
         {activeTab === 'Competition' && (
           <section>
             <CompetitionScreen />

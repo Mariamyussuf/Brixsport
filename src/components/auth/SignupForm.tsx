@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
-import { markOnboardingCompleted } from '@/utils/onboarding';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
 // Types
 interface FormData {
@@ -13,17 +14,6 @@ interface FormData {
 
 interface ValidationErrors {
   [key: string]: string;
-}
-
-interface SignupResponse {
-  success: boolean;
-  message?: string;
-  token?: string;
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-  };
 }
 
 // Enhanced email validation
@@ -104,36 +94,6 @@ class RateLimiter {
 
 const rateLimiter = new RateLimiter();
 
-// Mock API functions (replace with your actual API calls)
-const mockSignup = async (credentials: FormData): Promise<SignupResponse> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Simulate different responses
-      if (credentials.email === 'existing@example.com') {
-        resolve({
-          success: false,
-          message: 'An account with this email already exists. Please use a different email or try signing in.'
-        });
-      } else if (credentials.email.includes('invalid')) {
-        resolve({
-          success: false,
-          message: 'Invalid email domain. Please use a valid email address.'
-        });
-      } else {
-        resolve({
-          success: true,
-          token: 'mock-jwt-token',
-          user: {
-            id: '1',
-            email: credentials.email,
-            name: credentials.name
-          }
-        });
-      }
-    }, 2000); // Simulate network delay
-  });
-};
-
 const SignupForm: React.FC = () => {
   // Form state
   const [showPassword, setShowPassword] = useState(false);
@@ -149,6 +109,9 @@ const SignupForm: React.FC = () => {
 
   // Password strength state
   const [showPasswordStrength, setShowPasswordStrength] = useState(false);
+  
+  const router = useRouter();
+  const { login } = useAuth();
 
   // Handle input changes with debounced validation
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -237,25 +200,31 @@ const SignupForm: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const response = await mockSignup(form);
-      
-      if (response.success) {
-        // Store the token securely
-        localStorage.setItem('token', response.token || '');
-        localStorage.setItem('user', JSON.stringify(response.user));
-        
-        // Clear any previous errors
-        setSubmitError('');
-        
-        
-        window.location.href = '/onboarding';
-      } else {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
         rateLimiter.recordAttempt();
-        setSubmitError(response.message || 'Signup failed. Please try again.');
+        throw new Error(data.error?.message || 'Signup failed');
       }
-    } catch (error) {
+
+      // After successful signup, automatically log the user in
+      await login({ email: form.email, password: form.password });
+      router.push('/onboarding');
+    } catch (error: any) {
       rateLimiter.recordAttempt();
-      setSubmitError('Network error. Please check your connection and try again.');
+      setSubmitError(error.message || 'Network error. Please check your connection and try again.');
       console.error('Signup error:', error);
     } finally {
       setIsLoading(false);
@@ -574,19 +543,6 @@ const SignupForm: React.FC = () => {
           </Link>
         </div>
       </form>
-
-      {/* Demo information */}
-      <div className="mt-8 p-4 rounded-lg bg-blue-900/30 border border-blue-500/30 text-blue-200">
-        <div className="flex items-start gap-2">
-          <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5v3a.75.75 0 001.5 0v-3A.75.75 0 009 9z" clipRule="evenodd" />
-          </svg>
-          <div className="text-xs">
-            <p className="font-medium mb-1">Demo Mode</p>
-            <p>Try <code className="bg-blue-800/50 px-1 rounded">existing@example.com</code> to see error handling.</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

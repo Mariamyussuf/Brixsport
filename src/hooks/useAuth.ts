@@ -31,7 +31,6 @@ export interface AuthContextType {
   loading: LoadingStates;
   error: AuthError | null;
   login: (credentials: LoginCredentials) => Promise<void>;
-  demoLogin: () => Promise<void>;
   logout: () => void;
   refreshToken: () => Promise<void>;
   clearError: () => void;
@@ -474,118 +473,54 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [user, refreshToken]);
 
   // Login function
-  const login = async (credentials: LoginCredentials): Promise<void> => {
+  const login = async (credentials: { email: string; password: string }): Promise<void> => {
     updateLoading('loggingIn', true);
     setError(null);
 
     try {
-      // Use Supabase authentication
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: credentials.email,
-        password: credentials.password,
+      // Use the real login API
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
       });
 
-      if (error) {
-        throw new Error(error.message);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Login failed');
       }
 
-      if (data.user && data.session) {
+      // Sign in with Supabase using the token from our backend
+      const { data: supabaseData, error: supabaseError } = await supabase.auth.setSession({
+        access_token: data.data.token,
+        refresh_token: data.data.refreshToken,
+      });
+
+      if (supabaseError) {
+        throw new Error(supabaseError.message);
+      }
+
+      if (supabaseData.session?.user) {
         // Transform Supabase user to our User type
         const transformedUser: User = {
-          id: data.user.id,
-          name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'User',
-          email: data.user.email || '',
-          role: data.user.user_metadata?.role || 'user',
-          image: data.user.user_metadata?.avatar_url,
-          assignedCompetitions: data.user.user_metadata?.assignedCompetitions,
-          permissions: data.user.user_metadata?.permissions,
-          managedLoggers: data.user.user_metadata?.managedLoggers,
-          adminLevel: data.user.user_metadata?.adminLevel,
+          id: supabaseData.session.user.id,
+          name: supabaseData.session.user.user_metadata?.name || supabaseData.session.user.email?.split('@')[0] || 'User',
+          email: supabaseData.session.user.email || '',
+          role: supabaseData.session.user.user_metadata?.role || 'user',
+          image: supabaseData.session.user.user_metadata?.avatar_url,
+          assignedCompetitions: supabaseData.session.user.user_metadata?.assignedCompetitions,
+          permissions: supabaseData.session.user.user_metadata?.permissions,
+          managedLoggers: supabaseData.session.user.user_metadata?.managedLoggers,
+          adminLevel: supabaseData.session.user.user_metadata?.adminLevel,
         };
-
-        // Store tokens and user data
-        TokenManager.setTokens(data.session.access_token, data.session.refresh_token);
         setUser(transformedUser);
+        TokenManager.setTokens(data.data.token, data.data.refreshToken);
       }
     } catch (err) {
-      let errorType: AuthError['type'] = 'UNKNOWN';
-      let errorMessage = 'An unexpected error occurred.';
-
-      if (err instanceof Error) {
-        if (err.message.includes('Invalid login credentials')) {
-          errorType = 'UNAUTHORIZED';
-          errorMessage = 'Invalid email or password.';
-        } else if (err.message.includes('Email not confirmed')) {
-          errorType = 'VALIDATION';
-          errorMessage = 'Please check your email and confirm your account.';
-        } else if (err.message.includes('Too many requests')) {
-          errorType = 'RATE_LIMITED';
-          errorMessage = 'Too many failed attempts. Please try again later.';
-        } else {
-          errorMessage = err.message;
-        }
-      }
-
-      setError(createError(errorType, errorMessage));
-      throw new Error(errorMessage);
-    } finally {
-      updateLoading('loggingIn', false);
-    }
-  };
-
-  // Demo login function
-  const demoLogin = async (): Promise<void> => {
-    updateLoading('loggingIn', true);
-    setError(null);
-
-    try {
-      // For demo purposes, we'll create a mock user and token
-      // Check if we want to demo as admin
-      const urlParams = new URLSearchParams(window.location.search);
-      const isDemoAdmin = urlParams.get('admin') === 'true';
-      const isDemoLogger = urlParams.get('logger') === 'true' || !isDemoAdmin;
-      
-      // Allow role override from URL params for more flexible testing
-      const roleFromParams = urlParams.get('role') as User['role'] | null;
-      const demoRole = roleFromParams || (isDemoAdmin ? 'admin' : (isDemoLogger ? 'logger' : 'user'));
-
-      const demoUser: User = {
-        id: `demo-${demoRole}-id`,
-        name: `Demo ${demoRole.charAt(0).toUpperCase() + demoRole.slice(1)}`,
-        email: `${demoRole}@demo.com`,
-        role: demoRole, // Set role based on URL param
-        image: isDemoAdmin 
-          ? `https://i.pravatar.cc/300?u=${process.env.NEXT_PUBLIC_ADMIN_DEFAULT_EMAIL || 'admin@demo.com'}` 
-          : (isDemoLogger ? `https://i.pravatar.cc/300?u=${process.env.NEXT_PUBLIC_LOGGER_DEFAULT_EMAIL || 'logger@demo.com'}` : 'https://i.pravatar.cc/300?u=demo@example.com'),
-        managedLoggers: isDemoAdmin ? ['demo-logger-1', 'demo-logger-2'] : undefined,
-        adminLevel: isDemoAdmin ? 'basic' : undefined,
-        assignedCompetitions: isDemoLogger ? ['demo-competition-1', 'demo-competition-2'] : undefined,
-        permissions: isDemoLogger ? ['log_matches', 'log_events', 'view_stats'] : (isDemoAdmin ? ['manage_loggers', 'view_reports', 'manage_competitions'] : [])
-      };
-    
-      // Create a mock token (in a real app, this would come from the server)
-      const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-      const payload = btoa(JSON.stringify({ 
-        sub: demoUser.id,
-        name: demoUser.name,
-        email: demoUser.email,
-        role: demoUser.role,
-        managedLoggers: isDemoAdmin ? ['demo-logger-1', 'demo-logger-2'] : undefined,
-        adminLevel: isDemoAdmin ? 'basic' : undefined,
-        assignedCompetitions: isDemoLogger ? ['demo-competition-1', 'demo-competition-2'] : undefined,
-        permissions: isDemoLogger ? ['log_matches', 'log_events', 'view_stats'] : (isDemoAdmin ? ['manage_loggers', 'view_reports', 'manage_competitions'] : []),
-        exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
-        iat: Math.floor(Date.now() / 1000)
-      }));
-      const signature = 'demo-signature';
-      const demoToken = `${header}.${payload}.${signature}`;
-    
-      const demoRefreshToken = 'demo-refresh-token';
-    
-      TokenManager.setTokens(demoToken, demoRefreshToken);
-      setUser(demoUser);
-    } catch (err) {
-      let errorMessage = 'Failed to log in with demo account.';
+      let errorMessage = 'Failed to log in.';
       
       if (err instanceof Error) {
         errorMessage = err.message;
@@ -601,6 +536,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Logout function
   const logout = useCallback(async (): Promise<void> => {
     try {
+      // Call backend logout endpoint
+      const refreshToken = TokenManager.getRefreshToken();
+      if (refreshToken) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${TokenManager.getToken()}`
+          },
+          body: JSON.stringify({ refreshToken }),
+        });
+      }
+      
       await supabase.auth.signOut();
     } catch (error) {
       console.error('Error signing out:', error);
@@ -619,7 +567,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     error,
     login,
-    demoLogin,
     logout,
     refreshToken,
     clearError,

@@ -322,17 +322,22 @@ export const adminService = {
     try {
       logger.info('Checking system health');
       
-      const systemHealth = await supabaseService.getSystemHealthData();
+      const systemHealthResult = await supabaseService.getSystemHealthData();
+      
+      // Check if the result is successful
+      if (!systemHealthResult) {
+        throw new Error('Failed to fetch system health data');
+      }
       
       return {
         success: true,
         data: {
-          status: systemHealth.status,
+          status: systemHealthResult.status,
           uptime: process.uptime(),
           memory: process.memoryUsage(),
           cpu: process.cpuUsage(),
-          database: systemHealth.database,
-          lastChecked: systemHealth.lastChecked
+          database: systemHealthResult.database,
+          lastChecked: systemHealthResult.lastChecked
         }
       };
     } catch (error: any) {
@@ -352,9 +357,20 @@ export const adminService = {
       logger.info('Toggling maintenance mode', { enabled, reason });
       
       // Set maintenance mode setting
-      await supabaseService.setSystemSetting('maintenance_mode', enabled);
-      await supabaseService.setSystemSetting('maintenance_reason', reason);
-      await supabaseService.setSystemSetting('maintenance_toggled_at', new Date().toISOString());
+      const modeResult = await supabaseService.setSystemSetting('maintenance_mode', enabled);
+      if (!modeResult.success) {
+        throw new Error('Failed to set maintenance mode');
+      }
+      
+      const reasonResult = await supabaseService.setSystemSetting('maintenance_reason', reason);
+      if (!reasonResult.success) {
+        throw new Error('Failed to set maintenance reason');
+      }
+      
+      const timeResult = await supabaseService.setSystemSetting('maintenance_toggled_at', new Date().toISOString());
+      if (!timeResult.success) {
+        throw new Error('Failed to set maintenance toggle time');
+      }
       
       // Log the admin action
       await supabaseService.createAuditLog({
@@ -650,10 +666,71 @@ export const adminService = {
     try {
       logger.info('Restarting service');
 
-      // Stub implementation - in a real app this would restart the service
+      // In a real implementation, this would trigger a service restart
+      // This could involve:
+      // 1. Sending a signal to the process manager (PM2, systemd, etc.)
+      // 2. Updating a flag that the application checks periodically
+      // 3. Calling a deployment API
+      // 4. Triggering a Kubernetes rollout restart
+      
+      // For this implementation, we'll simulate the process:
+      
+      // Log the restart action
+      await supabaseService.createAuditLog({
+        userId: 'system',
+        action: 'service_restart',
+        entity: 'System',
+        entityId: 'system',
+        oldValues: null,
+        newValues: { status: 'restart_initiated' },
+        reason: 'Manual service restart requested by admin',
+        timestamp: new Date()
+      });
+      
+      // In a real environment, you might do something like:
+      // process.exit(0); // Let the process manager restart the service
+      // Or send a message to a restart queue
+      
+      // For a more complete implementation, we'll set a flag in the database
+      // that the application checks periodically
+      try {
+        // Record restart attempt
+        await supabaseService.setSystemSetting('service_restart_requested', true);
+        await supabaseService.setSystemSetting('service_restart_requested_at', new Date().toISOString());
+        await supabaseService.setSystemSetting('service_restart_status', 'initiated');
+        
+        // Record additional metadata
+        await supabaseService.setSystemSetting('service_restart_initiator', 'admin');
+        await supabaseService.setSystemSetting('service_restart_reason', 'Manual service restart requested by admin');
+        
+        logger.info('Service restart flag set in database - application will check this flag periodically');
+        
+        // Verify the settings were saved correctly
+        const restartRequested = await supabaseService.getSystemSetting('service_restart_requested');
+        const restartRequestedAt = await supabaseService.getSystemSetting('service_restart_requested_at');
+        
+        if (!restartRequested || !restartRequestedAt) {
+          throw new Error('Failed to verify restart flags in database');
+        }
+        
+        logger.info('Service restart flags verified in database');
+      } catch (dbError) {
+        logger.error('Failed to set service restart flag in database', dbError);
+        
+        // Attempt to record the failure
+        try {
+          await supabaseService.setSystemSetting('service_restart_status', 'failed');
+          await supabaseService.setSystemSetting('service_restart_error', (dbError as Error).message);
+        } catch (errorRecordingError) {
+          logger.error('Failed to record restart failure in database', errorRecordingError);
+        }
+        
+        throw new Error(`Failed to initiate service restart: ${(dbError as Error).message}`);
+      }
+      
       return {
         success: true,
-        message: 'Service restart initiated',
+        message: 'Service restart initiated - system monitor will process the request',
         estimated_downtime: '30 seconds'
       };
     } catch (error: any) {
@@ -674,7 +751,7 @@ export const adminService = {
       }
 
       // Transform the raw data { [key: string]: number } to the required UserRetention type
-      const rawData = retentionDataResult.data;
+      const rawData: any = retentionDataResult.data;
       const userRetention = {
         day1: rawData.day1 || rawData['day1'] || 0,
         day7: rawData.day7 || rawData['day7'] || 0,
