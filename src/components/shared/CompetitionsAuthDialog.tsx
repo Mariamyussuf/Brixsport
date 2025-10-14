@@ -21,21 +21,21 @@ export const CompetitionsAuthDialog: React.FC<CompetitionsAuthDialogProps> = ({ 
   const router = useRouter();
 
   const handleSignIn = () => {
-    router.push('/auth/login?next=/profile');
+    router.push('/auth/login?next=/competitions');
     onClose();
   };
 
   const handleSignUp = () => {
-    router.push('/auth/signup');
+    router.push('/auth/signup?next=/competitions');
     onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-800">
         <DialogHeader>
-          <DialogTitle>Competitions Access</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-gray-900 dark:text-white">Competitions Access</DialogTitle>
+          <DialogDescription className="text-gray-600 dark:text-gray-300">
             You need to sign in to use Competitions. Sign in or create an account.
           </DialogDescription>
         </DialogHeader>

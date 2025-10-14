@@ -23,13 +23,15 @@ export async function GET(request: Request) {
     });
 
     if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
       if (response.status === 401) {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
       }
       if (response.status === 404) {
         return NextResponse.json({ message: 'User not found' }, { status: 404 });
       }
-      throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+      console.error('Error fetching user profile from backend:', errorData);
+      throw new Error(errorData.error || `API call failed: ${response.status} ${response.statusText}`);
     }
 
     const user = await response.json();
@@ -53,6 +55,11 @@ export async function PATCH(request: Request) {
     
     const body = await request.json();
     
+    // Validate that we're not trying to change sensitive fields
+    if (body.id || body.email) {
+      return NextResponse.json({ message: 'Cannot change ID or email' }, { status: 400 });
+    }
+    
     // Make API call to update user profile
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
     
@@ -66,13 +73,18 @@ export async function PATCH(request: Request) {
     });
 
     if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      if (response.status === 400) {
+        return NextResponse.json({ message: errorData.message || 'Invalid data provided' }, { status: 400 });
+      }
       if (response.status === 401) {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
       }
       if (response.status === 404) {
         return NextResponse.json({ message: 'User not found' }, { status: 404 });
       }
-      throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+      console.error('Error updating user profile in backend:', errorData);
+      throw new Error(errorData.error || `API call failed: ${response.status} ${response.statusText}`);
     }
 
     const updatedUser = await response.json();

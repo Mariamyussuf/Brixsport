@@ -21,21 +21,21 @@ export const FavoritesAuthDialog: React.FC<FavoritesAuthDialogProps> = ({ isOpen
   const router = useRouter();
 
   const handleSignIn = () => {
-    router.push('/auth/login?next=/profile');
+    router.push('/auth/login?next=/favorites');
     onClose();
   };
 
   const handleSignUp = () => {
-    router.push('/auth/signup');
+    router.push('/auth/signup?next=/favorites');
     onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-800">
         <DialogHeader>
-          <DialogTitle>Favorites Access</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-gray-900 dark:text-white">Favorites Access</DialogTitle>
+          <DialogDescription className="text-gray-600 dark:text-gray-300">
             You need to sign in to use Favorites. Sign in or create an account.
           </DialogDescription>
         </DialogHeader>

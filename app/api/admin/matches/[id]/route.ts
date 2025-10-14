@@ -34,16 +34,46 @@ export async function PUT(request: Request, { params }: { params: Promise<{}> })
     const body = await request.json();
     const { id } = await params as { id: string };
     
+    // Validate match ID
+    if (!id || isNaN(parseInt(id))) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Valid match ID is required' 
+      }, { status: 400 });
+    }
+    
+    // Validate data types if provided
+    if (body.competitionId && isNaN(parseInt(body.competitionId))) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Competition ID must be a valid number' 
+      }, { status: 400 });
+    }
+    
+    if (body.homeTeamId && isNaN(parseInt(body.homeTeamId))) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Home team ID must be a valid number' 
+      }, { status: 400 });
+    }
+    
+    if (body.awayTeamId && isNaN(parseInt(body.awayTeamId))) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Away team ID must be a valid number' 
+      }, { status: 400 });
+    }
+    
     // Update match with real database operation
     const matchData = {
-      ...(body.competitionId && { competitionId: body.competitionId }),
-      ...(body.homeTeamId && { homeTeamId: body.homeTeamId }),
-      ...(body.awayTeamId && { awayTeamId: body.awayTeamId }),
+      ...(body.competitionId && { competitionId: parseInt(body.competitionId) }),
+      ...(body.homeTeamId && { homeTeamId: parseInt(body.homeTeamId) }),
+      ...(body.awayTeamId && { awayTeamId: parseInt(body.awayTeamId) }),
       ...(body.startTime && { startTime: body.startTime }),
       ...(body.status && { status: body.status }),
-      ...(body.homeScore !== undefined && { homeScore: body.homeScore }),
-      ...(body.awayScore !== undefined && { awayScore: body.awayScore }),
-      ...(body.currentMinute !== undefined && { currentMinute: body.currentMinute }),
+      ...(body.homeScore !== undefined && { homeScore: parseInt(body.homeScore) || 0 }),
+      ...(body.awayScore !== undefined && { awayScore: parseInt(body.awayScore) || 0 }),
+      ...(body.currentMinute !== undefined && { currentMinute: parseInt(body.currentMinute) || 0 }),
       ...(body.period && { period: body.period }),
       ...(body.venue && { venue: body.venue }),
     };
@@ -63,6 +93,18 @@ export async function PUT(request: Request, { params }: { params: Promise<{}> })
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      if (response.status === 401) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Unauthorized' 
+        }, { status: 401 });
+      }
+      if (response.status === 403) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Forbidden' 
+        }, { status: 403 });
+      }
       if (response.status === 404) {
         return NextResponse.json({ 
           success: false, 
@@ -117,6 +159,14 @@ export async function DELETE(request: Request, { params }: { params: Promise<{}>
 
     const { id } = await params as { id: string };
     
+    // Validate match ID
+    if (!id || isNaN(parseInt(id))) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Valid match ID is required' 
+      }, { status: 400 });
+    }
+    
     // Delete match with real database operation
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
     const adminToken = (await cookies()).get('admin_token')?.value;
@@ -131,6 +181,18 @@ export async function DELETE(request: Request, { params }: { params: Promise<{}>
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      if (response.status === 401) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Unauthorized' 
+        }, { status: 401 });
+      }
+      if (response.status === 403) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Forbidden' 
+        }, { status: 403 });
+      }
       if (response.status === 404) {
         return NextResponse.json({ 
           success: false, 

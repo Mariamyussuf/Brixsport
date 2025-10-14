@@ -82,11 +82,19 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
     
+    // Validate data types
+    if (isNaN(parseInt(body.competitionId)) || isNaN(parseInt(body.homeTeamId)) || isNaN(parseInt(body.awayTeamId))) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Competition ID, home team ID, and away team ID must be valid numbers' 
+      }, { status: 400 });
+    }
+    
     // Create new match with real database operation
     const matchData = {
-      competitionId: body.competitionId,
-      homeTeamId: body.homeTeamId,
-      awayTeamId: body.awayTeamId,
+      competitionId: parseInt(body.competitionId),
+      homeTeamId: parseInt(body.homeTeamId),
+      awayTeamId: parseInt(body.awayTeamId),
       startTime: body.startTime,
       status: body.status || 'scheduled',
       homeScore: body.homeScore || 0,
@@ -111,6 +119,18 @@ export async function POST(request: Request) {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      if (response.status === 401) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Unauthorized' 
+        }, { status: 401 });
+      }
+      if (response.status === 403) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Forbidden' 
+        }, { status: 403 });
+      }
       throw new Error(errorData.error || `API call failed: ${response.status} ${response.statusText}`);
     }
     

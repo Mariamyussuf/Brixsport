@@ -45,6 +45,12 @@ export async function getFavorites(): Promise<FavoritesResponse> {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      if (response.status === 401) {
+        throw new Error('Unauthorized: Please log in to view your favorites');
+      }
+      if (response.status === 500) {
+        throw new Error('Server error: Unable to fetch favorites');
+      }
       throw new Error(errorData.message || `API call failed: ${response.status} ${response.statusText}`);
     }
 
@@ -78,6 +84,14 @@ export async function getFavorites(): Promise<FavoritesResponse> {
  */
 export async function addFavorite(favorite_type: string, favorite_id: number): Promise<AddFavoriteResponse> {
   try {
+    // Validate inputs
+    if (!favorite_type || favorite_id === undefined) {
+      return {
+        success: false,
+        message: 'Favorite type and ID are required'
+      };
+    }
+    
     // Make actual API call to add favorite
     const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
@@ -96,6 +110,24 @@ export async function addFavorite(favorite_type: string, favorite_id: number): P
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      if (response.status === 400) {
+        return {
+          success: false,
+          message: errorData.message || 'Invalid favorite data provided'
+        };
+      }
+      if (response.status === 401) {
+        return {
+          success: false,
+          message: 'Unauthorized: Please log in to add favorites'
+        };
+      }
+      if (response.status === 500) {
+        return {
+          success: false,
+          message: 'Server error: Unable to add favorite'
+        };
+      }
       throw new Error(errorData.message || `API call failed: ${response.status} ${response.statusText}`);
     }
 
@@ -123,6 +155,14 @@ export async function addFavorite(favorite_type: string, favorite_id: number): P
  */
 export async function removeFavorite(favorite_type: string, favorite_id: number): Promise<RemoveFavoriteResponse> {
   try {
+    // Validate inputs
+    if (!favorite_type || favorite_id === undefined) {
+      return {
+        success: false,
+        message: 'Favorite type and ID are required'
+      };
+    }
+    
     // Make actual API call to remove favorite
     const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
@@ -141,6 +181,24 @@ export async function removeFavorite(favorite_type: string, favorite_id: number)
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      if (response.status === 400) {
+        return {
+          success: false,
+          message: errorData.message || 'Invalid favorite data provided'
+        };
+      }
+      if (response.status === 401) {
+        return {
+          success: false,
+          message: 'Unauthorized: Please log in to remove favorites'
+        };
+      }
+      if (response.status === 500) {
+        return {
+          success: false,
+          message: 'Server error: Unable to remove favorite'
+        };
+      }
       throw new Error(errorData.message || `API call failed: ${response.status} ${response.statusText}`);
     }
 
