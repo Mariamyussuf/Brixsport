@@ -376,9 +376,9 @@ export class SearchService {
       });
       
       // Combine and create suggestions
-      [...players.map(p => `${p.firstName} ${p.lastName}`), 
-       ...teams.map(t => t.name), 
-       ...competitions.map(c => c.name)]
+      [...players.map((p: any) => `${p.firstName} ${p.lastName}`), 
+       ...teams.map((t: any) => t.name), 
+       ...competitions.map((c: any) => c.name)]
         .forEach(name => {
           suggestions.push({ term: name, frequency: 1 });
         });
