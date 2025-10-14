@@ -34,30 +34,49 @@ export async function PUT(request: Request, { params }: { params: Promise<{}> })
     const body = await request.json();
     const { id } = await params as { id: string };
     
-    // Update match (mock implementation)
-    // TODO: Implement real database update
-    console.log('Updating match:', id, body);
+    // Update match with real database operation
+    const matchData = {
+      ...(body.competitionId && { competitionId: body.competitionId }),
+      ...(body.homeTeamId && { homeTeamId: body.homeTeamId }),
+      ...(body.awayTeamId && { awayTeamId: body.awayTeamId }),
+      ...(body.startTime && { startTime: body.startTime }),
+      ...(body.status && { status: body.status }),
+      ...(body.homeScore !== undefined && { homeScore: body.homeScore }),
+      ...(body.awayScore !== undefined && { awayScore: body.awayScore }),
+      ...(body.currentMinute !== undefined && { currentMinute: body.currentMinute }),
+      ...(body.period && { period: body.period }),
+      ...(body.venue && { venue: body.venue }),
+    };
     
-    // Get existing matches to simulate update
-    const matches = await dbService.getMatches();
-    const matchIndex = matches.findIndex(m => m.id === parseInt(id));
+    // Make API call to update match
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
+    const adminToken = (await cookies()).get('admin_token')?.value;
     
-    if (matchIndex === -1) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Match not found' 
-      }, { status: 404 });
+    const response = await fetch(`${API_BASE_URL}/v1/matches/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminToken}`
+      },
+      body: JSON.stringify(matchData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      if (response.status === 404) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Match not found' 
+        }, { status: 404 });
+      }
+      throw new Error(errorData.error || `API call failed: ${response.status} ${response.statusText}`);
     }
     
-    const updatedMatch = {
-      ...matches[matchIndex],
-      ...body,
-      id: parseInt(id)
-    };
+    const result = await response.json();
     
     return NextResponse.json({ 
       success: true, 
-      data: updatedMatch 
+      data: result.data 
     });
   } catch (error) {
     console.error('Error updating match:', error);
@@ -98,9 +117,28 @@ export async function DELETE(request: Request, { params }: { params: Promise<{}>
 
     const { id } = await params as { id: string };
     
-    // Delete match (mock implementation)
-    // TODO: Implement real database deletion
-    console.log('Deleting match:', id);
+    // Delete match with real database operation
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
+    const adminToken = (await cookies()).get('admin_token')?.value;
+    
+    const response = await fetch(`${API_BASE_URL}/v1/matches/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminToken}`
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      if (response.status === 404) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Match not found' 
+        }, { status: 404 });
+      }
+      throw new Error(errorData.error || `API call failed: ${response.status} ${response.statusText}`);
+    }
     
     return NextResponse.json({ 
       success: true, 

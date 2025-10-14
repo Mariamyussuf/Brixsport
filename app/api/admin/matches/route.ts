@@ -82,29 +82,43 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
     
-    // Create new match (mock implementation)
-    // TODO: Implement real database creation
-    const newMatch = {
-      id: Date.now(), // Simple ID generation for mock
-      competition_id: body.competitionId,
-      home_team_id: body.homeTeamId,
-      away_team_id: body.awayTeamId,
-      match_date: body.startTime,
+    // Create new match with real database operation
+    const matchData = {
+      competitionId: body.competitionId,
+      homeTeamId: body.homeTeamId,
+      awayTeamId: body.awayTeamId,
+      startTime: body.startTime,
       status: body.status || 'scheduled',
-      home_score: body.homeScore || 0,
-      away_score: body.awayScore || 0,
-      current_minute: 0,
+      homeScore: body.homeScore || 0,
+      awayScore: body.awayScore || 0,
+      currentMinute: 0,
       period: null,
       venue: body.venue || null,
-      // Add other required fields with default values
-      created_at: new Date().toISOString()
     };
     
-    console.log('Creating match:', newMatch);
+    // Make API call to create match
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
+    const adminToken = (await cookies()).get('admin_token')?.value;
+    
+    const response = await fetch(`${API_BASE_URL}/v1/matches`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminToken}`
+      },
+      body: JSON.stringify(matchData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `API call failed: ${response.status} ${response.statusText}`);
+    }
+    
+    const result = await response.json();
     
     return NextResponse.json({ 
       success: true, 
-      data: newMatch 
+      data: result.data 
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating match:', error);

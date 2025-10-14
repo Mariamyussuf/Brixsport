@@ -1,28 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/auth';
 
-// Mock user database - in a real application, this would be a real database
-const users = [
-  {
-    id: '1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    role: 'user',
-    image: 'https://example.com/avatar1.jpg',
-    createdAt: '2023-01-01T00:00:00Z',
-    updatedAt: '2023-01-01T00:00:00Z'
-  },
-  {
-    id: '2',
-    name: 'Jane Smith',
-    email: 'jane@example.com',
-    role: 'admin',
-    image: 'https://example.com/avatar2.jpg',
-    createdAt: '2023-01-02T00:00:00Z',
-    updatedAt: '2023-01-02T00:00:00Z'
-  }
-];
-
 // GET /api/user/profile - Get current user profile
 export async function GET(request: Request) {
   try {
@@ -33,12 +11,28 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
     
-    // Find the user in our mock database
-    const user = users.find(u => u.id === session.user.id);
+    // Make API call to get user profile
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
     
-    if (!user) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    const response = await fetch(`${API_BASE_URL}/v1/users/profile`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': request.headers.get('Authorization') || ''
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      }
+      if (response.status === 404) {
+        return NextResponse.json({ message: 'User not found' }, { status: 404 });
+      }
+      throw new Error(`API call failed: ${response.status} ${response.statusText}`);
     }
+
+    const user = await response.json();
     
     return NextResponse.json(user);
   } catch (error) {
@@ -59,24 +53,29 @@ export async function PATCH(request: Request) {
     
     const body = await request.json();
     
-    // Find the user in our mock database
-    const userIndex = users.findIndex(u => u.id === session.user.id);
+    // Make API call to update user profile
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
     
-    if (userIndex === -1) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    const response = await fetch(`${API_BASE_URL}/v1/users/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': request.headers.get('Authorization') || ''
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      }
+      if (response.status === 404) {
+        return NextResponse.json({ message: 'User not found' }, { status: 404 });
+      }
+      throw new Error(`API call failed: ${response.status} ${response.statusText}`);
     }
-    
-    // Update the user with the new data
-    const updatedUser = {
-      ...users[userIndex],
-      ...body,
-      id: users[userIndex].id, // Don't allow changing the ID
-      email: users[userIndex].email, // Don't allow changing the email in this example
-      updatedAt: new Date().toISOString()
-    };
-    
-    // Update the user in our mock database
-    users[userIndex] = updatedUser;
+
+    const updatedUser = await response.json();
     
     return NextResponse.json(updatedUser);
   } catch (error) {

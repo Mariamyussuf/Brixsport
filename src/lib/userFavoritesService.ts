@@ -51,17 +51,42 @@ export interface FavoritesData {
  */
 export const getFavorites = async (): Promise<FavoritesData | null> => {
   try {
-    // For now, return empty arrays as this needs backend implementation
-    // In a real implementation, this would fetch from the database service
-    // TODO: Implement proper favorites storage in Supabase
+    // Make actual API call to fetch favorites
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
+    
+    const response = await fetch(`${API_BASE_URL}/favorites`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `API call failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to fetch favorites');
+    }
+    
+    return {
+      teams: data.data?.teams || [],
+      players: data.data?.players || [],
+      competitions: data.data?.competitions || []
+    };
+  } catch (error) {
+    console.error('Failed to fetch favorites:', error);
+    // Return empty arrays as fallback
     return {
       teams: [],
       players: [],
       competitions: []
     };
-  } catch (error) {
-    console.error('Failed to fetch favorites:', error);
-    return null;
   }
 };
 
