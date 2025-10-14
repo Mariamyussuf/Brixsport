@@ -100,11 +100,6 @@ const ProfileScreen = () => {
       onClick: () => router.push('/events') 
     },
     { 
-      icon: <Trophy className="h-6 w-6" />, 
-      text: 'Competition', 
-      onClick: () => router.push('/competition') 
-    },
-    { 
       icon: <Users className="h-6 w-6" />, 
       text: 'Teams', 
       onClick: () => router.push('/teams') 

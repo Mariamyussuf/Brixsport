@@ -12,6 +12,17 @@ export class AppError extends Error {
   }
 }
 
+export class DatabaseError extends AppError {
+  constructor(
+    message: string,
+    public code: string = 'DATABASE_ERROR',
+    public status: number = 500
+  ) {
+    super(message, status);
+    Object.setPrototypeOf(this, DatabaseError.prototype);
+  }
+}
+
 export class ValidationError extends AppError {
   constructor(message: string) {
     super(message, 400);
