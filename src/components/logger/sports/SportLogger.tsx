@@ -1,11 +1,8 @@
 import React from 'react';
 import { SportType, Team, CampusEventType } from '../../../types/campus';
-import { FootballLogger } from './FootballLogger';
+import FootballLogger from './FootballLogger';
 import { BasketballLogger } from './BasketballLogger';
-import { VolleyballLogger } from './VolleyballLogger';
 import { TrackFieldLogger } from './TrackFieldLogger';
-import { TableTennisLogger } from './TableTennisLogger';
-import { BadmintonLogger } from './BadmintonLogger';
 
 interface SportLoggerProps {
   sportType: SportType;
@@ -29,9 +26,10 @@ export const SportLogger: React.FC<SportLoggerProps> = ({
   const renderSportLogger = () => {
     switch (sportType) {
       case 'football':
+        // FootballLogger doesn't actually use the teams prop, so we pass an empty array
         return (
           <FootballLogger
-            teams={teams}
+            teams={[]}
             onEventSubmit={onEventSubmit}
             disabled={disabled}
           />
@@ -44,33 +42,9 @@ export const SportLogger: React.FC<SportLoggerProps> = ({
             disabled={disabled}
           />
         );
-      case 'volleyball':
-        return (
-          <VolleyballLogger
-            teams={teams}
-            onEventSubmit={onEventSubmit}
-            disabled={disabled}
-          />
-        );
       case 'track_events':
         return (
           <TrackFieldLogger
-            teams={teams}
-            onEventSubmit={onEventSubmit}
-            disabled={disabled}
-          />
-        );
-      case 'table_tennis':
-        return (
-          <TableTennisLogger
-            teams={teams}
-            onEventSubmit={onEventSubmit}
-            disabled={disabled}
-          />
-        );
-      case 'badminton':
-        return (
-          <BadmintonLogger
             teams={teams}
             onEventSubmit={onEventSubmit}
             disabled={disabled}
