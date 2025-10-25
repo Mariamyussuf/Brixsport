@@ -2,8 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from '@/lib/auth';
 import { API_BASE_URL } from '@/lib/apiConfig';
 
-// Import the favorites service directly
-import { favoritesService } from '@/../../brixsport-backend/apps/api/src/services/favorites.service';
+// Import the favorites service directly with error handling
+let favoritesService: any = null;
+let favoritesServiceImportError: Error | null = null;
+
+try {
+  favoritesService = require('@/../../brixsport-backend/apps/api/src/services/favorites.service').favoritesService;
+} catch (error: any) {
+  favoritesServiceImportError = error;
+  console.warn('Failed to import favorites service:', error.message);
+}
 
 // GET /api/user/favorites - Get user favorites
 export async function GET(request: NextRequest) {
@@ -23,16 +31,37 @@ export async function GET(request: NextRequest) {
 
     // Check if API_BASE_URL points to our own API to avoid infinite loops
     if (API_BASE_URL === '/api' || API_BASE_URL.startsWith('/api')) {
-      // Use the favorites service directly
-      const result = await favoritesService.getUserFavorites(session.user.id);
-      return NextResponse.json({
-        success: true,
-        data: {
-          teams: result.data.teams || [],
-          players: result.data.players || [],
-          competitions: result.data.competitions || []
-        }
-      });
+      // Use the favorites service directly if available
+      if (!favoritesService) {
+        return NextResponse.json(
+          { 
+            success: false,
+            message: favoritesServiceImportError?.message || 'Favorites service not available'
+          },
+          { status: 500 }
+        );
+      }
+      
+      try {
+        const result = await favoritesService.getUserFavorites(session.user.id);
+        return NextResponse.json({
+          success: true,
+          data: {
+            teams: result.data.teams || [],
+            players: result.data.players || [],
+            competitions: result.data.competitions || []
+          }
+        });
+      } catch (serviceError: any) {
+        console.error('Error calling favorites service:', serviceError);
+        return NextResponse.json(
+          { 
+            success: false,
+            message: serviceError.message || 'Failed to fetch favorites'
+          },
+          { status: 500 }
+        );
+      }
     }
 
     // Forward request to backend
@@ -93,13 +122,35 @@ export async function POST(request: NextRequest) {
 
     // Check if API_BASE_URL points to our own API to avoid infinite loops
     if (API_BASE_URL === '/api' || API_BASE_URL.startsWith('/api')) {
-      // Use the favorites service directly
-      const result = await favoritesService.addFavorite(session.user.id, body.favorite_type, body.favorite_id);
-      return NextResponse.json({
-        success: true,
-        data: result.data,
-        message: 'Added to favorites successfully'
-      });
+      // Use the favorites service directly if available
+      if (!favoritesService) {
+        return NextResponse.json(
+          { 
+            success: false,
+            message: favoritesServiceImportError?.message || 'Favorites service not available'
+          },
+          { status: 500 }
+        );
+      }
+      
+      try {
+        const result = await favoritesService.addFavorite(session.user.id, body.favorite_type, body.favorite_id);
+        return NextResponse.json({
+          success: true,
+          data: result.data,
+          message: 'Added to favorites successfully'
+        });
+      } catch (serviceError: any) {
+        console.error('Error calling favorites service:', serviceError);
+        return NextResponse.json(
+          { 
+            success: false,
+            data: null,
+            message: serviceError.message || 'Failed to add favorite'
+          },
+          { status: 500 }
+        );
+      }
     }
 
     // Forward request to backend
@@ -166,12 +217,33 @@ export async function DELETE(request: NextRequest) {
 
     // Check if API_BASE_URL points to our own API to avoid infinite loops
     if (API_BASE_URL === '/api' || API_BASE_URL.startsWith('/api')) {
-      // Use the favorites service directly
-      const result = await favoritesService.removeFavorite(session.user.id, body.favorite_type, body.favorite_id);
-      return NextResponse.json({
-        success: true,
-        message: 'Removed from favorites successfully'
-      });
+      // Use the favorites service directly if available
+      if (!favoritesService) {
+        return NextResponse.json(
+          { 
+            success: false,
+            message: favoritesServiceImportError?.message || 'Favorites service not available'
+          },
+          { status: 500 }
+        );
+      }
+      
+      try {
+        const result = await favoritesService.removeFavorite(session.user.id, body.favorite_type, body.favorite_id);
+        return NextResponse.json({
+          success: true,
+          message: 'Removed from favorites successfully'
+        });
+      } catch (serviceError: any) {
+        console.error('Error calling favorites service:', serviceError);
+        return NextResponse.json(
+          { 
+            success: false,
+            message: serviceError.message || 'Failed to remove favorite'
+          },
+          { status: 500 }
+        );
+      }
     }
 
     // Forward request to backend
