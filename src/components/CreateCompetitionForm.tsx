@@ -5,6 +5,8 @@ import { createCompetition } from '@/lib/competitionService';
 interface FormData {
   name: string;
   type: string;
+  category: string;
+  status: string;
   start_date: string;
   end_date: string;
 }
@@ -13,6 +15,8 @@ const CreateCompetitionForm: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({
     name: '',
     type: 'football',
+    category: 'school',
+    status: 'upcoming',
     start_date: '',
     end_date: '',
   });
@@ -36,6 +40,8 @@ const CreateCompetitionForm: React.FC = () => {
       setFormData({
         name: '',
         type: 'football',
+        category: 'school',
+        status: 'upcoming',
         start_date: '',
         end_date: '',
       });
@@ -73,6 +79,38 @@ const CreateCompetitionForm: React.FC = () => {
           <option value="football">Football</option>
           <option value="basketball">Basketball</option>
           <option value="track">Track</option>
+        </select>
+      </div>
+      
+      <div>
+        <label htmlFor="category">Category:</label>
+        <select
+          id="category"
+          name="category"
+          value={formData.category}
+          onChange={handleChange}
+          required
+        >
+          <option value="school">School</option>
+          <option value="club">Club</option>
+          <option value="regional">Regional</option>
+          <option value="national">National</option>
+        </select>
+      </div>
+      
+      <div>
+        <label htmlFor="status">Status:</label>
+        <select
+          id="status"
+          name="status"
+          value={formData.status}
+          onChange={handleChange}
+          required
+        >
+          <option value="upcoming">Upcoming</option>
+          <option value="ongoing">Ongoing</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
         </select>
       </div>
       
