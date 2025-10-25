@@ -54,14 +54,12 @@ export const centralizedDatabaseService: CentralizedDatabaseService = {
       
       // Create the record using supabase service with specific method based on table name
       let result;
-      if (typeof (supabaseService as any)[`create${table}`] === 'function') {
-        result = await (supabaseService as any)[`create${table}`](data);
-      } else if (typeof supabaseService.create === 'function') {
-        // Fallback to generic create method if available
-        result = await supabaseService.create(table, data);
+      const methodName = `create${table}`;
+      if (typeof (supabaseService as any)[methodName] === 'function') {
+        result = await (supabaseService as any)[methodName](data);
       } else {
-        // If no specific method exists, try a generic approach
-        result = await supabaseService.createRecord(table, data);
+        // If no specific method exists, throw an error
+        throw new DatabaseError(`Operation 'create' not implemented for table '${table}'`, 'NOT_IMPLEMENTED', 501);
       }
       
       if (!result?.success) {
@@ -92,21 +90,21 @@ export const centralizedDatabaseService: CentralizedDatabaseService = {
       
       // Read the records using supabase service with specific method based on table name
       let result;
-      if (typeof (supabaseService as any)[`list${table}`] === 'function') {
-        result = await (supabaseService as any)[`list${table}`](filters);
-      } else if (typeof (supabaseService as any)[`get${table}`] === 'function' && filters.id) {
+      const listMethodName = `list${table}`;
+      const getMethodName = `get${table}`;
+
+      if (typeof (supabaseService as any)[listMethodName] === 'function') {
+        result = await (supabaseService as any)[listMethodName](filters);
+      } else if (typeof (supabaseService as any)[getMethodName] === 'function' && filters.id) {
         // For single record retrieval
-        result = await (supabaseService as any)[`get${table}`](filters.id);
+        result = await (supabaseService as any)[getMethodName](filters.id);
         // Convert single record to array format
         if (result?.success && result.data) {
           result.data = Array.isArray(result.data) ? result.data : [result.data];
         }
-      } else if (typeof supabaseService.read === 'function') {
-        // Fallback to generic read method if available
-        result = await supabaseService.read(table, filters);
       } else {
-        // If no specific method exists, try a generic approach
-        result = await supabaseService.listRecords(table, filters);
+        // If no specific method exists, throw an error
+        throw new DatabaseError(`Operation 'read' not implemented for table '${table}'`, 'NOT_IMPLEMENTED', 501);
       }
       
       if (!result?.success) {
@@ -140,14 +138,12 @@ export const centralizedDatabaseService: CentralizedDatabaseService = {
       
       // Update the record using supabase service with specific method based on table name
       let result;
-      if (typeof (supabaseService as any)[`update${table}`] === 'function') {
-        result = await (supabaseService as any)[`update${table}`](id, data);
-      } else if (typeof supabaseService.update === 'function') {
-        // Fallback to generic update method if available
-        result = await supabaseService.update(table, id, data);
+      const methodName = `update${table}`;
+      if (typeof (supabaseService as any)[methodName] === 'function') {
+        result = await (supabaseService as any)[methodName](id, data);
       } else {
-        // If no specific method exists, try a generic approach
-        result = await supabaseService.updateRecord(table, id, data);
+        // If no specific method exists, throw an error
+        throw new DatabaseError(`Operation 'update' not implemented for table '${table}'`, 'NOT_IMPLEMENTED', 501);
       }
       
       if (!result?.success) {
@@ -178,14 +174,12 @@ export const centralizedDatabaseService: CentralizedDatabaseService = {
       
       // Delete the record using supabase service with specific method based on table name
       let result;
-      if (typeof (supabaseService as any)[`delete${table}`] === 'function') {
-        result = await (supabaseService as any)[`delete${table}`](id);
-      } else if (typeof supabaseService.delete === 'function') {
-        // Fallback to generic delete method if available
-        result = await supabaseService.delete(table, id);
+      const methodName = `delete${table}`;
+      if (typeof (supabaseService as any)[methodName] === 'function') {
+        result = await (supabaseService as any)[methodName](id);
       } else {
-        // If no specific method exists, try a generic approach
-        result = await supabaseService.deleteRecord(table, id);
+        // If no specific method exists, throw an error
+        throw new DatabaseError(`Operation 'delete' not implemented for table '${table}'`, 'NOT_IMPLEMENTED', 501);
       }
       
       if (!result?.success) {
