@@ -137,11 +137,22 @@ class AdminService {
 
   // Check if a user has admin permissions
   async checkAdminPermission(userId: string): Promise<boolean> {
-    // In a real implementation, this would check the user's role in the database
-    // For now, we'll return true to simulate admin permissions
-    // In a production environment, you would verify the user's role
-    console.log('Checking admin permission for user:', userId);
-    return true;
+    try {
+      // In a real implementation, this would check the user's role in the database
+      const response = await apiCall('/admin/users/' + userId, {
+        method: 'GET'
+      });
+      
+      if (response.success && response.data) {
+        const user = response.data;
+        return user.role === 'admin' || user.role === 'super-admin';
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Check admin permission error:', error);
+      return false;
+    }
   }
 
   // Check if a user is an admin based on their role

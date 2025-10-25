@@ -10,8 +10,8 @@ export interface Competition {
   type: string;
   category: string;
   status: string;
-  start_date: string; // Changed from string | null to string
-  end_date: string;   // Changed from string | null to string
+  start_date: string;
+  end_date: string;
 }
 
 // New Match interface to match backend specification
@@ -41,6 +41,8 @@ export interface CompetitionDetailsResponse {
 export interface CreateCompetitionData {
   name: string;
   type: string;
+  category: string;
+  status: string;
   start_date: string;
   end_date: string;
 }
@@ -99,8 +101,23 @@ export async function getCompetitionById(id: number): Promise<CompetitionDetails
 // Create a new competition
 export async function createCompetition(data: CreateCompetitionData): Promise<Competition> {
   try {
-    // For now, we'll throw an error as this needs backend implementation
-    throw new Error('Competition creation not implemented');
+    // Use database service to create competition
+    const competition = await databaseService.createCompetition(data);
+    
+    if (!competition) {
+      throw new Error('Failed to create competition');
+    }
+    
+    // Convert nullable dates to empty strings to match the interface
+    return {
+      id: competition.id,
+      name: competition.name,
+      type: competition.type,
+      category: competition.category,
+      status: competition.status,
+      start_date: competition.start_date || '',
+      end_date: competition.end_date || ''
+    };
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -110,8 +127,23 @@ export async function createCompetition(data: CreateCompetitionData): Promise<Co
 // Update competition
 export async function updateCompetition(id: number, data: UpdateCompetitionData): Promise<Competition> {
   try {
-    // For now, we'll throw an error as this needs backend implementation
-    throw new Error('Competition update not implemented');
+    // Use database service to update competition
+    const competition = await databaseService.updateCompetition(id, data);
+    
+    if (!competition) {
+      throw new Error('Failed to update competition');
+    }
+    
+    // Convert nullable dates to empty strings to match the interface
+    return {
+      id: competition.id,
+      name: competition.name,
+      type: competition.type,
+      category: competition.category,
+      status: competition.status,
+      start_date: competition.start_date || '',
+      end_date: competition.end_date || ''
+    };
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -121,8 +153,12 @@ export async function updateCompetition(id: number, data: UpdateCompetitionData)
 // Delete competition
 export async function deleteCompetition(id: number): Promise<void> {
   try {
-    // For now, we'll throw an error as this needs backend implementation
-    throw new Error('Competition deletion not implemented');
+    // Use database service to delete competition
+    const success = await databaseService.deleteCompetition(id);
+    
+    if (!success) {
+      throw new Error('Failed to delete competition');
+    }
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -132,8 +168,20 @@ export async function deleteCompetition(id: number): Promise<void> {
 // Get competitions by sport
 export async function getCompetitionsBySport(sport: string): Promise<Competition[]> {
   try {
-    // For now, we'll throw an error as this needs backend implementation
-    throw new Error('Get competitions by sport not implemented');
+    // Get all competitions and filter by sport
+    const allCompetitions = await databaseService.getCompetitions();
+    const filteredCompetitions = allCompetitions.filter(comp => comp.type === sport);
+    
+    // Convert nullable dates to empty strings to match the interface
+    return filteredCompetitions.map(competition => ({
+      id: competition.id,
+      name: competition.name,
+      type: competition.type,
+      category: competition.category,
+      status: competition.status,
+      start_date: competition.start_date || '',
+      end_date: competition.end_date || ''
+    }));
   } catch (error) {
     handleApiError(error);
     throw error;
@@ -143,8 +191,20 @@ export async function getCompetitionsBySport(sport: string): Promise<Competition
 // Get active competitions
 export async function getActiveCompetitions(): Promise<Competition[]> {
   try {
-    // For now, we'll throw an error as this needs backend implementation
-    throw new Error('Get active competitions not implemented');
+    // Get all competitions and filter by active status
+    const allCompetitions = await databaseService.getCompetitions();
+    const activeCompetitions = allCompetitions.filter(comp => comp.status === 'active');
+    
+    // Convert nullable dates to empty strings to match the interface
+    return activeCompetitions.map(competition => ({
+      id: competition.id,
+      name: competition.name,
+      type: competition.type,
+      category: competition.category,
+      status: competition.status,
+      start_date: competition.start_date || '',
+      end_date: competition.end_date || ''
+    }));
   } catch (error) {
     handleApiError(error);
     throw error;

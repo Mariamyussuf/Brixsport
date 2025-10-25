@@ -55,8 +55,26 @@ export class NotificationService {
 
     return { data: newNotification };
   }
-  static markAsRead(id: string) {
-    throw new Error('Method not implemented.');
+  static async markAsRead(id: string, userId: string): Promise<boolean> {
+    try {
+      const notificationIndex = notifications.findIndex(n => n.id === id && n.userId === userId);
+      
+      if (notificationIndex === -1) {
+        return false;
+      }
+      
+      notifications[notificationIndex] = {
+        ...notifications[notificationIndex],
+        status: 'READ',
+        readAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      return true;
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      return false;
+    }
   }
   static async markAllAsRead(userId: string): Promise<{ success: boolean; count?: number; error?: string }> {
     try {
@@ -82,10 +100,27 @@ export class NotificationService {
       };
     }
   }
-  static
-    // In a real implementation, this would fetch users who favorited specific teams/players
-    clearNotifications(id: string) {
-      throw new Error('Method not implemented.');
+  static async clearNotifications(userId: string): Promise<{ success: boolean; count: number }> {
+    try {
+      const initialCount = notifications.length;
+      const userNotificationIds = notifications
+        .filter(n => n.userId === userId)
+        .map(n => n.id);
+      
+      // Remove all notifications for the user
+      notifications = notifications.filter(n => n.userId !== userId);
+      
+      return { 
+        success: true, 
+        count: initialCount - notifications.length 
+      };
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+      return { 
+        success: false, 
+        count: 0 
+      };
+    }
   }
   // Get user notifications with filtering and pagination
   static async getUserNotifications(
