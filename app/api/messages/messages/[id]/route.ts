@@ -43,15 +43,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{}> }) {
     );
 
     if (!result.success) {
-      if (result.error?.code === 'FORBIDDEN') {
-        return NextResponse.json({ 
-          error: { 
-            code: 'FORBIDDEN', 
-            message: 'Only administrators can update messages' 
-          } 
-        }, { status: 403 });
-      }
-      
       return NextResponse.json({ 
         error: { 
           code: 'NOT_FOUND', 
@@ -99,15 +90,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{}> }) 
     );
 
     if (!result.success) {
-      if (result.error?.code === 'FORBIDDEN') {
-        return NextResponse.json({ 
-          error: { 
-            code: 'FORBIDDEN', 
-            message: 'Only administrators can delete messages' 
-          } 
-        }, { status: 403 });
-      }
-      
       return NextResponse.json({ 
         error: { 
           code: 'NOT_FOUND', 

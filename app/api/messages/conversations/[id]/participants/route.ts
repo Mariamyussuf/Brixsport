@@ -31,32 +31,12 @@ export async function POST(req: Request, { params }: { params: Promise<{}> }) {
     );
 
     if (!result.success) {
-      if (result.error?.code === 'FORBIDDEN') {
-        return NextResponse.json({ 
-          error: { 
-            code: 'FORBIDDEN', 
-            message: 'Insufficient permissions to add participants' 
-          } 
-        }, { status: 403 });
-      }
-      
-      if (result.error?.code === 'NOT_FOUND') {
-        return NextResponse.json({ 
-          error: { 
-            code: 'NOT_FOUND', 
-            message: 'Conversation not found' 
-          } 
-        }, { status: 404 });
-      }
-      
-      if (result.error?.code === 'CONFLICT') {
-        return NextResponse.json({ 
-          error: { 
-            code: 'CONFLICT', 
-            message: 'User is already a participant' 
-          } 
-        }, { status: 409 });
-      }
+      return NextResponse.json({ 
+        error: { 
+          code: 'NOT_FOUND', 
+          message: 'Operation failed' 
+        } 
+      }, { status: 404 });
     }
 
     return NextResponse.json(result, { status: 201 });

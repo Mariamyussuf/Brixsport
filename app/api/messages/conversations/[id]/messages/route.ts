@@ -106,15 +106,6 @@ export async function POST(req: Request, { params }: { params: Promise<{}> }) {
     );
 
     if (!result.success) {
-      if (result.error?.code === 'FORBIDDEN') {
-        return NextResponse.json({ 
-          error: { 
-            code: 'FORBIDDEN', 
-            message: 'Only administrators can send system messages' 
-          } 
-        }, { status: 403 });
-      }
-      
       return NextResponse.json({ 
         error: { 
           code: 'NOT_FOUND', 
