@@ -1,11 +1,20 @@
 import { Queue, Worker, Job } from 'bullmq';
 import { logger } from '../utils/logger';
 import { notificationService } from './notification.service';
-import { redis } from './redis.service';
+
+// Redis connection options for BullMQ
+const redisOptions = {
+  connection: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD || undefined,
+    db: parseInt(process.env.REDIS_DB || '0'),
+  }
+};
 
 // Create queues
-const notificationQueue = new Queue('notifications', { connection: redis });
-const scheduledNotificationQueue = new Queue('scheduled-notifications', { connection: redis });
+const notificationQueue = new Queue('notifications', redisOptions);
+const scheduledNotificationQueue = new Queue('scheduled-notifications', redisOptions);
 
 export const queueService = {
   // Add job to notification queue
@@ -94,7 +103,7 @@ export const queueService = {
             throw error;
           }
         },
-        { connection: redis }
+        redisOptions
       );
       
       // Create worker for scheduled notification jobs
@@ -122,7 +131,7 @@ export const queueService = {
             throw error;
           }
         },
-        { connection: redis }
+        redisOptions
       );
       
       // Handle worker errors
