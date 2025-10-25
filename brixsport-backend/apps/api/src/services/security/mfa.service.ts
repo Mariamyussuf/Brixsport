@@ -4,7 +4,7 @@ import { authenticator } from 'otplib';
 import QRCode from 'qrcode';
 import { supabaseService } from '../supabase.service';
 import { redisService } from '../redis.service';
-import { MFASetup } from '../../types/security.types'; // Import the MFASetup interface from types
+import { MFASetup } from './security-service.types'; // Import the MFASetup interface from security service types
 
 export interface MFAService {
   enableMFA(userId: string, method: 'totp' | 'sms' | 'email'): Promise<MFASetup>;

@@ -2,22 +2,7 @@ import { logger } from '@utils/logger';
 import { v4 as uuidv4 } from 'uuid';
 import { supabaseService } from '../supabase.service';
 import { redisService } from '../redis.service';
-
-export interface Session {
-  id: string;
-  userId: string;
-  userAgent: string;
-  ip: string;
-  createdAt: Date;
-  lastActivity: Date;
-  expiresAt: Date;
-}
-
-export interface RefreshTokenSession {
-  userId: string;
-  createdAt: Date;
-  expiresAt: Date;
-}
+import { SecuritySession as Session, RefreshTokenSession } from './security-service.types';
 
 export interface SessionService {
   createSession(userId: string, userAgent: string, ip: string): Promise<Session>;

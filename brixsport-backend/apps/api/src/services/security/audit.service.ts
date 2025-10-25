@@ -1,6 +1,7 @@
 import { logger } from '../../utils/logger';
 import { redisService } from '../redis.service';
 import { supabaseService } from '../supabase.service';
+import { PaginatedResult } from './security-service.types';
 
 export interface SecurityEvent {
   id: string;
@@ -35,13 +36,6 @@ export interface AuditFilter {
   severity?: string;
   limit?: number;
   offset?: number;
-}
-
-export interface PaginatedResult<T> {
-  data: T[];
-  total: number;
-  limit: number;
-  offset: number;
 }
 
 export interface AuditService {

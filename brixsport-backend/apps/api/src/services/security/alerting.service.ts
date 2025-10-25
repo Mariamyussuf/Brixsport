@@ -1,18 +1,7 @@
 import { logger } from '@utils/logger';
 import { redisService } from '../redis.service';
 import { supabaseService } from '../supabase.service';
-
-export interface SecurityAlert {
-  id: string;
-  type: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  message: string;
-  details: Record<string, any>;
-  timestamp: Date;
-  resolved: boolean;
-  resolvedAt?: Date;
-  resolvedBy?: string;
-}
+import { SecurityAlert, PaginatedResult } from './security-service.types';
 
 export interface AlertRule {
   id: string;
@@ -52,13 +41,6 @@ export interface AlertFilter {
   resolved?: boolean;
   limit?: number;
   offset?: number;
-}
-
-export interface PaginatedResult<T> {
-  data: T[];
-  total: number;
-  limit: number;
-  offset: number;
 }
 
 // In-memory storage for alerts (in production, this should be in a database)
