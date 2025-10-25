@@ -1,49 +1,50 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { API_BASE_URL } from '@/lib/apiConfig';
 import { getAuth } from '@/lib/auth';
-import { dbService } from '@/lib/databaseService';
 
-// PATCH /api/track/events/[id]/status - Update track event status
-export async function PATCH(req: Request, { params }: { params: Promise<{}> }) {
+// PATCH /api/track/events/[id]/status - Update event status (logger/admin only)
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id: eventId } = await params as { id: string };
-
-    const session = await getAuth(req);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
-    }
-
-    // Check if user has permission to update track events
-    if (session.user.role !== 'admin' && session.user.role !== 'logger') {
-      return NextResponse.json({ 
-        error: { 
-          code: 'FORBIDDEN', 
-          message: 'Insufficient permissions' 
-        } 
-      }, { status: 403 });
-    }
-
-    const { status } = await req.json();
-
-    // Update event status in database
-    // This is a simplified implementation - in a real app, you would have a proper service
-    console.log(`Updating track event ${eventId} status to ${status}`);
+    const { id } = await params;
+    const session = await getAuth(request);
     
-    // Mock response
-    return NextResponse.json({
-      success: true,
-      message: 'Event status updated successfully',
-      data: {
-        id: eventId,
-        status
-      }
+    if (!session || !['logger', 'admin'].includes(session.user?.role || '')) {
+      return NextResponse.json(
+        { 
+          success: false,
+          message: 'Unauthorized: Only loggers and admins can update event status'
+        },
+        { status: 401 }
+      );
+    }
+
+    // Forward request to backend
+    const response = await fetch(`${API_BASE_URL}/track/events/${id}/status`, {
+      method: 'PATCH',
+      headers: {
+        ...request.headers,
+        'host': new URL(API_BASE_URL).host,
+        'Content-Type': 'application/json',
+        'Authorization': request.headers.get('Authorization') || ''
+      },
+      body: JSON.stringify(await request.json())
     });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to update event status');
+    }
+
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error('Error updating track event status:', error);
-    return NextResponse.json({ 
-      error: { 
-        code: 'INTERNAL_ERROR', 
-        message: 'An error occurred while updating the track event status' 
-      } 
-    }, { status: 500 });
+    console.error('Error updating event status:', error);
+    return NextResponse.json(
+      { 
+        success: false,
+        message: error instanceof Error ? error.message : 'Internal server error'
+      },
+      { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 500 }
+    );
   }
 }

@@ -59,6 +59,7 @@ import { logger } from '@utils/logger';
 import { connectRedis } from '@config/redis';
 import { connectDatabase } from '@config/database';
 import { systemMonitorService } from './services/system-monitor.service';
+import { queueService } from './services/queue.service';
 
 // Log environment variables for debugging
 logger.info('Environment variables loaded:', {
@@ -95,6 +96,10 @@ Promise.all([
       
       // Start system monitor service
       systemMonitorService.startMonitoring();
+      
+      // Start queue workers for processing jobs
+      queueService.processNotificationJobs();
+      logger.info('Queue workers started successfully');
     });
   })
   .catch((error: any) => {

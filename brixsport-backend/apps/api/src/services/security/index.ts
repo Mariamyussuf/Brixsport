@@ -14,3 +14,4 @@ export * from './file-security.service';
 export * from './network-security.service';
 export * from './container-security.service';
 export * from './monitoring.service';
+export * from './alerting.service';

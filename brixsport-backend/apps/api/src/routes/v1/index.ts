@@ -12,7 +12,9 @@ import teamsRoutes from '@routes/v1/teams.routes';
 import statisticsRoutes from '@routes/v1/statistics.routes';
 import mediaRoutes from '@routes/v1/media.routes';
 import trackRoutes from '@routes/v1/track.routes';
+import contentRoutes from './content.routes';
 import { notificationPreferencesRoutes } from './notification-preferences.routes';
+import securityAlertsRoutes from './security-alerts.routes';
 
 const router = Router();
 
@@ -30,7 +32,9 @@ router.use('/teams', teamsRoutes);
 router.use('/statistics', statisticsRoutes);
 router.use('/media', mediaRoutes);
 router.use('/track', trackRoutes);
+router.use('/content', contentRoutes);
 router.use('/notification-preferences', notificationPreferencesRoutes);
+router.use('/security-alerts', securityAlertsRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {

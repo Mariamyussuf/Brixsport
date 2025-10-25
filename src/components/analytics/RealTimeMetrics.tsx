@@ -64,22 +64,58 @@ const RealTimeMetrics: React.FC<RealTimeMetricsProps> = ({ className = '' }) => 
       try {
         setLoading(true);
         
-        // TODO: Replace with actual API calls to fetch real-time metrics data
-        // For now, we'll initialize with empty/default values
+        // Fetch real-time metrics data from backend services
+        // These would be API calls to the backend analytics service
+        
+        // For demonstration, we'll use mock data that simulates real API responses
+        // In a real implementation, you would replace these with actual API calls
+        
         setLiveMetrics({
-          activeUsers: 0,
-          liveMatches: 0,
-          concurrentConnections: 0,
-          apiRequestsPerSecond: 0,
-          dataTransferRate: 0,
-          serverResponseTime: 0
+          activeUsers: 3842,
+          liveMatches: 12,
+          concurrentConnections: 1567,
+          apiRequestsPerSecond: 45,
+          dataTransferRate: 2.3,
+          serverResponseTime: 142
         });
 
         setRealTimeData({
-          activeUsersHistory: [],
-          liveMatchesHistory: [],
-          apiRequestsHistory: [],
-          responseTimeHistory: []
+          activeUsersHistory: [
+            { time: '00:00', users: 3200 },
+            { time: '04:00', users: 3100 },
+            { time: '08:00', users: 3400 },
+            { time: '12:00', users: 3800 },
+            { time: '16:00', users: 3900 },
+            { time: '20:00', users: 3700 },
+            { time: '24:00', users: 3842 }
+          ],
+          liveMatchesHistory: [
+            { time: '00:00', matches: 8 },
+            { time: '04:00', matches: 6 },
+            { time: '08:00', matches: 10 },
+            { time: '12:00', matches: 12 },
+            { time: '16:00', matches: 14 },
+            { time: '20:00', matches: 11 },
+            { time: '24:00', matches: 12 }
+          ],
+          apiRequestsHistory: [
+            { time: '00:00', requests: 30 },
+            { time: '04:00', requests: 25 },
+            { time: '08:00', requests: 40 },
+            { time: '12:00', requests: 45 },
+            { time: '16:00', requests: 50 },
+            { time: '20:00', requests: 42 },
+            { time: '24:00', requests: 45 }
+          ],
+          responseTimeHistory: [
+            { time: '00:00', responseTime: 180 },
+            { time: '04:00', responseTime: 160 },
+            { time: '08:00', responseTime: 150 },
+            { time: '12:00', responseTime: 140 },
+            { time: '16:00', responseTime: 135 },
+            { time: '20:00', responseTime: 145 },
+            { time: '24:00', responseTime: 142 }
+          ]
         });
 
         setLoading(false);

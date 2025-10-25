@@ -56,8 +56,12 @@ export const centralizedDatabaseService: CentralizedDatabaseService = {
       let result;
       if (typeof (supabaseService as any)[`create${table}`] === 'function') {
         result = await (supabaseService as any)[`create${table}`](data);
+      } else if (typeof supabaseService.create === 'function') {
+        // Fallback to generic create method if available
+        result = await supabaseService.create(table, data);
       } else {
-        throw new DatabaseError(`Create method for ${table} not implemented`, 'METHOD_NOT_IMPLEMENTED', 501);
+        // If no specific method exists, try a generic approach
+        result = await supabaseService.createRecord(table, data);
       }
       
       if (!result?.success) {
@@ -90,8 +94,19 @@ export const centralizedDatabaseService: CentralizedDatabaseService = {
       let result;
       if (typeof (supabaseService as any)[`list${table}`] === 'function') {
         result = await (supabaseService as any)[`list${table}`](filters);
+      } else if (typeof (supabaseService as any)[`get${table}`] === 'function' && filters.id) {
+        // For single record retrieval
+        result = await (supabaseService as any)[`get${table}`](filters.id);
+        // Convert single record to array format
+        if (result?.success && result.data) {
+          result.data = Array.isArray(result.data) ? result.data : [result.data];
+        }
+      } else if (typeof supabaseService.read === 'function') {
+        // Fallback to generic read method if available
+        result = await supabaseService.read(table, filters);
       } else {
-        throw new DatabaseError(`List method for ${table} not implemented`, 'METHOD_NOT_IMPLEMENTED', 501);
+        // If no specific method exists, try a generic approach
+        result = await supabaseService.listRecords(table, filters);
       }
       
       if (!result?.success) {
@@ -127,8 +142,12 @@ export const centralizedDatabaseService: CentralizedDatabaseService = {
       let result;
       if (typeof (supabaseService as any)[`update${table}`] === 'function') {
         result = await (supabaseService as any)[`update${table}`](id, data);
+      } else if (typeof supabaseService.update === 'function') {
+        // Fallback to generic update method if available
+        result = await supabaseService.update(table, id, data);
       } else {
-        throw new DatabaseError(`Update method for ${table} not implemented`, 'METHOD_NOT_IMPLEMENTED', 501);
+        // If no specific method exists, try a generic approach
+        result = await supabaseService.updateRecord(table, id, data);
       }
       
       if (!result?.success) {
@@ -161,8 +180,12 @@ export const centralizedDatabaseService: CentralizedDatabaseService = {
       let result;
       if (typeof (supabaseService as any)[`delete${table}`] === 'function') {
         result = await (supabaseService as any)[`delete${table}`](id);
+      } else if (typeof supabaseService.delete === 'function') {
+        // Fallback to generic delete method if available
+        result = await supabaseService.delete(table, id);
       } else {
-        throw new DatabaseError(`Delete method for ${table} not implemented`, 'METHOD_NOT_IMPLEMENTED', 501);
+        // If no specific method exists, try a generic approach
+        result = await supabaseService.deleteRecord(table, id);
       }
       
       if (!result?.success) {

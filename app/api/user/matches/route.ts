@@ -40,12 +40,13 @@ export async function POST(request: NextRequest) {
     
     const body = await request.json();
     
-    // This will be implemented with real database connection
-    // For now, we'll just return a success message
+    // Create match using database service
+    const match = await databaseService.createMatch(body);
+    
     return NextResponse.json({
-      message: 'Match creation not implemented',
-      data: body
-    }, { status: 501 });
+      message: 'Match created successfully',
+      data: match
+    }, { status: 201 });
   } catch (error) {
     console.error('Error creating match:', error);
     return NextResponse.json({ error: 'Failed to create match' }, { status: 500 });

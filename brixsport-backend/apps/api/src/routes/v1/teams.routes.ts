@@ -1,5 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { TeamController } from '../../controllers/team.controller';
+import { authenticate } from '../../middleware/auth.middleware';
+import { hasPermission } from '../../middleware/rbac.middleware';
 import { 
   teamValidationRules,
   addPlayerValidationRules,
@@ -51,6 +53,8 @@ router.get('/search',
  * @access Private (Admin/Organizer)
  */
 router.post('/', 
+  authenticate,
+  hasPermission('admin:access'),
   teamValidationRules(), 
   (req: Request, res: Response, next: NextFunction) => {
     // Execute the first validation middleware
@@ -81,6 +85,8 @@ router.get('/:id',
  * @access Private (Admin/Organizer)
  */
 router.put('/:id', 
+  authenticate,
+  hasPermission('admin:access'),
   updateTeamValidationRules(), 
   (req: Request, res: Response, next: NextFunction) => {
     // Execute the first validation middleware
@@ -96,6 +102,8 @@ router.put('/:id',
  * @access Private (Admin)
  */
 router.delete('/:id', 
+  authenticate,
+  hasPermission('admin:access'),
   deleteTeamValidationRules(), 
   (req: Request, res: Response, next: NextFunction) => {
     // Execute the first validation middleware
@@ -126,6 +134,8 @@ router.get('/:id/players',
  * @access Private (Admin/Organizer)
  */
 router.post('/:id/players', 
+  authenticate,
+  hasPermission('admin:access'),
   addPlayerValidationRules(), 
   (req: Request, res: Response, next: NextFunction) => {
     // Execute the first validation middleware
@@ -141,6 +151,8 @@ router.post('/:id/players',
  * @access Private (Admin/Organizer)
  */
 router.delete('/:id/players/:playerId', 
+  authenticate,
+  hasPermission('admin:access'),
   removePlayerValidationRules(), 
   (req: Request, res: Response, next: NextFunction) => {
     // Execute the first validation middleware

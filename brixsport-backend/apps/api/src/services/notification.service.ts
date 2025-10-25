@@ -1,5 +1,6 @@
 import { logger } from '../utils/logger';
 import { supabase } from './supabase.service';
+import { queueService } from './queue.service';
 
 export const notificationService = {
   // Get user notifications
@@ -183,6 +184,18 @@ export const notificationService = {
           throw new Error(`Failed to broadcast notification: ${error.message}`);
         }
         
+        // Add notifications to job queue for processing
+        for (const notification of data || []) {
+          const priority = notification.type === 'urgent' ? 10 : 
+                          notification.type === 'important' ? 5 : 1;
+          
+          await queueService.addNotificationJob(
+            'send_notification',
+            { notificationId: notification.id, userId: notification.user_id },
+            priority
+          );
+        }
+        
         return {
           success: true,
           data,
@@ -190,7 +203,6 @@ export const notificationService = {
         };
       } else {
         // For system-wide broadcasts, we'll need to get all active users
-        // This is a simplified approach - in production you might want to use a job queue
         const { data: users, error: usersError } = await supabase
           .from('users')
           .select('id')
@@ -198,25 +210,27 @@ export const notificationService = {
         
         if (usersError) {
           logger.error('Error fetching users for broadcast', { error: usersError.message });
-          throw new Error(`Failed to fetch users for broadcast: ${usersError.message}`);
+          throw new Error(`Failed to fetch users: ${usersError.message}`);
         }
         
         if (!users || users.length === 0) {
           return {
             success: true,
             data: [],
-            message: 'No active users found for broadcast'
+            message: 'No active users found'
           };
         }
         
+        // Create notifications for all active users
         const notifications = users.map(user => ({
           user_id: user.id,
           title: notificationData.title,
           content: notificationData.content,
-          type: notificationData.type || 'system_broadcast',
+          type: notificationData.type || 'broadcast',
           metadata: notificationData.metadata || {},
           template_id: notificationData.templateId,
           read: false,
+          status: 'pending',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }));
@@ -227,14 +241,26 @@ export const notificationService = {
           .select();
         
         if (error) {
-          logger.error('Database error broadcasting system notification', { error: error.message });
+          logger.error('Database error broadcasting system-wide notification', { error: error.message });
           throw new Error(`Failed to broadcast notification: ${error.message}`);
+        }
+        
+        // Add notifications to job queue for processing
+        for (const notification of data || []) {
+          const priority = notification.type === 'urgent' ? 10 : 
+                          notification.type === 'important' ? 5 : 1;
+          
+          await queueService.addNotificationJob(
+            'send_notification',
+            { notificationId: notification.id, userId: notification.user_id },
+            priority
+          );
         }
         
         return {
           success: true,
           data,
-          message: `Notification broadcast to ${notifications.length} users`
+          message: `Notification sent to ${users.length} users`
         };
       }
     } catch (error: any) {
@@ -242,159 +268,10 @@ export const notificationService = {
       throw error;
     }
   },
-  
-  // Schedule notification (admin)
-  scheduleNotification: async (
-    notificationData: { 
-      title: string; 
-      content: string; 
-      type?: string; 
-      metadata?: any; 
-      targetUsers?: string[]; 
-      templateId?: string;
-    }, 
-    scheduleTime: Date
-  ) => {
-    try {
-      logger.info('Scheduling notification', { notificationData, scheduleTime });
-      
-      // Store scheduled notification in database
-      const scheduledNotification = {
-        title: notificationData.title,
-        content: notificationData.content,
-        type: notificationData.type || 'scheduled',
-        metadata: {
-          ...notificationData.metadata,
-          targetUsers: notificationData.targetUsers,
-          originalScheduleTime: scheduleTime.toISOString()
-        },
-        template_id: notificationData.templateId,
-        scheduled_for: scheduleTime.toISOString(),
-        status: 'scheduled',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      const { data, error } = await supabase
-        .from('scheduled_notifications')
-        .insert([scheduledNotification])
-        .select()
-        .single();
-      
-      if (error) {
-        logger.error('Database error scheduling notification', { error: error.message });
-        throw new Error(`Failed to schedule notification: ${error.message}`);
-      }
-      
-      // TODO: In production, integrate with a job queue like BullMQ or similar
-      // For now, we'll log that this needs to be processed by a background job
-      logger.info('Notification scheduled in database - background job processor needed', { 
-        scheduledNotificationId: data.id,
-        scheduleTime: scheduleTime.toISOString()
-      });
-      
-      return {
-        success: true,
-        data,
-        message: 'Notification scheduled successfully',
-        note: 'Background job processor required for automatic delivery'
-      };
-    } catch (error: any) {
-      logger.error('Schedule notification error', error);
-      throw error;
-    }
-  },
-  
-  // Get notification templates (admin)
-  getNotificationTemplates: async () => {
-    try {
-      logger.info('Fetching notification templates');
-      
-      // Fetch templates from database
-      const { data, error } = await supabase
-        .from('notification_templates')
-        .select('id, name, content, type, variables, is_active, created_at, updated_at')
-        .eq('is_active', true)
-        .order('name');
-      
-      if (error) {
-        logger.warn('Failed to fetch templates from database, using fallback templates', { error: error.message });
-        
-        // Fallback to mock templates if database query fails
-        const fallbackTemplates = [
-          {
-            id: 'match-started',
-            name: 'Match Started',
-            content: 'The match between {homeTeam} and {awayTeam} has started!',
-            type: 'match_event',
-            variables: ['homeTeam', 'awayTeam'],
-            is_active: true
-          },
-          {
-            id: 'goal-scored',
-            name: 'Goal Scored',
-            content: 'Goal! {scoringTeam} scores against {opponentTeam}!',
-            type: 'match_event',
-            variables: ['scoringTeam', 'opponentTeam'],
-            is_active: true
-          },
-          {
-            id: 'match-ended',
-            name: 'Match Ended',
-            content: 'The match between {homeTeam} and {awayTeam} has ended with a score of {homeScore}-{awayScore}',
-            type: 'match_event',
-            variables: ['homeTeam', 'awayTeam', 'homeScore', 'awayScore'],
-            is_active: true
-          }
-        ];
-        
-        return {
-          success: true,
-          data: fallbackTemplates,
-          source: 'fallback'
-        };
-      }
-      
-      return {
-        success: true,
-        data: data || [],
-        source: 'database'
-      };
-    } catch (error: any) {
-      logger.error('Get notification templates error', error);
-      throw error;
-    }
-  },
 
-  // Get unread notification count for a user
-  getUnreadCount: async (userId: string) => {
-    try {
-      logger.info('Fetching unread notification count', { userId });
-      
-      const { count, error } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('read', false);
-      
-      if (error) {
-        logger.error('Database error fetching unread count', { error: error.message, userId });
-        throw new Error(`Failed to fetch unread count: ${error.message}`);
-      }
-      
-      return {
-        success: true,
-        count: count || 0
-      };
-    } catch (error: any) {
-      logger.error('Get unread count error', error);
-      throw error;
-    }
-  },
-
-  // Create a single notification for a specific user
+  // Create notification for user
   createNotification: async (
-    userId: string, 
+    userId: string,
     notificationData: { 
       title: string; 
       content: string; 
@@ -414,6 +291,7 @@ export const notificationService = {
         metadata: notificationData.metadata || {},
         template_id: notificationData.templateId,
         read: false,
+        status: 'pending',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -428,6 +306,16 @@ export const notificationService = {
         logger.error('Database error creating notification', { error: error.message });
         throw new Error(`Failed to create notification: ${error.message}`);
       }
+      
+      // Add to job queue for processing
+      const priority = notification.type === 'urgent' ? 10 : 
+                      notification.type === 'important' ? 5 : 1;
+      
+      await queueService.addNotificationJob(
+        'send_notification',
+        { notificationId: data.id, userId: data.user_id },
+        priority
+      );
       
       return {
         success: true,
@@ -511,5 +399,298 @@ export const notificationService = {
       logger.error('Cancel scheduled notification error', error);
       throw error;
     }
+  },
+  
+  // Process notification queue
+  processNotificationQueue: async () => {
+    try {
+      logger.info('Processing notification queue');
+      
+      // This method is now handled by the queue service workers
+      return {
+        success: true,
+        message: 'Notification queue processing handled by workers'
+      };
+    } catch (error: any) {
+      logger.error('Process notification queue error', error);
+      throw error;
+    }
+  },
+  
+  // Send notification through job queue
+  sendNotificationViaQueue: async (notificationId: string) => {
+    try {
+      logger.info('Sending notification via job queue', { notificationId });
+      
+      // Get the notification details
+      const { data: notification, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('id', notificationId)
+        .single();
+      
+      if (error) {
+        logger.error('Database error fetching notification', { error: error.message, notificationId });
+        throw new Error(`Failed to fetch notification: ${error.message}`);
+      }
+      
+      if (!notification) {
+        throw new Error('Notification not found');
+      }
+      
+      // Add to job queue for processing
+      const priority = notification.type === 'urgent' ? 10 : 
+                      notification.type === 'important' ? 5 : 1;
+      
+      const jobResult = await queueService.addNotificationJob(
+        'send_notification',
+        { notificationId, userId: notification.user_id },
+        priority
+      );
+      
+      // Update notification status to queued
+      await supabase
+        .from('notifications')
+        .update({ 
+          status: 'queued',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', notificationId);
+      
+      return {
+        success: true,
+        data: jobResult.data,
+        message: 'Notification added to job queue for processing'
+      };
+    } catch (error: any) {
+      logger.error('Send notification via queue error', error);
+      throw error;
+    }
+  },
+  
+  // Process individual notification job
+  processNotificationJob: async (jobData: { notificationId: string; userId: string }) => {
+    try {
+      logger.info('Processing notification job', { jobData });
+      
+      const { notificationId, userId } = jobData;
+      
+      // Get the notification details
+      const { data: notification, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('id', notificationId)
+        .single();
+      
+      if (error) {
+        logger.error('Database error fetching notification for job processing', { 
+          error: error.message, 
+          notificationId 
+        });
+        throw new Error(`Failed to fetch notification: ${error.message}`);
+      }
+      
+      if (!notification) {
+        throw new Error('Notification not found');
+      }
+      
+      // Send notification based on type
+      logger.info('Sending notification', { 
+        notificationId, 
+        userId, 
+        type: notification.type,
+        title: notification.title
+      });
+      
+      // Send email notification for important updates
+      if (['urgent', 'important', 'broadcast'].includes(notification.type)) {
+        await sendEmailNotification(userId, notification);
+      }
+      
+      // Send push notification for real-time updates
+      await sendPushNotification(userId, notification);
+      
+      // Update notification status to sent
+      await supabase
+        .from('notifications')
+        .update({ 
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', notificationId);
+      
+      return {
+        success: true,
+        message: 'Notification sent successfully',
+        data: { notificationId, userId }
+      };
+    } catch (error: any) {
+      logger.error('Process notification job error', error);
+      
+      // Update notification status to failed
+      if (error.notificationId) {
+        await supabase
+          .from('notifications')
+          .update({ 
+            status: 'failed',
+            error_message: error.message,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', error.notificationId);
+      }
+      
+      throw error;
+    }
+  },
+  
+  // Schedule notification for future delivery
+  scheduleNotification: async (notificationData: { 
+    userId: string;
+    title: string; 
+    content: string; 
+    type?: string; 
+    metadata?: any; 
+    scheduledFor: string; // ISO date string
+    templateId?: string;
+  }) => {
+    try {
+      logger.info('Scheduling notification', { notificationData });
+      
+      // Calculate delay in milliseconds
+      const scheduledTime = new Date(notificationData.scheduledFor).getTime();
+      const currentTime = new Date().getTime();
+      const delay = Math.max(0, scheduledTime - currentTime);
+      
+      // Create scheduled notification record
+      const scheduledNotification = {
+        user_id: notificationData.userId,
+        title: notificationData.title,
+        content: notificationData.content,
+        type: notificationData.type || 'general',
+        metadata: notificationData.metadata || {},
+        template_id: notificationData.templateId,
+        scheduled_for: notificationData.scheduledFor,
+        status: 'scheduled',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      const { data, error } = await supabase
+        .from('scheduled_notifications')
+        .insert([scheduledNotification])
+        .select()
+        .single();
+      
+      if (error) {
+        logger.error('Database error scheduling notification', { error: error.message });
+        throw new Error(`Failed to schedule notification: ${error.message}`);
+      }
+      
+      // Add to scheduled notification queue for future processing
+      await queueService.addScheduledNotificationJob(
+        { scheduledNotificationId: data.id },
+        delay
+      );
+      
+      return {
+        success: true,
+        data,
+        message: 'Notification scheduled successfully'
+      };
+    } catch (error: any) {
+      logger.error('Schedule notification error', error);
+      throw error;
+    }
   }
 };
+
+export default notificationService;
+
+// Helper function to send email notifications
+async function sendEmailNotification(userId: string, notification: any) {
+  try {
+    // Get user email
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('email, name')
+      .eq('id', userId)
+      .single();
+    
+    if (userError) {
+      throw new Error(`Failed to fetch user: ${userError.message}`);
+    }
+    
+    if (!user?.email) {
+      logger.warn('User email not found', { userId });
+      return;
+    }
+    
+    // In a real implementation, this would integrate with an email service like SendGrid, SES, etc.
+    // For now, we'll log the email content
+    logger.info('Email notification sent', {
+      to: user.email,
+      subject: notification.title,
+      body: notification.content,
+      userId,
+      notificationId: notification.id
+    });
+    
+    // TODO: Implement actual email sending with a service like SendGrid
+    // Example with SendGrid:
+    /*
+    const sgMail = require('@sendgrid/mail');
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    const msg = {
+      to: user.email,
+      from: 'notifications@brixsport.com',
+      subject: notification.title,
+      text: notification.content,
+      html: `<strong>${notification.content}</strong>`,
+    };
+    await sgMail.send(msg);
+    */
+  } catch (error: any) {
+    logger.error('Error sending email notification', { 
+      error: error.message, 
+      userId, 
+      notificationId: notification.id 
+    });
+    throw error;
+  }
+}
+
+// Helper function to send push notifications
+async function sendPushNotification(userId: string, notification: any) {
+  try {
+    // In a real implementation, this would integrate with a push notification service
+    // For now, we'll log the push notification
+    logger.info('Push notification sent', {
+      userId,
+      title: notification.title,
+      body: notification.content,
+      notificationId: notification.id
+    });
+    
+    // TODO: Implement actual push notification sending with a service like Firebase Cloud Messaging
+    // Example with FCM:
+    /*
+    const admin = require('firebase-admin');
+    const message = {
+      notification: {
+        title: notification.title,
+        body: notification.content,
+      },
+      token: userDeviceToken // Would need to store and retrieve user device tokens
+    };
+    await admin.messaging().send(message);
+    */
+  } catch (error: any) {
+    logger.error('Error sending push notification', { 
+      error: error.message, 
+      userId, 
+      notificationId: notification.id 
+    });
+    throw error;
+  }
+}

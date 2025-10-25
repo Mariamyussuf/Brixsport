@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/auth';
 import MessagingService from '@/services/messagingService';
+import AdminService from '@/services/AdminService';
 
-// PUT /api/messages/messages/[id] - Update system message (admin only)
+// PUT /api/messages/messages/[id] - Update message (admin only)
 export async function PUT(req: Request, { params }: { params: Promise<{}> }) {
   try {
     const { id: messageId } = await params as { id: string };
@@ -12,8 +13,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{}> }) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
 
-    // Check if user is admin (in a real implementation, you would check admin permissions)
-    // For now, we'll assume this check is done in the service layer
+    // Check if user is admin (real implementation with proper role verification)
+    const isAdmin = await AdminService.checkAdminPermission(session.user.id);
+    if (!isAdmin) {
+      return NextResponse.json({ 
+        error: { 
+          code: 'FORBIDDEN', 
+          message: 'Only administrators can update messages' 
+        } 
+      }, { status: 403 });
+    }
 
     const { content } = await req.json();
 
@@ -38,7 +47,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{}> }) {
         return NextResponse.json({ 
           error: { 
             code: 'FORBIDDEN', 
-            message: 'Only administrators can edit system messages' 
+            message: 'Only administrators can update messages' 
           } 
         }, { status: 403 });
       }
@@ -53,17 +62,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{}> }) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error updating system message:', error);
+    console.error('Error updating message:', error);
     return NextResponse.json({ 
       error: { 
         code: 'INTERNAL_ERROR', 
-        message: 'An error occurred while updating the system message' 
+        message: 'An error occurred while updating the message' 
       } 
     }, { status: 500 });
   }
 }
 
-// DELETE /api/messages/messages/[id] - Delete system message (admin only)
+// DELETE /api/messages/messages/[id] - Delete message (admin only)
 export async function DELETE(req: Request, { params }: { params: Promise<{}> }) {
   try {
     const { id: messageId } = await params as { id: string };
@@ -73,8 +82,16 @@ export async function DELETE(req: Request, { params }: { params: Promise<{}> }) 
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
 
-    // Check if user is admin (in a real implementation, you would check admin permissions)
-    // For now, we'll assume this check is done in the service layer
+    // Check if user is admin (real implementation with proper role verification)
+    const isAdmin = await AdminService.checkAdminPermission(session.user.id);
+    if (!isAdmin) {
+      return NextResponse.json({ 
+        error: { 
+          code: 'FORBIDDEN', 
+          message: 'Only administrators can delete messages' 
+        } 
+      }, { status: 403 });
+    }
 
     const result = await MessagingService.deleteMessage(
       session.user.id,
@@ -86,7 +103,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{}> }) 
         return NextResponse.json({ 
           error: { 
             code: 'FORBIDDEN', 
-            message: 'Only administrators can delete system messages' 
+            message: 'Only administrators can delete messages' 
           } 
         }, { status: 403 });
       }
@@ -101,11 +118,11 @@ export async function DELETE(req: Request, { params }: { params: Promise<{}> }) 
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error deleting system message:', error);
+    console.error('Error deleting message:', error);
     return NextResponse.json({ 
       error: { 
         code: 'INTERNAL_ERROR', 
-        message: 'An error occurred while deleting the system message' 
+        message: 'An error occurred while deleting the message' 
       } 
     }, { status: 500 });
   }

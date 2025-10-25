@@ -787,6 +787,52 @@ export class DatabaseService {
     }
   }
 
+  // Create a new match
+  async createMatch(matchData: Omit<Match, 'id' | 'created_at'>): Promise<Match> {
+    logOperation('CREATE_MATCH_START', { homeTeam: matchData.home_team_name, awayTeam: matchData.away_team_name });
+    try {
+      // Validate required fields with enhanced validation
+      validate.string(matchData.home_team_name, 'Home team name', { required: true, minLength: 1, maxLength: 100 });
+      validate.string(matchData.away_team_name, 'Away team name', { required: true, minLength: 1, maxLength: 100 });
+      validate.string(matchData.venue, 'Venue', { required: true, minLength: 1, maxLength: 200 });
+      
+      // Validate date
+      if (!matchData.match_date) {
+        throw new ValidationError('Match date is required', 'match_date');
+      }
+      
+      const matchDate = new Date(matchData.match_date);
+      if (isNaN(matchDate.getTime())) {
+        throw new ValidationError('Invalid match date format', 'match_date');
+      }
+      
+      // Validate competition ID if provided
+      if (matchData.competition_id !== undefined && matchData.competition_id !== null) {
+        validate.positiveIntegerId(matchData.competition_id, 'Competition ID');
+      }
+      
+      const response = await apiCall('/matches', {
+        method: 'POST',
+        body: JSON.stringify(matchData),
+      }, 'admin');
+      
+      logOperation('CREATE_MATCH_SUCCESS', { id: response.data?.id, homeTeam: matchData.home_team_name, awayTeam: matchData.away_team_name });
+      return response.data;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('CREATE_MATCH_VALIDATION_ERROR', { homeTeam: matchData.home_team_name, awayTeam: matchData.away_team_name, error: error.message });
+        console.error('Validation error in createMatch:', error.message);
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('CREATE_MATCH_ERROR', { homeTeam: matchData.home_team_name, awayTeam: matchData.away_team_name, error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in createMatch:', error);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to create match: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
   // Additional match methods
   async getMatchesBySport(sport: string): Promise<Match[]> {
     logOperation('GET_MATCHES_BY_SPORT_START', { sport });

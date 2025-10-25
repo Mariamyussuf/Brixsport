@@ -319,7 +319,7 @@ const CompetitionManagement = () => {
                 <option value="football">Football</option>
                 <option value="basketball">Basketball</option>
                 <option value="volleyball">Volleyball</option>
-                <option value="track_field">Track & Field</option>
+                <option value="track_events">Track & Field</option>
                 <option value="table_tennis">Table Tennis</option>
                 <option value="badminton">Badminton</option>
               </select>

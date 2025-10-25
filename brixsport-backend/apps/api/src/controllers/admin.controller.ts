@@ -202,15 +202,7 @@ export const adminController = {
   // Get performance metrics (admin)
   getPerformanceMetrics: async (req: Request, res: Response) => {
     try {
-      // Stub implementation - return basic metrics
-      const result = {
-        success: true,
-        data: {
-          response_time: '150ms',
-          throughput: '100 req/min',
-          error_rate: '0.1%'
-        }
-      };
+      const result = await adminService.getPerformanceMetrics();
       
       return res.status(200).json(result);
     } catch (error: any) {
@@ -223,11 +215,7 @@ export const adminController = {
   // Clear cache (admin)
   clearCache: async (req: Request, res: Response) => {
     try {
-      // Stub implementation
-      const result = {
-        success: true,
-        message: 'Cache cleared successfully'
-      };
+      const result = await adminService.clearCache();
       
       return res.status(200).json(result);
     } catch (error: any) {
@@ -240,11 +228,25 @@ export const adminController = {
   // Toggle maintenance mode (admin)
   toggleMaintenanceMode: async (req: Request, res: Response) => {
     try {
-      // Stub implementation
-      const result = {
-        success: true,
-        message: 'Maintenance mode toggled'
-      };
+      const { enabled } = req.body;
+      const { reason } = req.body;
+      
+      // Validate inputs
+      if (typeof enabled !== 'boolean') {
+        return res.status(400).json({
+          error: 'Bad request',
+          message: 'Enabled must be a boolean value'
+        });
+      }
+      
+      if (!reason || reason.length < 10) {
+        return res.status(400).json({
+          error: 'Bad request',
+          message: 'Maintenance reason must be at least 10 characters long'
+        });
+      }
+      
+      const result = await adminService.toggleMaintenanceMode(enabled, reason);
       
       return res.status(200).json(result);
     } catch (error: any) {
@@ -257,12 +259,9 @@ export const adminController = {
   // Get user feedback (admin)
   getUserFeedback: async (req: Request, res: Response) => {
     try {
-      // Stub implementation
-      const result = {
-        success: true,
-        data: [],
-        message: 'No feedback available'
-      };
+      const filters = req.query;
+      
+      const result = await adminService.getUserFeedback(filters);
       
       return res.status(200).json(result);
     } catch (error: any) {
@@ -276,12 +275,32 @@ export const adminController = {
   respondToFeedback: async (req: Request, res: Response) => {
     try {
       const { feedbackId } = req.params;
+      const { response } = req.body;
+      const userId = (req as any).user?.userId;
       
-      // Stub implementation
-      const result = {
-        success: true,
-        message: `Response sent for feedback ${feedbackId}`
-      };
+      // Validate inputs
+      if (!feedbackId) {
+        return res.status(400).json({
+          error: 'Bad request',
+          message: 'Feedback ID is required'
+        });
+      }
+      
+      if (!response || response.length < 10) {
+        return res.status(400).json({
+          error: 'Bad request',
+          message: 'Response must be at least 10 characters long'
+        });
+      }
+      
+      if (!userId) {
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'User must be authenticated'
+        });
+      }
+      
+      const result = await adminService.respondToFeedback(feedbackId, response, userId);
       
       return res.status(200).json(result);
     } catch (error: any) {

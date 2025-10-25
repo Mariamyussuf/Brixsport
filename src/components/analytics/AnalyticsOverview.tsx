@@ -6,6 +6,7 @@ import LineChart from '@/components/analytics/charts/LineChart';
 import BarChart from '@/components/analytics/charts/BarChart';
 import PieChart from '@/components/analytics/charts/PieChart';
 import AreaChart from '@/components/analytics/charts/AreaChart';
+import analyticsService from '@/services/analyticsService';
 
 // Define proper TypeScript interfaces
 interface Metrics {
@@ -62,25 +63,13 @@ const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({ className = '' })
       try {
         setLoading(true);
         
-        // TODO: Replace with actual API calls to fetch real analytics data
-        // For now, we'll initialize with empty/default values
-        setMetrics({
-          totalUsers: 0,
-          activeUsers: 0,
-          totalMatches: 0,
-          liveMatches: 0,
-          totalRevenue: 0,
-          systemUptime: 0,
-          responseTime: 0,
-          errorRate: 0
-        });
-
-        setChartData({
-          userGrowth: [],
-          matchActivity: [],
-          revenue: [],
-          performance: []
-        });
+        // Fetch real analytics data from backend services
+        const result = await analyticsService.getAnalyticsOverview();
+        
+        if (result.success && result.data) {
+          setMetrics(result.data.metrics);
+          setChartData(result.data.chartData);
+        }
 
         setLoading(false);
       } catch (error) {

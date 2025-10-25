@@ -6,52 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Calendar, User, Tag } from 'lucide-react';
-
-// Types for blog posts
-interface BlogPost {
-  id: string;
-  title: string;
-  excerpt: string;
-  content: string;
-  author: string;
-  date: string;
-  tags: string[];
-  readTime: string;
-}
-
-// Mock blog data
-const mockBlogPosts: BlogPost[] = [
-  {
-    id: '1',
-    title: 'Getting Started with Brixsports',
-    excerpt: 'Learn how to set up your account and start tracking sports events.',
-    content: 'Full content would go here...',
-    author: 'Brixsports Team',
-    date: '2025-10-01',
-    tags: ['Getting Started', 'Tutorial'],
-    readTime: '5 min read'
-  },
-  {
-    id: '2',
-    title: 'Advanced Analytics Features',
-    excerpt: 'Discover how to use our advanced analytics to improve team performance.',
-    content: 'Full content would go here...',
-    author: 'Brixsports Team',
-    date: '2025-09-28',
-    tags: ['Analytics', 'Performance'],
-    readTime: '8 min read'
-  },
-  {
-    id: '3',
-    title: 'Offline Mode Guide',
-    excerpt: 'Learn how to use Brixsports even when you don\'t have internet access.',
-    content: 'Full content would go here...',
-    author: 'Brixsports Team',
-    date: '2025-09-25',
-    tags: ['Offline', 'Guide'],
-    readTime: '6 min read'
-  }
-];
+import blogService, { BlogPost } from '@/services/blogService';
+import ErrorHandler, { StandardizedError } from '@/lib/errorHandler';
 
 // Simple loading skeleton component
 const LoadingSkeleton = () => (
@@ -75,18 +31,57 @@ export default function BlogPage() {
   const router = useRouter();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      setPosts(mockBlogPosts);
-      setLoading(false);
-    }, 500);
+    const fetchBlogPosts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await blogService.getBlogPosts(1, 12);
+        
+        if (response.success) {
+          setPosts(response.data.articles);
+        } else {
+          setError('Failed to load blog posts');
+        }
+      } catch (err) {
+        const standardizedError = ErrorHandler.handle(err);
+        setError(standardizedError.message);
+        console.error('Error fetching blog posts:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBlogPosts();
   }, []);
 
-  const handlePostClick = (postId: string) => {
-    router.push(`/blog/${postId}`);
+  const handlePostClick = (slug: string) => {
+    router.push(`/blog/${slug}`);
   };
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-12">
+            <p className="text-red-500 dark:text-red-400">
+              {error}
+            </p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -126,13 +121,13 @@ export default function BlogPage() {
               <Card 
                 key={post.id} 
                 className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => handlePostClick(post.id)}
+                onClick={() => handlePostClick(post.slug)}
               >
                 <CardHeader className="pb-3">
                   <CardTitle className="text-xl line-clamp-2">{post.title}</CardTitle>
                   <CardDescription className="flex items-center space-x-2">
                     <Calendar className="h-4 w-4" />
-                    <span>{new Date(post.date).toLocaleDateString()}</span>
+                    <span>{new Date(post.published_at || post.created_at).toLocaleDateString()}</span>
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -142,12 +137,12 @@ export default function BlogPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                       <User className="h-4 w-4" />
-                      <span>{post.author}</span>
+                      <span>{post.author || 'Brixsports Team'}</span>
                     </div>
-                    <Badge variant="secondary">{post.readTime}</Badge>
+                    <Badge variant="secondary">{post.readTime || '5 min read'}</Badge>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1">
-                    {post.tags.map((tag) => (
+                    {post.tags?.map((tag) => (
                       <Badge key={tag} variant="outline" className="text-xs">
                         <Tag className="h-3 w-3 mr-1" />
                         {tag}

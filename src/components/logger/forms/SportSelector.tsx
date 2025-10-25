@@ -23,7 +23,7 @@ export type SportType =
   | 'football'
   | 'basketball'
   | 'volleyball'
-  | 'track_field'
+  | 'track_events'
   | 'table_tennis'
   | 'badminton';
 
@@ -63,7 +63,7 @@ const SPORT_OPTIONS: {
     category: 'team'
   },
   { 
-    type: 'track_field', 
+    type: 'track_events', 
     label: 'Track & Field', 
     icon: <span aria-hidden>🏃‍♂️</span>,
     description: 'Athletic sports including running, jumping, and throwing',

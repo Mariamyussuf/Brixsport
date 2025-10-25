@@ -34,7 +34,7 @@ export interface AlertingService {
   sendSecurityAlert(alert: SecurityAlert): Promise<void>;
   configureAlertRules(rules: AlertRule[]): Promise<void>;
   getAlertHistory(filters: AlertFilter): Promise<PaginatedResult<SecurityAlert>>;
-  resolveAlert(alertId: string): Promise<void>;
+  resolveAlert(alertId: string, resolvedBy?: string): Promise<void>;
   // New methods for production-ready implementation
   getAlertRules(): Promise<AlertRule[]>;
   addAlertRule(rule: AlertRule): Promise<void>;
@@ -220,9 +220,9 @@ export const alertingService: AlertingService = {
     }
   },
   
-  resolveAlert: async (alertId: string): Promise<void> => {
+  resolveAlert: async (alertId: string, resolvedByUserId?: string): Promise<void> => {
     try {
-      logger.info('Resolving alert', { alertId });
+      logger.info('Resolving alert', { alertId, resolvedByUserId });
       
       // Find the alert
       const alert = securityAlerts.find(a => a.id === alertId);
@@ -230,16 +230,26 @@ export const alertingService: AlertingService = {
         // Mark as resolved
         alert.resolved = true;
         alert.resolvedAt = new Date();
-        // alert.resolvedBy would be set to the user who resolved it in a real implementation
+        // Set the user who resolved the alert
+        if (resolvedByUserId) {
+          alert.resolvedBy = resolvedByUserId;
+        }
       }
       
       // Update in database
+      const updateData: any = {
+        resolved: true,
+        resolvedAt: new Date().toISOString()
+      };
+      
+      // Add resolvedBy field if userId is provided
+      if (resolvedByUserId) {
+        updateData.resolvedBy = resolvedByUserId;
+      }
+      
       const { error } = await (supabaseService as any).supabase
         .from('SecurityAlerts')
-        .update({
-          resolved: true,
-          resolvedAt: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', alertId);
       
       if (error) {
@@ -257,10 +267,14 @@ export const alertingService: AlertingService = {
         const alertData = JSON.parse(cachedAlert);
         alertData.resolved = true;
         alertData.resolvedAt = new Date().toISOString();
+        // Add resolvedBy field if userId is provided
+        if (resolvedByUserId) {
+          alertData.resolvedBy = resolvedByUserId;
+        }
         await redisService.set(alertKey, JSON.stringify(alertData), 3600);
       }
       
-      logger.info('Alert resolved', { alertId });
+      logger.info('Alert resolved', { alertId, resolvedByUserId });
     } catch (error: any) {
       logger.error('Alert resolution error', error);
       throw error;

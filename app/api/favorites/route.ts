@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from '@/lib/auth';
 import { API_BASE_URL } from '@/lib/apiConfig';
 
+// Import the favorites service directly
+import { favoritesService } from '@/../../brixsport-backend/apps/api/src/services/favorites.service';
+
 // GET /api/favorites - Get user favorites
 export async function GET(request: NextRequest) {
   try {
@@ -20,13 +23,14 @@ export async function GET(request: NextRequest) {
 
     // Check if API_BASE_URL points to our own API to avoid infinite loops
     if (API_BASE_URL === '/api' || API_BASE_URL.startsWith('/api')) {
-      // For development, return mock data
+      // Use the favorites service directly
+      const result = await favoritesService.getUserFavorites(session.user.id);
       return NextResponse.json({
         success: true,
         data: {
-          teams: [],
-          players: [],
-          competitions: []
+          teams: result.data.teams || [],
+          players: result.data.players || [],
+          competitions: result.data.competitions || []
         }
       });
     }
@@ -107,11 +111,12 @@ export async function POST(request: NextRequest) {
 
     // Check if API_BASE_URL points to our own API to avoid infinite loops
     if (API_BASE_URL === '/api' || API_BASE_URL.startsWith('/api')) {
-      // For development, simulate success
+      // Use the favorites service directly
+      const result = await favoritesService.addFavorite(session.user.id, body.favorite_type, body.favorite_id);
       return NextResponse.json({
         success: true,
-        data: null,
-        message: 'Favorite added successfully (mock)'
+        data: result.data,
+        message: 'Added to favorites successfully'
       });
     }
 
@@ -192,10 +197,11 @@ export async function DELETE(request: NextRequest) {
 
     // Check if API_BASE_URL points to our own API to avoid infinite loops
     if (API_BASE_URL === '/api' || API_BASE_URL.startsWith('/api')) {
-      // For development, simulate success
+      // Use the favorites service directly
+      const result = await favoritesService.removeFavorite(session.user.id, body.favorite_type, body.favorite_id);
       return NextResponse.json({
         success: true,
-        message: 'Favorite removed successfully (mock)'
+        message: 'Removed from favorites successfully'
       });
     }
 

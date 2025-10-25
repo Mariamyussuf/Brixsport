@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/auth';
 import MessagingService from '@/services/messagingService';
+import AdminService from '@/services/AdminService';
 
 // GET /api/messages/conversations/[id]/messages - Get messages in conversation
 export async function GET(req: Request, { params }: { params: Promise<{}> }) {
@@ -60,8 +61,16 @@ export async function POST(req: Request, { params }: { params: Promise<{}> }) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
 
-    // Check if user is admin (in a real implementation, you would check admin permissions)
-    // For now, we'll assume this check is done in the service layer
+    // Check if user is admin (real implementation with proper role verification)
+    const isAdmin = await AdminService.checkAdminPermission(session.user.id);
+    if (!isAdmin) {
+      return NextResponse.json({ 
+        error: { 
+          code: 'FORBIDDEN', 
+          message: 'Only administrators can send system messages' 
+        } 
+      }, { status: 403 });
+    }
 
     const { content, type, attachments, replyTo } = await req.json();
 

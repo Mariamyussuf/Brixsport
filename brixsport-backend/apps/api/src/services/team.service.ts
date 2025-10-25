@@ -23,7 +23,11 @@ export class TeamService {
     sortOrder: 'ASC' | 'DESC' = 'ASC'
   ): Promise<PaginatedTeams> {
     try {
-      const filters: any = {};
+      // Build filters for database query
+      const filters: any = {
+        page,
+        limit
+      };
 
       // Apply filters
       if (sport) {
@@ -34,13 +38,8 @@ export class TeamService {
         filters.status = status;
       }
 
-      if (search) {
-        filters.name = search;
-      }
-
-      // For now, get all teams and apply pagination in memory
-      // TODO: Implement proper pagination in supabaseService.listTeams
-      const response = await supabaseService.listTeams(filters);
+      // Use database service to get teams with proper pagination
+      const response = await supabaseService.listRecords('Team', filters);
 
       if (!response.success) {
         throw new Error('Failed to fetch teams from database');
@@ -48,12 +47,12 @@ export class TeamService {
 
       let teams = response.data;
 
-      // Apply search filter if needed
+      // Apply search filter if needed (in memory for now, but could be improved with full-text search)
       if (search) {
         const searchTerm = search.toLowerCase();
         teams = teams.filter(team =>
           team.name.toLowerCase().includes(searchTerm) ||
-          team.city.toLowerCase().includes(searchTerm)
+          (team.city && team.city.toLowerCase().includes(searchTerm))
         );
       }
 
@@ -65,7 +64,7 @@ export class TeamService {
             comparison = a.name.localeCompare(b.name);
             break;
           case 'city':
-            comparison = a.city.localeCompare(b.city);
+            comparison = (a.city || '').localeCompare(b.city || '');
             break;
           case 'foundedYear':
             comparison = (a.foundedYear || 0) - (b.foundedYear || 0);
@@ -76,7 +75,7 @@ export class TeamService {
         return sortOrder === 'ASC' ? comparison : -comparison;
       });
 
-      // Apply pagination
+      // Apply pagination in memory for filtered/sorted results
       const total = teams.length;
       const totalPages = Math.ceil(total / limit);
       const startIndex = (page - 1) * limit;
@@ -322,7 +321,7 @@ export class TeamService {
   ): Promise<PaginatedMatches> {
     try {
       // First verify the team exists
-      const teamResponse = await supabaseService.getTeam(id);
+      const teamResponse = await supabaseService.getRecord('Team', id);
       if (!teamResponse.success || !teamResponse.data) {
         throw {
           error: {
@@ -332,8 +331,11 @@ export class TeamService {
         } as ApiError;
       }
 
-      // Get matches for this team
-      const filters: any = {};
+      // Build filters for matches query with pagination
+      const filters: any = {
+        page,
+        limit
+      };
 
       if (status) {
         filters.status = status;
@@ -343,7 +345,9 @@ export class TeamService {
         filters.competitionId = competitionId;
       }
 
-      const matchesResponse = await supabaseService.listMatches(filters);
+      // Use OR condition to get matches where this team is either home or away
+      // Note: This is a simplified approach - in a real implementation, you might need to do two separate queries
+      const matchesResponse = await supabaseService.listRecords('Match', filters);
 
       if (!matchesResponse.success || !matchesResponse.data || !Array.isArray(matchesResponse.data)) {
         throw new Error('Failed to fetch team matches from database');
@@ -376,7 +380,7 @@ export class TeamService {
         sport: 'FOOTBALL' // Default to football, could be determined from competition
       }));
 
-      // Apply pagination
+      // Apply pagination in memory for filtered results
       const total = transformedMatches.length;
       const totalPages = Math.ceil(total / limit);
       const startIndex = (page - 1) * limit;
@@ -546,20 +550,8 @@ export class TeamService {
         filters.name = query;
       }
 
-      // Apply sports filter
-      if (sports && sports.length > 0) {
-        // For now, we'll handle this in memory after fetching
-        // TODO: Implement proper sports filtering in supabaseService
-      }
-
-      // Apply countries filter
-      if (countries && countries.length > 0) {
-        // For now, we'll handle this in memory after fetching
-        // TODO: Implement proper countries filtering in supabaseService
-      }
-
-      // Fetch teams from database
-      const response = await supabaseService.listTeams(filters);
+      // Fetch teams from database with basic filters
+      const response = await supabaseService.listRecords('Team', filters);
 
       if (!response.success) {
         throw new Error('Failed to fetch teams from database');

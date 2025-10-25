@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/auth';
 import MessagingService from '@/services/messagingService';
+import AdminService from '@/services/AdminService';
 
 // GET /api/messages/conversations/[id] - Get conversation details
 export async function GET(req: Request, { params }: { params: Promise<{}> }) {
@@ -48,8 +49,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{}> }) {
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
 
-    // Check if user is admin (in a real implementation, you would check admin permissions)
-    // For now, we'll assume this check is done in the service layer
+    // Check if user is admin (real implementation with proper role verification)
+    const isAdmin = await AdminService.checkAdminPermission(session.user.id);
+    if (!isAdmin) {
+      return NextResponse.json({ 
+        error: { 
+          code: 'FORBIDDEN', 
+          message: 'Insufficient permissions to update conversation' 
+        } 
+      }, { status: 403 });
+    }
 
     const { name, isMuted, isArchived } = await req.json();
 
@@ -103,8 +112,16 @@ export async function DELETE(req: Request, { params }: { params: Promise<{}> }) 
       return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
     }
 
-    // Check if user is admin (in a real implementation, you would check admin permissions)
-    // For now, we'll assume this check is done in the service layer
+    // Check if user is admin (real implementation with proper role verification)
+    const isAdmin = await AdminService.checkAdminPermission(session.user.id);
+    if (!isAdmin) {
+      return NextResponse.json({ 
+        error: { 
+          code: 'FORBIDDEN', 
+          message: 'Insufficient permissions to delete conversation' 
+        } 
+      }, { status: 403 });
+    }
 
     const result = await MessagingService.deleteConversation(
       session.user.id,
