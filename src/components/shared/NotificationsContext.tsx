@@ -298,6 +298,8 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
     return notificationId;
   };
 
+  
+
   // Cancel a scheduled notification
   const cancelScheduledNotification = (id: string) => {
     const timeoutId = scheduledNotifications.get(id);
@@ -313,8 +315,10 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
 
   // Mark a notification as read
   const markAsRead = async (id: string) => {
+    if (!user?.id) return;
+    
     try {
-      await NotificationService.markAsRead(id);
+      await NotificationService.markAsRead(id, user.id);
       
       setNotifications(prev => 
         prev.map(n => 
