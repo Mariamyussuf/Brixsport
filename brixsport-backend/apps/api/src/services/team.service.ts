@@ -39,7 +39,7 @@ export class TeamService {
       }
 
       // Use database service to get teams with proper pagination
-      const response = await supabaseService.listRecords('Team', filters);
+      const response = await supabaseService.listTeams(filters);
 
       if (!response.success) {
         throw new Error('Failed to fetch teams from database');
@@ -321,7 +321,7 @@ export class TeamService {
   ): Promise<PaginatedMatches> {
     try {
       // First verify the team exists
-      const teamResponse = await supabaseService.getRecord('Team', id);
+      const teamResponse = await supabaseService.getTeam(id);
       if (!teamResponse.success || !teamResponse.data) {
         throw {
           error: {
@@ -347,7 +347,7 @@ export class TeamService {
 
       // Use OR condition to get matches where this team is either home or away
       // Note: This is a simplified approach - in a real implementation, you might need to do two separate queries
-      const matchesResponse = await supabaseService.listRecords('Match', filters);
+      const matchesResponse = await supabaseService.listMatches(filters);
 
       if (!matchesResponse.success || !matchesResponse.data || !Array.isArray(matchesResponse.data)) {
         throw new Error('Failed to fetch team matches from database');
@@ -551,7 +551,7 @@ export class TeamService {
       }
 
       // Fetch teams from database with basic filters
-      const response = await supabaseService.listRecords('Team', filters);
+      const response = await supabaseService.listTeams(filters);
 
       if (!response.success) {
         throw new Error('Failed to fetch teams from database');
