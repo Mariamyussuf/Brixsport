@@ -1,23 +1,9 @@
 'use client';
 
 import React from 'react';
-import { LoggerLoginForm } from '@/components/logger/shared/LoggerLoginForm';
-import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
+import { AdminLoggerLoginForm } from '@/components/shared/AdminLoggerLoginForm';
 
 export default function LoggerLoginPage() {
-  const { login } = useAuth();
-  const router = useRouter();
-
-  const handleLogin = async (credentials: { email: string; password: string }) => {
-    try {
-      await login(credentials);
-      router.push('/logger');
-    } catch (error) {
-      console.error('Login failed:', error);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -31,7 +17,7 @@ export default function LoggerLoginPage() {
             <h1 className="text-2xl font-bold text-white">{process.env.NEXT_PUBLIC_LOGGER_APP_NAME || 'Logger Access'}</h1>
             <p className="text-gray-400 mt-2">{process.env.NEXT_PUBLIC_LOGGER_APP_DESCRIPTION || 'Secure logging platform'}</p>
           </div>
-          <LoggerLoginForm onLoginSuccess={() => router.push('/logger')} />
+          <AdminLoggerLoginForm initialUserType="logger" />
         </div>
       </div>
     </div>

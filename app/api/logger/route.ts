@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuth } from '../../../src/lib/auth';
+import { getLoggerAuth } from '@/lib/loggerAuthService';
 import { dbService } from '@/lib/databaseService';
+import { LoggerAuthRoles } from '@/lib/loggerAuthService';
 
 // Logger API route - only accessible from logger.brixsports.com
 export async function GET(request: NextRequest) {
@@ -19,14 +20,16 @@ export async function GET(request: NextRequest) {
     );
   }
   
-  const session = await getAuth(request);
+  const session = await getLoggerAuth(request);
   if (!session) {
     return NextResponse.json(
       { error: 'Authentication required' },
       { status: 401 }
     );
   }
-  if (!session.user.role.startsWith('logger') && session.user.role !== 'admin' && session.user.role !== 'super-admin') {
+  
+  // Check if user has logger permissions
+  if (!LoggerAuthRoles.isLogger(session.user) && !LoggerAuthRoles.hasAdminPrivileges(session.user)) {
     return NextResponse.json(
       { error: 'Insufficient permissions' },
       { status: 403 }
@@ -74,14 +77,16 @@ export async function POST(request: NextRequest) {
     );
   }
   
-  const session = await getAuth(request);
+  const session = await getLoggerAuth(request);
   if (!session) {
     return NextResponse.json(
       { error: 'Authentication required' },
       { status: 401 }
     );
   }
-  if (!session.user.role.startsWith('logger') && session.user.role !== 'admin' && session.user.role !== 'super-admin') {
+  
+  // Check if user has logger permissions
+  if (!LoggerAuthRoles.isLogger(session.user) && !LoggerAuthRoles.hasAdminPrivileges(session.user)) {
     return NextResponse.json(
       { error: 'Insufficient permissions' },
       { status: 403 }

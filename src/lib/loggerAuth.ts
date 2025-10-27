@@ -1,22 +1,16 @@
 // Logger Authentication Utilities
 // Specialized authentication functions for the logger system
 
-import { jwtVerify, SignJWT } from 'jose';
-import { User } from './auth';
-
-// Secret key for JWT verification - in production, use environment variables
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.LOGGER_JWT_SECRET || process.env.JWT_SECRET || 'logger_secret_key_for_development'
-);
+import { UnifiedUser, generateUnifiedToken, verifyUnifiedToken, hasPermission, canAccessCompetition, RBAC } from './authService';
 
 // Logger-specific user roles
-export type LoggerRole = 'logger' | 'senior-logger' | 'logger-admin' | 'admin' | 'super-admin';
+export type LoggerRole = 'logger';
 
-// Extended user interface for loggers
-export interface LoggerUser extends User {
+// Extended user interface for loggers (now using UnifiedUser)
+export interface LoggerUser extends UnifiedUser {
   role: LoggerRole;
   assignedCompetitions?: string[];
-  permissions: string[];
+  permissions?: string[];
   lastLogin?: string;
   sessionTimeout?: number; // Session timeout in minutes
 }
@@ -34,23 +28,7 @@ export interface SessionConfig {
  * @returns Promise<string> - The JWT token
  */
 export async function generateLoggerToken(user: LoggerUser): Promise<string> {
-  const iat = Math.floor(Date.now() / 1000);
-  const exp = iat + 60 * 60; // 1 hour expiration
-
-  return new SignJWT({ 
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    assignedCompetitions: user.assignedCompetitions,
-    permissions: user.permissions,
-    lastLogin: user.lastLogin,
-    sessionTimeout: user.sessionTimeout
-  })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt(iat)
-    .setExpirationTime(exp)
-    .sign(JWT_SECRET);
+  return generateUnifiedToken(user);
 }
 
 /**
@@ -59,31 +37,13 @@ export async function generateLoggerToken(user: LoggerUser): Promise<string> {
  * @returns Promise<LoggerUser | null> - The verified user or null if invalid
  */
 export async function verifyLoggerToken(token: string): Promise<LoggerUser | null> {
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    
-    // Check if this is a logger user or admin
-    const role = payload.role as string;
-    if (!role || (!role.startsWith('logger') && role !== 'admin' && role !== 'super-admin')) {
-      return null;
-    }
-    
-    const user: LoggerUser = {
-      id: payload.id as string,
-      name: payload.name as string,
-      email: payload.email as string,
-      role: role as LoggerRole,
-      assignedCompetitions: payload.assignedCompetitions as string[] | undefined,
-      permissions: payload.permissions as string[],
-      lastLogin: payload.lastLogin as string | undefined,
-      sessionTimeout: payload.sessionTimeout as number | undefined
-    };
-    
-    return user;
-  } catch (error) {
-    console.error('Logger token verification error:', error);
-    return null;
+  const user = await verifyUnifiedToken(token);
+  
+  if (user && user.role === 'logger') {
+    return user as LoggerUser;
   }
+  
+  return null;
 }
 
 /**
@@ -92,8 +52,8 @@ export async function verifyLoggerToken(token: string): Promise<LoggerUser | nul
  * @param permission - The permission to check
  * @returns boolean - Whether the user has the permission
  */
-export function hasLoggerPermission(user: LoggerUser, permission: string): boolean {
-  return user.permissions.includes(permission);
+export function hasLoggerPermission(user: UnifiedUser, permission: string): boolean {
+  return hasPermission(user, permission);
 }
 
 /**
@@ -102,19 +62,8 @@ export function hasLoggerPermission(user: LoggerUser, permission: string): boole
  * @param competitionId - The competition ID to check
  * @returns boolean - Whether the logger can access the competition
  */
-export function canAccessCompetition(user: LoggerUser, competitionId: string): boolean {
-  // Admins and super-admins can access all competitions
-  if (user.role === 'admin' || user.role === 'super-admin' || user.role === 'logger-admin') {
-    return true;
-  }
-  
-  // If user has specific competitions assigned, check if this one is in the list
-  if (user.assignedCompetitions && user.assignedCompetitions.length > 0) {
-    return user.assignedCompetitions.includes(competitionId);
-  }
-  
-  // If no specific competitions are assigned, allow access to all (for regular loggers)
-  return user.role === 'logger' || user.role === 'senior-logger';
+export function canAccessCompetitionForLogger(user: UnifiedUser, competitionId: string): boolean {
+  return canAccessCompetition(user, competitionId);
 }
 
 /**
@@ -151,7 +100,7 @@ export class LoggerSessionManager {
    * @param warnMinutes - Minutes before expiration to warn
    * @returns boolean - Whether session is about to expire
    */
-  static isSessionExpiring(user: LoggerUser, warnMinutes: number = 5): boolean {
+  static isSessionExpiring(user: UnifiedUser, warnMinutes: number = 5): boolean {
     if (!user.lastLogin) return false;
     
     const lastLoginTime = new Date(user.lastLogin).getTime();
@@ -167,7 +116,7 @@ export class LoggerSessionManager {
    * @param user - The logger user
    * @returns number - Remaining session time in minutes
    */
-  static getRemainingSessionTime(user: LoggerUser): number {
+  static getRemainingSessionTime(user: UnifiedUser): number {
     if (!user.lastLogin) return 0;
     
     const lastLoginTime = new Date(user.lastLogin).getTime();
@@ -183,7 +132,7 @@ export class LoggerSessionManager {
    * @param user - The logger user
    * @returns boolean - Whether session has expired
    */
-  static isSessionExpired(user: LoggerUser): boolean {
+  static isSessionExpired(user: UnifiedUser): boolean {
     if (!user.lastLogin) return false;
     
     const lastLoginTime = new Date(user.lastLogin).getTime();
@@ -194,11 +143,20 @@ export class LoggerSessionManager {
   }
 }
 
+// Export RBAC helpers for logger-specific checks
+export const LoggerRBAC = {
+  isLogger: RBAC.isLogger,
+  canLogEvents: RBAC.canLogEvents,
+  canManageLoggers: RBAC.canManageLoggers,
+  hasAdminPrivileges: RBAC.hasAdminPrivileges
+};
+
 export default {
   generateLoggerToken,
   verifyLoggerToken,
   hasLoggerPermission,
-  canAccessCompetition,
+  canAccessCompetitionForLogger,
   LoggerSessionManager,
-  DEFAULT_LOGGER_RATE_LIMIT
+  DEFAULT_LOGGER_RATE_LIMIT,
+  LoggerRBAC
 };

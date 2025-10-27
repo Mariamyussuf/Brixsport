@@ -10,6 +10,7 @@ import { NotificationsProvider } from "@/components/shared/NotificationsContext"
 import NotificationsGate from "@/components/shared/NotificationsGate";
 import DataSaverGate from "@/components/shared/DataSaverGate";
 import { LoggerProvider } from "@/contexts/LoggerContext";
+import { LoggerAuthProvider } from "@/contexts/LoggerAuthContext";
 
 // Client-only LoggerProvider wrapper
 const ClientLoggerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -74,15 +75,17 @@ export default async function LoggerLayout({
         <ThemeProvider>
           <SettingsProvider>
             <I18nProvider>
-              <ClientLoggerProvider>
-                <NotificationsProvider>
-                  <LoggerPWARegister />
-                  <OfflineWrapper />
-                  <NotificationsGate />
-                  <DataSaverGate />
-                  {children}
-                </NotificationsProvider>
-              </ClientLoggerProvider>
+              <LoggerAuthProvider>
+                <ClientLoggerProvider>
+                  <NotificationsProvider>
+                    <LoggerPWARegister />
+                    <OfflineWrapper />
+                    <NotificationsGate />
+                    <DataSaverGate />
+                    {children}
+                  </NotificationsProvider>
+                </ClientLoggerProvider>
+              </LoggerAuthProvider>
             </I18nProvider>
           </SettingsProvider>
         </ThemeProvider>

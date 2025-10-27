@@ -1,12 +1,48 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import React, { useState } from 'react';
+import { useLoggerAuth } from '@/contexts/LoggerAuthContext';
+import { LoggerRBAC } from '@/lib/loggerRBAC';
 
 const LoggerDashboard: React.FC = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useLoggerAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Define tabs based on user permissions
+  const getAvailableTabs = () => {
+    if (!user) return [];
+    
+    const baseTabs = [
+      { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+      { id: 'matches', label: 'Live Matches', icon: '⚽' }
+    ];
+    
+    // Add history tab for all loggers
+    baseTabs.push({ id: 'history', label: 'Match History', icon: '📋' });
+    
+    // Add stats tab for loggers who can generate reports
+    if (LoggerRBAC.canGenerateReports(user)) {
+      baseTabs.push({ id: 'stats', label: 'Statistics', icon: '📈' });
+    }
+    
+    // Add settings tab for all authenticated users
+    baseTabs.push({ id: 'settings', label: 'Settings', icon: '⚙️' });
+    
+    // Add admin tabs for logger admins
+    if (LoggerRBAC.canManageLoggers(user)) {
+      baseTabs.push({ id: 'admin', label: 'Admin Panel', icon: '👑' });
+    }
+    
+    return baseTabs;
+  };
+  
+  const availableTabs = getAvailableTabs();
+  
+  // Set default active tab if current tab is not available
+  if (availableTabs.length > 0 && !availableTabs.find(tab => tab.id === activeTab)) {
+    setActiveTab(availableTabs[0].id);
+  }
 
   // Mock logger data for testing
   const [loggerStats] = useState({
@@ -51,13 +87,7 @@ const LoggerDashboard: React.FC = () => {
 
         <nav className="mt-8">
           <ul className="space-y-1">
-            {[
-              { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-              { id: 'matches', label: 'Live Matches', icon: '⚽' },
-              { id: 'history', label: 'Match History', icon: '📋' },
-              { id: 'stats', label: 'Statistics', icon: '📈' },
-              { id: 'settings', label: 'Settings', icon: '⚙️' }
-            ].map((item) => (
+            {availableTabs.map((item) => (
               <li key={item.id}>
                 <button
                   onClick={() => setActiveTab(item.id)}
@@ -180,6 +210,42 @@ const LoggerDashboard: React.FC = () => {
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
               <h3 className="text-lg font-bold text-white mb-4">Settings</h3>
               <p className="text-gray-400">Logger preferences and configuration would go here...</p>
+            </div>
+          )}
+          
+          {activeTab === 'admin' && user && LoggerRBAC.canManageLoggers(user) && (
+            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+              <h3 className="text-lg font-bold text-white mb-4">Admin Panel</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-700 p-4 rounded-lg">
+                  <h4 className="text-md font-bold text-white mb-2">Manage Loggers</h4>
+                  <p className="text-gray-400 text-sm mb-3">Create, edit, and manage logger accounts</p>
+                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                    View Loggers
+                  </button>
+                </div>
+                <div className="bg-gray-700 p-4 rounded-lg">
+                  <h4 className="text-md font-bold text-white mb-2">System Logs</h4>
+                  <p className="text-gray-400 text-sm mb-3">View system activity and error logs</p>
+                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                    View Logs
+                  </button>
+                </div>
+                <div className="bg-gray-700 p-4 rounded-lg">
+                  <h4 className="text-md font-bold text-white mb-2">Competition Management</h4>
+                  <p className="text-gray-400 text-sm mb-3">Create and manage competitions</p>
+                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                    Manage Competitions
+                  </button>
+                </div>
+                <div className="bg-gray-700 p-4 rounded-lg">
+                  <h4 className="text-md font-bold text-white mb-2">Reports</h4>
+                  <p className="text-gray-400 text-sm mb-3">Generate system reports</p>
+                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                    Generate Reports
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

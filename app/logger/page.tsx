@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useLoggerAuth } from '@/hooks/useAuth';
+import { useLoggerAuth } from '@/contexts/LoggerAuthContext';
 import LoggerDashboard from '@/components/logger/dashboard/LoggerDashboard';
 import { useRouter } from 'next/navigation';
 
 const LoggerPage = () => {
-  const { user, isAuthenticated, hasLoggerPermissions } = useLoggerAuth();
+  const { user, isAuthenticated } = useLoggerAuth();
+  // All users in logger context have logger permissions
+  const hasLoggerPermissions = true;
   const router = useRouter();
 
   // Redirect to login if not authenticated

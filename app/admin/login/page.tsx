@@ -1,31 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
-import { AdminLoginForm } from '@/components/admin/shared/AdminLoginForm';
-import { LoggerLoginForm } from '@/components/logger/shared/LoggerLoginForm';
+import React from 'react';
+import { AdminLoggerLoginForm } from '@/components/shared/AdminLoggerLoginForm';
 
-export default function AdminLoggerLoginPage() {
-  const { login } = useAuth();
-  const router = useRouter();
-  const [userType, setUserType] = useState<'admin' | 'logger'>('admin');
-
-  const handleLogin = async (credentials: { email: string; password: string }) => {
-    try {
-      await login(credentials);
-      
-      // Redirect based on user role
-      if (userType === 'admin') {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/logger');
-      }
-    } catch (error) {
-      console.error('Login failed:', error);
-    }
-  };
-
+export default function AdminLoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -38,56 +16,15 @@ export default function AdminLoggerLoginPage() {
             </div>
             <h1 className="text-2xl font-bold text-white">BrixSports Admin Platform</h1>
             <p className="text-gray-400 mt-2">
-              {userType === 'admin' 
-                ? 'Administrative Dashboard' 
-                : 'Match Logging Platform'}
+              Administrative Dashboard
             </p>
           </div>
 
-          {/* User Type Selector */}
-          <div className="flex mb-6 bg-gray-700 rounded-lg p-1">
-            <button
-              onClick={() => setUserType('admin')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                userType === 'admin'
-                  ? 'bg-blue-600 text-white shadow'
-                  : 'text-gray-300 hover:text-white'
-              }`}
-            >
-              Admin
-            </button>
-            <button
-              onClick={() => setUserType('logger')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                userType === 'logger'
-                  ? 'bg-blue-600 text-white shadow'
-                  : 'text-gray-300 hover:text-white'
-              }`}
-            >
-              Logger
-            </button>
-          </div>
-
-          {/* Login Forms */}
-          {userType === 'admin' ? (
-            <AdminLoginForm onLoginSuccess={() => {
-              // The component handles its own login logic
-              // We just need to trigger navigation after successful login
-              router.push('/admin/dashboard');
-            }} />
-          ) : (
-            <LoggerLoginForm onLoginSuccess={() => {
-              // The component handles its own login logic
-              // We just need to trigger navigation after successful login
-              router.push('/logger');
-            }} />
-          )}
+          <AdminLoggerLoginForm initialUserType="admin" />
 
           <div className="mt-6 text-center text-sm text-gray-500">
             <p>
-              {userType === 'admin'
-                ? 'Access administrative features and manage loggers'
-                : 'Log sports events and manage match data'}
+              Access administrative features and manage the platform
             </p>
           </div>
         </div>

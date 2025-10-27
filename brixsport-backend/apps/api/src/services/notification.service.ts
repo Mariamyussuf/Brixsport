@@ -1,6 +1,7 @@
 import { logger } from '../utils/logger';
 import { supabase } from './supabase.service';
 import { queueService } from './queue.service';
+import { cloudMessagingService } from './cloud-messaging.service';
 
 export const notificationService = {
   // Get user notifications
@@ -663,28 +664,34 @@ async function sendEmailNotification(userId: string, notification: any) {
 // Helper function to send push notifications
 async function sendPushNotification(userId: string, notification: any) {
   try {
-    // In a real implementation, this would integrate with a push notification service
-    // For now, we'll log the push notification
-    logger.info('Push notification sent', {
+    // First, try to send via cloud messaging service (Firebase)
+    const pushResult = await cloudMessagingService.sendPushNotificationToUser(userId, {
+      title: notification.title,
+      body: notification.content,
+      data: {
+        notificationId: notification.id,
+        type: notification.type,
+        ...notification.metadata
+      }
+    });
+
+    if (pushResult.success) {
+      logger.info('Push notification sent via Firebase', {
+        userId,
+        title: notification.title,
+        body: notification.content,
+        notificationId: notification.id
+      });
+      return;
+    }
+
+    // Fallback to logging if cloud messaging is not available
+    logger.info('Push notification sent (logged)', {
       userId,
       title: notification.title,
       body: notification.content,
       notificationId: notification.id
     });
-    
-    // TODO: Implement actual push notification sending with a service like Firebase Cloud Messaging
-    // Example with FCM:
-    /*
-    const admin = require('firebase-admin');
-    const message = {
-      notification: {
-        title: notification.title,
-        body: notification.content,
-      },
-      token: userDeviceToken // Would need to store and retrieve user device tokens
-    };
-    await admin.messaging().send(message);
-    */
   } catch (error: any) {
     logger.error('Error sending push notification', { 
       error: error.message, 

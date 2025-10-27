@@ -1,18 +1,13 @@
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
+import { UnifiedUser, verifyUnifiedToken } from './authService';
 
-// Define the structure of our user object
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  image?: string;
-}
+// Define the structure of our user object (using UnifiedUser)
+export type { UnifiedUser as User };
 
 // Define the structure of our session object
 export interface Session {
-  user: User;
+  user: UnifiedUser;
   expires: string;
 }
 
@@ -35,22 +30,18 @@ export async function getAuth(request: Request): Promise<Session | null> {
       const token = authHeader.split(' ')[1]; // Bearer TOKEN
       
       if (token) {
-        // Verify the JWT token
-        const { payload } = await jwtVerify(token, JWT_SECRET);
+        // Verify the JWT token using our unified system
+        const user = await verifyUnifiedToken(token);
         
-        // Create and return the session object
-        const session: Session = {
-          user: {
-            id: payload.id as string,
-            name: payload.name as string,
-            email: payload.email as string,
-            role: payload.role as string,
-            image: payload.image as string | undefined
-          },
-          expires: new Date(payload.exp! * 1000).toISOString()
-        };
-        
-        return session;
+        if (user) {
+          // Create and return the session object
+          const session: Session = {
+            user,
+            expires: new Date(Date.now() + 60 * 60 * 1000).toISOString() // 1 hour from now
+          };
+          
+          return session;
+        }
       }
     }
     
@@ -59,22 +50,18 @@ export async function getAuth(request: Request): Promise<Session | null> {
     const sessionCookie = cookieStore.get('session');
     
     if (sessionCookie?.value) {
-      // Verify the JWT token from cookie
-      const { payload } = await jwtVerify(sessionCookie.value, JWT_SECRET);
+      // Verify the JWT token from cookie using our unified system
+      const user = await verifyUnifiedToken(sessionCookie.value);
       
-      // Create and return the session object
-      const session: Session = {
-        user: {
-          id: payload.id as string,
-          name: payload.name as string,
-          email: payload.email as string,
-          role: payload.role as string,
-          image: payload.image as string | undefined
-        },
-        expires: new Date(payload.exp! * 1000).toISOString()
-      };
-      
-      return session;
+      if (user) {
+        // Create and return the session object
+        const session: Session = {
+          user,
+          expires: new Date(Date.now() + 60 * 60 * 1000).toISOString() // 1 hour from now
+        };
+        
+        return session;
+      }
     }
     
     // No valid authentication found
@@ -85,3 +72,26 @@ export async function getAuth(request: Request): Promise<Session | null> {
     return null;
   }
 }
+
+// Role checking utilities
+export const AuthRoles = {
+  isUser: (user: UnifiedUser | null): boolean => {
+    return user !== null && user.role === 'user';
+  },
+  
+  isLogger: (user: UnifiedUser | null): boolean => {
+    return user !== null && user.role === 'logger';
+  },
+  
+  isAdmin: (user: UnifiedUser | null): boolean => {
+    return user !== null && user.role === 'admin';
+  },
+  
+  isSuperAdmin: (user: UnifiedUser | null): boolean => {
+    return user !== null && user.role === 'super-admin';
+  },
+  
+  hasAdminPrivileges: (user: UnifiedUser | null): boolean => {
+    return user !== null && (user.role === 'admin' || user.role === 'super-admin');
+  }
+};

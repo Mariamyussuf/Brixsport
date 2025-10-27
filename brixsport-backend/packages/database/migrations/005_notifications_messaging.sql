@@ -259,6 +259,26 @@ CREATE INDEX IF NOT EXISTS idx_broadcast_recipients_status ON broadcast_recipien
 CREATE UNIQUE INDEX IF NOT EXISTS idx_broadcast_recipients_unique ON broadcast_recipients(broadcast_id, user_id);
 
 -- =============================================================================
+-- CLOUD MESSAGING
+-- =============================================================================
+
+-- User Device Tokens (for push notifications)
+CREATE TABLE IF NOT EXISTS user_device_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+    token TEXT NOT NULL,
+    platform VARCHAR(20) NOT NULL, -- 'ios', 'android', 'web'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for user_device_tokens
+CREATE INDEX IF NOT EXISTS idx_user_device_tokens_user_id ON user_device_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_device_tokens_token ON user_device_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_user_device_tokens_platform ON user_device_tokens(platform);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_device_tokens_unique ON user_device_tokens(user_id, token);
+
+-- =============================================================================
 -- NOTIFICATION FUNCTIONS
 -- =============================================================================
 

@@ -18,6 +18,7 @@
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
+    "firebase": "^9.23.0",
     "framer-motion": "^12.23.6",
     "helmet": "^8.1.0",
     "jose": "^6.1.0",
