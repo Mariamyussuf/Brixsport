@@ -26,6 +26,7 @@
     "seed": "node prisma/seed.js"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
     "pg": "^8.16.3"
   }
 }
