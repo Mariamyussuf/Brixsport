@@ -2,11 +2,37 @@ const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
 
+// Load environment variables from .env file if it exists
+const envPath = path.join(__dirname, '..', '..', '.env');
+if (fs.existsSync(envPath)) {
+  require('dotenv').config({ path: envPath });
+} else {
+  // Try to load from .env.development if .env doesn't exist
+  const envDevPath = path.join(__dirname, '..', '..', '.env.development');
+  if (fs.existsSync(envDevPath)) {
+    require('dotenv').config({ path: envDevPath });
+  }
+}
+
 async function runMigrations() {
-  const databaseUrl = process.env.DATABASE_URL;
+  let databaseUrl = process.env.DATABASE_URL;
+
+  // If DATABASE_URL is still not set, try to construct it from individual components
+  if (!databaseUrl) {
+    const dbHost = process.env.DB_HOST || 'localhost';
+    const dbPort = process.env.DB_PORT || '5432';
+    const dbName = process.env.DB_NAME || 'brixsport';
+    const dbUser = process.env.DB_USER || 'postgres';
+    const dbPassword = process.env.DB_PASSWORD || 'postgres';
+    
+    databaseUrl = `postgresql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
+  }
 
   if (!databaseUrl) {
     console.error('ERROR: DATABASE_URL environment variable not set');
+    console.error('Please set DATABASE_URL in your environment or create a .env file with the database configuration');
+    console.error('Example .env file content:');
+    console.error('DATABASE_URL=postgresql://username:password@localhost:5432/your_database_name');
     process.exit(1);
   }
 
