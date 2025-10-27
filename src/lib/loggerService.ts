@@ -2,16 +2,10 @@ import { API_BASE_URL, API_TIMEOUT } from './apiConfig';
 // Import new types
 import { Match, MatchEvent, Team, Player, TimelineUpdate, WebSocketMessage, CardType, EventType, FoulType, GoalType, InjurySeverity, PlayerStats, TeamStats, MatchStatus } from '@/types/matchEvents';
 import { ErrorHandler, StandardizedError } from './errorHandler';
+import { UnifiedUser } from './authService';
 
-// Logger user interface
-export interface LoggerUser {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'logger';
-  status: 'active' | 'suspended';
-  lastLogin?: string;
-}
+// Logger user interface (using UnifiedUser)
+export type { UnifiedUser as LoggerUser };
 
 // Logger API endpoints
 const LOGGER_ENDPOINTS = {
@@ -191,8 +185,8 @@ class LoggerService {
    * Get logger profile
    * @returns Promise with logger user data
    */
-  async getProfile(): Promise<LoggerApiResponse<LoggerUser>> {
-    return await this.request<LoggerUser>(LOGGER_ENDPOINTS.AUTH);
+  async getProfile(): Promise<LoggerApiResponse<UnifiedUser>> {
+    return await this.request<UnifiedUser>(LOGGER_ENDPOINTS.AUTH);
   }
   
   /**
