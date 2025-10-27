@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/hooks/useAuth';
+import { useLoggerAuth } from '@/contexts/LoggerAuthContext';
 
 interface LoggerLoginFormProps {
   onLoginSuccess?: () => void;
@@ -18,7 +18,7 @@ export function LoggerLoginForm({ onLoginSuccess }: LoggerLoginFormProps) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { login } = useAuth();
+  const { login } = useLoggerAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
