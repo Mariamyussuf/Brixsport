@@ -173,15 +173,15 @@ export const cloudMessagingService = {
       logger.info('Sending push notification to user', { userId, title: notification.title });
 
       // Get user's device tokens
-      const deviceTokens = await this.getUserDeviceTokens(userId);
+      const deviceTokens = await cloudMessagingService.getUserDeviceTokens(userId);
 
-      if (deviceTokens.length === 0) {
+      if (!deviceTokens || deviceTokens.length === 0) {
         logger.info('No device tokens found for user', { userId });
         return { success: true, message: 'No device tokens found for user' };
       }
 
       // Extract tokens
-      const tokens = deviceTokens.map(token => token.token);
+      const tokens = deviceTokens.map((token: DeviceToken) => token.token);
 
       // Send multicast message
       const message = {
@@ -194,7 +194,7 @@ export const cloudMessagingService = {
         tokens: tokens
       };
 
-      const response = await admin.messaging().sendMulticast(message);
+      const response = await admin.messaging().sendEachForMulticast(message);
 
       logger.info('Push notification sent', {
         successCount: response.successCount,
@@ -204,7 +204,7 @@ export const cloudMessagingService = {
       // Handle failed tokens
       if (response.failureCount > 0) {
         const failedTokens: string[] = [];
-        response.responses.forEach((resp, idx) => {
+        response.responses.forEach((resp: any, idx: number) => {
           if (!resp.success) {
             logger.error('Failed to send push notification to token', {
               token: tokens[idx],
@@ -218,7 +218,7 @@ export const cloudMessagingService = {
         if (failedTokens.length > 0) {
           logger.info('Removing invalid device tokens', { count: failedTokens.length });
           for (const token of failedTokens) {
-            await this.removeDeviceToken(userId, token);
+            await cloudMessagingService.removeDeviceToken(userId, token);
           }
         }
       }
@@ -290,7 +290,7 @@ export const cloudMessagingService = {
             tokens: tokenList
           };
 
-          const response = await admin.messaging().sendMulticast(message);
+          const response = await admin.messaging().sendEachForMulticast(message);
           totalSuccessCount += response.successCount;
           totalFailureCount += response.failureCount;
 
@@ -369,15 +369,15 @@ export const cloudMessagingService = {
       logger.info('Subscribing user to topic', { userId, topic });
 
       // Get user's device tokens
-      const deviceTokens = await this.getUserDeviceTokens(userId);
+      const deviceTokens = await cloudMessagingService.getUserDeviceTokens(userId);
 
-      if (deviceTokens.length === 0) {
+      if (!deviceTokens || deviceTokens.length === 0) {
         logger.info('No device tokens found for user', { userId });
         return { success: true, message: 'No device tokens found for user' };
       }
 
       // Extract tokens
-      const tokens = deviceTokens.map(token => token.token);
+      const tokens = deviceTokens.map((token: DeviceToken) => token.token);
 
       // Subscribe tokens to topic
       const response = await admin.messaging().subscribeToTopic(tokens, topic);
@@ -410,15 +410,15 @@ export const cloudMessagingService = {
       logger.info('Unsubscribing user from topic', { userId, topic });
 
       // Get user's device tokens
-      const deviceTokens = await this.getUserDeviceTokens(userId);
+      const deviceTokens = await cloudMessagingService.getUserDeviceTokens(userId);
 
-      if (deviceTokens.length === 0) {
+      if (!deviceTokens || deviceTokens.length === 0) {
         logger.info('No device tokens found for user', { userId });
         return { success: true, message: 'No device tokens found for user' };
       }
 
       // Extract tokens
-      const tokens = deviceTokens.map(token => token.token);
+      const tokens = deviceTokens.map((token: DeviceToken) => token.token);
 
       // Unsubscribe tokens from topic
       const response = await admin.messaging().unsubscribeFromTopic(tokens, topic);
