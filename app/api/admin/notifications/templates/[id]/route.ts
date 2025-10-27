@@ -13,7 +13,7 @@ export async function GET(req: Request, { params }: { params: Promise<{}> }) {
     }
 
     // Check if user has admin role
-    if (session.user.role !== 'ADMIN') {
+    if (session.user.role !== 'admin') {
       return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Forbidden' } }, { status: 403 });
     }
 
@@ -53,7 +53,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{}> }) {
     }
 
     // Check if user has admin role
-    if (session.user.role !== 'ADMIN') {
+    if (session.user.role !== 'admin') {
       return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Forbidden' } }, { status: 403 });
     }
 
@@ -95,7 +95,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{}> }) 
     }
 
     // Check if user has admin role
-    if (session.user.role !== 'ADMIN') {
+    if (session.user.role !== 'admin') {
       return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Forbidden' } }, { status: 403 });
     }
 

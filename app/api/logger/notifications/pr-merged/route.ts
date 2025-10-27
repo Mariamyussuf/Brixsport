@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user has logger role
-    if (session.user.role !== 'LOGGER') {
+    if (session.user.role !== 'logger') {
       return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Forbidden' } }, { status: 403 });
     }
 
