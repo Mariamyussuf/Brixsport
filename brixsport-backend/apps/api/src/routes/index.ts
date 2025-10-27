@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import v1Routes from './v1';
+import { router as v1Routes } from './v1';
 import matchEventsRoutes from './matchEvents.routes';
 import docsRoutes from './docs.routes';
 import competitionRoutes from './competitions.routes';
