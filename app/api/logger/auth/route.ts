@@ -19,35 +19,6 @@ const MOCK_LOGGER_USERS = [
     role: 'logger',
     assignedCompetitions: ['comp-1', 'comp-2'],
     permissions: ['log_matches', 'log_events', 'view_players', 'view_teams', 'view_competitions']
-  },
-  {
-    id: 'senior-logger-1',
-    name: 'Senior Logger',
-    email: 'senior@example.com',
-    password: 'senior123', // In production, this should be hashed
-    role: 'senior-logger',
-    assignedCompetitions: ['comp-1', 'comp-2', 'comp-3'],
-    permissions: [
-      'log_matches', 'edit_matches', 'log_events', 'edit_events', 
-      'view_all_matches', 'view_players', 'edit_players', 'view_teams', 
-      'edit_teams', 'view_competitions', 'assign_competitions'
-    ]
-  },
-  {
-    id: 'admin-logger-1',
-    name: 'Logger Admin',
-    email: 'admin@example.com',
-    password: 'admin123', // In production, this should be hashed
-    role: 'logger-admin',
-    assignedCompetitions: [],
-    permissions: [
-      'log_matches', 'edit_matches', 'delete_matches', 'view_all_matches',
-      'log_events', 'edit_events', 'delete_events', 'view_all_events',
-      'manage_players', 'edit_players', 'view_players',
-      'manage_teams', 'edit_teams', 'view_teams',
-      'manage_competitions', 'assign_competitions', 'view_competitions',
-      'view_reports', 'generate_reports', 'view_system_logs'
-    ]
   }
 ];
 

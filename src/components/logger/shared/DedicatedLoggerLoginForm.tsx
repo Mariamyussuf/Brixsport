@@ -26,7 +26,7 @@ export function DedicatedLoggerLoginForm({ onLoginSuccess }: DedicatedLoggerLogi
       router.push('/logger');
       onLoginSuccess?.();
     } catch (err: any) {
-      setError(err.message || 'Invalid credentials. Use logger@example.com / logger123');
+      setError(err.message || 'Invalid credentials. For local development, use logger@example.com / logger123');
     } finally {
       setIsLoading(false);
     }
@@ -69,7 +69,8 @@ export function DedicatedLoggerLoginForm({ onLoginSuccess }: DedicatedLoggerLogi
 
         <div className="text-xs text-gray-400">
           <p>For local development, use:</p>
-          <p>logger@example.com / logger123</p>
+          <p className="font-mono">logger@example.com / logger123</p>
+          <p className="mt-2">On Vercel deployment, use your actual logger credentials.</p>
         </div>
 
         {error && (

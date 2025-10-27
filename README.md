@@ -123,6 +123,18 @@ Full API connectivity has been implemented:
 - `/auth?tab=signup` → Sign up tab
 - `/auth?tab=login` → Login tab
 - `/login` and `/signup` → Redirect to the unified `/auth` page
+- `/logger` → Logger dashboard (requires authentication)
+- `/logger/login` → Logger login page
+
+## Logger System
+The application includes a dedicated logger system for match logging personnel:
+
+- **Separate Authentication**: Loggers have their own authentication system with dedicated JWT handling
+- **Role-Based Access**: Loggers can access match logging features based on their assigned competitions
+- **Local Development**: Pre-configured credentials for local testing:
+  - Email: `logger@example.com`
+  - Password: `logger123`
+- **Environment Variables**: Requires `LOGGER_JWT_SECRET` for secure token generation
 
 ## Path Aliases
 Configured in `tsconfig.json`:
@@ -152,6 +164,16 @@ To register the service worker in UI, use `PWARegister` component or ensure regi
 - Icons must exist for install prompts on devices
 - Static export mode is enabled for better offline capabilities
 - Configure Supabase environment variables in Vercel project settings
+- For logger system, set `LOGGER_JWT_SECRET` environment variable in Vercel
+- See `vercel.env.example` for a complete list of required environment variables
+
+## Logger System Access
+To access the logger system:
+1. Visit `/logger/login` on your deployed site
+2. For local development, use the pre-configured credentials:
+   - Email: `logger@example.com`
+   - Password: `logger123`
+3. On production deployments, loggers will use their assigned credentials
 
 ## Contributing
 1. Fork the repository

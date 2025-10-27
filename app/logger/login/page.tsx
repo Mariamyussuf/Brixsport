@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { AdminLoggerLoginForm } from '@/components/shared/AdminLoggerLoginForm';
+import { DedicatedLoggerLoginForm } from '@/components/logger/shared/DedicatedLoggerLoginForm';
 
 export default function LoggerLoginPage() {
   return (
@@ -17,7 +17,7 @@ export default function LoggerLoginPage() {
             <h1 className="text-2xl font-bold text-white">{process.env.NEXT_PUBLIC_LOGGER_APP_NAME || 'Logger Access'}</h1>
             <p className="text-gray-400 mt-2">{process.env.NEXT_PUBLIC_LOGGER_APP_DESCRIPTION || 'Secure logging platform'}</p>
           </div>
-          <AdminLoggerLoginForm initialUserType="logger" />
+          <DedicatedLoggerLoginForm />
         </div>
       </div>
     </div>

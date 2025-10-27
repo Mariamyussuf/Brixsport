@@ -6,7 +6,7 @@ import { LoggerUser } from './loggerAuth';
 
 // Secret key for logger JWT verification - in production, use environment variables
 const LOGGER_JWT_SECRET = new TextEncoder().encode(
-  process.env.LOGGER_JWT_SECRET || process.env.JWT_SECRET || 'logger_secret_key_for_development'
+  process.env.LOGGER_JWT_SECRET || 'logger_secret_key_for_development'
 );
 
 // Logger session interface

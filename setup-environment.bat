@@ -59,6 +59,7 @@ if %errorlevel% neq 0 (
     echo ⚠️  Type check found issues - please review
 ) else (
     echo ✅ Type check passed
+
 )
 
 echo.
@@ -68,11 +69,16 @@ echo ========================================
 echo.
 echo IMPORTANT: Before running the application:
 echo 1. Edit .env.local with your Supabase credentials
-echo 2. Edit brixsport-backend\.env.development with your database credentials
-echo 3. Set up your Supabase database using the migration files
+echo 2. Edit .env.local and set LOGGER_JWT_SECRET for logger authentication
+echo 3. Edit brixsport-backend\.env.development with your database credentials
+echo 4. Set up your Supabase database using the migration files
 echo.
 echo To start development:
 echo - Frontend: npm run dev
 echo - Backend: cd brixsport-backend && npm run dev
+echo.
+echo For logger system access:
+echo - Visit /logger/login
+echo - Use logger@example.com / logger123 for local development
 echo.
 pause
