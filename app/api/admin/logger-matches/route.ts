@@ -143,7 +143,7 @@ export async function POST(request: Request) {
 }
 
 // PUT /api/admin/logger-matches/[id] - Update a match assignment for a logger
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(request: Request, { params }: { params: Promise<{}> }) {
   try {
     // Verify admin token
     const token = (await cookies()).get('admin_token')?.value;
@@ -171,7 +171,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const body = await request.json();
-    const { id: matchId } = await params;
+    const { id: matchId } = await params as { id: string };
     
     // Validate match ID
     if (!matchId) {
