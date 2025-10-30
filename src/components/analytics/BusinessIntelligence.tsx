@@ -5,6 +5,7 @@ import LineChart from '@/components/analytics/charts/LineChart';
 import BarChart from '@/components/analytics/charts/BarChart';
 import AreaChart from '@/components/analytics/charts/AreaChart';
 import PieChart from '@/components/analytics/charts/PieChart';
+import analyticsService from '@/services/analyticsService';
 
 interface BusinessIntelligenceProps {
   className?: string;
@@ -70,32 +71,104 @@ const BusinessIntelligence: React.FC<BusinessIntelligenceProps> = ({ className =
       try {
         setLoading(true);
         
-        // TODO: Replace with actual API calls to fetch real business intelligence data
-        // For now, we'll initialize with empty/default values
-        setBusinessMetrics({
-          totalRevenue: 0,
-          monthlyRecurringRevenue: 0,
-          averageRevenuePerUser: 0,
-          customerLifetimeValue: 0,
-          churnRate: 0,
-          customerAcquisitionCost: 0,
-          conversionRate: 0,
-          engagementScore: 0
-        });
+        // Fetch all required data in parallel
+        const [
+          userOverviewResult,
+          platformUsageResult,
+          systemPerformanceResult,
+          revenueResult,
+          userActivityResult,
+          fanEngagementResult,
+          sportPerformanceResult
+        ] = await Promise.all([
+          analyticsService.getUserOverview(),
+          analyticsService.getPlatformUsage(),
+          analyticsService.getSystemPerformance(),
+          analyticsService.getRevenueGeneration(),
+          analyticsService.getUserActivity(),
+          analyticsService.getFanEngagement(),
+          analyticsService.getSportsPerformance()
+        ]);
 
-        setRevenueData({
-          monthlyRevenue: [],
-          revenueBySource: [],
-          customerSegments: [],
-          growthMetrics: []
-        });
+        // Process business metrics with proper type checking
+        const processedBusinessMetrics: BusinessMetrics = {
+          totalRevenue: revenueResult.success && revenueResult.data ? (revenueResult.data.totalRevenue || revenueResult.data.total || 0) : 0,
+          monthlyRecurringRevenue: revenueResult.success && revenueResult.data ? (revenueResult.data.mrr || 0) : 0,
+          averageRevenuePerUser: revenueResult.success && revenueResult.data ? (revenueResult.data.arpu || 0) : 0,
+          customerLifetimeValue: revenueResult.success && revenueResult.data ? (revenueResult.data.clv || 0) : 0,
+          churnRate: userOverviewResult.success && userOverviewResult.data ? (userOverviewResult.data.userGrowth || 0) : 0,
+          customerAcquisitionCost: revenueResult.success && revenueResult.data ? (revenueResult.data.cac || 0) : 0,
+          conversionRate: platformUsageResult.success && platformUsageResult.data ? (platformUsageResult.data.apiRequests || 0) / 1000 : 0,
+          engagementScore: fanEngagementResult.success && fanEngagementResult.data ? (fanEngagementResult.data.appEngagement || fanEngagementResult.data.socialMediaMentions || 0) : 0
+        };
 
-        setEngagementData({
-          userEngagement: [],
-          contentPerformance: [],
-          featureUsage: [],
+        setBusinessMetrics(processedBusinessMetrics);
+
+        // Process revenue data with proper type checking
+        const processedRevenueData: RevenueData = {
+          monthlyRevenue: revenueResult.success && revenueResult.data && Array.isArray(revenueResult.data.history) 
+            ? revenueResult.data.history.map((item: any) => ({
+                month: item.month || item.date || '',
+                revenue: item.revenue || item.amount || 0
+              }))
+            : [],
+          revenueBySource: revenueResult.success && revenueResult.data && Array.isArray(revenueResult.data.bySource)
+            ? revenueResult.data.bySource.map((item: any) => ({
+                source: item.source || '',
+                amount: item.amount || item.value || 0
+              }))
+            : revenueResult.success && revenueResult.data
+            ? [
+                { source: 'Tickets', amount: revenueResult.data.ticketRevenue || 0 },
+                { source: 'Broadcast', amount: revenueResult.data.broadcastRevenue || 0 },
+                { source: 'Sponsorship', amount: revenueResult.data.sponsorshipRevenue || 0 },
+                { source: 'Merchandise', amount: revenueResult.data.merchandiseRevenue || 0 }
+              ]
+            : [],
+          customerSegments: revenueResult.success && revenueResult.data && Array.isArray(revenueResult.data.segments)
+            ? revenueResult.data.segments.map((item: any) => ({
+                segment: item.segment || '',
+                value: item.value || 0,
+                percentage: item.percentage || 0
+              }))
+            : [],
+          growthMetrics: revenueResult.success && revenueResult.data && Array.isArray(revenueResult.data.growth)
+            ? revenueResult.data.growth.map((item: any) => ({
+                metric: item.metric || '',
+                value: item.value || 0,
+                trend: item.trend === 'up' || item.trend === 'down' ? item.trend : 'up'
+              }))
+            : []
+        };
+
+        setRevenueData(processedRevenueData);
+
+        // Process engagement data with proper type checking
+        const processedEngagementData: EngagementData = {
+          userEngagement: userActivityResult.success && userActivityResult.data && Array.isArray(userActivityResult.data.history)
+            ? userActivityResult.data.history.map((item: any) => ({
+                date: item.date || '',
+                sessions: item.sessions || item.count || 0,
+                pageViews: item.pageViews || item.views || 0
+              }))
+            : [],
+          contentPerformance: fanEngagementResult.success && fanEngagementResult.data && Array.isArray(fanEngagementResult.data.content)
+            ? fanEngagementResult.data.content.map((item: any) => ({
+                content: item.content || item.title || '',
+                views: item.views || 0,
+                engagement: item.engagement || item.score || 0
+              }))
+            : [],
+          featureUsage: fanEngagementResult.success && fanEngagementResult.data && Array.isArray(fanEngagementResult.data.features)
+            ? fanEngagementResult.data.features.map((item: any) => ({
+                feature: item.feature || item.name || '',
+                usage: item.usage || item.percentage || 0
+              }))
+            : [],
           retentionCohorts: []
-        });
+        };
+
+        setEngagementData(processedEngagementData);
 
         setLoading(false);
       } catch (error) {
