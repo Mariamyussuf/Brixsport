@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -19,7 +19,18 @@ export function AdminLoggerLoginForm({
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
+
+  // Redirect based on user role after authentication
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin' || user.role === 'super-admin') {
+        router.push('/admin/dashboard');
+      } else if (user.role.startsWith('logger') || user.role === 'senior-logger' || user.role === 'logger-admin') {
+        router.push('/logger');
+      }
+    }
+  }, [user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,13 +40,7 @@ export function AdminLoggerLoginForm({
     try {
       await login({ email, password });
       
-      // Redirect based on user type
-      if (userType === 'admin') {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/logger');
-      }
-      
+      // The redirection will be handled by the useEffect above
       onLoginSuccess?.();
     } catch (err: any) {
       setError(err.message || 'Invalid credentials');
@@ -43,6 +48,18 @@ export function AdminLoggerLoginForm({
       setIsLoading(false);
     }
   };
+
+  // If user is already authenticated, don't render the form
+  if (user) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-white">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

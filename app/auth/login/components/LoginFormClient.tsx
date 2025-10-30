@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 const LoginFormClient = () => {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -17,16 +17,19 @@ const LoginFormClient = () => {
     password: '',
   });
 
-  const handleLogin = async (credentials: { email: string; password: string }) => {
-    try {
-      await login(credentials);
-      const next = searchParams?.get('next');
-      router.push(next || '/');
-    } catch (err) {
-      setError('Invalid email or password');
-      console.error('Login error:', err);
+  // Redirect based on user role after authentication
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin' || user.role === 'super-admin') {
+        router.push('/admin/dashboard');
+      } else if (user.role.startsWith('logger') || user.role === 'senior-logger' || user.role === 'logger-admin') {
+        router.push('/logger');
+      } else {
+        const next = searchParams?.get('next');
+        router.push(next || '/');
+      }
     }
-  };
+  }, [user, router, searchParams]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -49,8 +52,6 @@ const LoginFormClient = () => {
         email: formData.email, 
         password: formData.password 
       });
-      const next = searchParams?.get('next');
-      router.push(next || '/');
     } catch (err) {
       setError('Invalid email or password');
       console.error('Login error:', err);
@@ -58,6 +59,18 @@ const LoginFormClient = () => {
       setIsLoading(false);
     }
   };
+
+  // If user is already authenticated, don't render the form
+  if (user) {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-white">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-md mx-auto">

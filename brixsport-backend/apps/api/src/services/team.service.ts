@@ -517,17 +517,40 @@ export class TeamService {
         } as ApiError;
       }
 
-      // In a real implementation, this would query the competitions a team is in
-      // For now, we'll return mock data or implement basic competition lookup
-      const competitionsResponse = await supabaseService.listCompetitions({});
+      // Get all matches where this team is participating (either as home or away team)
+      const { data: matches, error: matchesError } = await supabase
+        .from('Match')
+        .select(`
+          competition_id,
+          competition:Competition (*)
+        `)
+        .or(`home_team_id.eq.${id},away_team_id.eq.${id}`);
 
-      if (!competitionsResponse.success) {
-        throw new Error('Failed to fetch competitions from database');
+      if (matchesError) {
+        throw new Error(`Failed to fetch team matches: ${matchesError.message}`);
       }
 
-      // For now, return first 2 competitions as mock data
-      // TODO: Implement proper team-competition relationship
-      return competitionsResponse.data.slice(0, 2);
+      // Extract unique competitions from matches
+      const competitionsMap = new Map<string, Competition>();
+      matches.forEach((match: any) => {
+        if (match.competition && !competitionsMap.has(match.competition.id)) {
+          competitionsMap.set(match.competition.id, {
+            id: match.competition.id,
+            name: match.competition.name,
+            description: match.competition.description,
+            sport: match.competition.sport?.toUpperCase() as 'FOOTBALL' | 'BASKETBALL' | 'TRACK',
+            startDate: new Date(match.competition.start_date),
+            endDate: new Date(match.competition.end_date),
+            status: match.competition.status?.toUpperCase() as 'UPCOMING' | 'ONGOING' | 'COMPLETED' | 'CANCELLED',
+            organizerId: match.competition.created_by,
+            createdAt: new Date(match.competition.created_at),
+            updatedAt: new Date(match.competition.updated_at)
+          });
+        }
+      });
+
+      // Convert map values to array
+      return Array.from(competitionsMap.values());
     } catch (error: any) {
       console.error('Error in getTeamCompetitions:', error);
       throw error;

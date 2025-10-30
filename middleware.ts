@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { withApiRoleCheck } from './src/lib/roleCheck';
 import { getAuth } from './src/lib/auth';
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const host = request.headers.get('host');
   const referer = request.headers.get('referer');
@@ -13,36 +13,10 @@ export function middleware(request: NextRequest) {
     return withApiRoleCheck(request);
   }
 
-  // Handle admin/logger subdomain routing
-  if (host === 'admin.brixsports.com' || host === 'admin.brixsport.vercel.app' ||
-      (host?.startsWith('localhost') && pathname.startsWith('/admin'))) {
-    // Route admin/logger subdomain requests
-    console.log(`[Middleware] Routing admin/logger request: ${pathname}`);
-
-    // Specific handling for admin routes
-    if (pathname === '/admin/login') {
-      // Don't redirect /admin/login - this is the login page
-      return NextResponse.next();
-    } else if (pathname === '/admin') {
-      // Redirect /admin to /admin/login
-      return NextResponse.redirect(new URL('/admin/login', request.url));
-    } else if (!pathname.startsWith('/admin')) {
-      // If the request is not for the admin section, redirect to admin
-      // But allow API routes and static assets
-      if (!pathname.startsWith('/api') && !pathname.startsWith('/_next') && pathname !== '/favicon.ico') {
-        return NextResponse.redirect(new URL(`/admin${pathname === '/' ? '' : pathname}`, request.url));
-      }
-    }
-
-    return NextResponse.next();
-  } else if (host === 'brixsports.com' || host === 'www.brixsports.com' || host?.endsWith('vercel.app') || host === 'brixsport.vercel.app' || host?.startsWith('localhost')) {
+  // Handle unified admin/logger routing on main domain
+  if (host === 'brixsports.com' || host === 'www.brixsports.com' || host?.endsWith('vercel.app') || host === 'brixsport.vercel.app' || host?.startsWith('localhost')) {
     // Route main domain requests (including localhost for development)
     console.log(`[Middleware] Routing main site request: ${pathname}`);
-
-    // Prevent admin routes on main domain, but allow logger routes
-    if (pathname.startsWith('/admin')) {
-      return NextResponse.redirect(new URL('/', request.url));
-    }
 
     // Handle /auth route
     if (pathname === '/auth') {
@@ -60,15 +34,33 @@ export function middleware(request: NextRequest) {
 
     // Handle profile route - REQUIRE AUTHENTICATION
     if (pathname === '/profile') {
-      // For now, we'll let the client-side handle authentication
-      // TODO: Implement proper server-side authentication check
-      // This is a temporary solution - authentication should be enforced server-side
+      // Implement proper server-side authentication check
+      const session = await getAuth(request);
+      
+      if (!session || !session.user) {
+        // Redirect unauthenticated users to login page
+        const loginUrl = new URL('/auth/login', request.url);
+        loginUrl.searchParams.set('redirect', pathname);
+        return NextResponse.redirect(loginUrl);
+      }
+      
+      // User is authenticated, allow access
       return NextResponse.next();
     }
 
     // Handle root route - check if user needs onboarding
     if (pathname === '/') {
       // We'll let the client-side handle redirection based on auth status and onboarding completion
+      return NextResponse.next();
+    }
+
+    // Allow access to login page
+    if (pathname === '/login' || pathname.startsWith('/auth/login')) {
+      return NextResponse.next();
+    }
+
+    // Allow access to admin and logger routes - role-based access will be handled client-side
+    if (pathname.startsWith('/admin') || pathname.startsWith('/logger')) {
       return NextResponse.next();
     }
 
