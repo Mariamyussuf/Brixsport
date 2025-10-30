@@ -1,20 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-
-// Define proper TypeScript interfaces
-interface Report {
-  id: string;
-  name: string;
-  type: 'user' | 'system' | 'business' | 'custom';
-  description: string;
-  parameters: any;
-  format: 'pdf' | 'csv' | 'json' | 'xlsx';
-  generatedAt: Date;
-  expiresAt: Date;
-  size?: string;
-  status: 'generating' | 'ready' | 'expired' | 'failed';
-}
+import analyticsService, { Report } from '@/services/analyticsService';
 
 interface AnalyticsReportsProps {
   className?: string;
@@ -28,61 +15,60 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ className = '' }) =
 
   const [newReport, setNewReport] = useState({
     name: '',
-    type: 'user' as Report['type'],
+    type: 'user' as 'user' | 'system' | 'business' | 'custom',
     description: '',
-    format: 'pdf' as Report['format'],
+    format: 'pdf' as 'pdf' | 'csv' | 'json' | 'xlsx',
     parameters: {}
   });
 
   useEffect(() => {
-    // Load reports from API
-    const loadReports = async () => {
-      try {
-        setLoading(true);
-        
-        // TODO: Replace with actual API calls to fetch real reports data
-        // For now, we'll initialize with empty values
-        setReports([]);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error loading reports:', error);
-        setLoading(false);
-      }
-    };
-
     loadReports();
   }, []);
+
+  const loadReports = async () => {
+    try {
+      setLoading(true);
+      
+      const response = await analyticsService.listReports();
+      if (response.success) {
+        setReports(response.data || []);
+      } else {
+        console.error('Failed to load reports:', response.error);
+      }
+    } catch (error) {
+      console.error('Error loading reports:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCreateReport = async () => {
     if (!newReport.name.trim()) return;
 
     setGeneratingReport('new');
     try {
-      // Simulate report generation
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      const report: Report = {
-        id: `rpt_${Date.now()}`,
-        name: newReport.name,
-        type: newReport.type,
-        description: newReport.description,
-        parameters: newReport.parameters,
-        format: newReport.format,
-        generatedAt: new Date(),
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        size: 'Generating...',
-        status: 'ready'
-      };
-
-      setReports(prev => [report, ...prev]);
-      setNewReport({
-        name: '',
-        type: 'user',
-        description: '',
-        format: 'pdf',
-        parameters: {}
-      });
-      setShowCreateForm(false);
+      const response = await analyticsService.generateReport(
+        newReport.type,
+        newReport.parameters,
+        newReport.format
+      );
+      
+      if (response.success && response.data) {
+        // Add the new report to the list
+        setReports(prev => [response.data!, ...prev]);
+        
+        // Reset form
+        setNewReport({
+          name: '',
+          type: 'user',
+          description: '',
+          format: 'pdf',
+          parameters: {}
+        });
+        setShowCreateForm(false);
+      } else {
+        console.error('Failed to create report:', response.error);
+      }
     } catch (error) {
       console.error('Error creating report:', error);
     } finally {
@@ -92,11 +78,13 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ className = '' }) =
 
   const handleDownloadReport = async (reportId: string) => {
     try {
-      // Simulate download
-      const report = reports.find(r => r.id === reportId);
-      if (report) {
+      const response = await analyticsService.downloadReport(reportId);
+      if (response.success) {
         // In a real app, this would trigger a download
-        console.log(`Downloading report: ${report.name}`);
+        console.log(`Downloading report: ${reportId}`);
+        // Here you would typically create a download link or open in new tab
+      } else {
+        console.error('Failed to download report:', response.error);
       }
     } catch (error) {
       console.error('Error downloading report:', error);
@@ -105,7 +93,12 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ className = '' }) =
 
   const handleDeleteReport = async (reportId: string) => {
     try {
-      setReports(prev => prev.filter(r => r.id !== reportId));
+      const response = await analyticsService.deleteReport(reportId);
+      if (response.success) {
+        setReports(prev => prev.filter(r => r.id !== reportId));
+      } else {
+        console.error('Failed to delete report:', response.error);
+      }
     } catch (error) {
       console.error('Error deleting report:', error);
     }
@@ -189,7 +182,7 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ className = '' }) =
               <label className="block text-sm font-medium text-gray-300 mb-2">Report Type</label>
               <select
                 value={newReport.type}
-                onChange={(e) => setNewReport(prev => ({ ...prev, type: e.target.value as Report['type'] }))}
+                onChange={(e) => setNewReport(prev => ({ ...prev, type: e.target.value as any }))}
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="user">User Analytics</option>
@@ -213,7 +206,7 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ className = '' }) =
               <label className="block text-sm font-medium text-gray-300 mb-2">Format</label>
               <select
                 value={newReport.format}
-                onChange={(e) => setNewReport(prev => ({ ...prev, format: e.target.value as Report['format'] }))}
+                onChange={(e) => setNewReport(prev => ({ ...prev, format: e.target.value as any }))}
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="pdf">PDF Document</option>
@@ -266,13 +259,13 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ className = '' }) =
                     <p className="text-gray-400 text-sm mt-1">{report.description}</p>
                     <div className="flex items-center space-x-4 mt-2">
                       <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(report.status)}`}>
-                        {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                        {report.status?.charAt(0).toUpperCase() + (report.status?.slice(1) || '')}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {report.format.toUpperCase()} • {report.size || 'N/A'}
+                        {report.format?.toUpperCase()} • {report.size || 'N/A'}
                       </span>
                       <span className="text-xs text-gray-500">
-                        Expires: {report.expiresAt.toLocaleDateString()}
+                        Expires: {report.expiresAt ? new Date(report.expiresAt).toLocaleDateString() : 'N/A'}
                       </span>
                     </div>
                   </div>
@@ -362,7 +355,20 @@ const AnalyticsReports: React.FC<AnalyticsReportsProps> = ({ className = '' }) =
               type: 'system'
             }
           ].map((template, index) => (
-            <div key={index} className="bg-gray-700/50 rounded-lg p-4 hover:bg-gray-700/70 transition-colors cursor-pointer border border-gray-600">
+            <div 
+              key={index} 
+              className="bg-gray-700/50 rounded-lg p-4 hover:bg-gray-700/70 transition-colors cursor-pointer border border-gray-600"
+              onClick={() => {
+                setNewReport({
+                  name: template.title,
+                  type: template.type as any,
+                  description: template.description,
+                  format: 'pdf',
+                  parameters: {}
+                });
+                setShowCreateForm(true);
+              }}
+            >
               <div className="text-2xl mb-3">{template.icon}</div>
               <h4 className="text-sm font-medium text-white mb-1">{template.title}</h4>
               <p className="text-xs text-gray-400 mb-3">{template.description}</p>

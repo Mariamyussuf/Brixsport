@@ -52,6 +52,21 @@ export interface SystemHealth {
   overallStatus: string;
 }
 
+// Report interfaces
+export interface Report {
+  id: string;
+  name: string;
+  description: string;
+  type: 'user' | 'sports' | 'competition' | 'platform' | 'system' | 'deployment' | 'custom';
+  parameters: Record<string, any>;
+  data: any;
+  format: 'json' | 'csv' | 'pdf' | 'xlsx';
+  generatedAt: string;
+  expiresAt?: string;
+  size?: string;
+  status?: 'generating' | 'ready' | 'expired' | 'failed';
+}
+
 // Analytics Service
 class AnalyticsService {
   private baseUrl: string;
@@ -158,6 +173,32 @@ class AnalyticsService {
   // Fetch detailed performance data
   public async getDetailedPerformance(): Promise<APIResponse<any>> {
     return this.apiRequest<any>('/analytics/system/performance');
+  }
+
+  // Reports methods
+  public async listReports(): Promise<APIResponse<Report[]>> {
+    return this.apiRequest<Report[]>('/analytics/reports');
+  }
+
+  public async getReport(id: string): Promise<APIResponse<Report>> {
+    return this.apiRequest<Report>(`/analytics/reports/${id}`);
+  }
+
+  public async generateReport(type: string, parameters: any, format: string): Promise<APIResponse<Report>> {
+    return this.apiRequest<Report>('/analytics/reports', {
+      method: 'POST',
+      body: JSON.stringify({ type, parameters, format })
+    });
+  }
+
+  public async downloadReport(id: string): Promise<APIResponse<any>> {
+    return this.apiRequest<any>(`/analytics/reports/${id}/download`);
+  }
+
+  public async deleteReport(id: string): Promise<APIResponse<void>> {
+    return this.apiRequest<void>(`/analytics/reports/${id}`, {
+      method: 'DELETE'
+    });
   }
 
   // Fetch all required data for the analytics overview
