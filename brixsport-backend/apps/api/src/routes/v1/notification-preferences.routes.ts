@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { notificationPreferencesController } from '../../controllers/notification-preferences.controller';
-import { authenticate } from '../../middleware/auth.middleware';
-import { validate } from '../../middleware/validation.middleware';
+import { notificationPreferencesController } from '@controllers/notification-preferences.controller';
+import { authenticate } from '@middleware/auth.middleware';
+import { validate } from '@middleware/validation.middleware';
 import { 
   updateNotificationPreferencesSchema 
 } from '../../validation/notification-preferences.validation';
