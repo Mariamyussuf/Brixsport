@@ -1,17 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { loggerService, LoggerMatch, MatchEvent, LoggerCompetition } from '@/lib/loggerService';
+import { useAdmin } from '@/contexts/AdminContext';
+import { loggerService, LoggerMatch as LoggerServiceMatch, MatchEvent, LoggerCompetition as LoggerServiceCompetition } from '@/lib/loggerService';
 import { getCompetitions } from '@/lib/competitionService';
+import { MatchStatus } from '@/types/matchEvents';
 
-interface MatchData extends LoggerMatch {
+// Define the match data interface that extends the admin service LoggerMatch (which is any)
+interface MatchData {
+  id: string;
+  competitionId: string;
+  homeTeamId: string;
+  awayTeamId: string;
+  startTime: string;
+  status: MatchStatus | string;
+  homeScore?: number;
+  awayScore?: number;
+  period?: string;
+  timeRemaining?: string;
+  events: MatchEvent[];
+  loggerId: string;
+  lastUpdated: string;
   competitionName?: string;
   loggerName?: string;
 }
 
 const MatchesManagement = () => {
-  const [matches, setMatches] = useState<MatchData[]>([]);
-  const [competitions, setCompetitions] = useState<LoggerCompetition[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { 
+    matches, 
+    competitions, 
+    loggers,
+    loading, 
+    error, 
+    loadLoggerMatches, 
+    loadLoggerCompetitions,
+    assignLoggerToMatch
+  } = useAdmin();
+  
   const [selectedMatch, setSelectedMatch] = useState<MatchData | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   
@@ -27,42 +50,16 @@ const MatchesManagement = () => {
 
   // Fetch matches and competitions from API
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // First fetch competitions
-        const competitionsResponse = await loggerService.getCompetitions();
-        if (competitionsResponse.success && competitionsResponse.data) {
-          setCompetitions(competitionsResponse.data);
-        }
-        
-        // If we have competitions, fetch matches for the first one
-        if (competitionsResponse.success && competitionsResponse.data && competitionsResponse.data.length > 0) {
-          const response = await loggerService.getMatches(competitionsResponse.data[0].id);
-          if (response.success && response.data) {
-            setMatches(response.data as MatchData[]);
-          } else {
-            throw new Error(response.error || 'Failed to load matches');
-          }
-        } else {
-          setMatches([]);
-        }
-      } catch (err) {
-        setError('Failed to load data');
-        console.error('Error fetching data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    loadLoggerCompetitions();
+    loadLoggerMatches();
   }, []);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: MatchStatus | string) => {
+    // Handle both typed and untyped status values
     switch (status) {
       case 'scheduled':
         return <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">Scheduled</span>;
@@ -83,8 +80,18 @@ const MatchesManagement = () => {
     setShowCreateForm(true);
   };
 
-  const handleViewDetails = (match: MatchData) => {
-    setSelectedMatch(match);
+  const handleViewDetails = (match: any) => {
+    // Find the logger name
+    const logger = loggers.find(l => l.id === match.loggerId);
+    const competition = competitions.find(c => c.id === match.competitionId);
+    
+    const matchWithData: MatchData = {
+      ...match,
+      loggerName: logger?.name || 'N/A',
+      competitionName: competition?.name || 'N/A'
+    };
+    
+    setSelectedMatch(matchWithData);
   };
 
   const handleCloseDetails = () => {
@@ -115,7 +122,17 @@ const MatchesManagement = () => {
     });
   };
 
-  if (loading) {
+  const handleAssignLogger = async (matchId: string, loggerId: string) => {
+    try {
+      await assignLoggerToMatch(matchId, loggerId);
+      // Refresh the matches data
+      await loadLoggerMatches();
+    } catch (err) {
+      console.error('Failed to assign logger to match:', err);
+    }
+  };
+
+  if (loading.loggers) {
     return (
       <div className="flex justify-center items-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
@@ -208,41 +225,47 @@ const MatchesManagement = () => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {matches.map((match) => (
-                <tr key={match.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      {match.homeTeamId} vs {match.awayTeamId}
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {formatDate(match.startTime)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">
-                      {competitions.find(c => c.id === match.competitionId)?.name || 'N/A'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">{match.loggerName || 'N/A'}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">ID: {match.loggerId}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(match.status)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {formatDate(match.lastUpdated)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleViewDetails(match)}
-                      className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                    >
-                      View Details
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {matches.map((match: any) => {
+                // Find the logger name
+                const logger = loggers.find(l => l.id === match.loggerId);
+                const competition = competitions.find(c => c.id === match.competitionId);
+                
+                return (
+                  <tr key={match.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {match.homeTeamId} vs {match.awayTeamId}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {formatDate(match.startTime)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        {competition?.name || 'N/A'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 dark:text-white">{logger?.name || 'N/A'}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">ID: {match.loggerId}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(match.status)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {formatDate(match.lastUpdated)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => handleViewDetails(match)}
+                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        View Details
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -304,7 +327,7 @@ const MatchesManagement = () => {
                     <div className="flex justify-between">
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Competition</dt>
                       <dd className="text-sm text-gray-900 dark:text-white">
-                        {competitions.find(c => c.id === selectedMatch.competitionId)?.name || 'N/A'}
+                        {selectedMatch.competitionName || 'N/A'}
                       </dd>
                     </div>
                     <div className="flex justify-between">
@@ -320,6 +343,31 @@ const MatchesManagement = () => {
                       <dd className="text-sm text-gray-900 dark:text-white">{formatDate(selectedMatch.lastUpdated)}</dd>
                     </div>
                   </dl>
+                  
+                  {/* Assign Logger Section */}
+                  <div className="mt-4">
+                    <h4 className="text-md font-medium text-gray-900 dark:text-white mb-2">Assign Logger</h4>
+                    <div className="flex space-x-2">
+                      <select
+                        value={selectedMatch.loggerId || ''}
+                        onChange={(e) => handleAssignLogger(selectedMatch.id, e.target.value)}
+                        className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                      >
+                        <option value="">Select Logger</option>
+                        {loggers.map(logger => (
+                          <option key={logger.id} value={logger.id}>
+                            {logger.name} ({logger.email})
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => handleAssignLogger(selectedMatch.id, '')}
+                        className="px-3 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white rounded-md hover:bg-gray-300 dark:hover:bg-gray-500"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -469,8 +517,11 @@ const MatchesManagement = () => {
                       className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
                     >
                       <option value="">Select Logger</option>
-                      <option value="logger-1">John Smith</option>
-                      <option value="logger-2">Sarah Johnson</option>
+                      {loggers.map(logger => (
+                        <option key={logger.id} value={logger.id}>
+                          {logger.name} ({logger.email})
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>

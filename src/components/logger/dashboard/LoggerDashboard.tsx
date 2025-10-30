@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { useLoggerAuth } from '@/hooks/useAuth';
+import { useLoggerAuth } from '@/contexts/LoggerAuthContext';
 import LoggerNotifications from '@/components/logger/notifications/LoggerNotifications';
 import MatchTrackerPage from '@/components/logger/matches/MatchTrackerPage';
 
 const LoggerDashboard = () => {
-  const { user, isLogger, hasLoggerPermissions } = useLoggerAuth();
+  const { user, isAuthenticated } = useLoggerAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   // Security check - only show dashboard to authenticated loggers
-  if (!user || !hasLoggerPermissions) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 max-w-md w-full text-center">
@@ -38,7 +38,7 @@ const LoggerDashboard = () => {
                 <svg className="mr-1.5 h-2 w-2 text-blue-400" fill="currentColor" viewBox="0 0 8 8">
                   <circle cx="4" cy="4" r="3" />
                 </svg>
-                {isLogger ? 'Logger Role' : 'Admin Role'}
+                Logger Role
               </span>
             </div>
           </div>

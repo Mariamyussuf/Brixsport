@@ -16,6 +16,7 @@ export interface CentralizedDatabaseService {
   maskSensitiveFields<T>(data: T, fields: string[]): Promise<T>;
   encryptField(value: string): Promise<string>;
   decryptField(encryptedValue: string): Promise<string>;
+  hashPassword(password: string): Promise<string>;
   auditAccess(userId: string, operation: string, resource: string, details?: any): Promise<void>;
   checkPermissions(userId: string, resource: string, action: string): Promise<boolean>;
   
@@ -207,6 +208,11 @@ export const centralizedDatabaseService: CentralizedDatabaseService = {
   // Decrypt field
   decryptField: async (encryptedValue: string): Promise<string> => {
     return await databaseSecurityService.decryptField(encryptedValue);
+  },
+  
+  // Hash password
+  hashPassword: async (password: string): Promise<string> => {
+    return await databaseSecurityService.hashPassword(password);
   },
   
   // Audit database access

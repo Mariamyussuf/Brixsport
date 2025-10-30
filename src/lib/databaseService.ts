@@ -360,7 +360,6 @@ interface UserStats {
   upcomingMatches: number;
 }
 
-// Logger type
 interface Logger {
   id: string;
   name: string;
@@ -371,6 +370,22 @@ interface Logger {
   createdAt: string;
   lastActive: string;
   updatedAt?: string;
+}
+
+interface LoggerMatch {
+  id: string;
+  competitionId: string;
+  homeTeamId: string;
+  awayTeamId: string;
+  startTime: string;
+  status: string;
+  homeScore?: number;
+  awayScore?: number;
+  period?: string;
+  timeRemaining?: string;
+  events: any[];
+  loggerId: string;
+  lastUpdated: string;
 }
 
 export class DatabaseService {
@@ -477,6 +492,45 @@ export class DatabaseService {
     }
   }
 
+  async createLoggerWithCredentials(loggerData: Omit<Logger, 'id' | 'created_at'> & { password: string }): Promise<Logger> {
+    logOperation('CREATE_LOGGER_WITH_CREDENTIALS_START', { email: loggerData.email });
+    try {
+      // Validate required fields with enhanced validation
+      validate.string(loggerData.name, 'Name', { required: true, minLength: 1, maxLength: 100 });
+      validate.email(loggerData.email);
+      validate.string(loggerData.role, 'Role', { required: true, maxLength: 50 });
+      validate.string(loggerData.password, 'Password', { required: true, minLength: 8 });
+      
+      // Additional validation for assignedCompetitions if present
+      if (loggerData.assignedCompetitions) {
+        validate.array(loggerData.assignedCompetitions, 'Assigned Competitions', { required: false, maxLength: 100 });
+        // Validate each competition ID in the array
+        for (const competitionId of loggerData.assignedCompetitions) {
+          validate.string(competitionId, 'Competition ID', { required: true, minLength: 1 });
+        }
+      }
+      
+      // Send the complete logger data including the password to the backend
+      // The backend will hash the password before storing it
+      const response = await apiCall('/admin/loggers/with-credentials', {
+        method: 'POST',
+        body: JSON.stringify(loggerData),
+      }, 'admin');
+      
+      logOperation('CREATE_LOGGER_WITH_CREDENTIALS_SUCCESS', { id: response.data?.id, email: loggerData.email });
+      return response.data;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('CREATE_LOGGER_WITH_CREDENTIALS_VALIDATION_ERROR', { email: loggerData.email, error: error.message });
+        console.error('Validation error in createLoggerWithCredentials:', error.message);
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('CREATE_LOGGER_WITH_CREDENTIALS_ERROR', { email: loggerData.email, error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in createLoggerWithCredentials:', error);
+      throw error;
+    }
+  }
+
   async updateLogger(id: string, updates: Partial<Logger>): Promise<Logger | null> {
     logOperation('UPDATE_LOGGER_START', { id });
     try {
@@ -525,6 +579,70 @@ export class DatabaseService {
       logOperation('UPDATE_LOGGER_ERROR', { id, error: error instanceof Error ? error.message : 'Unknown error' });
       console.error('Error in updateLogger:', error);
       return null;
+    }
+  }
+
+  async assignLoggerToMatch(matchId: string, loggerId: string): Promise<LoggerMatch | null> {
+    logOperation('ASSIGN_LOGGER_TO_MATCH_START', { matchId, loggerId });
+    try {
+      // Validate input using enhanced validation
+      validate.id(matchId, 'Match ID');
+      validate.id(loggerId, 'Logger ID');
+      
+      // Check if the logger exists
+      const logger = await this.getLoggerById(loggerId);
+      if (!logger) {
+        throw new DatabaseError('Logger not found', 'LOGGER_NOT_FOUND', 404);
+      }
+      
+      // Assign the logger to the match
+      // In a real implementation, you would update the match record in the database
+      // to include the loggerId field
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
+      const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+      
+      const response = await fetch(`${API_BASE_URL}/v1/matches/${matchId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ loggerId })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || `API call failed: ${response.status} ${response.statusText}`;
+        
+        // Map HTTP status codes to specific error types
+        switch (response.status) {
+          case 401:
+            throw new AuthenticationError(errorMessage);
+          case 403:
+            throw new DatabaseError(errorMessage, 'FORBIDDEN', 403);
+          case 404:
+            throw new DatabaseError(errorMessage, 'NOT_FOUND', 404);
+          default:
+            throw new DatabaseError(errorMessage, 'API_ERROR', response.status);
+        }
+      }
+      
+      const result = await response.json();
+      
+      logOperation('ASSIGN_LOGGER_TO_MATCH_SUCCESS', { matchId, loggerId });
+      return result.data || null;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('ASSIGN_LOGGER_TO_MATCH_VALIDATION_ERROR', { matchId, loggerId, error: error.message });
+        console.error('Validation error in assignLoggerToMatch:', error.message);
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('ASSIGN_LOGGER_TO_MATCH_ERROR', { matchId, loggerId, error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in assignLoggerToMatch:', error);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to assign logger to match: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

@@ -24,17 +24,17 @@ import {
   changePasswordSchema,
   validate
 } from '../../validation/user.validation';
-import { authRateLimiter, passwordResetRateLimiter } from '../../middleware/rateLimit.middleware';
+import { authRateLimiter, passwordResetRateLimiter, credentialRateLimiter, accountCreationRateLimiter, mfaRateLimiter } from '../../middleware/rateLimit.middleware';
 import { authenticate } from '../../middleware/auth.middleware';
 
 const router = Router();
 
 // Public routes with rate limiting
-router.post('/signup', authRateLimiter, validate(signupSchema), signup);
+router.post('/signup', accountCreationRateLimiter, validate(signupSchema), signup);
 router.post('/login', authRateLimiter, validate(loginSchema), login);
 router.post('/refresh', validate(refreshTokenSchema), refreshTokens);
 router.post('/verify-email', verifyEmail);
-router.post('/resend-verification', resendVerification);
+router.post('/resend-verification', credentialRateLimiter, resendVerification);
 router.post('/forgot-password', passwordResetRateLimiter, validate(forgotPasswordSchema), forgotPassword);
 router.post('/reset-password', passwordResetRateLimiter, validate(resetPasswordSchema), resetPassword);
 
@@ -43,9 +43,9 @@ router.use(authenticate);
 
 router.post('/logout', logout);
 router.post('/logout-all', logoutAllSessions);
-router.post('/change-password', validate(changePasswordSchema), changePassword);
-router.post('/enable-mfa', enableMFA);
-router.post('/disable-mfa', disableMFA);
+router.post('/change-password', credentialRateLimiter, validate(changePasswordSchema), changePassword);
+router.post('/enable-mfa', mfaRateLimiter, enableMFA);
+router.post('/disable-mfa', mfaRateLimiter, disableMFA);
 router.get('/sessions', listSessions);
 router.delete('/sessions/:id', revokeSession);
 

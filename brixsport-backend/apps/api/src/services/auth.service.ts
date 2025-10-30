@@ -5,6 +5,7 @@ import { supabaseService } from './supabase.service';
 import { sessionService } from './security/session.service';
 import { emailService } from './email.service';
 import { mfaService } from './mfa.service';
+import { centralizedDatabaseService } from './centralized-database.service';
 import { v4 as uuidv4 } from 'uuid';
 
 export const authService = {
@@ -18,9 +19,8 @@ export const authService = {
         throw new Error('User already exists with this email');
       }
       
-      // Hash password
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
+      // Hash password using the centralized database service
+      const hashedPassword = await centralizedDatabaseService.hashPassword(userData.password);
       
       // Create user
       const user = await supabaseService.createUser({
@@ -95,7 +95,7 @@ export const authService = {
         throw new Error('User account is suspended');
       }
       
-      // Verify password
+      // Verify password using bcrypt directly since we need to compare with stored hash
       const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
       if (!isPasswordValid) {
         throw new Error('Invalid email or password');
@@ -398,9 +398,8 @@ export const authService = {
         throw new Error('Invalid or expired reset token');
       }
       
-      // Hash new password
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+      // Hash new password using the centralized database service
+      const hashedPassword = await centralizedDatabaseService.hashPassword(newPassword);
       
       // Update password
       const updateResult = await supabaseService.updateUser(decoded.userId, { 
@@ -440,9 +439,8 @@ export const authService = {
         throw new Error('Current password is incorrect');
       }
       
-      // Hash new password
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+      // Hash new password using the centralized database service
+      const hashedPassword = await centralizedDatabaseService.hashPassword(newPassword);
       
       // Update password
       await supabaseService.updateUser(userId, { password: hashedPassword });

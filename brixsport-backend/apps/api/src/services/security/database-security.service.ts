@@ -7,6 +7,7 @@ export interface DatabaseSecurityService {
   maskSensitiveData<T>(data: T, fields: string[]): Promise<T>;
   encryptField(value: string): Promise<string>;
   decryptField(encryptedValue: string): Promise<string>;
+  hashPassword(password: string): Promise<string>;
   auditDatabaseAccess(userId: string, query: string, resource: string): Promise<void>;
   checkDatabasePermissions(userId: string, resource: string, action: string): Promise<boolean>;
   // New methods for production-ready implementation
@@ -96,6 +97,21 @@ export const databaseSecurityService: DatabaseSecurityService = {
       return decryptedValue;
     } catch (error: any) {
       logger.error('Field decryption error', error);
+      throw error;
+    }
+  },
+  
+  hashPassword: async (password: string): Promise<string> => {
+    try {
+      logger.debug('Hashing password in database security service');
+      
+      const hashedPassword = await encryptionService.hashPassword(password);
+      
+      logger.debug('Password hashed in database security service');
+      
+      return hashedPassword;
+    } catch (error: any) {
+      logger.error('Password hashing error in database security service', error);
       throw error;
     }
   },

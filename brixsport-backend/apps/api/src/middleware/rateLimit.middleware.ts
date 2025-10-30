@@ -44,6 +44,69 @@ export const passwordResetRateLimiter = rateLimit({
   }
 });
 
+// Rate limiter for credential-related operations (more strict)
+export const credentialRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 3, // limit each IP to 3 requests per windowMs
+  message: {
+    success: false,
+    error: 'Too many requests',
+    message: 'Too many credential-related requests, please try again later'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    logger.warn('Credential rate limit exceeded', {
+      ip: req.ip,
+      url: req.url,
+      method: req.method
+    });
+    res.status(options.statusCode).send(options.message);
+  }
+});
+
+// Rate limiter for account creation
+export const accountCreationRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // limit each IP to 5 account creations per hour
+  message: {
+    success: false,
+    error: 'Too many requests',
+    message: 'Too many account creation attempts, please try again later'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    logger.warn('Account creation rate limit exceeded', {
+      ip: req.ip,
+      url: req.url,
+      method: req.method
+    });
+    res.status(options.statusCode).send(options.message);
+  }
+});
+
+// Rate limiter for MFA operations
+export const mfaRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 MFA attempts per windowMs
+  message: {
+    success: false,
+    error: 'Too many requests',
+    message: 'Too many MFA attempts, please try again later'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    logger.warn('MFA rate limit exceeded', {
+      ip: req.ip,
+      url: req.url,
+      method: req.method
+    });
+    res.status(options.statusCode).send(options.message);
+  }
+});
+
 // General API rate limiter
 export const apiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

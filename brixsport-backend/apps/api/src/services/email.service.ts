@@ -135,5 +135,33 @@ export const emailService = {
       logger.error('Failed to send security alert email', { error: error.message, email });
       throw error;
     }
+  },
+  
+  sendLoggerCredentials: async (email: string, name: string, temporaryPassword: string) => {
+    try {
+      const result = await emailService.sendEmail({
+        to: email,
+        subject: 'Brixsport Logger Account Created',
+        html: `
+          <h2>Welcome to Brixsport Logger System</h2>
+          <p>Hello ${name},</p>
+          <p>Your logger account has been created successfully.</p>
+          <p><strong>Temporary Credentials:</strong></p>
+          <ul>
+            <li><strong>Email:</strong> ${email}</li>
+            <li><strong>Password:</strong> ${temporaryPassword}</li>
+          </ul>
+          <p>Please log in to the system and change your password immediately for security reasons.</p>
+          <p><a href="${process.env.APP_URL}/logger/login">Login to Logger System</a></p>
+          <p>For security reasons, this temporary password will expire in 24 hours.</p>
+          <p>If you didn't request this account, please contact your administrator immediately.</p>
+        `
+      });
+      
+      return result;
+    } catch (error: any) {
+      logger.error('Failed to send logger credentials email', { error: error.message, email });
+      throw error;
+    }
   }
 };

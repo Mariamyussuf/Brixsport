@@ -109,10 +109,12 @@ interface AdminContextType extends AdminState {
   loadLoggers: () => Promise<void>;
   selectLogger: (logger: Logger | null) => void;
   createLogger: (loggerData: Omit<Logger, 'id' | 'createdAt' | 'lastActive'>) => Promise<void>;
+  createLoggerWithCredentials: (loggerData: Omit<Logger, 'id' | 'createdAt' | 'lastActive'> & { password: string }) => Promise<Logger>;
   updateLogger: (loggerId: string, updates: Partial<Logger>) => Promise<void>;
   deleteLogger: (loggerId: string) => Promise<void>;
   suspendLogger: (loggerId: string) => Promise<void>;
   activateLogger: (loggerId: string) => Promise<void>;
+  assignLoggerToMatch: (matchId: string, loggerId: string) => Promise<void>;
   clearError: () => void;
   reset: () => void;
   setAdminUser: (user: AdminUser | null) => void;
@@ -169,7 +171,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     
     try {
       // Call the adminService to fetch real data
-      const response = await adminService.getLoggers();
+      const response: { success: boolean; data?: Logger[]; error?: { message?: string; code?: number } } = await adminService.getLoggers();
       if (response.success && response.data) {
         // Ensure all logger data is properly typed
         const typedLoggers = response.data.map(ensureLoggerType);
@@ -197,7 +199,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     
     try {
       // Call the adminService to create a logger
-      const response = await adminService.createLogger(loggerData);
+      const response: { success: boolean; data?: Logger; error?: { message?: string; code?: number } } = await adminService.createLogger(loggerData);
       if (response.success && response.data) {
         // Add new logger to the list
         dispatch({ type: 'SET_LOGGERS', payload: [...state.loggers, response.data] });
@@ -212,6 +214,41 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     }
   };
   
+  // Create logger with credentials
+  const createLoggerWithCredentials = async (loggerData: Omit<Logger, 'id' | 'createdAt' | 'lastActive'> & { password: string }): Promise<Logger> => {
+    dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: true } });
+    dispatch({ type: 'CLEAR_ERROR' });
+    
+    try {
+      // Call the adminService to create a logger with credentials
+      const response: { success: boolean; data?: Logger; error?: { message?: string; code?: number } } = await adminService.createLoggerWithCredentials(loggerData);
+      if (response.success && response.data) {
+        // Add new logger to the list
+        dispatch({ type: 'SET_LOGGERS', payload: [...state.loggers, response.data] });
+        return response.data;
+      } else {
+        throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to create logger');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create logger';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      throw error;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: false } });
+    }
+  };
+
+  // Set admin user
+  const setAdminUser = (user: AdminUser | null): void => {
+    dispatch({ type: 'SET_ADMIN_USER', payload: user });
+  };
+
+  // Logout
+  const logout = (): void => {
+    authLogout();
+    dispatch({ type: 'RESET' });
+  };
+
   // Update logger
   const updateLogger = async (loggerId: string, updates: Partial<Logger>): Promise<void> => {
     dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: true } });
@@ -219,7 +256,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     
     try {
       // Call the adminService to update a logger
-      const response = await adminService.updateLogger(loggerId, updates);
+      const response: { success: boolean; data?: Logger; error?: { message?: string; code?: number } } = await adminService.updateLogger(loggerId, updates);
       if (response.success && response.data) {
         // Update logger in the list
         const updatedLoggers = state.loggers.map(logger => 
@@ -244,7 +281,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     
     try {
       // Call the adminService to delete a logger
-      const response = await adminService.deleteLogger(loggerId);
+      const response: { success: boolean; data?: boolean; error?: { message?: string; code?: number } } = await adminService.deleteLogger(loggerId);
       if (response.success) {
         // Remove logger from the list
         const updatedLoggers = state.loggers.filter(logger => logger.id !== loggerId);
@@ -267,7 +304,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     
     try {
       // Call the adminService to suspend a logger
-      const response = await adminService.suspendLogger(loggerId);
+      const response: { success: boolean; data?: Logger; error?: { message?: string; code?: number } } = await adminService.suspendLogger(loggerId);
       if (response.success && response.data) {
         // Update logger status in the list
         const updatedLoggers = state.loggers.map(logger => 
@@ -292,7 +329,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     
     try {
       // Call the adminService to activate a logger
-      const response = await adminService.activateLogger(loggerId);
+      const response: { success: boolean; data?: Logger; error?: { message?: string; code?: number } } = await adminService.activateLogger(loggerId);
       if (response.success && response.data) {
         // Update logger status in the list
         const updatedLoggers = state.loggers.map(logger => 
@@ -319,7 +356,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     
     try {
       // Call the adminService to fetch competitions
-      const response = await adminService.getLoggerCompetitions();
+      const response: { success: boolean; data?: LoggerCompetition[]; error?: { message?: string; code?: number } } = await adminService.getLoggerCompetitions();
       if (response.success && response.data) {
         dispatch({ type: 'SET_COMPETITIONS', payload: response.data });
       } else {
@@ -340,7 +377,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     
     try {
       // Call the adminService to fetch matches
-      const response = await adminService.getLoggerMatches();
+      const response: { success: boolean; data?: LoggerMatch[]; error?: { message?: string; code?: number } } = await adminService.getLoggerMatches();
       if (response.success && response.data) {
         dispatch({ type: 'SET_MATCHES', payload: response.data });
       } else {
@@ -361,7 +398,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     
     try {
       // Call the adminService to create a match
-      const response = await adminService.createLoggerMatch(matchData);
+      const response: { success: boolean; data?: LoggerMatch; error?: { message?: string; code?: number } } = await adminService.createLoggerMatch(matchData);
       if (response.success && response.data) {
         // Add new match to the list
         dispatch({ type: 'SET_MATCHES', payload: [...state.matches, response.data] });
@@ -383,7 +420,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     
     try {
       // Call the adminService to update a match
-      const response = await adminService.updateLoggerMatch(matchId, updates);
+      const response: { success: boolean; data?: LoggerMatch; error?: { message?: string; code?: number } } = await adminService.updateLoggerMatch(matchId, updates);
       if (response.success && response.data) {
         // Update match in the list
         const updatedMatches = state.matches.map(match => 
@@ -408,12 +445,12 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     
     try {
       // Call the adminService to add an event
-      const response = await adminService.addLoggerEvent(matchId, event);
+      const response: { success: boolean; data?: LoggerMatch; error?: { message?: string; code?: number } } = await adminService.addLoggerEvent(matchId, event);
       if (response.success && response.data) {
         // Update match in the list
         const updatedMatches = state.matches.map(match => 
           match.id === matchId ? response.data : match
-        );
+        ).filter((match): match is LoggerMatch => match !== undefined);
         dispatch({ type: 'SET_MATCHES', payload: updatedMatches });
       } else {
         throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to add event');
@@ -433,7 +470,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     
     try {
       // Call the adminService to generate a report
-      const response = await adminService.generateLoggerReport(matchId);
+      const response: { success: boolean; data?: any; error?: { message?: string; code?: number } } = await adminService.generateLoggerReport(matchId);
       if (response.success && response.data) {
         // Report generated successfully
         // You might want to do something with the report data here
@@ -442,6 +479,31 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to generate report';
+      dispatch({ type: 'SET_ERROR', payload: message });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: false } });
+    }
+  };
+  
+  // Assign logger to match
+  const assignLoggerToMatch = async (matchId: string, loggerId: string): Promise<void> => {
+    dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: true } });
+    dispatch({ type: 'CLEAR_ERROR' });
+    
+    try {
+      // Call the adminService to assign a logger to a match
+      const response: { success: boolean; data?: LoggerMatch; error?: { message?: string; code?: number } } = await adminService.assignLoggerToMatch(matchId, loggerId);
+      if (response.success && response.data) {
+        // Update match in the list
+        const updatedMatches = state.matches.map(match => 
+          match.id === matchId ? { ...match, loggerId } : match
+        );
+        dispatch({ type: 'SET_MATCHES', payload: updatedMatches });
+      } else {
+        throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to assign logger to match');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to assign logger to match';
       dispatch({ type: 'SET_ERROR', payload: message });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: { key: 'logger', value: false } });
@@ -474,31 +536,16 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children, currentA
     loadLoggers,
     selectLogger,
     createLogger,
+    createLoggerWithCredentials,
     updateLogger,
     deleteLogger,
     suspendLogger,
     activateLogger,
+    assignLoggerToMatch,
     clearError,
     reset,
-    setAdminUser: (user: AdminUser | null) => dispatch({ type: 'SET_ADMIN_USER', payload: user }),
-    logout: () => {
-      authLogout();
-      dispatch({ type: 'RESET' });
-      // Redirect to admin login page on the same domain
-      if (typeof window !== 'undefined') {
-        const currentHost = window.location.hostname;
-        // For localhost development, stay on the same host
-        if (currentHost.startsWith('localhost') || currentHost.includes('vercel.app')) {
-          router.push('/admin/login');
-        } else {
-          // For production, redirect to the admin subdomain
-          window.location.href = 'https://admin.brixsports.com/admin/login';
-        }
-      } else {
-        router.push('/admin/login');
-      }
-    },
-    // Logger functionality for admins
+    setAdminUser,
+    logout,
     loadLoggerCompetitions,
     loadLoggerMatches,
     createLoggerMatch,

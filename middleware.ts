@@ -39,8 +39,8 @@ export function middleware(request: NextRequest) {
     // Route main domain requests (including localhost for development)
     console.log(`[Middleware] Routing main site request: ${pathname}`);
 
-    // Prevent admin/logger routes on main domain
-    if (pathname.startsWith('/admin') || pathname.startsWith('/logger')) {
+    // Prevent admin routes on main domain, but allow logger routes
+    if (pathname.startsWith('/admin')) {
       return NextResponse.redirect(new URL('/', request.url));
     }
 

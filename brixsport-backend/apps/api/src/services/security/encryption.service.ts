@@ -1,5 +1,6 @@
 import { logger } from '@utils/logger';
 import * as crypto from 'crypto';
+import * as bcrypt from 'bcryptjs';
 import { redisService } from '../redis.service';
 import { supabaseService } from '../supabase.service';
 
@@ -25,6 +26,8 @@ export interface EncryptionService {
   decrypt(encryptedData: EncryptedData, keyId?: string): Promise<string>;
   generateKey(type?: string): Promise<{ id: string; key: string }>;
   hash(data: string, algorithm?: string): Promise<string>;
+  hashPassword(password: string): Promise<string>;
+  comparePassword(password: string, hash: string): Promise<boolean>;
   compare(data: string, hash: string): Promise<boolean>;
   // New methods for production-ready implementation
   getKey(keyId: string): Promise<EncryptionKey | null>;
@@ -165,6 +168,37 @@ export const encryptionService: EncryptionService = {
     } catch (error: any) {
       logger.error('Hashing error', error);
       throw error;
+    }
+  },
+  
+  hashPassword: async (password: string): Promise<string> => {
+    try {
+      logger.debug('Hashing password');
+      
+      const saltRounds = 12; // Increased from 10 for better security
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      
+      logger.debug('Password hashed');
+      
+      return hashedPassword;
+    } catch (error: any) {
+      logger.error('Password hashing error', error);
+      throw error;
+    }
+  },
+  
+  comparePassword: async (password: string, hash: string): Promise<boolean> => {
+    try {
+      logger.debug('Comparing password with hash');
+      
+      const isMatch = await bcrypt.compare(password, hash);
+      
+      logger.debug('Password comparison completed', { isMatch });
+      
+      return isMatch;
+    } catch (error: any) {
+      logger.error('Password comparison error', error);
+      return false;
     }
   },
   
