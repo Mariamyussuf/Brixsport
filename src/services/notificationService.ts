@@ -16,12 +16,68 @@ import {
   DeliveryMethod,
   DeliveryStatus
 } from '@/types/notifications';
+import { API_BASE_URL } from '@/lib/apiConfig';
 
-// In-memory storage for notifications (in a real app, this would be a database)
-let notifications: Notification[] = [];
-let preferences: NotificationPreferences[] = [];
-let templates: NotificationTemplate[] = [];
-let notificationHistory: NotificationHistory[] = [];
+// Simple in-memory cache
+const cache: Record<string, { data: any; timestamp: number; ttl: number }> = {};
+
+// Cache TTL in milliseconds (5 minutes default)
+const DEFAULT_TTL = 5 * 60 * 1000;
+
+// Generic request function with authentication
+const fetchAPI = async (endpoint: string, options: RequestInit = {}) => {
+  try {
+    // Get auth token from localStorage
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        ...headers,
+        ...options.headers
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`API Error: ${response.status} - ${response.statusText} - ${errorData.error || 'Unknown error'}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('API request failed:', error);
+    throw error;
+  }
+};
+
+// Cache helper functions
+const getFromCache = (key: string) => {
+  const cached = cache[key];
+  if (cached && Date.now() - cached.timestamp < cached.ttl) {
+    return cached.data;
+  }
+  // Remove expired cache entry
+  delete cache[key];
+  return null;
+};
+
+const setInCache = (key: string, data: any, ttl: number = DEFAULT_TTL) => {
+  cache[key] = {
+    data,
+    timestamp: Date.now(),
+    ttl
+  };
+};
+
+const clearCache = (key: string) => {
+  delete cache[key];
+};
 
 // Notification Service class
 export class NotificationService {
@@ -30,68 +86,54 @@ export class NotificationService {
     createdAt?: string;
     updatedAt?: string;
   }): Promise<{ data: Notification }> {
-    const now = new Date().toISOString();
-    const status = notificationData.status || 'UNREAD';
-    
-    // Extract metadata from the root level if needed
-    const metadata = {
-      ...(notificationData.metadata || {}),
-      ...(notificationData as any).metadata // Handle any additional metadata
-    };
-
-    // Create the notification with proper typing
-    const newNotification: Notification = {
-      ...notificationData,
-      id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      status: status,
-      createdAt: notificationData.createdAt || now,
-      updatedAt: notificationData.updatedAt || now,
-      metadata: Object.keys(metadata).length > 0 ? metadata : undefined
-    };
-
-    // In a real implementation, this would be an API call
-    // For now, we'll just add it to our in-memory array
-    notifications.push(newNotification);
-
-    return { data: newNotification };
+    try {
+      // Clear relevant cache entries
+      clearCache('notifications');
+      
+      // In a real implementation, this would be an API call to create a notification
+      const response = await fetchAPI('/notifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...notificationData,
+          status: notificationData.status || 'UNREAD'
+        })
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      throw error;
+    }
   }
+  
   static async markAsRead(id: string, userId: string): Promise<boolean> {
     try {
-      const notificationIndex = notifications.findIndex(n => n.id === id && n.userId === userId);
+      // Clear relevant cache entries
+      clearCache('notifications');
       
-      if (notificationIndex === -1) {
-        return false;
-      }
+      const response = await fetchAPI(`/notifications/${id}/read`, {
+        method: 'PUT',
+        body: JSON.stringify({ userId })
+      });
       
-      notifications[notificationIndex] = {
-        ...notifications[notificationIndex],
-        status: 'READ',
-        readAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      return true;
+      return response.success;
     } catch (error) {
       console.error('Error marking notification as read:', error);
       return false;
     }
   }
+  
   static async markAllAsRead(userId: string): Promise<{ success: boolean; count?: number; error?: string }> {
     try {
-      // In a real implementation, this would be an API call to the backend
-      const unreadNotifications = notifications.filter(n => n.userId === userId && n.status === 'UNREAD');
+      // Clear relevant cache entries
+      clearCache('notifications');
       
-      // Update all unread notifications to READ
-      notifications = notifications.map(n => 
-        n.userId === userId && n.status === 'UNREAD'
-          ? { ...n, status: 'READ', updatedAt: new Date().toISOString() }
-          : n
-      );
+      const response = await fetchAPI(`/notifications/read-all`, {
+        method: 'POST',
+        body: JSON.stringify({ userId })
+      });
       
-      return { 
-        success: true, 
-        count: unreadNotifications.length 
-      };
+      return response;
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
       return { 
@@ -100,20 +142,18 @@ export class NotificationService {
       };
     }
   }
+  
   static async clearNotifications(userId: string): Promise<{ success: boolean; count: number }> {
     try {
-      const initialCount = notifications.length;
-      const userNotificationIds = notifications
-        .filter(n => n.userId === userId)
-        .map(n => n.id);
+      // Clear relevant cache entries
+      clearCache('notifications');
       
-      // Remove all notifications for the user
-      notifications = notifications.filter(n => n.userId !== userId);
+      const response = await fetchAPI(`/notifications/clear`, {
+        method: 'POST',
+        body: JSON.stringify({ userId })
+      });
       
-      return { 
-        success: true, 
-        count: initialCount - notifications.length 
-      };
+      return response;
     } catch (error) {
       console.error('Error clearing notifications:', error);
       return { 
@@ -122,6 +162,7 @@ export class NotificationService {
       };
     }
   }
+  
   // Get user notifications with filtering and pagination
   static async getUserNotifications(
     userId: string,
@@ -142,94 +183,78 @@ export class NotificationService {
     total: number; 
     totalPages: number;
   }> {
-    // Filter notifications for the user
-    let userNotifications = notifications.filter(n => n.userId === userId);
-    
-    // Apply filters
-    if (filters?.status) {
-      userNotifications = userNotifications.filter(n => n.status === filters.status);
-    }
-    
-    if (filters?.type) {
-      userNotifications = userNotifications.filter(n => n.type === filters.type);
-    }
-    
-    if (filters?.priority) {
-      userNotifications = userNotifications.filter(n => n.priority === filters.priority);
-    }
-    
-    // Apply sorting
-    if (filters?.sortBy) {
-      const sortBy = filters.sortBy as keyof Notification;
-      const sortOrder = filters.sortOrder || 'DESC';
+    try {
+      // Build cache key
+      const cacheKey = `notifications_${userId}_${JSON.stringify(filters)}_${JSON.stringify(pagination)}`;
       
-      userNotifications.sort((a, b) => {
-        const aValue = a[sortBy];
-        const bValue = b[sortBy];
-        
-        // Handle undefined values
-        if (aValue === undefined && bValue === undefined) return 0;
-        if (aValue === undefined) return 1;
-        if (bValue === undefined) return -1;
-        
-        // Compare values
-        if (sortOrder === 'ASC') {
-          return aValue > bValue ? 1 : -1;
-        } else {
-          return aValue < bValue ? 1 : -1;
-        }
-      });
+      // Check cache first
+      const cached = getFromCache(cacheKey);
+      if (cached) {
+        return cached;
+      }
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.append('userId', userId);
+      
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.type) params.append('type', filters.type);
+      if (filters?.priority) params.append('priority', filters.priority);
+      if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+      if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
+      if (pagination?.page) params.append('page', pagination.page.toString());
+      if (pagination?.limit) params.append('limit', Math.min(pagination.limit, 100).toString());
+      
+      const response = await fetchAPI(`/notifications?${params.toString()}`);
+      
+      // Cache the result
+      setInCache(cacheKey, response);
+      
+      return response;
+    } catch (error) {
+      console.error('Error fetching user notifications:', error);
+      throw error;
     }
-    
-    // Apply pagination
-    const page = pagination?.page || 1;
-    const limit = Math.min(pagination?.limit || 20, 100);
-    const total = userNotifications.length;
-    const totalPages = Math.ceil(total / limit);
-    const startIndex = (page - 1) * limit;
-    const paginatedNotifications = userNotifications.slice(startIndex, startIndex + limit);
-    
-    return {
-      data: paginatedNotifications,
-      notifications: paginatedNotifications,
-      total,
-      totalPages
-    };
   }
+  
   // Update notification status
   static async updateNotificationStatus(
     userId: string,
     notificationId: string,
     status: NotificationStatus
   ): Promise<Notification | null> {
-    const notificationIndex = notifications.findIndex(n => n.id === notificationId && n.userId === userId);
-    
-    if (notificationIndex === -1) {
+    try {
+      // Clear relevant cache entries
+      clearCache('notifications');
+      
+      const response = await fetchAPI(`/notifications/${notificationId}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ userId, status })
+      });
+      
+      return response.data || null;
+    } catch (error) {
+      console.error('Error updating notification status:', error);
       return null;
     }
-    
-    const readAt = status === 'READ' ? new Date().toISOString() : notifications[notificationIndex].readAt;
-    
-    notifications[notificationIndex] = {
-      ...notifications[notificationIndex],
-      status,
-      readAt,
-      updatedAt: new Date().toISOString()
-    };
-    
-    return notifications[notificationIndex];
   }
   
   // Delete notification
   static async deleteNotification(userId: string, notificationId: string): Promise<boolean> {
-    const notificationIndex = notifications.findIndex(n => n.id === notificationId && n.userId === userId);
-    
-    if (notificationIndex === -1) {
+    try {
+      // Clear relevant cache entries
+      clearCache('notifications');
+      
+      const response = await fetchAPI(`/notifications/${notificationId}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ userId })
+      });
+      
+      return response.success;
+    } catch (error) {
+      console.error('Error deleting notification:', error);
       return false;
     }
-    
-    notifications.splice(notificationIndex, 1);
-    return true;
   }
   
   // Batch update notifications
@@ -238,33 +263,40 @@ export class NotificationService {
     notificationIds: string[],
     status: NotificationStatus
   ): Promise<number> {
-    let updatedCount = 0;
-    
-    for (const notificationId of notificationIds) {
-      const notificationIndex = notifications.findIndex(n => n.id === notificationId && n.userId === userId);
+    try {
+      // Clear relevant cache entries
+      clearCache('notifications');
       
-      if (notificationIndex !== -1) {
-        const readAt = status === 'READ' ? new Date().toISOString() : notifications[notificationIndex].readAt;
-        
-        notifications[notificationIndex] = {
-          ...notifications[notificationIndex],
-          status,
-          readAt,
-          updatedAt: new Date().toISOString()
-        };
-        
-        updatedCount++;
-      }
+      const response = await fetchAPI(`/notifications/batch-update`, {
+        method: 'POST',
+        body: JSON.stringify({ userId, notificationIds, status })
+      });
+      
+      return response.updatedCount || 0;
+    } catch (error) {
+      console.error('Error batch updating notifications:', error);
+      return 0;
     }
-    
-    return updatedCount;
   }
   
   // Get user notification preferences
   static async getUserPreferences(userId: string): Promise<NotificationPreferences> {
-    const userPreferences = preferences.find(p => p.userId === userId);
-    
-    if (!userPreferences) {
+    try {
+      // Check cache first
+      const cacheKey = `preferences_${userId}`;
+      const cached = getFromCache(cacheKey);
+      if (cached) {
+        return cached;
+      }
+      
+      const response = await fetchAPI(`/notification-preferences`);
+      
+      // Cache the result
+      setInCache(cacheKey, response.data, 10 * 60 * 1000); // 10 minutes cache for preferences
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user preferences:', error);
       // Return default preferences if none exist
       const defaultPreferences: NotificationPreferences = {
         id: `pref-${userId}`,
@@ -298,8 +330,6 @@ export class NotificationService {
       
       return defaultPreferences;
     }
-    
-    return userPreferences;
   }
   
   // Update user notification preferences
@@ -307,53 +337,19 @@ export class NotificationService {
     userId: string,
     updatedPreferences: Partial<NotificationPreferences>
   ): Promise<NotificationPreferences> {
-    const existingIndex = preferences.findIndex(p => p.userId === userId);
-    
-    if (existingIndex !== -1) {
-      // Update existing preferences
-      preferences[existingIndex] = {
-        ...preferences[existingIndex],
-        ...updatedPreferences,
-        userId,
-        updatedAt: new Date().toISOString()
-      };
+    try {
+      // Clear relevant cache entries
+      clearCache(`preferences_${userId}`);
       
-      return preferences[existingIndex];
-    } else {
-      // Create new preferences
-      const newPreferences: NotificationPreferences = {
-        id: `pref-${userId}`,
-        userId,
-        ...updatedPreferences,
-        deliveryMethods: {
-          push: true,
-          email: true,
-          sms: false,
-          inApp: true
-        },
-        categories: {
-          matchUpdates: true,
-          scoreAlerts: true,
-          favoriteTeamNews: true,
-          competitionNews: true,
-          systemAlerts: true,
-          reminders: true,
-          achievements: true,
-          adminNotices: true,
-          logAlerts: true
-        },
-        followedTeams: [],
-        followedPlayers: [],
-        followedCompetitions: [],
-        digestFrequency: 'INSTANT',
-        devices: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      } as NotificationPreferences;
+      const response = await fetchAPI(`/notification-preferences`, {
+        method: 'PUT',
+        body: JSON.stringify(updatedPreferences)
+      });
       
-      preferences.push(newPreferences);
-      
-      return newPreferences;
+      return response.data;
+    } catch (error) {
+      console.error('Error updating user preferences:', error);
+      throw error;
     }
   }
   
@@ -367,73 +363,110 @@ export class NotificationService {
       limit?: number;
     }
   ): Promise<{ templates: NotificationTemplate[]; total: number; totalPages: number }> {
-    // Filter templates
-    let filteredTemplates = templates;
-    if (filters?.activeOnly) {
-      filteredTemplates = templates.filter(t => t.isActive);
+    try {
+      // Build cache key
+      const cacheKey = `templates_${JSON.stringify(filters)}_${JSON.stringify(pagination)}`;
+      
+      // Check cache first
+      const cached = getFromCache(cacheKey);
+      if (cached) {
+        return cached;
+      }
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      
+      if (filters?.activeOnly) params.append('activeOnly', filters.activeOnly.toString());
+      if (pagination?.page) params.append('page', pagination.page.toString());
+      if (pagination?.limit) params.append('limit', Math.min(pagination.limit, 100).toString());
+      
+      const response = await fetchAPI(`/notification-templates?${params.toString()}`);
+      
+      // Cache the result
+      setInCache(cacheKey, response);
+      
+      return response;
+    } catch (error) {
+      console.error('Error fetching notification templates:', error);
+      throw error;
     }
-    
-    // Apply pagination
-    const page = pagination?.page || 1;
-    const limit = Math.min(pagination?.limit || 20, 100);
-    const total = filteredTemplates.length;
-    const totalPages = Math.ceil(total / limit);
-    const startIndex = (page - 1) * limit;
-    const paginatedTemplates = filteredTemplates.slice(startIndex, startIndex + limit);
-    
-    return {
-      templates: paginatedTemplates,
-      total,
-      totalPages
-    };
   }
   
   // Admin: Get specific notification template
   static async getTemplate(templateId: string): Promise<NotificationTemplate | null> {
-    const template = templates.find(t => t.id === templateId);
-    return template || null;
+    try {
+      // Check cache first
+      const cacheKey = `template_${templateId}`;
+      const cached = getFromCache(cacheKey);
+      if (cached) {
+        return cached;
+      }
+      
+      const response = await fetchAPI(`/notification-templates/${templateId}`);
+      
+      // Cache the result
+      setInCache(cacheKey, response.data);
+      
+      return response.data || null;
+    } catch (error) {
+      console.error('Error fetching notification template:', error);
+      return null;
+    }
   }
   
   // Admin: Create notification template
   static async createTemplate(templateData: Omit<NotificationTemplate, 'id' | 'createdAt' | 'updatedAt'>): Promise<NotificationTemplate> {
-    const newTemplate: NotificationTemplate = {
-      id: `template-${Date.now()}`,
-      ...templateData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    templates.push(newTemplate);
-    return newTemplate;
+    try {
+      // Clear relevant cache entries
+      clearCache('templates');
+      
+      const response = await fetchAPI(`/notification-templates`, {
+        method: 'POST',
+        body: JSON.stringify(templateData)
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error creating notification template:', error);
+      throw error;
+    }
   }
   
   // Admin: Update notification template
   static async updateTemplate(templateId: string, updatedData: Partial<NotificationTemplate>): Promise<NotificationTemplate | null> {
-    const templateIndex = templates.findIndex(t => t.id === templateId);
-    
-    if (templateIndex === -1) {
+    try {
+      // Clear relevant cache entries
+      clearCache('templates');
+      clearCache(`template_${templateId}`);
+      
+      const response = await fetchAPI(`/notification-templates/${templateId}`, {
+        method: 'PUT',
+        body: JSON.stringify(updatedData)
+      });
+      
+      return response.data || null;
+    } catch (error) {
+      console.error('Error updating notification template:', error);
       return null;
     }
-    
-    templates[templateIndex] = {
-      ...templates[templateIndex],
-      ...updatedData,
-      updatedAt: new Date().toISOString()
-    };
-    
-    return templates[templateIndex];
   }
   
   // Admin: Delete notification template
   static async deleteTemplate(templateId: string): Promise<boolean> {
-    const templateIndex = templates.findIndex(t => t.id === templateId);
-    
-    if (templateIndex === -1) {
+    try {
+      // Clear relevant cache entries
+      clearCache('templates');
+      clearCache(`template_${templateId}`);
+      
+      const response = await fetchAPI(`/notification-templates/${templateId}`, {
+        method: 'DELETE'
+      });
+      
+      return response.success;
+    } catch (error) {
+      console.error('Error deleting notification template:', error);
       return false;
     }
-    
-    templates.splice(templateIndex, 1);
-    return true;
   }
   
   // Admin: Send notification to users
@@ -442,61 +475,22 @@ export class NotificationService {
     recipients: Recipients,
     notificationData: Omit<Notification, 'id' | 'userId' | 'status' | 'createdAt' | 'updatedAt'>
   ): Promise<{ notification: Notification; sentTo: number }> {
-    // Determine recipient users based on recipient type
-    let recipientUserIds: string[] = [];
-    
-    switch (recipients.type) {
-      case 'ALL':
-        // In a real implementation, this would fetch all users
-        recipientUserIds = ['user1', 'user2', 'user3'];
-        break;
-      case 'SPECIFIC':
-        recipientUserIds = recipients.userIds || [];
-        break;
-      case 'FAVORITES':
-        // In a real implementation, this would fetch users who favorited specific teams/players
-        recipientUserIds = ['user1'];
-        break;
-      case 'TEAM':
-        // In a real implementation, this would fetch users who follow the specified team
-        recipientUserIds = ['user1', 'user2'];
-        break;
-      case 'COMPETITION':
-        // In a real implementation, this would fetch users who follow the specified competition
-        recipientUserIds = ['user1', 'user2', 'user3'];
-        break;
-      case 'ADMINS':
-        // In a real implementation, this would fetch all admin users
-        recipientUserIds = ['admin1'];
-        break;
-      case 'LOGGERS':
-        // In a real implementation, this would fetch all logger users
-        recipientUserIds = ['logger1', 'logger2'];
-        break;
-    }
-    
-    // Create notifications for each recipient
-    const createdNotifications: Notification[] = [];
-    
-    for (const userId of recipientUserIds) {
-      const newNotification: Notification = {
-        id: `notification-${Date.now()}-${userId}`,
-        userId,
-        ...notificationData,
-        status: 'UNREAD',
-        source: senderRole as NotificationSource,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+    try {
+      const payload: SendNotificationPayload = {
+        recipients,
+        notification: notificationData
       };
       
-      notifications.push(newNotification);
-      createdNotifications.push(newNotification);
+      const response = await fetchAPI(`/admin/notifications/send`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      throw error;
     }
-    
-    return {
-      notification: createdNotifications[0], // Return first notification as example
-      sentTo: recipientUserIds.length
-    };
   }
   
   // Admin: Send notification using template
@@ -508,79 +502,25 @@ export class NotificationService {
     scheduledAt?: string,
     expiresAt?: string
   ): Promise<{ notifications: Notification[]; sentTo: number }> {
-    // Find the template
-    const template = templates.find(t => t.id === templateId);
-    
-    if (!template) {
-      throw new Error('Template not found');
-    }
-    
-    // Determine recipient users based on recipient type
-    let recipientUserIds: string[] = [];
-    
-    switch (recipients.type) {
-      case 'ALL':
-        // In a real implementation, this would fetch all users
-        recipientUserIds = ['user1', 'user2', 'user3'];
-        break;
-      case 'SPECIFIC':
-        recipientUserIds = recipients.userIds || [];
-        break;
-      case 'FAVORITES':
-        // In a real implementation, this would fetch users who favorited specific teams/players
-        recipientUserIds = ['user1'];
-        break;
-      case 'TEAM':
-        // In a real implementation, this would fetch users who follow the specified team
-        recipientUserIds = ['user1', 'user2'];
-        break;
-      case 'COMPETITION':
-        // In a real implementation, this would fetch users who follow the specified competition
-        recipientUserIds = ['user1', 'user2', 'user3'];
-        break;
-    }
-    
-    // Create notifications for each recipient by replacing template variables
-    const createdNotifications: Notification[] = [];
-    
-    for (const userId of recipientUserIds) {
-      // Replace template variables in title and message
-      let title = template.titleTemplate;
-      let message = template.messageTemplate;
-      
-      for (const [key, value] of Object.entries(variables)) {
-        const regex = new RegExp(`{{${key}}}`, 'g');
-        title = title.replace(regex, String(value));
-        message = message.replace(regex, String(value));
-      }
-      
-      const newNotification: Notification = {
-        id: `notification-${Date.now()}-${userId}`,
-        userId,
-        title,
-        message,
-        type: template.type as NotificationType,
-        priority: template.defaultPriority,
-        status: 'UNREAD',
-        entityId: variables.entityId,
-        entityType: variables.entityType,
-        actionUrl: variables.actionUrl,
-        imageUrl: variables.imageUrl,
+    try {
+      const payload: SendTemplatePayload = {
+        templateId,
+        recipients,
+        variables,
         scheduledAt,
-        expiresAt,
-        source: senderRole as NotificationSource,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        expiresAt
       };
       
-      notifications.push(newNotification);
-      createdNotifications.push(newNotification);
+      const response = await fetchAPI(`/admin/notifications/send-template`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Error sending template notification:', error);
+      throw error;
     }
-    
-    return {
-      notifications: createdNotifications,
-      sentTo: recipientUserIds.length
-    };
   }
   
   // Admin: Get notification history
@@ -596,40 +536,24 @@ export class NotificationService {
       limit?: number;
     }
   ): Promise<{ history: NotificationHistory[]; total: number; totalPages: number }> {
-    // Filter notification history
-    let filteredHistory = notificationHistory;
-    
-    if (filters?.status) {
-      filteredHistory = filteredHistory.filter(h => h.status === filters.status);
+    try {
+      // Build query parameters
+      const params = new URLSearchParams();
+      
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.deliveryMethod) params.append('deliveryMethod', filters.deliveryMethod);
+      if (filters?.startDate) params.append('startDate', filters.startDate);
+      if (filters?.endDate) params.append('endDate', filters.endDate);
+      if (pagination?.page) params.append('page', pagination.page.toString());
+      if (pagination?.limit) params.append('limit', Math.min(pagination.limit, 100).toString());
+      
+      const response = await fetchAPI(`/admin/notifications/history?${params.toString()}`);
+      
+      return response;
+    } catch (error) {
+      console.error('Error fetching notification history:', error);
+      throw error;
     }
-    
-    if (filters?.deliveryMethod) {
-      filteredHistory = filteredHistory.filter(h => h.deliveryMethod === filters.deliveryMethod);
-    }
-    
-    if (filters?.startDate) {
-      const start = new Date(filters.startDate);
-      filteredHistory = filteredHistory.filter(h => new Date(h.createdAt) >= start);
-    }
-    
-    if (filters?.endDate) {
-      const end = new Date(filters.endDate);
-      filteredHistory = filteredHistory.filter(h => new Date(h.createdAt) <= end);
-    }
-    
-    // Apply pagination
-    const page = pagination?.page || 1;
-    const limit = Math.min(pagination?.limit || 20, 100);
-    const total = filteredHistory.length;
-    const totalPages = Math.ceil(total / limit);
-    const startIndex = (page - 1) * limit;
-    const paginatedHistory = filteredHistory.slice(startIndex, startIndex + limit);
-    
-    return {
-      history: paginatedHistory,
-      total,
-      totalPages
-    };
   }
   
   // Logger: Send system logging notifications
@@ -640,47 +564,22 @@ export class NotificationService {
     },
     notificationData: Omit<Notification, 'id' | 'userId' | 'status' | 'type' | 'source' | 'createdAt' | 'updatedAt'>
   ): Promise<{ notification: Notification; sentTo: number }> {
-    // Determine recipient users based on recipient type
-    let recipientUserIds: string[] = [];
-    
-    switch (recipients.type) {
-      case 'ADMINS':
-        // In a real implementation, this would fetch all admin users
-        recipientUserIds = ['admin1', 'admin2'];
-        break;
-      case 'LOGGERS':
-        // In a real implementation, this would fetch all logger users
-        recipientUserIds = ['logger1', 'logger2', 'logger3'];
-        break;
-      case 'SPECIFIC':
-        recipientUserIds = recipients.userIds || [];
-        break;
-    }
-    
-    // Create notifications for each recipient
-    const createdNotifications: Notification[] = [];
-    
-    for (const userId of recipientUserIds) {
-      const newNotification: Notification = {
-        id: `notification-${Date.now()}-${userId}`,
-        userId,
-        ...notificationData,
-        type: 'LOG_ALERT',
-        priority: notificationData.priority || 'NORMAL',
-        source: 'LOGGER',
-        status: 'UNREAD',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+    try {
+      const payload: SendLoggingNotificationPayload = {
+        recipients,
+        notification: notificationData
       };
       
-      notifications.push(newNotification);
-      createdNotifications.push(newNotification);
+      const response = await fetchAPI(`/logger/notifications/send`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Error sending logging notification:', error);
+      throw error;
     }
-    
-    return {
-      notification: createdNotifications[0], // Return first notification as example
-      sentTo: recipientUserIds.length
-    };
   }
   
   // Logger: Send PR merged notification
@@ -703,61 +602,22 @@ export class NotificationService {
       };
     }
   ): Promise<{ notification: Notification; sentTo: number }> {
-    // Determine recipient users based on recipient type
-    let recipientUserIds: string[] = [];
-    
-    switch (recipients.type) {
-      case 'ADMINS':
-        // In a real implementation, this would fetch all admin users
-        recipientUserIds = ['admin1', 'admin2'];
-        break;
-      case 'LOGGERS':
-        // In a real implementation, this would fetch all logger users
-        recipientUserIds = ['logger1', 'logger2', 'logger3'];
-        break;
-      case 'SPECIFIC':
-        recipientUserIds = recipients.userIds || [];
-        break;
-    }
-    
-    // Create notifications for each recipient
-    const createdNotifications: Notification[] = [];
-    
-    for (const userId of recipientUserIds) {
-      const title = `PR #${prData.prNumber} Merged: ${prData.prTitle}`;
-      const message = `Pull Request by ${prData.author} in ${prData.repository}/${prData.branch} has been merged by ${prData.mergedBy}. ` +
-                     `Changes: ${prData.changes.filesChanged} files changed, ${prData.changes.linesAdded} lines added, ${prData.changes.linesDeleted} lines deleted.`;
-      
-      const newNotification: Notification = {
-        id: `notification-${Date.now()}-${userId}`,
-        userId,
-        title,
-        message,
-        type: 'LOG_ALERT',
-        priority: 'NORMAL',
-        source: 'LOGGER',
-        status: 'UNREAD',
-        metadata: {
-          logLevel: 'INFO',
-          component: 'PR_MERGER',
-          service: 'VERSION_CONTROL',
-          environment: process.env.NODE_ENV || 'development',
-          correlationId: `pr-${prData.prNumber}`,
-          ...prData
-        },
-        tags: ['PR', 'DEPLOYMENT'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+    try {
+      const payload: SendPrMergedPayload = {
+        ...prData,
+        recipients
       };
       
-      notifications.push(newNotification);
-      createdNotifications.push(newNotification);
+      const response = await fetchAPI(`/logger/notifications/send-pr-merged`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Error sending PR merged notification:', error);
+      throw error;
     }
-    
-    return {
-      notification: createdNotifications[0], // Return first notification as example
-      sentTo: recipientUserIds.length
-    };
   }
   
   // Get system logging notifications (new method for retrieving LOG_ALERT notifications)
@@ -774,58 +634,40 @@ export class NotificationService {
       limit?: number;
     }
   ): Promise<{ notifications: Notification[]; total: number; totalPages: number }> {
-    // Filter notifications for the user and type LOG_ALERT
-    let userNotifications = notifications.filter(n => 
-      n.userId === userId && n.type === 'LOG_ALERT'
-    );
-    
-    // Apply filters
-    if (filters?.priority) {
-      userNotifications = userNotifications.filter(n => n.priority === filters.priority);
-    }
-    
-    if (filters?.tags && filters.tags.length > 0) {
-      userNotifications = userNotifications.filter(n => 
-        n.tags && n.tags.some(tag => filters.tags!.includes(tag))
-      );
-    }
-    
-    // Apply sorting
-    if (filters?.sortBy) {
-      const sortBy = filters.sortBy as keyof Notification;
-      const sortOrder = filters.sortOrder || 'DESC';
+    try {
+      // Build cache key
+      const cacheKey = `logging_notifications_${userId}_${JSON.stringify(filters)}_${JSON.stringify(pagination)}`;
       
-      userNotifications.sort((a, b) => {
-        const aValue = a[sortBy];
-        const bValue = b[sortBy];
-        
-        // Handle undefined values
-        if (aValue === undefined && bValue === undefined) return 0;
-        if (aValue === undefined) return 1;
-        if (bValue === undefined) return -1;
-        
-        // Compare values
-        if (sortOrder === 'ASC') {
-          return aValue > bValue ? 1 : -1;
-        } else {
-          return aValue < bValue ? 1 : -1;
-        }
-      });
+      // Check cache first
+      const cached = getFromCache(cacheKey);
+      if (cached) {
+        return cached;
+      }
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.append('userId', userId);
+      params.append('type', 'LOG_ALERT');
+      
+      if (filters?.priority) params.append('priority', filters.priority);
+      if (filters?.tags && filters.tags.length > 0) {
+        params.append('tags', filters.tags.join(','));
+      }
+      if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+      if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
+      if (pagination?.page) params.append('page', pagination.page.toString());
+      if (pagination?.limit) params.append('limit', Math.min(pagination.limit, 100).toString());
+      
+      const response = await fetchAPI(`/notifications?${params.toString()}`);
+      
+      // Cache the result
+      setInCache(cacheKey, response);
+      
+      return response;
+    } catch (error) {
+      console.error('Error fetching system logging notifications:', error);
+      throw error;
     }
-    
-    // Apply pagination
-    const page = pagination?.page || 1;
-    const limit = Math.min(pagination?.limit || 20, 100);
-    const total = userNotifications.length;
-    const totalPages = Math.ceil(total / limit);
-    const startIndex = (page - 1) * limit;
-    const paginatedNotifications = userNotifications.slice(startIndex, startIndex + limit);
-    
-    return {
-      notifications: paginatedNotifications,
-      total,
-      totalPages
-    };
   }
   
   // Get deployment tracking notifications (new method for retrieving deployment-related notifications)
@@ -842,58 +684,44 @@ export class NotificationService {
       limit?: number;
     }
   ): Promise<{ notifications: Notification[]; total: number; totalPages: number }> {
-    // Filter notifications for the user and deployment-related tags
-    let userNotifications = notifications.filter(n => 
-      n.userId === userId && n.tags && 
-      (n.tags.includes('PR') || n.tags.includes('DEPLOYMENT') || n.tags.includes('RELEASE'))
-    );
-    
-    // Apply filters
-    if (filters?.status) {
-      userNotifications = userNotifications.filter(n => n.status === filters.status);
-    }
-    
-    if (filters?.tags && filters.tags.length > 0) {
-      userNotifications = userNotifications.filter(n => 
-        n.tags && n.tags.some(tag => filters.tags!.includes(tag))
-      );
-    }
-    
-    // Apply sorting
-    if (filters?.sortBy) {
-      const sortBy = filters.sortBy as keyof Notification;
-      const sortOrder = filters.sortOrder || 'DESC';
+    try {
+      // Build cache key
+      const cacheKey = `deployment_notifications_${userId}_${JSON.stringify(filters)}_${JSON.stringify(pagination)}`;
       
-      userNotifications.sort((a, b) => {
-        const aValue = a[sortBy];
-        const bValue = b[sortBy];
-        
-        // Handle undefined values
-        if (aValue === undefined && bValue === undefined) return 0;
-        if (aValue === undefined) return 1;
-        if (bValue === undefined) return -1;
-        
-        // Compare values
-        if (sortOrder === 'ASC') {
-          return aValue > bValue ? 1 : -1;
-        } else {
-          return aValue < bValue ? 1 : -1;
-        }
-      });
+      // Check cache first
+      const cached = getFromCache(cacheKey);
+      if (cached) {
+        return cached;
+      }
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.append('userId', userId);
+      params.append('tags', 'PR,DEPLOYMENT,RELEASE');
+      
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.tags && filters.tags.length > 0) {
+        params.append('tags', [...filters.tags, 'PR', 'DEPLOYMENT', 'RELEASE'].join(','));
+      }
+      if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+      if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
+      if (pagination?.page) params.append('page', pagination.page.toString());
+      if (pagination?.limit) params.append('limit', Math.min(pagination.limit, 100).toString());
+      
+      const response = await fetchAPI(`/notifications?${params.toString()}`);
+      
+      // Cache the result
+      setInCache(cacheKey, response);
+      
+      return response;
+    } catch (error) {
+      console.error('Error fetching deployment tracking notifications:', error);
+      throw error;
     }
-    
-    // Apply pagination
-    const page = pagination?.page || 1;
-    const limit = Math.min(pagination?.limit || 20, 100);
-    const total = userNotifications.length;
-    const totalPages = Math.ceil(total / limit);
-    const startIndex = (page - 1) * limit;
-    const paginatedNotifications = userNotifications.slice(startIndex, startIndex + limit);
-    
-    return {
-      notifications: paginatedNotifications,
-      total,
-      totalPages
-    };
+  }
+  
+  // Clear all cache entries
+  static clearAllCache(): void {
+    Object.keys(cache).forEach(key => delete cache[key]);
   }
 }

@@ -52,6 +52,13 @@ export interface SystemHealth {
   overallStatus: string;
 }
 
+export interface ResourceUtilization {
+  resourceName: string;
+  currentUsage: number;
+  maxCapacity: number;
+  utilizationPercentage: number;
+}
+
 // Report interfaces
 export interface Report {
   id: string;
@@ -128,6 +135,11 @@ class AnalyticsService {
   // Fetch system health data
   public async getSystemHealth(): Promise<APIResponse<SystemHealth>> {
     return this.apiRequest<SystemHealth>('/analytics/system/health');
+  }
+
+  // Fetch resource utilization data
+  public async getResourceUtilization(): Promise<APIResponse<ResourceUtilization[]>> {
+    return this.apiRequest<ResourceUtilization[]>('/analytics/system/resources');
   }
 
   // Fetch user activity data

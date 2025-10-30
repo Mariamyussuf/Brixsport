@@ -3,9 +3,41 @@ import { supabase } from './supabase.service';
 import { queueService } from './queue.service';
 import { cloudMessagingService } from './cloud-messaging.service';
 
+// Define notification interfaces
+interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  type: string;
+  read: boolean;
+  read_at?: string;
+  status: string;
+  metadata?: any;
+  template_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  is_active: boolean;
+}
+
 export const notificationService = {
   // Get user notifications
-  getUserNotifications: async (userId: string, options: { limit?: number; offset?: number; unreadOnly?: boolean } = {}) => {
+  getUserNotifications: async (userId: string, options: { 
+    limit?: number; 
+    offset?: number; 
+    unreadOnly?: boolean;
+    status?: string;
+    type?: string;
+    priority?: string;
+    sortBy?: string;
+    sortOrder?: 'ASC' | 'DESC';
+  } = {}) => {
     try {
       logger.info('Fetching user notifications', { userId, options });
       
@@ -19,6 +51,15 @@ export const notificationService = {
         query = query.eq('read', false);
       }
       
+      // Apply additional filters
+      if (options.status) {
+        query = query.eq('status', options.status);
+      }
+      
+      if (options.type) {
+        query = query.eq('type', options.type);
+      }
+      
       // Apply pagination
       if (options.limit) {
         query = query.limit(options.limit);
@@ -28,8 +69,10 @@ export const notificationService = {
         query = query.range(options.offset, options.offset + (options.limit || 50) - 1);
       }
       
-      // Order by creation date (newest first)
-      query = query.order('created_at', { ascending: false });
+      // Order by creation date (newest first) or specified sort
+      const sortBy = options.sortBy || 'created_at';
+      const sortOrder = options.sortOrder || 'desc';
+      query = query.order(sortBy, { ascending: sortOrder === 'ASC' });
       
       const { data, error } = await query;
       
@@ -40,7 +83,10 @@ export const notificationService = {
       
       return {
         success: true,
-        data: data || []
+        data: data || [],
+        notifications: data || [],
+        total: data?.length || 0,
+        totalPages: options.limit ? Math.ceil((data?.length || 0) / options.limit) : 1
       };
     } catch (error: any) {
       logger.error('Get user notifications error', error);
@@ -279,6 +325,17 @@ export const notificationService = {
       type?: string; 
       metadata?: any; 
       templateId?: string;
+      status?: string;
+      priority?: string;
+      source?: string;
+      tags?: string[];
+      entityId?: string;
+      entityType?: string;
+      actionUrl?: string;
+      imageUrl?: string;
+      scheduledAt?: string;
+      expiresAt?: string;
+      read?: boolean;
     }
   ) => {
     try {
@@ -291,8 +348,17 @@ export const notificationService = {
         type: notificationData.type || 'general',
         metadata: notificationData.metadata || {},
         template_id: notificationData.templateId,
-        read: false,
-        status: 'pending',
+        status: notificationData.status || 'pending',
+        priority: notificationData.priority || 'NORMAL',
+        source: notificationData.source || 'SYSTEM',
+        tags: notificationData.tags || [],
+        entity_id: notificationData.entityId,
+        entity_type: notificationData.entityType,
+        action_url: notificationData.actionUrl,
+        image_url: notificationData.imageUrl,
+        scheduled_at: notificationData.scheduledAt,
+        expires_at: notificationData.expiresAt,
+        read: notificationData.read || false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -309,8 +375,9 @@ export const notificationService = {
       }
       
       // Add to job queue for processing
-      const priority = notification.type === 'urgent' ? 10 : 
-                      notification.type === 'important' ? 5 : 1;
+      const priority = notification.priority === 'URGENT' ? 10 : 
+                      notification.priority === 'HIGH' ? 5 : 
+                      notification.priority === 'NORMAL' ? 3 : 1;
       
       await queueService.addNotificationJob(
         'send_notification',
@@ -440,8 +507,9 @@ export const notificationService = {
       }
       
       // Add to job queue for processing
-      const priority = notification.type === 'urgent' ? 10 : 
-                      notification.type === 'important' ? 5 : 1;
+      const priority = notification.priority === 'URGENT' ? 10 : 
+                      notification.priority === 'HIGH' ? 5 : 
+                      notification.priority === 'NORMAL' ? 3 : 1;
       
       const jobResult = await queueService.addNotificationJob(
         'send_notification',
@@ -601,6 +669,105 @@ export const notificationService = {
       };
     } catch (error: any) {
       logger.error('Schedule notification error', error);
+      throw error;
+    }
+  },
+  
+  // Get users by recipient type
+  getUsersByRecipientType: async (recipients: { 
+    type: string; 
+    userIds?: string[]; 
+    teamId?: string; 
+    competitionId?: string 
+  }) => {
+    try {
+      let recipientUserIds: string[] = [];
+      
+      switch (recipients.type) {
+        case 'ALL':
+          // Fetch all active users
+          const { data: allUsers, error: allUsersError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('is_active', true);
+          
+          if (allUsersError) {
+            throw new Error(`Failed to fetch all users: ${allUsersError.message}`);
+          }
+          
+          recipientUserIds = allUsers?.map(user => user.id) || [];
+          break;
+          
+        case 'SPECIFIC':
+          recipientUserIds = recipients.userIds || [];
+          // Validate that these users exist
+          if (recipientUserIds.length > 0) {
+            const { data: validUsers, error: validUsersError } = await supabase
+              .from('users')
+              .select('id')
+              .in('id', recipientUserIds);
+            
+            if (validUsersError) {
+              throw new Error(`Failed to validate users: ${validUsersError.message}`);
+            }
+            
+            recipientUserIds = validUsers?.map(user => user.id) || [];
+          }
+          break;
+          
+        case 'FAVORITES':
+          // Fetch users who favorited specific teams/players
+          // This would require joining with the favorites table
+          // For now, we'll return an empty array as a placeholder
+          recipientUserIds = [];
+          break;
+          
+        case 'TEAM':
+          // Fetch users who follow the specified team
+          // This would require joining with the favorites table
+          // For now, we'll return an empty array as a placeholder
+          recipientUserIds = [];
+          break;
+          
+        case 'COMPETITION':
+          // Fetch users who follow the specified competition
+          // This would require joining with the favorites table
+          // For now, we'll return an empty array as a placeholder
+          recipientUserIds = [];
+          break;
+          
+        case 'ADMINS':
+          // Fetch all admin users
+          const { data: adminUsers, error: adminUsersError } = await supabase
+            .from('users')
+            .select('id')
+            .in('role', ['admin', 'super-admin']);
+          
+          if (adminUsersError) {
+            throw new Error(`Failed to fetch admin users: ${adminUsersError.message}`);
+          }
+          
+          recipientUserIds = adminUsers?.map(user => user.id) || [];
+          break;
+          
+        case 'LOGGERS':
+          // Fetch all logger users
+          const { data: loggerUsers, error: loggerUsersError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('role', 'logger');
+          
+          if (loggerUsersError) {
+            throw new Error(`Failed to fetch logger users: ${loggerUsersError.message}`);
+          }
+          
+          recipientUserIds = loggerUsers?.map(user => user.id) || [];
+          break;
+      }
+      
+      return recipientUserIds;
+    } catch (error: any) {
+      logger.error('Get users by recipient type error', error);
       throw error;
     }
   }
