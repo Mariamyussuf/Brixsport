@@ -12,6 +12,7 @@ export const useSocket = (url?: string, options: SocketOptions = {}) => {
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  const listenersRef = useRef<Record<string, Array<(data: any) => void>>>({});
 
   const {
     autoConnect = true,
@@ -48,6 +49,23 @@ export const useSocket = (url?: string, options: SocketOptions = {}) => {
         setIsConnected(false);
       };
 
+      socket.onmessage = (messageEvent: MessageEvent) => {
+        try {
+          const message = JSON.parse(messageEvent.data);
+          const event = message.event;
+          const data = message.data;
+          
+          // Call all listeners for this event
+          if (listenersRef.current[event]) {
+            listenersRef.current[event].forEach(callback => {
+              callback(data);
+            });
+          }
+        } catch (err) {
+          console.error('Error parsing WebSocket message:', err);
+        }
+      };
+
       socketRef.current = socket;
       return socket;
     } catch (err) {
@@ -77,31 +95,30 @@ export const useSocket = (url?: string, options: SocketOptions = {}) => {
   };
 
   const on = (event: string, callback: (data: any) => void) => {
-    if (!socketRef.current) return;
-
-    const handleMessage = (messageEvent: MessageEvent) => {
-      try {
-        const message = JSON.parse(messageEvent.data);
-        if (message.event === event) {
-          callback(message.data);
-        }
-      } catch (err) {
-        console.error('Error parsing WebSocket message:', err);
-      }
-    };
-
-    socketRef.current.addEventListener('message', handleMessage);
-
+    // Initialize listeners array for this event if it doesn't exist
+    if (!listenersRef.current[event]) {
+      listenersRef.current[event] = [];
+    }
+    
+    // Add callback to listeners
+    listenersRef.current[event].push(callback);
+    
+    // Return unsubscribe function
     return () => {
-      if (socketRef.current) {
-        socketRef.current.removeEventListener('message', handleMessage);
-      }
+      listenersRef.current[event] = listenersRef.current[event].filter(cb => cb !== callback);
     };
   };
 
   const off = (event: string, callback?: (data: any) => void) => {
-    // In a real implementation, you'd track listeners and remove specific ones
-    // For now, this is a placeholder
+    if (callback) {
+      // Remove specific callback
+      if (listenersRef.current[event]) {
+        listenersRef.current[event] = listenersRef.current[event].filter(cb => cb !== callback);
+      }
+    } else {
+      // Remove all callbacks for this event
+      delete listenersRef.current[event];
+    }
   };
 
   useEffect(() => {
@@ -114,14 +131,12 @@ export const useSocket = (url?: string, options: SocketOptions = {}) => {
     };
   }, [url, autoConnect]);
 
-  // Mock socket object for compatibility with existing code
-  const socket = {
+  return {
     emit,
     on,
     off,
     connected: isConnected,
-    disconnect
+    disconnect,
+    error
   };
-
-  return isConnected ? socket : null;
 };

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { loggerService } from '@/lib/loggerService';
 import { LoggerCompetition, LoggerMatch } from '@/lib/loggerService';
-import { useLoggerAuth } from '@/hooks/useAuth';
+import { useLoggerAuth, TokenManager } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/shared/NotificationsContext';
 import { hasPermission } from '@/lib/loggerPermissions';
 
@@ -163,13 +163,14 @@ export const LoggerProvider: React.FC<LoggerProviderProps> = ({ children }) => {
   
   // Set auth token in logger service
   useEffect(() => {
-    if (user) {
-      // In a real app, you would get the token from auth context
-      // loggerService.setAuthToken(token);
+    if (isAuthenticated && user) {
+      // Get token from TokenManager and set it in logger service
+      const token = TokenManager.getToken();
+      loggerService.setAuthToken(token);
     } else {
       loggerService.setAuthToken(null);
     }
-  }, [user]);
+  }, [isAuthenticated, user]);
   
   // Load competitions
   const loadCompetitions = async (): Promise<void> => {

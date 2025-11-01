@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { Team, Player, Competition } from '@/types/favorites';
 import { NotificationService } from '@/services/notificationService';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Notification as APINotification, 
   NotificationPreferences as APINotificationPreferences,
@@ -83,6 +84,7 @@ interface NotificationsProviderProps {
 
 export const NotificationsProvider = ({ children }: NotificationsProviderProps) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -160,6 +162,13 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
       console.error('Failed to fetch notifications:', err);
       setError('Failed to load notifications. Please try again later.');
       
+      // Show error notification
+      toast({
+        title: "Error",
+        description: "Failed to load notifications. Please try again later.",
+        variant: "destructive",
+      });
+      
       // Fallback to local storage if available
       const storedNotifications = localStorage.getItem('notifications');
       if (storedNotifications) {
@@ -173,7 +182,7 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, toast]);
 
   // Load notifications and preferences on mount or when user changes
   useEffect(() => {
@@ -256,6 +265,12 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
         
         setNotifications(prev => [newNotification, ...prev]);
         
+        // Show success message
+        toast({
+          title: "Success",
+          description: "Notification added successfully!",
+        });
+        
         // Update unread count
         if (!newNotification.isRead) {
           // You might want to show a toast or badge update here
@@ -263,9 +278,15 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
       }
     } catch (err) {
       console.error('Failed to add notification:', err);
+      // Show error notification
+      toast({
+        title: "Error",
+        description: "Failed to add notification. Please try again.",
+        variant: "destructive",
+      });
       throw err;
     }
-  }, [setNotifications]);
+  }, [setNotifications, toast]);
 
   // Schedule a notification for later
   const scheduleNotification = (
@@ -327,8 +348,20 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
             : n
         )
       );
+      
+      // Show success message
+      toast({
+        title: "Success",
+        description: "Notification marked as read!",
+      });
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
+      // Show error notification
+      toast({
+        title: "Error",
+        description: "Failed to mark notification as read. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -350,29 +383,77 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
           }))
         );
         
+        // Show success message
+        toast({
+          title: "Success",
+          description: `Marked ${result.count} notifications as read!`,
+        });
+        
         // In a real app, you might want to show a success message
         console.log(`Marked ${result.count} notifications as read`);
       } else {
         console.error('Failed to mark all notifications as read:', result.error);
+        // Show error notification
+        toast({
+          title: "Error",
+          description: "Failed to mark all notifications as read. Please try again.",
+          variant: "destructive",
+        });
         // In a real app, you might want to show an error notification here
       }
     } catch (error) {
       console.error('Error in markAllAsRead:', error);
+      // Show error notification
+      toast({
+        title: "Error",
+        description: "Failed to mark all notifications as read. Please try again.",
+        variant: "destructive",
+      });
       // In a real app, you might want to show an error notification here
     }
   };
 
   // Clear all notifications
-  const clearNotifications = () => {
+  const clearNotifications = async () => {
     if (!user?.id) return;
     
-    // In a real app, you would call an API to clear notifications
-    setNotifications([]);
+    try {
+      const result = await NotificationService.clearNotifications(user.id);
+      
+      if (result.success) {
+        // Update the local state to reflect the changes
+        setNotifications([]);
+        
+        // Show success message
+        toast({
+          title: "Success",
+          description: `Cleared ${result.count} notifications!`,
+        });
+      } else {
+        console.error('Failed to clear notifications:', result);
+        // Show error notification
+        toast({
+          title: "Error",
+          description: "Failed to clear notifications. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error in clearNotifications:', error);
+      // Show error notification
+      toast({
+        title: "Error",
+        description: "Failed to clear notifications. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Update notification preferences
   const updatePreferences = (prefs: Partial<APINotificationPreferences>) => {
     if (!user?.id) return;
+    
+    const previousPreferences = { ...preferences };
     
     setPreferences(prev => ({
       ...prev,
@@ -383,8 +464,24 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
     NotificationService.updateUserPreferences(user.id, {
       ...preferences,
       ...prefs
-    }).catch(err => {
+    })
+    .then(() => {
+      // Show success message
+      toast({
+        title: "Success",
+        description: "Preferences updated successfully!",
+      });
+    })
+    .catch(err => {
       console.error('Failed to update preferences:', err);
+      // Revert to previous preferences on error
+      setPreferences(previousPreferences);
+      // Show error notification
+      toast({
+        title: "Error",
+        description: "Failed to update preferences. Please try again.",
+        variant: "destructive",
+      });
     });
   };
 

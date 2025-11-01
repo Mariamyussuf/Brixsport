@@ -39,6 +39,9 @@ export class AuthenticationError extends Error {
   }
 }
 
+// Import the JWT verification function
+import { verifyUnifiedToken } from './authService';
+
 // Helper function to make authenticated API calls with enhanced error handling
 const apiCall = async (endpoint: string, options: RequestInit = {}, requiredRole?: string) => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
@@ -57,8 +60,21 @@ const apiCall = async (endpoint: string, options: RequestInit = {}, requiredRole
   // If a specific role is required, check it
   if (requiredRole && token) {
     try {
-      // In a real implementation, we would decode the JWT token and check the user's role
-      // For now, we'll assume the backend will handle this check
+      // Decode the JWT token and check the user's role
+      const user = await verifyUnifiedToken(token);
+      if (!user) {
+        logOperation('API_CALL_AUTH_ERROR', { endpoint, error: 'Invalid authentication token' });
+        throw new AuthenticationError('Invalid authentication token');
+      }
+      
+      // Check if user has the required role
+      if (requiredRole === 'admin' && user.role !== 'admin' && user.role !== 'super-admin') {
+        logOperation('API_CALL_AUTH_ERROR', { endpoint, error: 'Insufficient permissions' });
+        throw new AuthenticationError('Insufficient permissions');
+      } else if (requiredRole === 'logger' && user.role !== 'logger' && user.role !== 'admin' && user.role !== 'super-admin') {
+        logOperation('API_CALL_AUTH_ERROR', { endpoint, error: 'Insufficient permissions' });
+        throw new AuthenticationError('Insufficient permissions');
+      }
     } catch (error) {
       logOperation('API_CALL_AUTH_ERROR', { endpoint, error: 'Invalid authentication token' });
       throw new AuthenticationError('Invalid authentication token');
@@ -367,6 +383,7 @@ interface Logger {
   role: string;
   status: string;
   assignedCompetitions: string[];
+  permissions: string[];
   createdAt: string;
   lastActive: string;
   updatedAt?: string;
@@ -473,6 +490,15 @@ export class DatabaseService {
         }
       }
       
+      // Additional validation for permissions if present
+      if (loggerData.permissions !== undefined) {
+        validate.array(loggerData.permissions, 'Permissions', { required: false, maxLength: 100 });
+        // Validate each permission in the array
+        for (const permission of loggerData.permissions) {
+          validate.string(permission, 'Permission', { required: true, minLength: 1 });
+        }
+      }
+      
       const response = await apiCall('/admin/loggers', {
         method: 'POST',
         body: JSON.stringify(loggerData),
@@ -507,6 +533,15 @@ export class DatabaseService {
         // Validate each competition ID in the array
         for (const competitionId of loggerData.assignedCompetitions) {
           validate.string(competitionId, 'Competition ID', { required: true, minLength: 1 });
+        }
+      }
+      
+      // Additional validation for permissions if present
+      if (loggerData.permissions) {
+        validate.array(loggerData.permissions, 'Permissions', { required: false, maxLength: 100 });
+        // Validate each permission in the array
+        for (const permission of loggerData.permissions) {
+          validate.string(permission, 'Permission', { required: true, minLength: 1 });
         }
       }
       
@@ -563,6 +598,15 @@ export class DatabaseService {
         }
       }
       
+      // Additional validation for permissions if present
+      if (updates.permissions !== undefined) {
+        validate.array(updates.permissions, 'Permissions', { required: false, maxLength: 100 });
+        // Validate each permission in the array
+        for (const permission of updates.permissions) {
+          validate.string(permission, 'Permission', { required: true, minLength: 1 });
+        }
+      }
+      
       const response = await apiCall(`/admin/loggers/${id}`, {
         method: 'PUT',
         body: JSON.stringify(updates),
@@ -595,42 +639,14 @@ export class DatabaseService {
         throw new DatabaseError('Logger not found', 'LOGGER_NOT_FOUND', 404);
       }
       
-      // Assign the logger to the match
-      // In a real implementation, you would update the match record in the database
-      // to include the loggerId field
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
-      const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-      
-      const response = await fetch(`${API_BASE_URL}/v1/matches/${matchId}`, {
+      // Assign the logger to the match by updating the match record in the database
+      const response = await apiCall(`/matches/${matchId}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-        },
         body: JSON.stringify({ loggerId })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.message || `API call failed: ${response.status} ${response.statusText}`;
-        
-        // Map HTTP status codes to specific error types
-        switch (response.status) {
-          case 401:
-            throw new AuthenticationError(errorMessage);
-          case 403:
-            throw new DatabaseError(errorMessage, 'FORBIDDEN', 403);
-          case 404:
-            throw new DatabaseError(errorMessage, 'NOT_FOUND', 404);
-          default:
-            throw new DatabaseError(errorMessage, 'API_ERROR', response.status);
-        }
-      }
-      
-      const result = await response.json();
+      }, 'admin');
       
       logOperation('ASSIGN_LOGGER_TO_MATCH_SUCCESS', { matchId, loggerId });
-      return result.data || null;
+      return response.data || null;
     } catch (error) {
       if (error instanceof ValidationError) {
         logOperation('ASSIGN_LOGGER_TO_MATCH_VALIDATION_ERROR', { matchId, loggerId, error: error.message });
@@ -1249,6 +1265,63 @@ export class DatabaseService {
     }
   }
 
+  /**
+   * Fetches match statistics by match ID
+   * @param matchId The ID of the match to fetch statistics for
+   * @returns Promise resolving to match statistics data
+   */
+  async getMatchStats(matchId: string): Promise<any> {
+    logOperation('GET_MATCH_STATS_START', { matchId });
+    try {
+      // Validate input using enhanced validation
+      validate.id(matchId, 'Match ID');
+      
+      const response = await apiCall(`/matches/${matchId}/stats`);
+      logOperation('GET_MATCH_STATS_SUCCESS', { matchId });
+      return response; // Return the full response, not just response.data
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('GET_MATCH_STATS_VALIDATION_ERROR', { matchId, error: error.message });
+        console.error('Validation error in getMatchStats:', error.message);
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('GET_MATCH_STATS_ERROR', { matchId, error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in getMatchStats:', error);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to fetch match stats: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Fetches match events by match ID
+   * @param matchId The ID of the match to fetch events for
+   * @returns Promise resolving to match events data
+   */
+  async getMatchEvents(matchId: number): Promise<any[]> {
+    logOperation('GET_MATCH_EVENTS_START', { matchId });
+    try {
+      // Validate input using enhanced validation
+      validate.number(matchId, 'Match ID', { min: 1 });
+      
+      const response = await apiCall(`/matches/${matchId}/events`);
+      logOperation('GET_MATCH_EVENTS_SUCCESS', { matchId });
+      return response.data || [];
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('GET_MATCH_EVENTS_VALIDATION_ERROR', { matchId, error: error.message });
+        console.error('Validation error in getMatchEvents:', error.message);
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('GET_MATCH_EVENTS_ERROR', { matchId, error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in getMatchEvents:', error);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to fetch match events: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
 }
 
 // Export a singleton instance

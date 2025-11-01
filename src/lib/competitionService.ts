@@ -56,6 +56,57 @@ export interface UpdateCompetitionData {
   end_date?: string;
 }
 
+// Add new interfaces for group standings and knockout structure
+export interface GroupStanding {
+  team_id: string;
+  team_name: string;
+  team_logo?: string;
+  position: number;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goals_for: number;
+  goals_against: number;
+  goal_difference: number;
+  points: number;
+}
+
+export interface GroupWithStandings {
+  group_id: string;
+  group_name: string;
+  standings: GroupStanding[];
+}
+
+export interface KnockoutMatch {
+  match_id: string;
+  home_team: {
+    team_id: string;
+    team_name: string;
+    team_logo?: string;
+    source: string;
+  };
+  away_team: {
+    team_id: string;
+    team_name: string;
+    team_logo?: string;
+    source: string;
+  };
+  match_date: string;
+  venue: string;
+  status: string;
+  home_score?: number;
+  away_score?: number;
+  round: string;
+}
+
+export interface KnockoutStage {
+  round_of_16: KnockoutMatch[];
+  quarter_finals: KnockoutMatch[];
+  semi_finals: KnockoutMatch[];
+  final: KnockoutMatch | null;
+}
+
 // Get all competitions
 export async function getCompetitions(): Promise<Competition[]> {
   try {
@@ -208,5 +259,103 @@ export async function getActiveCompetitions(): Promise<Competition[]> {
   } catch (error) {
     handleApiError(error);
     throw error;
+  }
+}
+
+// Add new functions to fetch group standings and knockout structure
+export async function getCompetitionGroupStandings(id: string): Promise<GroupWithStandings[]> {
+  try {
+    const response = await fetch(`/api/competitions/${id}/group-standings`);
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch group standings');
+    }
+    
+    return data.data;
+  } catch (error) {
+    console.error('Error fetching group standings:', error);
+    throw error;
+  }
+}
+
+export async function getCompetitionKnockoutStructure(id: string): Promise<KnockoutStage> {
+  try {
+    const response = await fetch(`/api/competitions/${id}/knockout-structure`);
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch knockout structure');
+    }
+    
+    return data.data;
+  } catch (error) {
+    console.error('Error fetching knockout structure:', error);
+    throw error;
+  }
+}
+
+// Add function to get competition teams
+export async function getCompetitionTeams(id: string): Promise<any[]> {
+  try {
+    // This would typically be a separate endpoint, but for now we'll use the existing teams service
+    // In a real implementation, you might want to fetch teams specific to this competition
+    const response = await fetch(`/api/competitions/${id}/teams`);
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch competition teams');
+    }
+    
+    return data.data || [];
+  } catch (error) {
+    console.error('Error fetching competition teams:', error);
+    return [];
+  }
+}
+
+// Add function to get group matches
+export async function getGroupMatches(competitionId: string, groupId: string): Promise<Match[]> {
+  return getCompetitionMatches(competitionId, { group_id: groupId, round: 'GROUP_STAGE' });
+}
+
+// Add function to get competition matches
+export async function getCompetitionMatches(id: string, filters: { group_id?: string; round?: string } = {}): Promise<Match[]> {
+  try {
+    // Build query string with filters
+    const queryParams = new URLSearchParams();
+    if (filters.group_id) queryParams.append('group_id', filters.group_id);
+    if (filters.round) queryParams.append('round', filters.round);
+    
+    const queryString = queryParams.toString();
+    const url = `/api/competitions/${id}/matches${queryString ? `?${queryString}` : ''}`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch competition matches');
+    }
+    
+    return data.data.map((match: any) => ({
+      id: match.id,
+      competition_id: match.competition_id,
+      home_team_id: match.home_team_id,
+      away_team_id: match.away_team_id,
+      match_date: match.match_date,
+      venue: match.venue,
+      status: match.status,
+      home_score: match.home_score,
+      away_score: match.away_score,
+      current_minute: match.current_minute,
+      period: match.period,
+      home_team_name: match.home_team_name,
+      home_team_logo: match.home_team_logo,
+      away_team_name: match.away_team_name,
+      away_team_logo: match.away_team_logo
+    }));
+  } catch (error) {
+    console.error('Error fetching competition matches:', error);
+    return [];
   }
 }

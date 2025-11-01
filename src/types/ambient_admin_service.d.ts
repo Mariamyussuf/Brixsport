@@ -8,6 +8,7 @@ declare module '@/lib/adminService' {
     createdAt?: string;
     lastActive?: string;
     assignedCompetitions?: string[];
+    permissions?: string[];
     password?: string; // Added for credential management
   };
 

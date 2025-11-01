@@ -41,6 +41,11 @@ export interface PlayerStats {
   substitutions: number;
   offside: number;
   possession: number;
+  corners?: number;
+  throwIns?: number;
+  passAccuracy?: number;
+  fouls?: number;
+  offsides?: number;
 }
 
 export interface TeamStats extends PlayerStats {
@@ -50,6 +55,47 @@ export interface TeamStats extends PlayerStats {
   cornerKicks: number;
   goalAttempts: number;
   dangerousAttacks: number;
+}
+
+// Add the new interface for match stats response
+export interface MatchStatsResponse {
+  matchId: string;
+  homeTeam: TeamStats & {
+    teamId: string;
+    teamName: string;
+    goals: number;
+    events: number;
+    goalsEvents: number;
+    cardEvents: number;
+    shots: number;
+    shotsOnTarget: number;
+    corners: number;
+    fouls: number;
+    yellowCards: number;
+    redCards: number;
+    offsides: number;
+    throwIns: number;
+    passes: number;
+    passAccuracy: number;
+  };
+  awayTeam: TeamStats & {
+    teamId: string;
+    teamName: string;
+    goals: number;
+    events: number;
+    goalsEvents: number;
+    cardEvents: number;
+    shots: number;
+    shotsOnTarget: number;
+    corners: number;
+    fouls: number;
+    yellowCards: number;
+    redCards: number;
+    offsides: number;
+    throwIns: number;
+    passes: number;
+    passAccuracy: number;
+  };
 }
 
 export interface MatchEvent {

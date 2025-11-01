@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Logger } from '@/lib/adminService';
+// Import the services to fetch competitions and matches
+import { getCompetitions } from '@/lib/userCompetitionService';
+import { getMatches } from '@/lib/userMatchService';
 
 const EnhancedLoggerManagement = () => {
   const { 
@@ -27,6 +30,50 @@ const EnhancedLoggerManagement = () => {
     assignedMatches: [] as string[],
     assignedCompetitions: [] as string[]
   });
+  
+  // State for competitions and matches
+  const [availableCompetitions, setAvailableCompetitions] = useState<{ id: string; name: string }[]>([]);
+  const [availableMatches, setAvailableMatches] = useState<{ id: string; name: string; competition: string }[]>([]);
+  
+  // Loading states for competitions and matches
+  const [competitionsLoading, setCompetitionsLoading] = useState(false);
+  const [matchesLoading, setMatchesLoading] = useState(false);
+
+  // Fetch competitions and matches when component mounts
+  useEffect(() => {
+    const fetchData = async () => {
+      // Fetch competitions
+      try {
+        setCompetitionsLoading(true);
+        const competitions = await getCompetitions();
+        setAvailableCompetitions(competitions.map(comp => ({
+          id: comp.id.toString(),
+          name: comp.name
+        })));
+      } catch (err) {
+        console.error('Failed to fetch competitions:', err);
+      } finally {
+        setCompetitionsLoading(false);
+      }
+      
+      // Fetch matches
+      try {
+        setMatchesLoading(true);
+        const matches = await getMatches();
+        setAvailableMatches(matches.map(match => ({
+          id: match.id,
+          name: `${match.homeTeam} vs ${match.awayTeam}`,
+          competition: match.competitionId || ''
+        })));
+      } catch (err) {
+        console.error('Failed to fetch matches:', err);
+      } finally {
+        setMatchesLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
 
   // Get logger statuses from environment variables
   const loggerStatuses = process.env.NEXT_PUBLIC_LOGGER_STATUSES?.split(',') || ['active', 'inactive', 'suspended'];
@@ -72,22 +119,6 @@ const EnhancedLoggerManagement = () => {
     'assign_competitions'
   ];
 
-  // Available competitions (in a real app, this would come from the API)
-  const availableCompetitions = [
-    { id: 'comp-1', name: 'Premier League' },
-    { id: 'comp-2', name: 'Championship' },
-    { id: 'comp-3', name: 'League One' },
-    { id: 'comp-4', name: 'FA Cup' }
-  ];
-
-  // Available matches (in a real app, this would come from the API)
-  const availableMatches = [
-    { id: 'match-1', name: 'Team A vs Team B', competition: 'comp-1' },
-    { id: 'match-2', name: 'Team C vs Team D', competition: 'comp-1' },
-    { id: 'match-3', name: 'Team E vs Team F', competition: 'comp-2' },
-    { id: 'match-4', name: 'Team G vs Team H', competition: 'comp-3' }
-  ];
-
   // Handle form submission for creating a logger
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -103,7 +134,8 @@ const EnhancedLoggerManagement = () => {
         password: password,
         role: formData.role,
         status: 'active',
-        assignedCompetitions: formData.assignedCompetitions
+        assignedCompetitions: formData.assignedCompetitions,
+        permissions: formData.permissions
       });
       
       // Store the generated credentials to show to the admin
@@ -122,6 +154,8 @@ const EnhancedLoggerManagement = () => {
       setShowCreateForm(false);
     } catch (err) {
       console.error('Failed to create logger:', err);
+      // Show error to user
+      alert('Failed to create logger. Please try again.');
     }
   };
 
@@ -136,7 +170,8 @@ const EnhancedLoggerManagement = () => {
         name: formData.name,
         email: formData.email,
         role: formData.role,
-        assignedCompetitions: formData.assignedCompetitions
+        assignedCompetitions: formData.assignedCompetitions,
+        permissions: formData.permissions
       });
       
       // Reset form and editing state
@@ -150,8 +185,13 @@ const EnhancedLoggerManagement = () => {
       });
       setEditingLogger(null);
       setShowCreateForm(false);
+      
+      // Show success message
+      alert('Logger updated successfully!');
     } catch (err) {
       console.error('Failed to update logger:', err);
+      // Show error to user
+      alert('Failed to update logger. Please try again.');
     }
   };
 
@@ -176,7 +216,7 @@ const EnhancedLoggerManagement = () => {
       name: logger.name || '',
       email: logger.email || '',
       role: logger.role || 'logger',
-      permissions: [],
+      permissions: logger.permissions || [],
       assignedMatches: [],
       assignedCompetitions: logger.assignedCompetitions || []
     });
@@ -188,8 +228,12 @@ const EnhancedLoggerManagement = () => {
     if (window.confirm('Are you sure you want to suspend this logger?')) {
       try {
         await suspendLogger(id);
+        // Show success message
+        alert('Logger suspended successfully!');
       } catch (err) {
         console.error('Failed to suspend logger:', err);
+        // Show error to user
+        alert('Failed to suspend logger. Please try again.');
       }
     }
   };
@@ -198,8 +242,12 @@ const EnhancedLoggerManagement = () => {
   const handleActivate = async (id: string) => {
     try {
       await activateLogger(id);
+      // Show success message
+      alert('Logger activated successfully!');
     } catch (err) {
       console.error('Failed to activate logger:', err);
+      // Show error to user
+      alert('Failed to activate logger. Please try again.');
     }
   };
 
@@ -208,8 +256,12 @@ const EnhancedLoggerManagement = () => {
     if (window.confirm('Are you sure you want to delete this logger? This action cannot be undone.')) {
       try {
         await deleteLogger(id);
+        // Show success message
+        alert('Logger deleted successfully!');
       } catch (err) {
         console.error('Failed to delete logger:', err);
+        // Show error to user
+        alert('Failed to delete logger. Please try again.');
       }
     }
   };
@@ -356,22 +408,28 @@ const EnhancedLoggerManagement = () => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Assign Competitions
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {availableCompetitions.map(competition => (
-                  <div key={competition.id} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`competition-${competition.id}`}
-                      checked={formData.assignedCompetitions.includes(competition.id)}
-                      onChange={() => handleCompetitionAssignmentChange(competition.id)}
-                      className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor={`competition-${competition.id}`} className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                      {competition.name}
-                    </label>
-                  </div>
-                ))}
-              </div>
+              {competitionsLoading ? (
+                <div className="text-gray-500 dark:text-gray-400">Loading competitions...</div>
+              ) : availableCompetitions.length === 0 ? (
+                <div className="text-gray-500 dark:text-gray-400">No competitions available</div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {availableCompetitions.map(competition => (
+                    <div key={competition.id} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`competition-${competition.id}`}
+                        checked={formData.assignedCompetitions.includes(competition.id)}
+                        onChange={() => handleCompetitionAssignmentChange(competition.id)}
+                        className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor={`competition-${competition.id}`} className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                        {competition.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Assigned Matches Section */}
@@ -379,36 +437,44 @@ const EnhancedLoggerManagement = () => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Assign Matches
               </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-gray-200 dark:border-gray-700 rounded">
-                {availableMatches.map(match => (
-                  <div key={match.id} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`match-${match.id}`}
-                      checked={formData.assignedMatches.includes(match.id)}
-                      onChange={() => handleMatchAssignmentChange(match.id)}
-                      className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor={`match-${match.id}`} className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                      {match.name}
-                    </label>
-                  </div>
-                ))}
-              </div>
+              {matchesLoading ? (
+                <div className="text-gray-500 dark:text-gray-400">Loading matches...</div>
+              ) : availableMatches.length === 0 ? (
+                <div className="text-gray-500 dark:text-gray-400">No matches available</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-gray-200 dark:border-gray-700 rounded">
+                  {availableMatches.map(match => (
+                    <div key={match.id} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`match-${match.id}`}
+                        checked={formData.assignedMatches.includes(match.id)}
+                        onChange={() => handleMatchAssignmentChange(match.id)}
+                        className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor={`match-${match.id}`} className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                        {match.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex space-x-3">
               <button
                 type="submit"
                 className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200"
+                disabled={loading.logger}
               >
-                {editingLogger ? 'Update Logger' : 'Create Logger'}
+                {loading.logger ? 'Processing...' : (editingLogger ? 'Update Logger' : 'Create Logger')}
               </button>
               {editingLogger && (
                 <button
                   type="button"
                   onClick={cancelEditing}
                   className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-200 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-white"
+                  disabled={loading.logger}
                 >
                   Cancel
                 </button>
@@ -489,6 +555,7 @@ const EnhancedLoggerManagement = () => {
                     <button
                       onClick={() => startEditing(logger)}
                       className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                      disabled={loading.logger}
                     >
                       Edit
                     </button>
@@ -496,6 +563,7 @@ const EnhancedLoggerManagement = () => {
                       <button
                         onClick={() => handleSuspend(logger.id)}
                         className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
+                        disabled={loading.logger}
                       >
                         Suspend
                       </button>
@@ -503,6 +571,7 @@ const EnhancedLoggerManagement = () => {
                       <button
                         onClick={() => handleActivate(logger.id)}
                         className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                        disabled={loading.logger}
                       >
                         Activate
                       </button>
@@ -510,6 +579,7 @@ const EnhancedLoggerManagement = () => {
                     <button
                       onClick={() => handleDelete(logger.id)}
                       className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                      disabled={loading.logger}
                     >
                       Delete
                     </button>

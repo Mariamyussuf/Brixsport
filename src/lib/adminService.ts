@@ -80,27 +80,27 @@ export const adminService = {
   },
   async getStatistics(): Promise<ApiResponse<any>> {
     try {
-      // In a real implementation, this would fetch admin statistics from the backend
+      // Fetch system analytics
+      const analyticsResponse = await apiCall('/admin/analytics');
+      
+      // Fetch additional data for a more complete statistics view
+      const [loggersResponse, matchesResponse] = await Promise.all([
+        this.getLoggers(),
+        this.getMatches()
+      ]);
+      
+      // Combine all data into a comprehensive statistics object
       const stats = {
-        totalLoggers: 0,
-        activeLoggers: 0,
-        totalMatches: 0,
-        pendingMatches: 0,
-        completedMatches: 0
+        ...(analyticsResponse.data || {}),
+        totalLoggers: loggersResponse.success ? loggersResponse.data?.length || 0 : 0,
+        activeLoggers: loggersResponse.success ? 
+          loggersResponse.data?.filter(logger => logger.status === 'active').length || 0 : 0,
+        totalMatches: matchesResponse.success ? matchesResponse.data?.length || 0 : 0,
+        pendingMatches: matchesResponse.success ? 
+          matchesResponse.data?.filter(match => match.status === 'scheduled').length || 0 : 0,
+        completedMatches: matchesResponse.success ? 
+          matchesResponse.data?.filter(match => match.status === 'completed').length || 0 : 0,
       };
-      
-      // Fetch actual statistics
-      const loggers = await this.getLoggers();
-      if (loggers.success && loggers.data) {
-        stats.totalLoggers = loggers.data.length;
-        stats.activeLoggers = loggers.data.filter(logger => logger.status === 'active').length;
-      }
-      
-      // For matches, we would need to implement a matches endpoint
-      // This is a placeholder implementation
-      stats.totalMatches = 0;
-      stats.pendingMatches = 0;
-      stats.completedMatches = 0;
       
       return { success: true, data: stats };
     } catch (error: any) {
@@ -204,6 +204,14 @@ export const adminService = {
       return { success: true, data: response.data || [] };
     } catch (error: any) {
       return { success: false, error: { message: error.message || 'Failed to fetch logger matches' } };
+    }
+  },
+  async getMatches(): Promise<ApiResponse<any[]>> {
+    try {
+      const response = await apiCall('/admin/matches');
+      return { success: true, data: response.data || [] };
+    } catch (error: any) {
+      return { success: false, error: { message: error.message || 'Failed to fetch matches' } };
     }
   },
   async createLoggerMatch(data: any): Promise<ApiResponse<LoggerMatch>> {

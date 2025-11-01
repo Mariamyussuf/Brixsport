@@ -13,48 +13,65 @@ export const useRealTimeUpdates = () => {
   const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
 
-  // Simulate WebSocket connection for real-time updates
+  // Connect to WebSocket server for real-time updates
   useEffect(() => {
-    // In a real implementation, we would connect to a WebSocket server:
-    // const ws = new WebSocket('wss://api.brixsports.com/live/updates');
+    // Connect to WebSocket server
+    const ws = new WebSocket('wss://api.brixsports.com/live/updates');
+    wsRef.current = ws;
     
-    const connect = () => {
+    ws.onopen = () => {
       setIsConnected(true);
-      
-      // Simulate receiving updates every 10 seconds
-      const interval = setInterval(() => {
-        const matchIds = Object.keys(liveMatches).map(Number);
-        if (matchIds.length > 0) {
-          const randomMatchId = matchIds[Math.floor(Math.random() * matchIds.length)];
+      console.log('WebSocket connection established');
+    };
+    
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        // Handle different types of messages
+        if (data.type === 'scoreUpdate') {
           const update: LiveMatchUpdate = {
-            matchId: randomMatchId,
-            homeScore: Math.floor(Math.random() * 5),
-            awayScore: Math.floor(Math.random() * 3),
-            status: 'live',
+            matchId: data.matchId,
+            homeScore: data.homeScore,
+            awayScore: data.awayScore,
+            status: data.status || 'live',
             timestamp: new Date().toISOString()
           };
           
           setLiveMatches(prev => ({
             ...prev,
-            [randomMatchId]: update
+            [data.matchId]: update
           }));
         }
-      }, 10000);
-      
-      return () => clearInterval(interval);
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
     };
     
-    const connection = connect();
-    
-    return () => {
+    ws.onclose = () => {
       setIsConnected(false);
-      if (connection) clearInterval(connection as any);
+      console.log('WebSocket connection closed');
     };
-  }, [liveMatches]);
+    
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+    
+    // Cleanup function
+    return () => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    };
+  }, []);
 
   const subscribeToMatch = (matchId: number) => {
-    // In a real implementation, we would send a subscription message to the WebSocket server:
-    // ws.send(JSON.stringify({ type: 'subscribe', matchId }));
+    // Send a subscription message to the WebSocket server
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ 
+        type: 'subscribe', 
+        matchId 
+      }));
+    }
     
     setLiveMatches(prev => ({
       ...prev,
@@ -69,8 +86,13 @@ export const useRealTimeUpdates = () => {
   };
 
   const unsubscribeFromMatch = (matchId: number) => {
-    // In a real implementation, we would send an unsubscribe message to the WebSocket server:
-    // ws.send(JSON.stringify({ type: 'unsubscribe', matchId }));
+    // Send an unsubscribe message to the WebSocket server
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ 
+        type: 'unsubscribe', 
+        matchId 
+      }));
+    }
     
     setLiveMatches(prev => {
       const newMatches = { ...prev };

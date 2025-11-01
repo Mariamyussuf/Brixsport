@@ -1,6 +1,6 @@
 import { API_BASE_URL, API_TIMEOUT } from './apiConfig';
 // Import new types
-import { Match, MatchEvent, Team, Player, TimelineUpdate, WebSocketMessage, CardType, EventType, FoulType, GoalType, InjurySeverity, PlayerStats, TeamStats, MatchStatus } from '@/types/matchEvents';
+import { Match, MatchEvent, Team, Player, TimelineUpdate, WebSocketMessage, CardType, EventType, FoulType, GoalType, InjurySeverity, PlayerStats, TeamStats, MatchStatus, MatchStatsResponse } from '@/types/matchEvents';
 import { ErrorHandler, StandardizedError } from './errorHandler';
 import { UnifiedUser } from './authService';
 
@@ -476,8 +476,8 @@ class LoggerService {
    * @param matchId - Match ID
    * @returns Promise with match stats
    */
-  async getMatchStats(matchId: string): Promise<LoggerApiResponse<{ teamStats: TeamStats, playerStats: Record<string, PlayerStats> }>> {
-    return await this.request<{ teamStats: TeamStats, playerStats: Record<string, PlayerStats> }>(`${LOGGER_ENDPOINTS.MATCHES}/${matchId}/stats`);
+  async getMatchStats(matchId: string): Promise<LoggerApiResponse<MatchStatsResponse>> {
+    return await this.request<MatchStatsResponse>(`${LOGGER_ENDPOINTS.MATCHES}/${matchId}/stats`);
   }
 
   /**

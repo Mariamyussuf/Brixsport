@@ -5,6 +5,9 @@ import { API_BASE_URL } from './apiConfig';
 import { getAuth } from './auth';
 import { userEndpoints } from './apiEndpoints';
 
+// Add Request import for server-side usage
+import type { NextRequest } from 'next/server';
+
 // User interfaces
 export interface User {
   id: string;
@@ -40,12 +43,22 @@ export interface NotificationSettings {
 }
 
 // Generic request function with authentication
-const fetchAPI = async (endpoint: string, options: RequestInit = {}) => {
+// Updated to accept an optional request object for server-side authentication
+const fetchAPI = async (endpoint: string, options: RequestInit = {}, request?: Request) => {
   try {
-    // Get auth session
-    // Note: This is a simplified version. In a real implementation, you would pass the request object
-    // from the API route to getAuth() to properly extract headers/cookies
-    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    let token: string | null = null;
+    
+    // If we have a request object (server-side), extract token from Authorization header
+    if (request) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7); // Remove 'Bearer ' prefix
+      }
+    } 
+    // Otherwise, fallback to client-side localStorage (browser only)
+    else if (typeof window !== 'undefined') {
+      token = localStorage.getItem('authToken');
+    }
     
     const headers = {
       'Content-Type': 'application/json',
@@ -79,14 +92,15 @@ const fetchAPI = async (endpoint: string, options: RequestInit = {}) => {
 /**
  * Sign up a new user
  * @param userData User registration data
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to authentication response
  */
-export const signup = async (userData: { name: string; email: string; password: string }) => {
+export const signup = async (userData: { name: string; email: string; password: string }, request?: Request) => {
   try {
     const response = await fetchAPI(userEndpoints.signup.url, {
       method: 'POST',
       body: JSON.stringify(userData)
-    });
+    }, request);
     return response;
   } catch (error) {
     console.error('Failed to sign up:', error);
@@ -97,14 +111,15 @@ export const signup = async (userData: { name: string; email: string; password: 
 /**
  * Log in a user
  * @param credentials User login credentials
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to authentication response
  */
-export const login = async (credentials: { email: string; password: string }) => {
+export const login = async (credentials: { email: string; password: string }, request?: Request) => {
   try {
     const response = await fetchAPI(userEndpoints.login.url, {
       method: 'POST',
       body: JSON.stringify(credentials)
-    });
+    }, request);
     return response;
   } catch (error) {
     console.error('Failed to log in:', error);
@@ -115,14 +130,15 @@ export const login = async (credentials: { email: string; password: string }) =>
 /**
  * Refresh authentication tokens
  * @param refreshToken Refresh token
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to new tokens
  */
-export const refreshToken = async (refreshToken: string) => {
+export const refreshToken = async (refreshToken: string, request?: Request) => {
   try {
     const response = await fetchAPI(userEndpoints.refreshToken.url, {
       method: 'POST',
       body: JSON.stringify({ refreshToken })
-    });
+    }, request);
     return response;
   } catch (error) {
     console.error('Failed to refresh token:', error);
@@ -132,13 +148,14 @@ export const refreshToken = async (refreshToken: string) => {
 
 /**
  * Log out the current user
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to logout response
  */
-export const logout = async () => {
+export const logout = async (request?: Request) => {
   try {
     const response = await fetchAPI(userEndpoints.logout.url, {
       method: 'POST'
-    });
+    }, request);
     return response;
   } catch (error) {
     console.error('Failed to log out:', error);
@@ -148,13 +165,14 @@ export const logout = async () => {
 
 /**
  * Log out all user sessions
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to logout response
  */
-export const logoutAll = async () => {
+export const logoutAll = async (request?: Request) => {
   try {
     const response = await fetchAPI(userEndpoints.logoutAll.url, {
       method: 'POST'
-    });
+    }, request);
     return response;
   } catch (error) {
     console.error('Failed to log out all sessions:', error);
@@ -165,14 +183,15 @@ export const logoutAll = async () => {
 /**
  * Request password reset
  * @param email User's email
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to reset response
  */
-export const forgotPassword = async (email: string) => {
+export const forgotPassword = async (email: string, request?: Request) => {
   try {
     const response = await fetchAPI(userEndpoints.forgotPassword.url, {
       method: 'POST',
       body: JSON.stringify({ email })
-    });
+    }, request);
     return response;
   } catch (error) {
     console.error('Failed to request password reset:', error);
@@ -184,14 +203,15 @@ export const forgotPassword = async (email: string) => {
  * Reset password with token
  * @param token Reset token
  * @param newPassword New password
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to reset response
  */
-export const resetPassword = async (token: string, newPassword: string) => {
+export const resetPassword = async (token: string, newPassword: string, request?: Request) => {
   try {
     const response = await fetchAPI(userEndpoints.resetPassword.url, {
       method: 'POST',
       body: JSON.stringify({ token, newPassword })
-    });
+    }, request);
     return response;
   } catch (error) {
     console.error('Failed to reset password:', error);
@@ -203,14 +223,15 @@ export const resetPassword = async (token: string, newPassword: string) => {
  * Change user password
  * @param currentPassword Current password
  * @param newPassword New password
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to change response
  */
-export const changePassword = async (currentPassword: string, newPassword: string) => {
+export const changePassword = async (currentPassword: string, newPassword: string, request?: Request) => {
   try {
     const response = await fetchAPI(userEndpoints.changePassword.url, {
       method: 'POST',
       body: JSON.stringify({ currentPassword, newPassword })
-    });
+    }, request);
     return response;
   } catch (error) {
     console.error('Failed to change password:', error);
@@ -224,11 +245,12 @@ export const changePassword = async (currentPassword: string, newPassword: strin
 
 /**
  * Gets the current user profile
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to user profile
  */
-export const getCurrentUser = async (): Promise<User> => {
+export const getCurrentUser = async (request?: Request): Promise<User> => {
   try {
-    return await fetchAPI(userEndpoints.getCurrentUser.url);
+    return await fetchAPI(userEndpoints.getCurrentUser.url, {}, request);
   } catch (error) {
     console.error('Failed to fetch user profile:', error);
     throw error;
@@ -238,14 +260,15 @@ export const getCurrentUser = async (): Promise<User> => {
 /**
  * Updates the current user profile
  * @param userData User data to update
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to updated user
  */
-export const updateUserProfile = async (userData: Partial<User>): Promise<User> => {
+export const updateUserProfile = async (userData: Partial<User>, request?: Request): Promise<User> => {
   try {
     return await fetchAPI(userEndpoints.updateProfile.url, {
       method: 'PUT',
       body: JSON.stringify(userData)
-    });
+    }, request);
   } catch (error) {
     console.error('Failed to update user profile:', error);
     throw error;
@@ -255,14 +278,15 @@ export const updateUserProfile = async (userData: Partial<User>): Promise<User> 
 /**
  * Uploads a profile picture
  * @param url Picture URL
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to avatar URL
  */
-export const uploadProfilePicture = async (url: string) => {
+export const uploadProfilePicture = async (url: string, request?: Request) => {
   try {
     return await fetchAPI(userEndpoints.uploadProfilePicture.url, {
       method: 'POST',
       body: JSON.stringify({ url })
-    });
+    }, request);
   } catch (error) {
     console.error('Failed to upload profile picture:', error);
     throw error;
@@ -271,13 +295,14 @@ export const uploadProfilePicture = async (url: string) => {
 
 /**
  * Removes the profile picture
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to null avatar
  */
-export const removeProfilePicture = async () => {
+export const removeProfilePicture = async (request?: Request) => {
   try {
     return await fetchAPI(userEndpoints.removeProfilePicture.url, {
       method: 'DELETE'
-    });
+    }, request);
   } catch (error) {
     console.error('Failed to remove profile picture:', error);
     throw error;
@@ -290,11 +315,12 @@ export const removeProfilePicture = async () => {
 
 /**
  * Gets user preferences
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to user preferences
  */
-export const getPreferences = async (): Promise<UserPreferences> => {
+export const getPreferences = async (request?: Request): Promise<UserPreferences> => {
   try {
-    return await fetchAPI(userEndpoints.getPreferences.url);
+    return await fetchAPI(userEndpoints.getPreferences.url, {}, request);
   } catch (error) {
     console.error('Failed to fetch user preferences:', error);
     throw error;
@@ -304,14 +330,15 @@ export const getPreferences = async (): Promise<UserPreferences> => {
 /**
  * Updates user preferences
  * @param preferences Preferences to update
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to updated preferences
  */
-export const updatePreferences = async (preferences: Partial<UserPreferences>): Promise<UserPreferences> => {
+export const updatePreferences = async (preferences: Partial<UserPreferences>, request?: Request): Promise<UserPreferences> => {
   try {
     return await fetchAPI(userEndpoints.updatePreferences.url, {
       method: 'PUT',
       body: JSON.stringify(preferences)
-    });
+    }, request);
   } catch (error) {
     console.error('Failed to update user preferences:', error);
     throw error;
@@ -324,11 +351,12 @@ export const updatePreferences = async (preferences: Partial<UserPreferences>): 
 
 /**
  * Gets notification settings
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to notification settings
  */
-export const getNotificationSettings = async (): Promise<NotificationSettings> => {
+export const getNotificationSettings = async (request?: Request): Promise<NotificationSettings> => {
   try {
-    return await fetchAPI(userEndpoints.getNotificationSettings.url);
+    return await fetchAPI(userEndpoints.getNotificationSettings.url, {}, request);
   } catch (error) {
     console.error('Failed to fetch notification settings:', error);
     throw error;
@@ -338,14 +366,15 @@ export const getNotificationSettings = async (): Promise<NotificationSettings> =
 /**
  * Updates notification settings
  * @param settings Settings to update
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to updated settings
  */
-export const updateNotificationSettings = async (settings: Partial<NotificationSettings>): Promise<NotificationSettings> => {
+export const updateNotificationSettings = async (settings: Partial<NotificationSettings>, request?: Request): Promise<NotificationSettings> => {
   try {
     return await fetchAPI(userEndpoints.updateNotificationSettings.url, {
       method: 'PUT',
       body: JSON.stringify(settings)
-    });
+    }, request);
   } catch (error) {
     console.error('Failed to update notification settings:', error);
     throw error;
@@ -355,11 +384,12 @@ export const updateNotificationSettings = async (settings: Partial<NotificationS
 /**
  * Gets a user by ID
  * @param id User ID
+ * @param request Optional request object for server-side authentication
  * @returns Promise resolving to user or null if not found
  */
-export const getUserById = async (id: string): Promise<User | null> => {
+export const getUserById = async (id: string, request?: Request): Promise<User | null> => {
   try {
-    return await fetchAPI(`/user/${id}`);
+    return await fetchAPI(`/user/${id}`, {}, request);
   } catch (error) {
     console.error(`Failed to fetch user with ID ${id}:`, error);
     return null;

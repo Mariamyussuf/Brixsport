@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Activity, Target, CornerDownLeft, AlertTriangle } from 'lucide-react';
 import { getMatchById } from '@/lib/userMatchService';
 import { loggerService } from '@/lib/loggerService';
-import { TeamStats } from '@/types/matchEvents';
+import { TeamStats, MatchStatsResponse } from '@/types/matchEvents';
 
 interface StatRowProps {
   label: string;
@@ -122,54 +122,54 @@ const StatsScreen: React.FC<{
         
         // Transform the stats data to match our component's expected format
         if (response.success && response.data) {
-          const { teamStats } = response.data;
-          const homeTeam = teamStats.homeTeam;
-          const awayTeam = teamStats.awayTeam;
+          // Fix: Correctly access the homeTeam and awayTeam properties from the actual response structure
+          const homeTeamData = response.data.homeTeam;
+          const awayTeamData = response.data.awayTeam;
           
           setStats({
             possession: [
-              homeTeam?.possession || 50,
-              awayTeam?.possession || 50
+              homeTeamData?.possession || 50,
+              awayTeamData?.possession || 50
             ],
             shots: [
-              homeTeam?.shots || 0,
-              awayTeam?.shots || 0
+              homeTeamData?.shots || 0,
+              awayTeamData?.shots || 0
             ],
             shotsOnTarget: [
-              homeTeam?.shotsOnTarget || 0,
-              awayTeam?.shotsOnTarget || 0
+              homeTeamData?.shotsOnTarget || 0,
+              awayTeamData?.shotsOnTarget || 0
             ],
             corners: [
-              homeTeam?.corners || 0,
-              awayTeam?.corners || 0
+              homeTeamData?.corners || 0,
+              awayTeamData?.corners || 0
             ],
             fouls: [
-              homeTeam?.fouls || homeTeam?.foulsCommitted || 0,
-              awayTeam?.fouls || awayTeam?.foulsCommitted || 0
+              homeTeamData?.fouls || homeTeamData?.foulsCommitted || 0,
+              awayTeamData?.fouls || awayTeamData?.foulsCommitted || 0
             ],
             passes: [
-              homeTeam?.passes || 0,
-              awayTeam?.passes || 0
+              homeTeamData?.passes || 0,
+              awayTeamData?.passes || 0
             ],
             passAccuracy: [
-              homeTeam?.passAccuracy || 0,
-              awayTeam?.passAccuracy || 0
+              homeTeamData?.passAccuracy || 0,
+              awayTeamData?.passAccuracy || 0
             ],
             offsides: [
-              homeTeam?.offsides || homeTeam?.offside || 0,
-              awayTeam?.offsides || awayTeam?.offside || 0
+              homeTeamData?.offsides || homeTeamData?.offside || 0,
+              awayTeamData?.offsides || awayTeamData?.offside || 0
             ],
             throwIns: [
-              homeTeam?.throwIns || 0,
-              awayTeam?.throwIns || 0
+              homeTeamData?.throwIns || 0,
+              awayTeamData?.throwIns || 0
             ],
             yellowCards: [
-              homeTeam?.yellowCards || 0,
-              awayTeam?.yellowCards || 0
+              homeTeamData?.yellowCards || 0,
+              awayTeamData?.yellowCards || 0
             ],
             redCards: [
-              homeTeam?.redCards || 0,
-              awayTeam?.redCards || 0
+              homeTeamData?.redCards || 0,
+              awayTeamData?.redCards || 0
             ]
           });
         } else {

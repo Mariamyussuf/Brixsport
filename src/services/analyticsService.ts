@@ -1,4 +1,5 @@
 import { APIResponse } from '@/types/api';
+import redisService from '@/lib/redis';
 
 // Define TypeScript interfaces for analytics data
 export interface Metrics {
@@ -57,6 +58,17 @@ export interface ResourceUtilization {
   currentUsage: number;
   maxCapacity: number;
   utilizationPercentage: number;
+}
+
+// Cache statistics interface
+export interface CacheStats {
+  hits: number;
+  misses: number;
+  hitRate: number;
+  evictions: number;
+  memoryUsage: string;
+  connectedClients: number;
+  opsPerSecond: number;
 }
 
 // Report interfaces
@@ -119,27 +131,102 @@ class AnalyticsService {
 
   // Fetch user overview data
   public async getUserOverview(): Promise<APIResponse<UserOverview>> {
-    return this.apiRequest<UserOverview>('/analytics/users/overview');
+    // Check cache first
+    const cacheKey = 'analytics:user-overview';
+    const cached = await redisService.get<UserOverview>(cacheKey);
+    
+    if (cached.success && cached.data) {
+      return { success: true, data: cached.data };
+    }
+    
+    const result = await this.apiRequest<UserOverview>('/analytics/users/overview');
+    
+    // Cache the result for 5 minutes
+    if (result.success) {
+      await redisService.set(cacheKey, result.data, 300);
+    }
+    
+    return result;
   }
 
   // Fetch platform usage data
   public async getPlatformUsage(): Promise<APIResponse<PlatformUsage>> {
-    return this.apiRequest<PlatformUsage>('/analytics/platform/usage');
+    // Check cache first
+    const cacheKey = 'analytics:platform-usage';
+    const cached = await redisService.get<PlatformUsage>(cacheKey);
+    
+    if (cached.success && cached.data) {
+      return { success: true, data: cached.data };
+    }
+    
+    const result = await this.apiRequest<PlatformUsage>('/analytics/platform/usage');
+    
+    // Cache the result for 5 minutes
+    if (result.success) {
+      await redisService.set(cacheKey, result.data, 300);
+    }
+    
+    return result;
   }
 
   // Fetch system performance data
   public async getSystemPerformance(): Promise<APIResponse<SystemPerformance>> {
-    return this.apiRequest<SystemPerformance>('/analytics/platform/performance');
+    // Check cache first
+    const cacheKey = 'analytics:system-performance';
+    const cached = await redisService.get<SystemPerformance>(cacheKey);
+    
+    if (cached.success && cached.data) {
+      return { success: true, data: cached.data };
+    }
+    
+    const result = await this.apiRequest<SystemPerformance>('/analytics/platform/performance');
+    
+    // Cache the result for 1 minute
+    if (result.success) {
+      await redisService.set(cacheKey, result.data, 60);
+    }
+    
+    return result;
   }
 
   // Fetch system health data
   public async getSystemHealth(): Promise<APIResponse<SystemHealth>> {
-    return this.apiRequest<SystemHealth>('/analytics/system/health');
+    // Check cache first
+    const cacheKey = 'analytics:system-health';
+    const cached = await redisService.get<SystemHealth>(cacheKey);
+    
+    if (cached.success && cached.data) {
+      return { success: true, data: cached.data };
+    }
+    
+    const result = await this.apiRequest<SystemHealth>('/analytics/system/health');
+    
+    // Cache the result for 1 minute
+    if (result.success) {
+      await redisService.set(cacheKey, result.data, 60);
+    }
+    
+    return result;
   }
 
   // Fetch resource utilization data
   public async getResourceUtilization(): Promise<APIResponse<ResourceUtilization[]>> {
-    return this.apiRequest<ResourceUtilization[]>('/analytics/system/resources');
+    // Check cache first
+    const cacheKey = 'analytics:resource-utilization';
+    const cached = await redisService.get<ResourceUtilization[]>(cacheKey);
+    
+    if (cached.success && cached.data) {
+      return { success: true, data: cached.data };
+    }
+    
+    const result = await this.apiRequest<ResourceUtilization[]>('/analytics/system/resources');
+    
+    // Cache the result for 1 minute
+    if (result.success) {
+      await redisService.set(cacheKey, result.data, 60);
+    }
+    
+    return result;
   }
 
   // Fetch user activity data
@@ -184,7 +271,42 @@ class AnalyticsService {
 
   // Fetch detailed performance data
   public async getDetailedPerformance(): Promise<APIResponse<any>> {
-    return this.apiRequest<any>('/analytics/system/performance');
+    // Check cache first
+    const cacheKey = 'analytics:detailed-performance';
+    const cached = await redisService.get<any>(cacheKey);
+    
+    if (cached.success && cached.data) {
+      return { success: true, data: cached.data };
+    }
+    
+    const result = await this.apiRequest<any>('/analytics/system/performance');
+    
+    // Cache the result for 1 minute
+    if (result.success) {
+      await redisService.set(cacheKey, result.data, 60);
+    }
+    
+    return result;
+  }
+
+  // Fetch cache statistics
+  public async getCacheStats(): Promise<APIResponse<CacheStats>> {
+    // Check cache first
+    const cacheKey = 'analytics:cache-stats';
+    const cached = await redisService.get<CacheStats>(cacheKey);
+    
+    if (cached.success && cached.data) {
+      return { success: true, data: cached.data };
+    }
+    
+    const result = await this.apiRequest<CacheStats>('/cache/stats');
+    
+    // Cache the result for 2 minutes
+    if (result.success) {
+      await redisService.set(cacheKey, result.data, 120);
+    }
+    
+    return result;
   }
 
   // Reports methods
@@ -219,6 +341,14 @@ class AnalyticsService {
     chartData: ChartData;
   }>> {
     try {
+      // Check cache first
+      const cacheKey = 'analytics:overview';
+      const cached = await redisService.get<{ metrics: Metrics; chartData: ChartData }>(cacheKey);
+      
+      if (cached.success && cached.data) {
+        return { success: true, data: cached.data };
+      }
+      
       // Fetch all required data in parallel
       const [
         userOverviewResult,
@@ -302,14 +432,21 @@ class AnalyticsService {
       if (performanceResult.success && performanceResult.data) {
         chartData.performance = performanceResult.data.history || [];
       }
-
-      return {
+      
+      const result = {
         success: true,
         data: {
           metrics,
           chartData
         }
       };
+      
+      // Cache the result for 1 minute
+      if (result.success) {
+        await redisService.set(cacheKey, result.data, 60);
+      }
+      
+      return result;
     } catch (error) {
       console.error('Error fetching analytics overview:', error);
       return {

@@ -176,3 +176,18 @@ export const getLiveMatches = async (): Promise<Match[]> => {
     return [];
   }
 };
+
+/**
+ * Gets match statistics by match ID
+ * @param id Match ID
+ * @returns Promise resolving to match statistics
+ */
+export const getMatchStats = async (id: string): Promise<any> => {
+  try {
+    const stats = await databaseService.getMatchStats(id);
+    return stats;
+  } catch (error) {
+    console.error(`Failed to fetch stats for match with ID ${id}:`, error);
+    throw error;
+  }
+};
