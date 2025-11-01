@@ -34,17 +34,27 @@ export async function GET() {
     // Fetch competitions from database that can be assigned to loggers
     const competitions = await dbService.getCompetitions();
     
+    // Fetch all loggers to determine assignment counts
+    const loggers = await dbService.getAllLoggers();
+    
     // Filter competitions to only include active ones that can be assigned to loggers
     const assignableCompetitions = competitions.filter(competition => 
       competition.status === 'upcoming' || competition.status === 'ongoing'
     );
     
-    // Add additional data for logger assignment UI
-    const competitionsWithDetails = assignableCompetitions.map(competition => ({
-      ...competition,
-      displayName: `${competition.name} (${competition.category})`,
-      assignmentCount: 0 // This would be populated with actual data in a real implementation
-    }));
+    // Add assignment counts to competitions by counting how many loggers have each competition assigned
+    const competitionsWithDetails = assignableCompetitions.map(competition => {
+      // Count how many loggers have this competition assigned
+      const assignmentCount = loggers.filter(logger => 
+        logger.assignedCompetitions && logger.assignedCompetitions.includes(String(competition.id))
+      ).length;
+      
+      return {
+        ...competition,
+        displayName: `${competition.name} (${competition.category})`,
+        assignmentCount
+      };
+    });
     
     return NextResponse.json({ 
       success: true, 

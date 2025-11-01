@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import MetricCard from '@/components/analytics/charts/MetricCard';
 import LineChart from '@/components/analytics/charts/LineChart';
 import BarChart from '@/components/analytics/charts/BarChart';
 import AreaChart from '@/components/analytics/charts/AreaChart';
-import analyticsService, { SystemHealth as FrontendSystemHealth, ResourceUtilization } from '@/services/analyticsService';
+import analyticsService, { SystemHealth as FrontendSystemHealth, ResourceUtilization, CacheStats } from '@/services/analyticsService';
+import { useSocket } from '@/hooks/useSocket';
+import redisService from '@/lib/redis';
 
 // Define proper TypeScript interfaces
 interface SystemMetrics {
@@ -17,6 +19,7 @@ interface SystemMetrics {
   throughput: number;
   errorRate: number;
   uptime: number;
+  cacheHitRate: number;
 }
 
 interface HistoryDataPoint {
@@ -30,6 +33,8 @@ interface PerformanceData {
   responseTimeHistory: HistoryDataPoint[];
   throughputHistory: HistoryDataPoint[];
   errorHistory: HistoryDataPoint[];
+  networkLatencyHistory: HistoryDataPoint[];
+  cacheHitRateHistory: HistoryDataPoint[];
 }
 
 interface ServiceStatus {
@@ -71,7 +76,8 @@ const SystemAnalytics: React.FC<SystemAnalyticsProps> = ({ className = '' }) => 
     responseTime: 0,
     throughput: 0,
     errorRate: 0,
-    uptime: 0
+    uptime: 0,
+    cacheHitRate: 0
   });
 
   const [performanceData, setPerformanceData] = useState<PerformanceData>({
@@ -79,7 +85,9 @@ const SystemAnalytics: React.FC<SystemAnalyticsProps> = ({ className = '' }) => 
     memoryHistory: [],
     responseTimeHistory: [],
     throughputHistory: [],
-    errorHistory: []
+    errorHistory: [],
+    networkLatencyHistory: [],
+    cacheHitRateHistory: []
   });
 
   const [systemHealth, setSystemHealth] = useState<SystemHealth>({
@@ -88,118 +96,537 @@ const SystemAnalytics: React.FC<SystemAnalyticsProps> = ({ className = '' }) => 
     incidents: []
   });
 
-  const [loading, setLoading] = useState(true);
+  const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({
+    systemMetrics: true,
+    performanceData: true,
+    systemHealth: true,
+    cacheStats: true,
+    networkLatency: true
+  });
 
-  useEffect(() => {
-    // Load system analytics data from API
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch system performance data
-        const [systemPerformanceResult, systemHealthResult, detailedPerformanceResult, resourceUtilizationResult] = await Promise.all([
-          analyticsService.getSystemPerformance(),
-          analyticsService.getSystemHealth(),
-          analyticsService.getDetailedPerformance(),
-          analyticsService.getResourceUtilization()
-        ]);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
+  const [timeRange, setTimeRange] = useState<string>('24h');
+  const socket = useSocket(process.env.NEXT_PUBLIC_API_BASE_URL?.replace('http', 'ws') + '/analytics');
+  
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-        // Process system performance data
-        if (systemPerformanceResult.success && systemPerformanceResult.data) {
-          const perfData = systemPerformanceResult.data;
-          setSystemMetrics(prev => ({
-            ...prev,
-            responseTime: perfData.responseTime || 0,
-            uptime: perfData.uptime || 0,
-            errorRate: perfData.errorRate || 0,
-            throughput: perfData.throughput || 0
-          }));
-        }
-
-        // Process resource utilization data for system metrics
-        if (resourceUtilizationResult.success && resourceUtilizationResult.data) {
-          const resources: ResourceUtilization[] = resourceUtilizationResult.data;
-          
-          // Extract specific resource metrics
-          const cpuResource = resources.find(r => r.resourceName === 'CPU');
-          const memoryResource = resources.find(r => r.resourceName === 'Memory');
-          const diskResource = resources.find(r => r.resourceName === 'Disk');
-          
-          setSystemMetrics(prev => ({
-            ...prev,
-            cpuUsage: cpuResource ? cpuResource.utilizationPercentage : 0,
-            memoryUsage: memoryResource ? memoryResource.utilizationPercentage : 0,
-            diskUsage: diskResource ? diskResource.utilizationPercentage : 0
-          }));
-        }
-
-        // Process detailed performance data for charts
-        if (detailedPerformanceResult.success && detailedPerformanceResult.data) {
-          const detailedData = detailedPerformanceResult.data;
-          
-          // Transform data for charts
-          const cpuHistory = detailedData.cpuHistory?.map((item: any) => ({
-            time: item.timestamp || item.time || '',
-            usage: item.value || item.cpuUsage || 0
-          })) || [];
-          
-          const memoryHistory = detailedData.memoryHistory?.map((item: any) => ({
-            time: item.timestamp || item.time || '',
-            usage: item.value || item.memoryUsage || 0
-          })) || [];
-          
-          const responseTimeHistory = detailedData.responseTimeHistory?.map((item: any) => ({
-            time: item.timestamp || item.time || '',
-            responseTime: item.value || item.responseTime || 0
-          })) || [];
-          
-          const throughputHistory = detailedData.throughputHistory?.map((item: any) => ({
-            time: item.timestamp || item.time || '',
-            requests: item.value || item.throughput || 0
-          })) || [];
-          
-          const errorHistory = detailedData.errorHistory?.map((item: any) => ({
-            time: item.timestamp || item.time || '',
-            errors: item.value || item.errorCount || 0
-          })) || [];
-
-          setPerformanceData({
-            cpuHistory,
-            memoryHistory,
-            responseTimeHistory,
-            throughputHistory,
-            errorHistory
-          });
-        }
-
-        // In a real implementation, system health data would come from the API
-        // For now, we'll initialize with empty arrays to remove mock data
-        setSystemHealth({
-          services: [],
-          alerts: [],
-          incidents: []
-        });
-
-        setLoading(false);
-      } catch (error) {
-        console.error('Error loading system analytics:', error);
-        setLoading(false);
+  // Measure network latency
+  const measureNetworkLatency = useCallback(async (): Promise<number> => {
+    try {
+      // Check if we have a cached value
+      const cacheKey = 'network-latency';
+      const cachedResult = await redisService.get<number>(cacheKey);
+      
+      if (cachedResult.success && cachedResult.data !== null) {
+        return cachedResult.data ?? 0; // Fix: provide default value
       }
-    };
-
-    loadData();
+      
+      const startTime = Date.now();
+      await fetch('/api/ping', { method: 'HEAD' });
+      const endTime = Date.now();
+      const latency = endTime - startTime;
+      
+      // Cache the result for 30 seconds
+      await redisService.set(cacheKey, latency, 30);
+      
+      return latency;
+    } catch (err) {
+      console.error('Network latency measurement failed:', err);
+      return 0;
+    }
   }, []);
 
-  if (loading) {
+  // Fetch cache statistics
+  const fetchCacheStats = useCallback(async () => {
+    try {
+      setLoadingStates(prev => ({ ...prev, cacheStats: true }));
+      
+      // Check if we have cached cache stats
+      const cacheKey = 'cache-stats';
+      const cachedResult = await redisService.get<CacheStats>(cacheKey);
+      
+      if (cachedResult.success && cachedResult.data !== null) {
+        const cacheStats = cachedResult.data;
+        
+        setSystemMetrics(prev => ({
+          ...prev,
+          cacheHitRate: cacheStats?.hitRate ?? 0
+        }));
+        
+        // Add to history
+        setPerformanceData(prev => ({
+          ...prev,
+          cacheHitRateHistory: [
+            ...prev.cacheHitRateHistory.slice(-29), // Keep last 30 data points
+            {
+              time: new Date().toLocaleTimeString(),
+              hitRate: cacheStats?.hitRate ?? 0
+            }
+          ]
+        }));
+        
+        setLoadingStates(prev => ({ ...prev, cacheStats: false }));
+        return;
+      }
+      
+      const cacheStatsResult = await analyticsService.getCacheStats();
+      
+      if (cacheStatsResult.success && cacheStatsResult.data) {
+        const cacheStats: CacheStats = cacheStatsResult.data;
+        
+        setSystemMetrics(prev => ({
+          ...prev,
+          cacheHitRate: cacheStats.hitRate ?? 0
+        }));
+        
+        // Add to history
+        setPerformanceData(prev => ({
+          ...prev,
+          cacheHitRateHistory: [
+            ...prev.cacheHitRateHistory.slice(-29), // Keep last 30 data points
+            {
+              time: new Date().toLocaleTimeString(),
+              hitRate: cacheStats.hitRate ?? 0
+            }
+          ]
+        }));
+      }
+      
+      setLoadingStates(prev => ({ ...prev, cacheStats: false }));
+    } catch (err) {
+      console.error('Error fetching cache stats:', err);
+      setLoadingStates(prev => ({ ...prev, cacheStats: false }));
+    }
+  }, []);
+
+  // Load system analytics data from API
+  const loadData = useCallback(async () => {
+    try {
+      setError(null);
+      
+      // Check if we have cached system analytics data
+      const cacheKey = `system-analytics-${timeRange}`;
+      const cachedResult = await redisService.get<any>(cacheKey);
+      
+      if (cachedResult.success && cachedResult.data !== null) {
+        const cachedData = cachedResult.data;
+        
+        setSystemMetrics(cachedData.systemMetrics);
+        setPerformanceData(cachedData.performanceData);
+        setSystemHealth(cachedData.systemHealth);
+        setLastUpdated(new Date());
+        
+        // Update loading states
+        setLoadingStates({
+          systemMetrics: false,
+          performanceData: false,
+          systemHealth: false,
+          cacheStats: false,
+          networkLatency: false
+        });
+        
+        return;
+      }
+      
+      // Fetch system performance data
+      const [
+        systemPerformanceResult, 
+        systemHealthResult, 
+        detailedPerformanceResult, 
+        resourceUtilizationResult
+      ] = await Promise.all([
+        analyticsService.getSystemPerformance(),
+        analyticsService.getSystemHealth(),
+        analyticsService.getDetailedPerformance(),
+        analyticsService.getResourceUtilization()
+      ]);
+
+      // Process system performance data
+      if (systemPerformanceResult.success && systemPerformanceResult.data) {
+        const perfData = systemPerformanceResult.data;
+        setSystemMetrics(prev => ({
+          ...prev,
+          responseTime: perfData.responseTime || 0,
+          uptime: perfData.uptime || 0,
+          errorRate: perfData.errorRate || 0,
+          throughput: perfData.throughput || 0
+        }));
+        setLoadingStates(prev => ({ ...prev, systemMetrics: false }));
+      }
+
+      // Process resource utilization data for system metrics
+      if (resourceUtilizationResult.success && resourceUtilizationResult.data) {
+        const resources: ResourceUtilization[] = resourceUtilizationResult.data;
+        
+        // Extract specific resource metrics
+        const cpuResource = resources.find(r => r.resourceName === 'CPU');
+        const memoryResource = resources.find(r => r.resourceName === 'Memory');
+        const diskResource = resources.find(r => r.resourceName === 'Disk');
+        
+        setSystemMetrics(prev => ({
+          ...prev,
+          cpuUsage: cpuResource ? cpuResource.utilizationPercentage : 0,
+          memoryUsage: memoryResource ? memoryResource.utilizationPercentage : 0,
+          diskUsage: diskResource ? diskResource.utilizationPercentage : 0
+        }));
+        setLoadingStates(prev => ({ ...prev, systemMetrics: false }));
+      }
+
+      // Process detailed performance data for charts
+      if (detailedPerformanceResult.success && detailedPerformanceResult.data) {
+        const detailedData = detailedPerformanceResult.data;
+        
+        // Transform data for charts
+        const cpuHistory = detailedData.cpuHistory?.map((item: any) => ({
+          time: item.timestamp || item.time || '',
+          usage: item.value || item.cpuUsage || 0
+        })) || [];
+        
+        const memoryHistory = detailedData.memoryHistory?.map((item: any) => ({
+          time: item.timestamp || item.time || '',
+          usage: item.value || item.memoryUsage || 0
+        })) || [];
+        
+        const responseTimeHistory = detailedData.responseTimeHistory?.map((item: any) => ({
+          time: item.timestamp || item.time || '',
+          responseTime: item.value || item.responseTime || 0
+        })) || [];
+        
+        const throughputHistory = detailedData.throughputHistory?.map((item: any) => ({
+          time: item.timestamp || item.time || '',
+          requests: item.value || item.throughput || 0
+        })) || [];
+        
+        const errorHistory = detailedData.errorHistory?.map((item: any) => ({
+          time: item.timestamp || item.time || '',
+          errors: item.value || item.errorCount || 0
+        })) || [];
+
+        setPerformanceData({
+          cpuHistory,
+          memoryHistory,
+          responseTimeHistory,
+          throughputHistory,
+          errorHistory,
+          networkLatencyHistory: [],
+          cacheHitRateHistory: []
+        });
+        setLoadingStates(prev => ({ ...prev, performanceData: false }));
+      }
+
+      // Process system health data
+      if (systemHealthResult.success && systemHealthResult.data) {
+        // Transform API data to our component's data structure
+        const healthData = systemHealthResult.data;
+        
+        // Use real data from the API instead of mock data
+        const services: ServiceStatus[] = [
+          { name: 'API Gateway', status: healthData.apiStatus || 'unknown', uptime: 'N/A', responseTime: 'N/A' },
+          { name: 'Database', status: healthData.databaseStatus || 'unknown', uptime: 'N/A', responseTime: 'N/A' },
+          { name: 'Cache', status: healthData.cacheStatus || 'unknown', uptime: 'N/A', responseTime: 'N/A' },
+          { name: 'Authentication', status: healthData.overallStatus || 'unknown', uptime: 'N/A', responseTime: 'N/A' }
+        ];
+        
+        setSystemHealth({
+          services,
+          alerts: [], // Would come from a separate alerts API
+          incidents: [] // Would come from a separate incidents API
+        });
+        setLoadingStates(prev => ({ ...prev, systemHealth: false }));
+      }
+      
+      // Cache the data for 1 minute
+      const dataToCache = {
+        systemMetrics,
+        performanceData,
+        systemHealth
+      };
+      
+      await redisService.set(cacheKey, dataToCache, 60);
+
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error('Error loading system analytics:', err);
+      setError('Failed to load system analytics data. Please try again.');
+      // Set all loading states to false on error
+      setLoadingStates({
+        systemMetrics: false,
+        performanceData: false,
+        systemHealth: false,
+        cacheStats: false,
+        networkLatency: false
+      });
+    }
+  }, [timeRange, systemMetrics, performanceData, systemHealth]);
+
+  // Refresh all data
+  const refreshData = useCallback(async () => {
+    // Clear cache before refreshing
+    await redisService.del('system-analytics-24h');
+    await redisService.del('cache-stats');
+    await redisService.del('network-latency');
+    
+    await loadData();
+    await measureNetworkLatency();
+    await fetchCacheStats();
+  }, [loadData, measureNetworkLatency, fetchCacheStats]);
+
+  // Set up auto-refresh
+  useEffect(() => {
+    if (autoRefresh) {
+      refreshIntervalRef.current = setInterval(() => {
+        refreshData();
+      }, 30000); // Refresh every 30 seconds
+    } else if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+    }
+
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+  }, [autoRefresh, refreshData]);
+
+  // Initial data load
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
+
+  // Set up WebSocket for real-time updates
+  useEffect(() => {
+    if (!socket) return;
+
+    // Listen for real-time system metrics updates
+    const unsubscribeMetrics = socket.on('analytics:liveMetrics', (data: any) => {
+      if (data.metrics) {
+        setSystemMetrics(prev => ({
+          ...prev,
+          ...data.metrics
+        }));
+      }
+      
+      if (data.history) {
+        setPerformanceData(prev => ({
+          ...prev,
+          cpuHistory: data.history.cpu || prev.cpuHistory,
+          memoryHistory: data.history.memory || prev.memoryHistory,
+          responseTimeHistory: data.history.responseTime || prev.responseTimeHistory,
+          throughputHistory: data.history.throughput || prev.throughputHistory
+        }));
+      }
+      
+      setLastUpdated(new Date());
+    });
+
+    // Listen for system health updates
+    const unsubscribeHealth = socket.on('system:healthUpdate', (data: any) => {
+      if (data.health) {
+        setSystemHealth(prev => ({
+          ...prev,
+          ...data.health
+        }));
+      }
+      setLastUpdated(new Date());
+    });
+
+    // Request live metrics subscription
+    socket.emit('analytics:subscribeLiveMetrics');
+
+    return () => {
+      unsubscribeMetrics?.();
+      unsubscribeHealth?.();
+      socket.emit('analytics:unsubscribeLiveMetrics');
+    };
+  }, [socket]);
+
+  // Measure network latency periodically
+  useEffect(() => {
+    const measureLatency = async () => {
+      const latency = await measureNetworkLatency();
+      setSystemMetrics(prev => ({
+        ...prev,
+        networkLatency: latency
+      }));
+      
+      // Add to history
+      setPerformanceData(prev => ({
+        ...prev,
+        networkLatencyHistory: [
+          ...prev.networkLatencyHistory.slice(-29), // Keep last 30 data points
+          {
+            time: new Date().toLocaleTimeString(),
+            latency
+          }
+        ]
+      }));
+    };
+
+    // Measure immediately
+    measureLatency();
+
+    // Measure periodically
+    const latencyInterval = setInterval(measureLatency, 60000); // Every minute
+
+    return () => clearInterval(latencyInterval);
+  }, [measureNetworkLatency]);
+
+  // Fetch cache stats periodically
+  useEffect(() => {
+    fetchCacheStats();
+    const cacheInterval = setInterval(fetchCacheStats, 120000); // Every 2 minutes
+    return () => clearInterval(cacheInterval);
+  }, [fetchCacheStats]);
+
+  // Memoized chart data transformations
+  const chartData = useMemo(() => {
+    return {
+      cpuHistory: performanceData.cpuHistory.map(item => ({
+        ...item,
+        usage: typeof item.usage === 'number' ? item.usage : 0
+      })),
+      memoryHistory: performanceData.memoryHistory.map(item => ({
+        ...item,
+        usage: typeof item.usage === 'number' ? item.usage : 0
+      })),
+      responseTimeHistory: performanceData.responseTimeHistory.map(item => ({
+        ...item,
+        responseTime: typeof item.responseTime === 'number' ? item.responseTime : 0
+      })),
+      throughputHistory: performanceData.throughputHistory.map(item => ({
+        ...item,
+        requests: typeof item.requests === 'number' ? item.requests : 0
+      })),
+      errorHistory: performanceData.errorHistory.map(item => ({
+        ...item,
+        errors: typeof item.errors === 'number' ? item.errors : 0
+      })),
+      networkLatencyHistory: performanceData.networkLatencyHistory.map(item => ({
+        ...item,
+        latency: typeof item.latency === 'number' ? item.latency : 0
+      })),
+      cacheHitRateHistory: performanceData.cacheHitRateHistory.map(item => ({
+        ...item,
+        hitRate: typeof item.hitRate === 'number' ? item.hitRate : 0
+      }))
+    };
+  }, [performanceData]);
+
+  // Handle time range change
+  const handleTimeRangeChange = (range: string) => {
+    setTimeRange(range);
+    // In a real implementation, this would fetch data for the selected time range
+  };
+
+  // Export data functionality
+  const exportData = () => {
+    const data = {
+      systemMetrics,
+      performanceData,
+      systemHealth,
+      exportedAt: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `system-analytics-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Check if any section is still loading
+  const isLoading = Object.values(loadingStates).some(state => state);
+
+  if (isLoading && !error) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div data-testid="loading-spinner" className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   return (
     <div className={`space-y-6 ${className}`}>
+      {/* Header with controls */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-white">System Analytics</h2>
+          <p className="text-gray-400 text-sm">
+            Last updated: {lastUpdated.toLocaleTimeString()}
+          </p>
+        </div>
+        
+        <div className="flex flex-wrap gap-3">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="autoRefresh"
+              checked={autoRefresh}
+              onChange={(e) => setAutoRefresh(e.target.checked)}
+              className="mr-2 h-4 w-4 text-blue-600 rounded"
+            />
+            <label htmlFor="autoRefresh" className="text-gray-300 text-sm">
+              Auto-refresh
+            </label>
+          </div>
+          
+          <select
+            value={timeRange}
+            onChange={(e) => handleTimeRangeChange(e.target.value)}
+            className="bg-gray-700 text-white rounded px-3 py-1 text-sm"
+          >
+            <option value="1h">Last 1 hour</option>
+            <option value="6h">Last 6 hours</option>
+            <option value="24h">Last 24 hours</option>
+            <option value="7d">Last 7 days</option>
+          </select>
+          
+          <button
+            onClick={refreshData}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm flex items-center"
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </button>
+          
+          <button
+            onClick={exportData}
+            className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm flex items-center"
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Export
+          </button>
+        </div>
+      </div>
+
+      {/* Error message */}
+      {error && (
+        <div className="bg-red-900/50 border border-red-700 rounded-lg p-4">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-red-300">{error}</span>
+          </div>
+          <button
+            onClick={refreshData}
+            className="mt-2 bg-red-700 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* System Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
@@ -284,7 +711,7 @@ const SystemAnalytics: React.FC<SystemAnalyticsProps> = ({ className = '' }) => 
             </div>
           </div>
           <AreaChart
-            data={performanceData.cpuHistory}
+            data={chartData.cpuHistory}
             xKey="time"
             yKey="usage"
             color="#3b82f6"
@@ -302,7 +729,7 @@ const SystemAnalytics: React.FC<SystemAnalyticsProps> = ({ className = '' }) => 
             </div>
           </div>
           <AreaChart
-            data={performanceData.memoryHistory}
+            data={chartData.memoryHistory}
             xKey="time"
             yKey="usage"
             color="#8b5cf6"
@@ -320,7 +747,7 @@ const SystemAnalytics: React.FC<SystemAnalyticsProps> = ({ className = '' }) => 
             </div>
           </div>
           <LineChart
-            data={performanceData.responseTimeHistory}
+            data={chartData.responseTimeHistory}
             xKey="time"
             yKey="responseTime"
             color="#10b981"
@@ -338,7 +765,7 @@ const SystemAnalytics: React.FC<SystemAnalyticsProps> = ({ className = '' }) => 
             </div>
           </div>
           <BarChart
-            data={performanceData.throughputHistory}
+            data={chartData.throughputHistory}
             xKey="time"
             yKey="requests"
             color="#10b981"
@@ -440,7 +867,7 @@ const SystemAnalytics: React.FC<SystemAnalyticsProps> = ({ className = '' }) => 
             </div>
           </div>
           <BarChart
-            data={performanceData.errorHistory}
+            data={chartData.errorHistory}
             xKey="time"
             yKey="errors"
             color="#ef4444"
@@ -470,7 +897,7 @@ const SystemAnalytics: React.FC<SystemAnalyticsProps> = ({ className = '' }) => 
             </div>
             <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
               <span className="text-sm text-gray-300">Cache Hit Rate</span>
-              <span className="text-sm font-medium text-purple-400">94.2%</span>
+              <span className="text-sm font-medium text-purple-400">{systemMetrics.cacheHitRate.toFixed(1)}%</span>
             </div>
           </div>
         </div>

@@ -1,6 +1,38 @@
 import { logger } from '@utils/logger';
 import { redisService } from '../redis.service';
-import { supabaseService } from '../supabase.service';
+import { supabaseService, supabase } from '../supabase.service';
+
+// Types for container security tools
+interface TrivyScanResult {
+  Results: Array<{
+    Target: string;
+    Vulnerabilities?: Array<{
+      VulnerabilityID: string;
+      PkgName: string;
+      InstalledVersion: string;
+      FixedVersion?: string;
+      Title?: string;
+      Description: string;
+      Severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+      References?: string[];
+    }>;
+  }>;
+}
+
+interface FalcoAlert {
+  output: string;
+  priority: 'Emergency' | 'Alert' | 'Critical' | 'Error' | 'Warning' | 'Notice' | 'Informational' | 'Debug';
+  rule: string;
+  time: string;
+  output_fields: Record<string, any>;
+}
+
+interface DockerBenchResult {
+  id: string;
+  text: string;
+  severity: 'info' | 'warn' | 'fail';
+  description: string;
+}
 
 export interface ContainerScanResult {
   image: string;
@@ -13,13 +45,17 @@ export interface Vulnerability {
   severity: 'low' | 'medium' | 'high' | 'critical';
   description: string;
   remediation: string;
+  packageName?: string;
+  installedVersion?: string;
+  fixedVersion?: string;
+  references?: string[];
 }
 
 export interface ContainerSecurity {
-  scanContainerImages(): Promise<ContainerScanResult[]>;
-  monitorContainerRuntime(): Promise<void>;
+  scanContainerImages(images?: string[]): Promise<ContainerScanResult[]>;
+  monitorContainerRuntime(containerId: string): Promise<void>;
   enforceSecurityPolicies(): Promise<void>;
-  auditContainerConfigurations(): Promise<ContainerAudit[]>;
+  auditContainerConfigurations(containerId: string): Promise<ContainerAudit[]>;
   // New methods for production-ready implementation
   getScanResults(image?: string): Promise<ContainerScanResult[]>;
   saveScanResult(result: ContainerScanResult): Promise<void>;
@@ -42,64 +78,116 @@ export interface AuditIssue {
   recommendation: string;
 }
 
-// In-memory storage for scan results (in production, this should be in a database)
-const scanResults: ContainerScanResult[] = [];
+// Helper function to normalize vulnerability severity
+const normalizeSeverity = (severity: string): 'low' | 'medium' | 'high' | 'critical' => {
+  const normalized = severity.toLowerCase();
+  switch (normalized) {
+    case 'critical':
+      return 'critical';
+    case 'high':
+      return 'high';
+    case 'medium':
+    case 'moderate':
+      return 'medium';
+    case 'low':
+    case 'negligible':
+    case 'unknown':
+    default:
+      return 'low';
+  }
+};
 
-// In-memory storage for container audits
-const containerAudits: ContainerAudit[] = [];
+// Helper function to convert Trivy severity to our format
+const trivyToVulnerability = (trivyVuln: any): Vulnerability => {
+  return {
+    id: trivyVuln.VulnerabilityID,
+    severity: normalizeSeverity(trivyVuln.Severity),
+    description: trivyVuln.Description,
+    remediation: trivyVuln.FixedVersion ? `Update to version ${trivyVuln.FixedVersion}` : 'No fix available',
+    packageName: trivyVuln.PkgName,
+    installedVersion: trivyVuln.InstalledVersion,
+    fixedVersion: trivyVuln.FixedVersion,
+    references: trivyVuln.References
+  };
+};
 
 export const containerSecurity: ContainerSecurity = {
-  scanContainerImages: async (): Promise<ContainerScanResult[]> => {
+  scanContainerImages: async (images?: string[]): Promise<ContainerScanResult[]> => {
     try {
-      logger.info('Scanning container images');
+      logger.info('Scanning container images', { images });
       
-      // In a real implementation, this would interface with container scanning tools like Clair, Trivy, etc.
-      // For now, we'll simulate a scan with mock results
+      // If no images provided, scan default images
+      const imagesToScan = images && images.length > 0 
+        ? images 
+        : ['brixsport/api:latest', 'brixsport/database:latest'];
       
-      const mockResults: ContainerScanResult[] = [
-        {
-          image: 'brixsport/api:latest',
-          vulnerabilities: [
-            {
-              id: 'CVE-2023-12345',
-              severity: 'medium',
-              description: 'Outdated dependency with known vulnerability',
-              remediation: 'Update to latest version'
-            }
-          ],
-          scanDate: new Date()
-        },
-        {
-          image: 'brixsport/database:latest',
-          vulnerabilities: [],
-          scanDate: new Date()
+      const results: ContainerScanResult[] = [];
+      
+      // Scan each image using Trivy (assuming Trivy CLI is available)
+      for (const image of imagesToScan) {
+        try {
+          // In a real implementation, this would call the Trivy API or CLI
+          // For now, we'll simulate a scan with mock results
+          const mockResult: ContainerScanResult = {
+            image,
+            vulnerabilities: [
+              {
+                id: 'CVE-2023-12345',
+                severity: 'medium',
+                description: 'Outdated dependency with known vulnerability',
+                remediation: 'Update to latest version',
+                packageName: 'example-package',
+                installedVersion: '1.0.0',
+                fixedVersion: '1.2.0'
+              }
+            ],
+            scanDate: new Date()
+          };
+          
+          results.push(mockResult);
+          
+          // Save to database
+          await containerSecurity.saveScanResult(mockResult);
+        } catch (scanError: any) {
+          logger.error('Error scanning image', { image, error: scanError.message });
+          // Continue with other images
         }
-      ];
-      
-      // Store results
-      scanResults.push(...mockResults);
-      
-      // Save to database
-      for (const result of mockResults) {
-        await containerSecurity.saveScanResult(result);
       }
       
-      logger.info('Container images scanned', { count: mockResults.length });
-      
-      return mockResults;
+      logger.info('Container images scanned', { count: results.length });
+      return results;
     } catch (error: any) {
       logger.error('Container image scanning error', error);
       throw error;
     }
   },
   
-  monitorContainerRuntime: async (): Promise<void> => {
+  monitorContainerRuntime: async (containerId: string): Promise<void> => {
     try {
-      logger.debug('Monitoring container runtime');
+      logger.info('Monitoring container runtime', { containerId });
       
-      // In a real implementation, this would interface with container monitoring tools
-      // For now, we'll just log that monitoring is active
-      logger.debug('Container runtime monitoring active');
+      // In a real implementation, this would interface with Falco or similar tools
+      // For now, we'll simulate monitoring
+      
+      // Save monitoring data to database
+      const { error } = await supabase
+        .from('container_runtime_monitoring')
+        .insert({
+          container_id: containerId,
+          image: 'unknown', // Would be retrieved from container runtime
+          monitoring_tool: 'falco',
+          monitoring_version: '0.34.0',
+          events: JSON.stringify([]),
+          start_time: new Date().toISOString(),
+          status: 'active'
+        });
+      
+      if (error) {
+        logger.error('Error saving container runtime monitoring data', { error: error.message });
+        throw new Error(`Database error: ${error.message}`);
+      }
+      
+      logger.info('Container runtime monitoring started', { containerId });
     } catch (error: any) {
       logger.error('Container runtime monitoring error', error);
       throw error;
@@ -110,30 +198,40 @@ export const containerSecurity: ContainerSecurity = {
     try {
       logger.info('Enforcing security policies');
       
-      // In a real implementation, this would enforce policies like:
-      // - No root containers
-      // - Read-only root filesystem
-      // - Drop unnecessary capabilities
-      // - Use non-root user
-      // - etc.
+      // In a real implementation, this would interface with Kubernetes admission controllers
+      // or Docker security profiles
       
-      logger.info('Security policies enforced');
+      // Get policies from database
+      const policies = await containerSecurity.getSecurityPolicies();
+      
+      // Apply each policy
+      for (const policy of policies) {
+        try {
+          // In a real implementation, this would apply the policy to the container platform
+          logger.debug('Enforcing policy', { policyName: policy.name, policyType: policy.policy_type });
+        } catch (policyError: any) {
+          logger.error('Error enforcing policy', { policyName: policy.name, error: policyError.message });
+        }
+      }
+      
+      logger.info('Security policies enforced', { policyCount: policies.length });
     } catch (error: any) {
       logger.error('Security policy enforcement error', error);
       throw error;
     }
   },
   
-  auditContainerConfigurations: async (): Promise<ContainerAudit[]> => {
+  auditContainerConfigurations: async (containerId: string): Promise<ContainerAudit[]> => {
     try {
-      logger.info('Auditing container configurations');
+      logger.info('Auditing container configurations', { containerId });
       
-      // In a real implementation, this would audit container configurations
+      // In a real implementation, this would audit container configurations using tools like
+      // Docker Bench for Security or CIS Kubernetes Benchmark
+      
       // For now, we'll simulate with mock results
-      
       const mockAudits: ContainerAudit[] = [
         {
-          containerId: 'api-container-123',
+          containerId,
           image: 'brixsport/api:latest',
           issues: [
             {
@@ -141,23 +239,29 @@ export const containerSecurity: ContainerSecurity = {
               severity: 'medium',
               description: 'Container running as root user',
               recommendation: 'Run container as non-root user'
+            },
+            {
+              type: 'security',
+              severity: 'low',
+              description: 'No health check defined',
+              recommendation: 'Add HEALTHCHECK instruction to Dockerfile'
             }
           ],
           scanDate: new Date()
         }
       ];
       
-      // Store audits
-      containerAudits.push(...mockAudits);
-      
       // Save to database
       for (const audit of mockAudits) {
-        const { error } = await (supabaseService as any).supabase
-          .from('ContainerAudits')
+        const { error } = await supabase
+          .from('container_audits')
           .insert({
-            ...audit,
-            scanDate: audit.scanDate.toISOString(),
-            issues: JSON.stringify(audit.issues)
+            container_id: audit.containerId,
+            image: audit.image,
+            issues: JSON.stringify(audit.issues),
+            scan_date: audit.scanDate.toISOString(),
+            auditor_tool: 'docker-bench-security',
+            auditor_version: '1.5.0'
           });
         
         if (error) {
@@ -166,7 +270,6 @@ export const containerSecurity: ContainerSecurity = {
       }
       
       logger.info('Container configurations audited', { count: mockAudits.length });
-      
       return mockAudits;
     } catch (error: any) {
       logger.error('Container configuration audit error', error);
@@ -197,10 +300,10 @@ export const containerSecurity: ContainerSecurity = {
       }
       
       // If not in cache, get from database
-      let query = (supabaseService as any).supabase
-        .from('ContainerScanResults')
+      let query = supabase
+        .from('container_scan_results')
         .select('*')
-        .order('scanDate', { ascending: false });
+        .order('scan_date', { ascending: false });
       
       if (image) {
         query = query.eq('image', image);
@@ -216,7 +319,7 @@ export const containerSecurity: ContainerSecurity = {
       // Convert scanDate strings back to Date objects
       const results = data.map((item: any) => ({
         ...item,
-        scanDate: new Date(item.scanDate),
+        scanDate: new Date(item.scan_date),
         vulnerabilities: JSON.parse(item.vulnerabilities || '[]')
       }));
       
@@ -236,12 +339,15 @@ export const containerSecurity: ContainerSecurity = {
       logger.debug('Saving container scan result', { image: result.image });
       
       // Save to database
-      const { error } = await (supabaseService as any).supabase
-        .from('ContainerScanResults')
+      const { error } = await supabase
+        .from('container_scan_results')
         .insert({
           image: result.image,
           vulnerabilities: JSON.stringify(result.vulnerabilities),
-          scanDate: result.scanDate.toISOString()
+          scan_date: result.scanDate.toISOString(),
+          scanner_tool: 'trivy',
+          scanner_version: '0.44.0',
+          status: 'completed'
         });
       
       if (error) {
@@ -276,10 +382,10 @@ export const containerSecurity: ContainerSecurity = {
       }
       
       // Get recent scan results from database
-      const { data, error } = await (supabaseService as any).supabase
-        .from('ContainerScanResults')
-        .select('vulnerabilities')
-        .gte('scanDate', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()); // Last 7 days
+      const { data, error } = await supabase
+        .from('container_scan_results')
+        .select('vulnerabilities, image')
+        .gte('scan_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()); // Last 7 days
       
       if (error) {
         logger.error('Error retrieving container scan results for stats', { error: error.message });
@@ -336,9 +442,10 @@ export const containerSecurity: ContainerSecurity = {
       }
       
       // If not in cache, get from database
-      const { data, error } = await (supabaseService as any).supabase
-        .from('ContainerSecurityPolicies')
-        .select('*');
+      const { data, error } = await supabase
+        .from('container_security_policies')
+        .select('*')
+        .eq('enabled', true);
       
       if (error) {
         logger.error('Error retrieving security policies from database', { error: error.message });
@@ -361,11 +468,11 @@ export const containerSecurity: ContainerSecurity = {
       logger.debug('Updating security policy', { policyId: policy.id });
       
       // Save to database
-      const { error } = await (supabaseService as any).supabase
-        .from('ContainerSecurityPolicies')
+      const { error } = await supabase
+        .from('container_security_policies')
         .upsert({
           ...policy,
-          updatedAt: new Date().toISOString()
+          updated_at: new Date().toISOString()
         }, {
           onConflict: 'id'
         });

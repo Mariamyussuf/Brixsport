@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
       role: body.role || 'logger',
       status: body.status || 'inactive',
       assignedCompetitions: body.assignedCompetitions || [],
+      permissions: body.permissions || [],
       createdAt: new Date().toISOString(),
       lastActive: new Date().toISOString()
     });

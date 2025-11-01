@@ -12,6 +12,7 @@ import NotificationsGate from "@/components/shared/NotificationsGate";
 import DataSaverGate from "@/components/shared/DataSaverGate";
 import ErrorBoundary from "@/components/shared/ErrorBoundary";
 import MonitoringInitializer from "@/components/shared/MonitoringInitializer";
+import { Toaster } from "@/components/ui/toaster";
 
 export const viewport = {
   width: 'device-width',
@@ -162,6 +163,7 @@ export default function RootLayout({
                     <OfflineWrapper />
                     <NotificationsGate />
                     <DataSaverGate />
+                    <Toaster />
                     {children}
                   </NotificationsProvider>
                 </AuthProvider>

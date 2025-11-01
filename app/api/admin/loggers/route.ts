@@ -109,6 +109,7 @@ export async function POST(request: Request) {
       role: 'logger',
       status: body.status || 'inactive',
       assignedCompetitions: body.assignedCompetitions || [],
+      permissions: body.permissions || [],
     });
     
     return NextResponse.json({ 
