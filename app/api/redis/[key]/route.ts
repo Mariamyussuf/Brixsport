@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server';
 import { getRedisClient } from '@/lib/redisClient';
 
 // GET /api/redis/[key] - Get a value from Redis
-export async function GET(request: Request, { params }: { params: { key: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{}> }) {
   try {
     const client = await getRedisClient();
-    const key = decodeURIComponent(params.key);
+    const { key } = await params as { key: string };
+    const decodedKey = decodeURIComponent(key);
     
-    const value = await client.get(key);
+    const value = await client.get(decodedKey);
     
     if (value === null) {
       return NextResponse.json({
@@ -42,10 +43,11 @@ export async function GET(request: Request, { params }: { params: { key: string 
 }
 
 // POST /api/redis/[key] - Set a value in Redis
-export async function POST(request: Request, { params }: { params: { key: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{}> }) {
   try {
     const client = await getRedisClient();
-    const key = decodeURIComponent(params.key);
+    const { key } = await params as { key: string };
+    const decodedKey = decodeURIComponent(key);
     const body = await request.json();
     const { value, expireInSeconds } = body;
     
@@ -53,9 +55,9 @@ export async function POST(request: Request, { params }: { params: { key: string
     const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
     
     if (expireInSeconds) {
-      await client.setEx(key, expireInSeconds, stringValue);
+      await client.setEx(decodedKey, expireInSeconds, stringValue);
     } else {
-      await client.set(key, stringValue);
+      await client.set(decodedKey, stringValue);
     }
     
     return NextResponse.json({
@@ -75,12 +77,13 @@ export async function POST(request: Request, { params }: { params: { key: string
 }
 
 // DELETE /api/redis/[key] - Delete a value from Redis
-export async function DELETE(request: Request, { params }: { params: { key: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{}> }) {
   try {
     const client = await getRedisClient();
-    const key = decodeURIComponent(params.key);
+    const { key } = await params as { key: string };
+    const decodedKey = decodeURIComponent(key);
     
-    const result = await client.del(key);
+    const result = await client.del(decodedKey);
     
     return NextResponse.json({
       success: true,
