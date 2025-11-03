@@ -651,30 +651,27 @@ const Homescreen: React.FC = () => {
       </div>
 
       {/* Enhanced Bottom Navigation - all badge counts removed as requested */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 backdrop-blur supports-[backdrop-filter]:bg-white/90 dark:supports-[backdrop-filter]:bg-slate-900/90 border-t border-gray-200 dark:border-gray-700 px-2 sm:px-4 py-2 z-20">
-        <div className="flex justify-around items-center w-full max-w-7xl mx-auto">
+      <div className="fixed bottom-0 left-0 right-0 z-20 glassmorphic-nav mx-2 mb-2">
+        <div className="flex justify-around items-center w-full max-w-7xl mx-auto px-2 sm:px-4">
           {tabs.map((tab) => (
             <button
               key={tab.name}
               onClick={() => handleTabClick(tab.name)}
-              className={`flex flex-col items-center py-2 px-1 sm:px-2 rounded-lg transition-all min-w-0 flex-1 max-w-16 sm:max-w-20 md:max-w-24 touch-manipulation active:scale-95 ${
+              className={`flex flex-col items-center justify-center space-y-1 px-3 py-1 rounded-lg transition-all duration-200 min-w-0 flex-1 max-w-16 sm:max-w-20 md:max-w-24 ${
                 activeTab === tab.name
-                  ? 'text-blue-600'
-                  : 'text-gray-600 dark:text-slate-300 hover:text-gray-800 dark:hover:text-white active:text-blue-500'
+                  ? 'text-blue-600 dark:text-blue-400 glow-blue scale-105'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
               role="tab"
               aria-selected={activeTab === tab.name}
               aria-controls={`${tab.name.toLowerCase()}-panel`}
             >
-              <div className="mb-0.5 sm:mb-1 relative">
+              <div className={activeTab === tab.name ? 'scale-110' : ''}>
                 <div className="w-5 h-5 sm:w-6 sm:h-6">
                   {tab.icon}
                 </div>
-                {activeTab === tab.name && (
-                  <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-600 rounded-full"></div>
-                )}
               </div>
-              <span className="text-xs font-medium leading-tight text-center truncate">{tab.name}</span>
+              <span className="text-xs font-medium">{tab.name}</span>
             </button>
           ))}
         </div>

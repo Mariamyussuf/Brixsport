@@ -32,8 +32,8 @@ const BottomNav: React.FC = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 glassmorphic-nav pb-safe">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 glassmorphic-nav">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4">
         <div className="flex justify-around items-center h-16">
           {navItems.map((item) => {
             const isActive = pathname === item.path;
@@ -41,9 +41,9 @@ const BottomNav: React.FC = () => {
               <Link
                 key={item.path}
                 href={item.path}
-                className={`flex flex-col items-center justify-center space-y-1 px-3 py-1 rounded-lg transition-all ${
+                className={`flex flex-col items-center justify-center space-y-1 px-3 py-1 rounded-lg transition-all duration-200 ${
                   isActive 
-                    ? 'text-blue-600 glow-blue' 
+                    ? 'text-blue-600 dark:text-blue-400 glow-blue scale-105' 
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >

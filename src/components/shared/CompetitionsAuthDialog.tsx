@@ -32,7 +32,7 @@ export const CompetitionsAuthDialog: React.FC<CompetitionsAuthDialogProps> = ({ 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-800">
+      <DialogContent className="sm:max-w-[425px] glassmorphic-card">
         <DialogHeader>
           <DialogTitle className="text-gray-900 dark:text-white">Competitions Access</DialogTitle>
           <DialogDescription className="text-gray-600 dark:text-gray-300">
