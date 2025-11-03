@@ -364,6 +364,12 @@ const Homescreen: React.FC = () => {
 
     // Instead of redirecting to /fixtures, just set the active tab
     setActiveTab(tab);
+    
+    // If clicking on already active Fixtures tab, reset to default view
+    if (tab === 'Fixtures' && activeTab === 'Fixtures') {
+      setActiveSport('all');
+    }
+    
     setMobileMenuOpen(false); 
   };
 
@@ -476,12 +482,13 @@ const Homescreen: React.FC = () => {
 
         {activeTab === 'Fixtures' && activeSport !== 'track_events' && (
           <div className="mb-4 sm:mb-6">
-            {liveMatches.length > 0 ? (
+            {/* Live Matches Section */}
+            {getFilteredMatches(activeSport).some(m => m.status === 'Live') && (
               <>
                 <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3">
                   Live Matches
                   <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
-                    ({liveMatches.length} ongoing)
+                    ({getFilteredMatches(activeSport).filter(m => m.status === 'Live').length} ongoing)
                   </span>
                 </h2>
                 
@@ -492,12 +499,9 @@ const Homescreen: React.FC = () => {
                     <MatchCard key={`live-${index}`} match={match} />
                   ))}
               </>
-            ) : (
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                No live matches at the moment
-              </p>
             )}
             
+            {/* Upcoming Matches Section */}
             {getFilteredMatches(activeSport).some(m => m.status === 'Upcoming') && (
               <>
                 <h2 id="upcoming-matches" className="text-lg font-bold text-gray-800 dark:text-gray-100 mt-6 mb-3">
@@ -519,6 +523,7 @@ const Homescreen: React.FC = () => {
               </>
             )}
             
+            {/* Finished Matches Section */}
             {getFilteredMatches(activeSport).some(m => m.status === 'Finished') && (
               <>
                 <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 mt-6 mb-3">
@@ -540,58 +545,9 @@ const Homescreen: React.FC = () => {
                 ))}
               </>
             )}
-          </div>
-        )}
-
-
-        {/* Show API error if exists but don't block UI */}
-        {homeError && (
-          <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                {homeError}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'Fixtures' && (
-          <div className="space-y-6 sm:space-y-8">
-            {(activeSport === 'all' || activeSport === 'football') && footballMatches.length > 0 && (
-              <section>
-                <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4 px-1">{t('football_section')}</h2>
-                <div className="space-y-2 sm:space-y-3">
-                  {footballMatches.map((match, index) => (
-                    <MatchCard key={`football-fixture-${index}`} match={match} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {(activeSport === 'all' || activeSport === 'basketball') && basketballMatches.length > 0 && (
-              <section>
-                <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4 px-1">{t('basketball_section')}</h2>
-                <div className="space-y-2 sm:space-y-3">
-                  {basketballMatches.map((match, index) => (
-                    <MatchCard key={`basketball-fixture-${index}`} match={match} isBasketball={true} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {(activeSport === 'all' || activeSport === 'track_events') && trackEvents.length > 0 && (
-              <section>
-                <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4 px-1">{t('track_events')}</h2>
-                <div className="space-y-2 sm:space-y-3">
-                  {trackEvents.map((event, index) => (
-                    <TrackEventCard key={`track-fixture-${index}`} event={event} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Show empty state if no matches */}
-            {footballMatches.length === 0 && basketballMatches.length === 0 && trackEvents.length === 0 && (
+            
+            {/* No Matches Message */}
+            {!getFilteredMatches(activeSport).some(m => m.status === 'Live' || m.status === 'Upcoming' || m.status === 'Finished') && (
               <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
                 <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
@@ -608,6 +564,41 @@ const Homescreen: React.FC = () => {
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'Fixtures' && activeSport === 'track_events' && (
+          <div className="mb-4 sm:mb-6">
+            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3">
+              Track Events
+            </h2>
+            
+            {trackEvents.length > 0 ? (
+              trackEvents.map((event, index) => (
+                <TrackEventCard key={`track-${index}`} event={event} />
+              ))
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
+                <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  No track events found
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  There are currently no track events scheduled.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Show API error if exists but don't block UI */}
+        {homeError && (
+          <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                {homeError}
+              </p>
+            </div>
           </div>
         )}
 

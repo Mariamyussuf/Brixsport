@@ -12,7 +12,7 @@ const BottomNav: React.FC = () => {
     { 
       name: 'Fixtures', 
       icon: <Calendar className="h-5 w-5" />, 
-      path: '/matches' 
+      path: '/' 
     },
     { 
       name: 'Favourites', 
