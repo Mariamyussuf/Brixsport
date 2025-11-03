@@ -1,0 +1,72 @@
+{
+  "team": {
+    "name": "Siberia",
+    "short_name": "SIB",
+    "sport": "BASKETBALL",
+    "status": "ACTIVE"
+  },
+  "players": [
+    {
+      "firstName": "Riri",
+      "jersey_number": 8,
+      "position": "Shooting Guard",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Dc",
+      "lastName": "Airway",
+      "jersey_number": 18,
+      "position": "Power Forward",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Rathode",
+      "jersey_number": 15,
+      "position": "Center",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Ayii",
+      "jersey_number": 4,
+      "position": "Shooting Guard",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Bobby",
+      "jersey_number": 2,
+      "position": "Shooting Guard",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Sammy",
+      "jersey_number": 0,
+      "position": "Forward",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Jose",
+      "jersey_number": 5,
+      "position": "Point Guard",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Mr",
+      "lastName": "Siberia",
+      "jersey_number": 9,
+      "position": "Point Guard",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Somto",
+      "jersey_number": 7,
+      "position": "Center",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Erah",
+      "jersey_number": 0,
+      "position": "Small Forward",
+      "status": "ACTIVE"
+    }
+  ]
+}

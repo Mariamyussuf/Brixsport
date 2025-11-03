@@ -1,0 +1,76 @@
+{
+  "team": {
+    "name": "TBK",
+    "short_name": "TBK",
+    "sport": "BASKETBALL",
+    "status": "ACTIVE"
+  },
+  "players": [
+    {
+      "firstName": "Richard",
+      "jersey_number": 13,
+      "position": "Forward",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Salim",
+      "jersey_number": 1,
+      "position": "Forward",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Kosi",
+      "jersey_number": 3,
+      "position": "Forward",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Dara",
+      "jersey_number": 24,
+      "position": "Guard",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Frank",
+      "jersey_number": 14,
+      "position": "Forward",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Oshai",
+      "jersey_number": 6,
+      "position": "Guard",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Raymond",
+      "jersey_number": 20,
+      "position": "Guard",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Iyanu",
+      "jersey_number": 67,
+      "position": "Guard",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Ruth",
+      "jersey_number": 7,
+      "position": "Guard",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Posi",
+      "jersey_number": 9,
+      "position": "Guard",
+      "status": "ACTIVE"
+    },
+    {
+      "firstName": "Ini",
+      "jersey_number": 25,
+      "position": "Center",
+      "status": "ACTIVE"
+    }
+  ]
+}

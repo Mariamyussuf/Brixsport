@@ -32,7 +32,7 @@ export async function POST(req: Request, { params }: { params: Promise<{}> }) {
       if (socket.connected) {
         resolve(null);
       } else {
-        socket.on('connect', resolve);
+        socket.on('connect', () => resolve(null));
       }
     });
     

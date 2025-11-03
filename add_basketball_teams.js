@@ -544,10 +544,239 @@ const basketballPlayers = {
     }
   ],
   'Siberia': [
-    // Waiting for player information
+    {
+      first_name: 'Riri',
+      last_name: '',
+      jersey_number: 8,
+      position: 'Shooting Guard',
+      date_of_birth: '2005-01-01',
+      nationality: 'Nigeria',
+      height_cm: 190,
+      weight_kg: 82,
+      status: 'active'
+    },
+    {
+      first_name: 'Dc',
+      last_name: 'Airway',
+      jersey_number: 18,
+      position: 'Power Forward',
+      date_of_birth: '2004-01-01',
+      nationality: 'Nigeria',
+      height_cm: 205,
+      weight_kg: 102,
+      status: 'active'
+    },
+    {
+      first_name: 'Rathode',
+      last_name: '',
+      jersey_number: 15,
+      position: 'Center',
+      date_of_birth: '2003-01-01',
+      nationality: 'Nigeria',
+      height_cm: 210,
+      weight_kg: 110,
+      status: 'active'
+    },
+    {
+      first_name: 'Ayii',
+      last_name: '',
+      jersey_number: 4,
+      position: 'Shooting Guard',
+      date_of_birth: '2005-01-01',
+      nationality: 'Nigeria',
+      height_cm: 192,
+      weight_kg: 85,
+      status: 'active'
+    },
+    {
+      first_name: 'Bobby',
+      last_name: '',
+      jersey_number: 2,
+      position: 'Shooting Guard',
+      date_of_birth: '2005-01-01',
+      nationality: 'Nigeria',
+      height_cm: 190,
+      weight_kg: 82,
+      status: 'active'
+    },
+    {
+      first_name: 'Sammy',
+      last_name: '',
+      jersey_number: 0,
+      position: 'Forward',
+      date_of_birth: '2004-01-01',
+      nationality: 'Nigeria',
+      height_cm: 203,
+      weight_kg: 98,
+      status: 'active'
+    },
+    {
+      first_name: 'Jose',
+      last_name: '',
+      jersey_number: 5,
+      position: 'Point Guard',
+      date_of_birth: '2004-01-01',
+      nationality: 'Nigeria',
+      height_cm: 185,
+      weight_kg: 78,
+      status: 'active'
+    },
+    {
+      first_name: 'Mr',
+      last_name: 'Siberia',
+      jersey_number: 9,
+      position: 'Point Guard',
+      date_of_birth: '2003-01-01',
+      nationality: 'Nigeria',
+      height_cm: 186,
+      weight_kg: 79,
+      status: 'active'
+    },
+    {
+      first_name: 'Somto',
+      last_name: '',
+      jersey_number: 7,
+      position: 'Center',
+      date_of_birth: '2004-01-01',
+      nationality: 'Nigeria',
+      height_cm: 210,
+      weight_kg: 110,
+      status: 'active'
+    },
+    {
+      first_name: 'Erah',
+      last_name: '',
+      jersey_number: 0,
+      position: 'Small Forward',
+      date_of_birth: '2005-01-01',
+      nationality: 'Nigeria',
+      height_cm: 200,
+      weight_kg: 95,
+      status: 'active'
+    }
   ],
   'TBK': [
-    // Waiting for player information
+    {
+      first_name: 'Richard',
+      last_name: '',
+      jersey_number: 13,
+      position: 'Forward',
+      date_of_birth: '2004-01-01',
+      nationality: 'Nigeria',
+      height_cm: 203,
+      weight_kg: 98,
+      status: 'active'
+    },
+    {
+      first_name: 'Salim',
+      last_name: '',
+      jersey_number: 1,
+      position: 'Forward',
+      date_of_birth: '2004-01-01',
+      nationality: 'Nigeria',
+      height_cm: 205,
+      weight_kg: 102,
+      status: 'active'
+    },
+    {
+      first_name: 'Kosi',
+      last_name: '',
+      jersey_number: 3,
+      position: 'Forward',
+      date_of_birth: '2004-01-01',
+      nationality: 'Nigeria',
+      height_cm: 204,
+      weight_kg: 100,
+      status: 'active'
+    },
+    {
+      first_name: 'Dara',
+      last_name: '',
+      jersey_number: 24,
+      position: 'Guard',
+      date_of_birth: '2005-01-01',
+      nationality: 'Nigeria',
+      height_cm: 190,
+      weight_kg: 82,
+      status: 'active'
+    },
+    {
+      first_name: 'Frank',
+      last_name: '',
+      jersey_number: 14,
+      position: 'Forward',
+      date_of_birth: '2004-01-01',
+      nationality: 'Nigeria',
+      height_cm: 203,
+      weight_kg: 98,
+      status: 'active'
+    },
+    {
+      first_name: 'Oshai',
+      last_name: '',
+      jersey_number: 6,
+      position: 'Guard',
+      date_of_birth: '2005-01-01',
+      nationality: 'Nigeria',
+      height_cm: 188,
+      weight_kg: 80,
+      status: 'active'
+    },
+    {
+      first_name: 'Raymond',
+      last_name: '',
+      jersey_number: 20,
+      position: 'Guard',
+      date_of_birth: '2005-01-01',
+      nationality: 'Nigeria',
+      height_cm: 187,
+      weight_kg: 79,
+      status: 'active'
+    },
+    {
+      first_name: 'Iyanu',
+      last_name: '',
+      jersey_number: 67,
+      position: 'Guard',
+      date_of_birth: '2005-01-01',
+      nationality: 'Nigeria',
+      height_cm: 192,
+      weight_kg: 85,
+      status: 'active'
+    },
+    {
+      first_name: 'Ruth',
+      last_name: '',
+      jersey_number: 7,
+      position: 'Guard',
+      date_of_birth: '2005-01-01',
+      nationality: 'Nigeria',
+      height_cm: 185,
+      weight_kg: 75,
+      status: 'active'
+    },
+    {
+      first_name: 'Posi',
+      last_name: '',
+      jersey_number: 9,
+      position: 'Guard',
+      date_of_birth: '2005-01-01',
+      nationality: 'Nigeria',
+      height_cm: 186,
+      weight_kg: 78,
+      status: 'active'
+    },
+    {
+      first_name: 'Ini',
+      last_name: '',
+      jersey_number: 25,
+      position: 'Center',
+      date_of_birth: '2003-01-01',
+      nationality: 'Nigeria',
+      height_cm: 210,
+      weight_kg: 110,
+      status: 'active'
+    }
   ]
 };
 
