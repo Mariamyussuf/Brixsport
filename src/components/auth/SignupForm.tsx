@@ -246,39 +246,39 @@ const SignupForm: React.FC = () => {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <h1 className="text-3xl font-bold mb-8 text-center text-neutral-900 dark:text-white">
+      <h1 className="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-white">
         Sign Up
       </h1>
       
       {/* Rate limiting warning */}
       {!rateLimiter.canAttempt() && (
-        <div className="mb-6 p-4 rounded-lg bg-red-900/50 dark:bg-red-900/30 border border-red-500 text-red-200 dark:text-red-300">
+        <div className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
           <div className="flex items-center gap-2 mb-2">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-5 h-5 text-red-500 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
-            <span className="font-semibold">Too Many Attempts</span>
+            <span className="font-medium text-red-800 dark:text-red-200">Too Many Attempts</span>
           </div>
-          <p className="text-sm">Please try again in {Math.ceil(rateLimiter.getRemainingTime() / 1000 / 60)} minutes.</p>
+          <p className="text-sm text-red-700 dark:text-red-300">Please try again in {Math.ceil(rateLimiter.getRemainingTime() / 1000 / 60)} minutes.</p>
         </div>
       )}
 
       <form
-        className="w-full max-w-md flex flex-col gap-8"
+        className="w-full max-w-md flex flex-col gap-6"
         onSubmit={handleSubmit}
         id="signup-panel"
         aria-labelledby="Sign Up"
         noValidate
       >
         <div className="flex flex-col gap-2">
-          <label htmlFor="name" className="text-lg text-neutral-800 dark:text-neutral-200">Name</label>
+          <label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
           <input
             id="name"
             name="name"
             type="text"
             autoComplete="name"
-            className={`bg-transparent border-b border-neutral-400 dark:border-neutral-600 py-2 px-0 text-neutral-900 dark:text-white text-lg focus:outline-none focus:border-neutral-700 dark:focus:border-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-400 ${errors.name ? 'border-red-500' : ''}`}
-            placeholder="Name"
+            className={`bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg py-2 px-3 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-500 dark:placeholder:text-gray-400 ${errors.name ? 'border-red-500' : ''}`}
+            placeholder="Full name"
             value={form.name}
             onChange={handleChange}
             required
@@ -286,18 +286,18 @@ const SignupForm: React.FC = () => {
             aria-describedby={errors.name ? 'name-error' : undefined}
             disabled={isLoading}
           />
-          {errors.name && <span id="name-error" className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.name}</span>}
+          {errors.name && <span id="name-error" className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.name}</span>}
         </div>
 
         <div className="flex flex-col gap-2">
-          <label htmlFor="email" className="text-lg text-neutral-800 dark:text-neutral-200">Enter your email</label>
+          <label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
           <input
             id="email"
             name="email"
             type="email"
             autoComplete="email"
-            className={`bg-transparent border-b border-neutral-400 dark:border-neutral-600 py-2 px-0 text-neutral-900 dark:text-white text-lg focus:outline-none focus:border-neutral-700 dark:focus:border-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-400 ${errors.email ? 'border-red-500' : ''}`}
-            placeholder="Enter your email"
+            className={`bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg py-2 px-3 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-500 dark:placeholder:text-gray-400 ${errors.email ? 'border-red-500' : ''}`}
+            placeholder="Email address"
             value={form.email}
             onChange={handleChange}
             required
@@ -305,18 +305,18 @@ const SignupForm: React.FC = () => {
             aria-describedby={errors.email ? 'email-error' : undefined}
             disabled={isLoading}
           />
-          {errors.email && <span id="email-error" className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.email}</span>}
+          {errors.email && <span id="email-error" className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.email}</span>}
         </div>
 
         <div className="flex flex-col gap-2 relative">
-          <label htmlFor="password" className="text-lg text-neutral-800 dark:text-neutral-200">Enter password</label>
+          <label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
           <input
             id="password"
             name="password"
             type={showPassword ? 'text' : 'password'}
             autoComplete="new-password"
-            className={`bg-transparent border-b border-neutral-400 dark:border-neutral-600 py-2 px-0 text-neutral-900 dark:text-white text-lg focus:outline-none focus:border-neutral-700 dark:focus:border-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-400 pr-10 ${errors.password ? 'border-red-500' : ''}`}
-            placeholder="Enter password"
+            className={`bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg py-2 px-3 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-500 dark:placeholder:text-gray-400 pr-10 ${errors.password ? 'border-red-500' : ''}`}
+            placeholder="Create password"
             value={form.password}
             onChange={handleChange}
             required
@@ -326,28 +326,28 @@ const SignupForm: React.FC = () => {
           />
           <button
             type="button"
-            className="absolute right-0 top-8 text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 focus:outline-none"
+            className="absolute right-3 top-9 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none"
             tabIndex={0}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
             onClick={() => setShowPassword(v => !v)}
           >
             {showPassword ? (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M9.88 9.88A3 3 0 0012 15a3 3 0 002.12-5.12M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.36 6.36A9.956 9.956 0 0021 12c0-5.523-4.477-10-10-10a9.956 9.956 0 00-6.36 2.36M3 3l18 18z" />
               </svg>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.36 6.36A9.956 9.956 0 0021 12c0-5.523-4.477-10-10-10a9.956 9.956 0 00-6.36 2.36M3 3l18 18z" />
               </svg>
             )}
           </button>
-          {errors.password && <span id="password-error" className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.password}</span>}
+          {errors.password && <span id="password-error" className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.password}</span>}
           
           {/* Password Strength Indicator */}
           {showPasswordStrength && passwordStrength && (
-            <div className="space-y-2">
+            <div className="space-y-2 mt-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-neutral-700 dark:text-neutral-300">Password strength:</span>
+                <span className="text-xs text-gray-600 dark:text-gray-400">Password strength:</span>
                 <span className={`text-xs font-medium capitalize ${
                   passwordStrength.strength === 'strong' ? 'text-green-600 dark:text-green-400' :
                   passwordStrength.strength === 'good' ? 'text-yellow-600 dark:text-yellow-400' :
@@ -361,16 +361,16 @@ const SignupForm: React.FC = () => {
                 {[1, 2, 3, 4].map((level) => (
                   <div
                     key={level}
-                    className={`h-1 flex-1 rounded ${
+                    className={`h-1.5 flex-1 rounded-full ${
                       level <= (['weak', 'fair', 'good', 'strong'].indexOf(passwordStrength.strength) + 1)
                         ? getStrengthColor(passwordStrength.strength)
-                        : 'bg-neutral-200 dark:bg-neutral-700'
+                        : 'bg-gray-200 dark:bg-gray-700'
                     } transition-colors duration-200`}
                   />
                 ))}
               </div>
               {passwordStrength.errors.length > 0 && (
-                <div className="text-xs text-neutral-600 dark:text-neutral-400">
+                <div className="text-xs text-gray-600 dark:text-gray-400">
                   <span>Missing: </span>
                   <span>{passwordStrength.errors.join(', ')}</span>
                 </div>
@@ -380,13 +380,13 @@ const SignupForm: React.FC = () => {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label htmlFor="confirmPassword" className="text-lg text-neutral-800 dark:text-neutral-200">Confirm password</label>
+          <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700 dark:text-gray-300">Confirm Password</label>
           <input
             id="confirmPassword"
             name="confirmPassword"
             type={showPassword ? 'text' : 'password'}
             autoComplete="new-password"
-            className={`bg-transparent border-b border-neutral-400 dark:border-neutral-600 py-2 px-0 text-neutral-900 dark:text-white text-lg focus:outline-none focus:border-neutral-700 dark:focus:border-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-400 ${errors.confirmPassword ? 'border-red-500' : ''}`}
+            className={`bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg py-2 px-3 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-500 dark:placeholder:text-gray-400 ${errors.confirmPassword ? 'border-red-500' : ''}`}
             placeholder="Confirm password"
             value={form.confirmPassword}
             onChange={handleChange}
@@ -395,13 +395,13 @@ const SignupForm: React.FC = () => {
             aria-describedby={errors.confirmPassword ? 'confirmPassword-error' : undefined}
             disabled={isLoading}
           />
-          {errors.confirmPassword && <span id="confirmPassword-error" className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.confirmPassword}</span>}
+          {errors.confirmPassword && <span id="confirmPassword-error" className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.confirmPassword}</span>}
         </div>
 
-        {submitError && <div className="text-red-500 dark:text-red-400 text-center text-sm mt-2">{submitError}</div>}
+        {submitError && <div className="text-red-500 dark:text-red-400 text-center text-xs mt-2">{submitError}</div>}
 
         {/* Terms and Privacy */}
-        <div className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+        <div className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
           By creating an account, you agree to our{' '}
           <Link href="/terms" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline">
             Terms of Service
@@ -415,13 +415,13 @@ const SignupForm: React.FC = () => {
 
         <button
           type="submit"
-          className="w-full py-4 rounded-full bg-neutral-200/50 dark:bg-white/20 backdrop-blur-sm border border-neutral-300 dark:border-white/30 text-neutral-900 dark:text-white text-xl font-semibold mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all hover:bg-neutral-300/50 dark:hover:bg-white/30 shadow-md hover:shadow-lg active:scale-98 mt-8 disabled:opacity-50"
+          className="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm mt-6 disabled:opacity-50"
           aria-label="Sign Up"
           disabled={isLoading || !rateLimiter.canAttempt()}
         >
           {isLoading ? (
             <div className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-neutral-900 dark:text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
@@ -431,11 +431,11 @@ const SignupForm: React.FC = () => {
         </button>
 
         {/* Sign In Link */}
-        <div className="text-center pt-6 border-t border-neutral-300 dark:border-neutral-700">
-          <span className="text-neutral-700 dark:text-neutral-300">Already have an account? </span>
+        <div className="text-center pt-6 border-t border-gray-200 dark:border-gray-700">
+          <span className="text-gray-600 dark:text-gray-400 text-sm">Already have an account? </span>
           <Link 
             href="/auth/login" 
-            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium transition-colors duration-200"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium text-sm transition-colors duration-200"
           >
             Log in
           </Link>
