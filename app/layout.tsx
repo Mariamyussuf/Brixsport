@@ -171,7 +171,6 @@ export default function RootLayout({
                       <main className="flex-grow pb-[80px] pt-[70px]">
                         {children}
                       </main>
-                      <BottomNav />
                     </div>
                   </NotificationsProvider>
                 </AuthProvider>
