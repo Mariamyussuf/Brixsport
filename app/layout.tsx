@@ -13,6 +13,8 @@ import DataSaverGate from "@/components/shared/DataSaverGate";
 import ErrorBoundary from "@/components/shared/ErrorBoundary";
 import MonitoringInitializer from "@/components/shared/MonitoringInitializer";
 import { Toaster } from "@/components/ui/toaster";
+import Header from "@/components/shared/glassmorphic/Header";
+import BottomNav from "@/components/shared/glassmorphic/BottomNav";
 
 export const viewport = {
   width: 'device-width',
@@ -164,7 +166,13 @@ export default function RootLayout({
                     <NotificationsGate />
                     <DataSaverGate />
                     <Toaster />
-                    {children}
+                    <div className="min-h-screen flex flex-col">
+                      <Header />
+                      <main className="flex-grow pb-[80px] pt-[70px]">
+                        {children}
+                      </main>
+                      <BottomNav />
+                    </div>
                   </NotificationsProvider>
                 </AuthProvider>
               </I18nProvider>

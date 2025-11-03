@@ -7,6 +7,8 @@ import { AdminProvider } from "@/contexts/AdminContext";
 import { cookies } from 'next/headers';
 import { verifyAdminToken } from '@/lib/adminAuth';
 import type { AdminUser } from '@/lib/adminAuth';
+import Header from "@/components/shared/glassmorphic/Header";
+import BottomNav from "@/components/shared/glassmorphic/BottomNav";
 
 export const viewport = {
   width: 'device-width',
@@ -56,7 +58,13 @@ export default async function AdminLayout({
         <ThemeProvider>
           <AdminProvider currentAdmin={user}>
             <AdminPWARegister />
-            {children}
+            <div className="min-h-screen flex flex-col">
+              <Header />
+              <main className="flex-grow pb-[80px] pt-[70px]">
+                {children}
+              </main>
+              <BottomNav />
+            </div>
           </AdminProvider>
         </ThemeProvider>
       </body>

@@ -7,7 +7,13 @@ module.exports = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        navy: {
+          900: '#0D1B2A',
+        }
+      }
+    },
   },
   plugins: [],
   darkMode: 'class', // Enable dark mode support with class strategy
