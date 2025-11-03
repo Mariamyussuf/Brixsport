@@ -284,7 +284,18 @@ const FixturesScreen = () => {
         {/* Basketball Section */}
         {(activeTab === 'all' || activeTab === 'basketball') && (
           <div>
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6">{t('basketball_section')}</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white">{t('basketball_section')}</h2>
+              <button 
+                onClick={() => router.push('/basketball-schedule')}
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium flex items-center"
+              >
+                View Full Schedule
+                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
             <div className="space-y-4">
               {basketballMatches.map((match, index) => (
                 <MatchCard key={`basketball-${index}`} match={match} isBasketball={true} />

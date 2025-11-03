@@ -8,9 +8,10 @@
 // Import required modules
 const { createClient } = require('@supabase/supabase-js');
 
-// Configuration - Replace with your actual Supabase credentials
-const SUPABASE_URL = process.env.SUPABASE_URL || 'your_supabase_url';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'your_service_key';
+// Configuration - Use credentials from .env file
+require('dotenv').config({ path: './.env' });
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'your_supabase_url';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'your_service_key';
 
 // Create Supabase client
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);

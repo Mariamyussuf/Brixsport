@@ -79,6 +79,16 @@ const LoggerAdminDashboard = () => {
           >
             Matches
           </button>
+          <button
+            onClick={() => setActiveTab('schedule')}
+            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'schedule'
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+            }`}
+          >
+            Schedule
+          </button>
         </nav>
       </div>
 
@@ -122,6 +132,22 @@ const LoggerAdminDashboard = () => {
           <p className="text-gray-600 dark:text-gray-300">
             Manage matches and assign them to specific loggers.
           </p>
+        </div>
+      )}
+
+      {/* Schedule Content */}
+      {activeTab === 'schedule' && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Basketball Schedule</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">
+            Manage the official basketball league schedule.
+          </p>
+          <a 
+            href="/admin/basketball-schedule" 
+            className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            Import Basketball Schedule
+          </a>
         </div>
       )}
     </div>
