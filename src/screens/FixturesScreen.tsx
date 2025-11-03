@@ -6,6 +6,8 @@ import MatchCard from '@/components/shared/MatchCard';
 import TrackEventCard from '@/components/shared/TrackEventCard';
 import { useHomeData, useSportMatches } from '@/hooks/useHomeData';
 import { UI_Match } from '@/types/campus';
+import BasketballSchedule from '@/components/BasketballSchedule';
+import { useBasketballSchedule } from '@/hooks/useBasketballSchedule';
 
 // No need to redefine the interfaces, we're using the exported ones
 
@@ -20,6 +22,9 @@ const FixturesScreen = () => {
   // Only fetch sport matches when activeTab is not 'all'
   const { matches: sportMatches, loading: matchesLoading, error: matchesError } = 
     useSportMatches(activeTab !== 'all' ? activeTab : 'football', 'all');
+  
+  // Basketball schedule hook
+  const { schedule: basketballSchedule, loading: basketballLoading, error: basketballError } = useBasketballSchedule();
 
   // Enhanced conversion functions
   const convertMatchToUI = (match: any): UI_Match => {
@@ -296,11 +301,39 @@ const FixturesScreen = () => {
                 </svg>
               </button>
             </div>
-            <div className="space-y-4">
-              {basketballMatches.map((match, index) => (
-                <MatchCard key={`basketball-${index}`} match={match} isBasketball={true} />
-              ))}
-            </div>
+            {activeTab === 'basketball' ? (
+              // Show full basketball schedule when basketball tab is selected
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                {basketballLoading ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : basketballError ? (
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-center">
+                    <p className="text-red-700 dark:text-red-300">{basketballError}</p>
+                    <button 
+                      onClick={() => window.location.reload()}
+                      className="mt-2 px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : basketballSchedule && basketballSchedule.length > 0 ? (
+                  <BasketballSchedule rounds={basketballSchedule} />
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 dark:text-gray-400">No basketball schedule available</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Show preview of basketball matches when in "all" tab
+              <div className="space-y-4">
+                {basketballMatches.map((match, index) => (
+                  <MatchCard key={`basketball-${index}`} match={match} isBasketball={true} />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
