@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 import { getRedisClient } from '@/lib/redisClient';
 
 // POST /api/redis/incr/[key] - Increment a value in Redis
-export async function POST(request: Request, { params }: { params: { key: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{}> }) {
   try {
     const client = await getRedisClient();
-    const key = decodeURIComponent(params.key);
+    const { key } = await params as { key: string };
+    const decodedKey = decodeURIComponent(key);
     
     // Check if key exists and is a number
-    const currentValue = await client.get(key);
+    const currentValue = await client.get(decodedKey);
     
     if (currentValue !== null) {
       // Try to parse current value as number
@@ -25,7 +26,7 @@ export async function POST(request: Request, { params }: { params: { key: string
     }
     
     // Increment the value
-    const newValue = await client.incr(key);
+    const newValue = await client.incr(decodedKey);
     
     return NextResponse.json({
       success: true,
