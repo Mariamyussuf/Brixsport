@@ -449,63 +449,6 @@ const Homescreen: React.FC = () => {
         onClose={() => setShowCompetitionsDialog(false)} 
       />
       
-      {/* Enhanced Mobile Header - keeping File A's structure but adding File B's features */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-slate-900 dark:text-white sticky top-0 z-30">
-        <div className="px-3 sm:px-4 py-3 sm:py-4">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-              {activeTab !== 'Fixtures' && (
-                <button
-                  onClick={() => handleTabClick('Fixtures')}
-                  aria-label="Back"
-                  className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
-                  type="button"
-                >
-                  <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 dark:text-white" />
-                </button>
-              )}
-              <div className="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
-                <div className="flex items-center">
-                  <img 
-                    src="/BRIX-SPORT-LOGO.png" 
-                    alt="Brixsport Logo" 
-                    width={32} 
-                    height={32} 
-                    className="mr-2 sm:mr-3"
-                  />
-                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">{t('app_title')}</h1>
-                </div>
-                <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 bg-white rounded-full"></div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
-              <button 
-                className="px-3 py-1 bg-white dark:bg-gray-800 border border-red-500 rounded-full flex items-center space-x-1 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                onClick={handleLiveClick}
-                type="button"
-              >
-                <span className="text-red-500 font-bold text-xs">
-                  LIVE {homeData?.liveFootball?.length || liveMatches.length}
-                </span>
-                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              </button>
-              <button 
-                className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                aria-label="Search"
-                onClick={handleSearchClick}
-                type="button"
-              >
-                <Search className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 dark:text-white" />
-              </button>
-              <NotificationsBadge onClick={handleNotificationClick} />
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4 max-w-7xl mx-auto">
         {activeTab === 'Fixtures' && (
           <div className="mb-4 sm:mb-6">

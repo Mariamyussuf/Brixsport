@@ -172,44 +172,6 @@ const FixturesScreen = () => {
   if (currentView === 'track') {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        {/* Header */}
-        <div className="bg-slate-800 dark:bg-slate-900 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <h1 className="text-white text-2xl font-bold">{t('app_title')}</h1>
-              <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                <div className="w-3 h-3 bg-white rounded-full"></div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Search className="w-6 h-6 text-white cursor-pointer" />
-              <Bell className="w-6 h-6 text-white cursor-pointer" />
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <div className="bg-white dark:bg-gray-900 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex space-x-4">
-            {[t('track_events'), t('basketball'), t('football')].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => {
-                  if (tab === t('track_events')) setCurrentView('track');
-                  else setCurrentView('dashboard');
-                }}
-                className={`px-6 py-2 rounded-full font-medium transition-colors ${
-                  tab === t('track_events')
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Track Events Content */}
         <div className="px-6 py-6">
           <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6">{t('current_competition_fixtures')}</h2>
@@ -230,48 +192,6 @@ const FixturesScreen = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-slate-800 dark:bg-slate-900 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <h1 className="text-white text-2xl font-bold">{t('app_title')}</h1>
-            <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-              <div className="w-3 h-3 bg-white rounded-full"></div>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Search className="w-6 h-6 text-white cursor-pointer" />
-            <Bell className="w-6 h-6 text-white cursor-pointer" />
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="bg-white dark:bg-gray-900 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex space-x-4">
-          {[t('all'), t('football'), t('basketball'), t('track_events')].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => {
-                if (tab === t('track_events')) {
-                  setCurrentView('track');
-                } else {
-                  setActiveTab((tab === t('all') ? 'all' : tab === t('football') ? 'football' : tab === t('basketball') ? 'basketball' : 'track') as any);
-                  setCurrentView('dashboard');
-                }
-              }}
-              className={`px-6 py-2 rounded-full font-medium transition-colors ${
-                ((activeTab === 'all' && tab === t('all')) || (activeTab === 'football' && tab === t('football')) || (activeTab === 'basketball' && tab === t('basketball'))) && currentView === 'dashboard'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="px-6 py-6 space-y-8">
         {/* Football Section */}

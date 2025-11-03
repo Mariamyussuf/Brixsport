@@ -48,30 +48,6 @@ const LiveMatchesScreen: React.FC<LiveMatchesScreenProps> = ({
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-neutral-900 dark:text-neutral-100 pb-24 sm:pb-28">
-        {/* Header */}
-        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-slate-900 dark:text-white sticky top-0 z-30">
-          <div className="px-3 sm:px-4 py-3 sm:py-4">
-            <div className="flex items-center justify-between w-full">
-              {/* Left side - Back button and Title */}
-              <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-                <button
-                  onClick={onBack}
-                  aria-label="Back"
-                  className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
-                  type="button"
-                >
-                  <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 dark:text-white" />
-                </button>
-                <div className="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
-                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                    {t('live_events')}
-                  </h1>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
         <div className="w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4 max-w-7xl mx-auto">
           <div className="flex justify-center items-center h-64">
             <div className="animate-pulse text-gray-500 dark:text-gray-400">
@@ -86,30 +62,6 @@ const LiveMatchesScreen: React.FC<LiveMatchesScreenProps> = ({
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-neutral-900 dark:text-neutral-100 pb-24 sm:pb-28">
-        {/* Header */}
-        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-slate-900 dark:text-white sticky top-0 z-30">
-          <div className="px-3 sm:px-4 py-3 sm:py-4">
-            <div className="flex items-center justify-between w-full">
-              {/* Left side - Back button and Title */}
-              <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-                <button
-                  onClick={onBack}
-                  aria-label="Back"
-                  className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
-                  type="button"
-                >
-                  <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 dark:text-white" />
-                </button>
-                <div className="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
-                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                    {t('live_events')}
-                  </h1>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
         <div className="w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4 max-w-7xl mx-auto">
           <div className="bg-white dark:bg-gray-900 rounded-lg p-4 sm:p-6 md:p-8 text-center border border-gray-100 dark:border-gray-700">
             <div className="text-red-500 dark:text-red-400 mb-4">
@@ -136,30 +88,6 @@ const LiveMatchesScreen: React.FC<LiveMatchesScreenProps> = ({
   if (!hasLiveMatches) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-neutral-900 dark:text-neutral-100 pb-24 sm:pb-28">
-        {/* Header */}
-        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-slate-900 dark:text-white sticky top-0 z-30">
-          <div className="px-3 sm:px-4 py-3 sm:py-4">
-            <div className="flex items-center justify-between w-full">
-              {/* Left side - Back button and Title */}
-              <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-                <button
-                  onClick={onBack}
-                  aria-label="Back"
-                  className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
-                  type="button"
-                >
-                  <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 dark:text-white" />
-                </button>
-                <div className="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
-                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                    {t('live_events')}
-                  </h1>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
         <div className="w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4 max-w-7xl mx-auto">
           <div className="bg-white dark:bg-gray-900 rounded-lg p-4 sm:p-6 md:p-8 text-center border border-gray-100 dark:border-gray-700">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">{t('no_live_matches')}</h3>
@@ -172,30 +100,6 @@ const LiveMatchesScreen: React.FC<LiveMatchesScreenProps> = ({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-neutral-900 dark:text-neutral-100 pb-24 sm:pb-28">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-slate-900 dark:text-white sticky top-0 z-30">
-        <div className="px-3 sm:px-4 py-3 sm:py-4">
-          <div className="flex items-center justify-between w-full">
-            {/* Left side - Back button and Title */}
-            <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-              <button
-                onClick={onBack}
-                aria-label="Back"
-                className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
-                type="button"
-              >
-                <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900 dark:text-white" />
-              </button>
-              <div className="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                  {t('live_events')}
-                </h1>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4 max-w-7xl mx-auto">
         {liveMatches.football.length > 0 && (
           <section className="mb-8">
