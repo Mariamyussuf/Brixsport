@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* Define a custom variant for dark mode */
-@custom-variant dark (&:is(.dark *));
+@variant dark (&:is(.dark *));
 
 /* Base tweaks */
 @layer base {
@@ -18,8 +18,28 @@
   }
 }
 
-/* Custom utilities for tournament component */
+/* Glassmorphism utilities */
 @layer utilities {
+  .glassmorphic-header {
+    @apply bg-white/10 dark:bg-black/10 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-2xl shadow-lg;
+  }
+  
+  .glassmorphic-nav {
+    @apply bg-white/10 dark:bg-black/10 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-2xl shadow-lg mx-2 mb-2;
+  }
+  
+  .glassmorphic-card {
+    @apply bg-white/10 dark:bg-black/10 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-lg;
+  }
+  
+  .glow-blue {
+    @apply shadow-[0_0_15px_rgba(0,123,255,0.5)];
+  }
+  
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;

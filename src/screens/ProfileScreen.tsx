@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import UserProfile from '@/components/shared/UserProfile';
 import { useTheme } from '@/components/shared/ThemeProvider';
 import SettingsLauncher from '@/components/shared/SettingsLauncher';
+import Link from 'next/link';
 
 import { 
   Settings, 
@@ -358,6 +359,22 @@ const ProfileScreen = () => {
                   <span className="font-medium">Logout</span>
                 </Button>
               )}
+              
+              {/* Legal Links */}
+              <div className="flex justify-center space-x-4 pt-4">
+                <Link 
+                  href="/terms" 
+                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline"
+                >
+                  Terms of Service
+                </Link>
+                <Link 
+                  href="/privacy" 
+                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline"
+                >
+                  Privacy Policy
+                </Link>
+              </div>
             </div>
           </div>
         </div>
