@@ -30,20 +30,22 @@ const Header: React.FC<HeaderProps> = ({ variant = 'main' }) => {
               </div>
               
               <div className="flex items-center space-x-4">
-                <button 
+                <Link 
+                  href="/search"
                   className="p-2 rounded-full hover:bg-white/20 transition-colors"
                   aria-label="Search"
                 >
                   <Search className="h-5 w-5 text-navy-900 dark:text-white" />
-                </button>
+                </Link>
                 
-                <button 
+                <Link 
+                  href="/notifications"
                   className="p-2 rounded-full hover:bg-white/20 transition-colors relative"
                   aria-label="Notifications"
                 >
                   <Bell className="h-5 w-5 text-navy-900 dark:text-white" />
                   <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-                </button>
+                </Link>
                 
                 <div className="flex items-center space-x-1 px-2 py-1 bg-green-500/20 rounded-full">
                   <Radio className="h-4 w-4 text-green-600 dark:text-green-400" />

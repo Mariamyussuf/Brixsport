@@ -3,6 +3,19 @@
 /* Define a custom variant for dark mode */
 @variant dark (&:is(.dark *));
 
+/* Ensure dark mode works properly with system preference */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+  }
+}
+
 /* Base tweaks */
 @layer base {
   :root { 
