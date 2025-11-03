@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { LoginPrompt } from '@/components/shared/LoginPrompt';
 import { useScrollDetection } from '@/hooks/useScrollDetection';
 import IntelligentMatchHeader from '@/components/FootballScreen/IntelligentMatchHeader';
+import { io } from 'socket.io-client';
 
 interface MatchEventDisplay {
   id: number;
