@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useLoggerAuth } from '@/contexts/LoggerAuthContext';
 import LoggerNotifications from '@/components/logger/notifications/LoggerNotifications';
 import MatchTrackerPage from '@/components/logger/matches/MatchTrackerPage';
+import LoggerBasketballSchedule from '@/components/logger/basketball/LoggerBasketballSchedule';
+import { Button } from '@/components/ui/button';
 
 const LoggerDashboard = () => {
   const { user, isAuthenticated } = useLoggerAuth();
@@ -87,6 +89,16 @@ const LoggerDashboard = () => {
             >
               Reports
             </button>
+            <button
+              onClick={() => setActiveTab('basketball')}
+              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'basketball'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              Basketball Schedule
+            </button>
           </nav>
         </div>
         
@@ -144,6 +156,18 @@ const LoggerDashboard = () => {
                 Generate and export match reports.
               </p>
             </div>
+          </div>
+        )}
+        
+        {/* Basketball Schedule Content */}
+        {activeTab === 'basketball' && (
+          <div className="mt-6">
+            <div className="mb-4 flex justify-end">
+              <Button onClick={() => window.location.href = '/logger/basketball-schedule'}>
+                View Full Schedule
+              </Button>
+            </div>
+            <LoggerBasketballSchedule />
           </div>
         )}
       </div>
