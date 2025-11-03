@@ -31,6 +31,7 @@ An offline-first Next.js 14 PWA for managing campus sports activities. Built wit
 - **Notification System**: Real-time updates for matches, teams, and players with personalized alerts
 - **Supabase Integration**: PostgreSQL database hosted on Supabase for production data storage
 - **API Integration**: Full backend API connectivity with real-time data
+- **Basketball Schedule Management**: Comprehensive schedule system for basketball leagues with fixture viewing and admin import capabilities
 
 ## Getting Started
 
@@ -166,6 +167,27 @@ To register the service worker in UI, use `PWARegister` component or ensure regi
 - Configure Supabase environment variables in Vercel project settings
 - For logger system, set `LOGGER_JWT_SECRET` environment variable in Vercel
 - See `vercel.env.example` for a complete list of required environment variables
+
+## Basketball Schedule System
+The application includes a comprehensive basketball schedule system with the following features:
+
+- **Fixture Viewing**: Users can view the complete basketball league schedule organized by rounds and dates
+- **Admin Import**: Administrators can import official schedules through a dedicated admin interface
+- **API Integration**: Schedule data is stored in the Supabase database and accessible through REST API endpoints
+- **Responsive UI**: Mobile-friendly schedule display with expandable rounds and match details
+
+### Accessing the Schedule
+- Users can access the basketball schedule through the "Fixtures" tab in the main navigation
+- Administrators can import schedules through the admin dashboard at `/admin`
+- Developers can access schedule data through the API endpoint at `/api/basketball-schedule`
+
+### Schedule Data Structure
+The basketball schedule is stored in `basketball_schedule.json` with the following structure:
+- League information (name, season)
+- Team list
+- Rounds with dates and matches
+- Special events (draft combine, all-star games)
+- Trading period information
 
 ## Logger System Access
 To access the logger system:
