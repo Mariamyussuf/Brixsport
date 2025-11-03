@@ -181,7 +181,7 @@ export default function BlogPostPage() {
               <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                 <div className="flex items-center space-x-1">
                   <User className="h-4 w-4" />
-                  <span>{post.author || 'Brixsports Team'}</span>
+                  <span>{typeof post.author === 'object' && post.author !== null ? post.author.name : (post.author || 'Brixsports Team')}</span>
                 </div>
                 
                 <div className="flex items-center space-x-1">
