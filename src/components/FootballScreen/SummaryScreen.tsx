@@ -2,6 +2,37 @@ import React, { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
 import { io } from 'socket.io-client';
 
+interface BaseEvent {
+  time: number;
+  team: 'home' | 'away';
+  player: string;
+}
+
+interface GoalEvent extends BaseEvent {
+  eventType: 'goal';
+  assistBy?: string;
+  score?: string;
+}
+
+interface CardEvent extends BaseEvent {
+  eventType: 'yellow' | 'red';
+}
+
+interface SubstitutionEvent extends BaseEvent {
+  eventType: 'substitution';
+  inPlayer?: string;
+  outPlayer?: string;
+}
+
+interface MarkerEvent {
+  time: number;
+  team: 'home' | 'away';
+  player: string;
+  eventType: 'half-time' | 'full-time';
+}
+
+type MatchEvent = GoalEvent | CardEvent | SubstitutionEvent | MarkerEvent;
+
 interface MatchSummaryProps {
   matchId: string;
   homeTeam: string;
@@ -10,16 +41,7 @@ interface MatchSummaryProps {
   awayScore: number;
   matchDate: string;
   matchVenue?: string;
-  events?: Array<{
-    time: number;
-    team: 'home' | 'away';
-    player: string;
-    eventType: 'goal' | 'yellow' | 'red' | 'substitution';
-    assistBy?: string;
-    inPlayer?: string;
-    outPlayer?: string;
-    score?: string;
-  }>;
+  events?: MatchEvent[];
 }
 
 // Event Icon Component
@@ -179,9 +201,9 @@ const SummaryScreen: React.FC<MatchSummaryProps> = ({
   matchVenue,
   events
 }) => {
-  const [displayEvents, setDisplayEvents] = useState(() => {
+  const [displayEvents, setDisplayEvents] = useState<MatchEvent[]>(() => {
     // Sample events if none provided
-    const initialEvents = events && events.length > 0 ? [...events].sort((a, b) => a.time - b.time) : [
+    const initialEvents: MatchEvent[] = events && events.length > 0 ? [...events].sort((a, b) => a.time - b.time) : [
       { time: 21, team: 'home', player: 'Calafiori', eventType: 'yellow' },
       { time: 33, team: 'away', player: 'McTominay', eventType: 'yellow' },
       { time: 45, team: 'home', player: '', eventType: 'half-time' },
@@ -216,16 +238,46 @@ const SummaryScreen: React.FC<MatchSummaryProps> = ({
         );
         
         if (!exists) {
-          const transformedEvent = {
-            time: newEvent.minute,
-            team: newEvent.team_name === homeTeam ? 'home' : 'away',
-            player: newEvent.player_name || '',
-            eventType: newEvent.event_type.replace('_', '') as 'goal' | 'yellow' | 'red' | 'substitution',
-            assistBy: newEvent.assist_by || undefined,
-            inPlayer: newEvent.in_player || undefined,
-            outPlayer: newEvent.out_player || undefined,
-            score: newEvent.score || undefined
-          };
+          // Determine event type
+          const eventType = newEvent.event_type.replace('_', '') as 'goal' | 'yellow' | 'red' | 'substitution';
+          
+          // Create properly typed event object based on event type
+          let transformedEvent: MatchEvent;
+          
+          if (eventType === 'goal') {
+            transformedEvent = {
+              time: newEvent.minute,
+              team: newEvent.team_name === homeTeam ? 'home' : 'away',
+              player: newEvent.player_name || '',
+              eventType: 'goal',
+              assistBy: newEvent.assist_by || undefined,
+              score: newEvent.score || undefined
+            };
+          } else if (eventType === 'substitution') {
+            transformedEvent = {
+              time: newEvent.minute,
+              team: newEvent.team_name === homeTeam ? 'home' : 'away',
+              player: newEvent.player_name || '',
+              eventType: 'substitution',
+              inPlayer: newEvent.in_player || undefined,
+              outPlayer: newEvent.out_player || undefined
+            };
+          } else if (eventType === 'yellow' || eventType === 'red') {
+            transformedEvent = {
+              time: newEvent.minute,
+              team: newEvent.team_name === homeTeam ? 'home' : 'away',
+              player: newEvent.player_name || '',
+              eventType: eventType
+            };
+          } else {
+            // Fallback for any other event types
+            transformedEvent = {
+              time: newEvent.minute,
+              team: newEvent.team_name === homeTeam ? 'home' : 'away',
+              player: newEvent.player_name || '',
+              eventType: eventType
+            } as MatchEvent;
+          }
           
           // Add new event and sort by time
           const updatedEvents = [...prev, transformedEvent];
