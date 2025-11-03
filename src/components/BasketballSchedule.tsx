@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin } from 'lucide-react';
+import { Calendar, Clock, MapPin, AlertTriangle } from 'lucide-react';
 import { useI18n } from '@/components/shared/I18nProvider';
 
 interface ScheduleMatch {
@@ -132,6 +132,12 @@ const BasketballSchedule: React.FC<BasketballScheduleProps> = ({ rounds: initial
           const roundKey = `${round.round}-${round.date}`;
           const isExpanded = expandedRounds[roundKey] ?? true;
           
+          // Filter out cancelled matches for display
+          const activeMatches = round.matches.filter(match => match.status !== 'cancelled');
+          
+          // If all matches in a round are cancelled, we might want to show a special message
+          const allCancelled = round.matches.length > 0 && activeMatches.length === 0;
+          
           return (
             <div key={roundKey} className="p-4">
               <button
@@ -146,6 +152,12 @@ const BasketballSchedule: React.FC<BasketballScheduleProps> = ({ rounds: initial
                   <span className="text-sm text-gray-500 dark:text-gray-400">
                     {formatDate(round.date)}
                   </span>
+                  {allCancelled && (
+                    <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                      <AlertTriangle className="w-3 h-3 mr-1" />
+                      All Cancelled
+                    </span>
+                  )}
                 </div>
                 <svg
                   className={`w-5 h-5 text-gray-500 transform transition-transform ${
@@ -161,57 +173,68 @@ const BasketballSchedule: React.FC<BasketballScheduleProps> = ({ rounds: initial
               
               {isExpanded && (
                 <div className="mt-4 space-y-4">
-                  {(() => {
-                    const groupedMatches = groupMatchesByDate(round.matches);
-                    return Object.entries(groupedMatches).map(([date, matches]) => (
-                      <div key={date} className="ml-2 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
-                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          {formatDate(date)}
-                        </div>
-                        <div className="space-y-3">
-                          {matches.map((match) => (
-                            <div 
-                              key={match.id} 
-                              className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between">
-                                    <div className="font-medium text-gray-900 dark:text-white truncate">
-                                      {match.home_team_name}
+                  {allCancelled ? (
+                    <div className="ml-2 pl-4 border-l-2 border-gray-200 dark:border-gray-700 py-2">
+                      <div className="flex items-center text-gray-500 dark:text-gray-400">
+                        <AlertTriangle className="w-4 h-4 mr-2" />
+                        <span>All matches for this round have been cancelled</span>
+                      </div>
+                    </div>
+                  ) : (
+                    (() => {
+                      const groupedMatches = groupMatchesByDate(activeMatches);
+                      return Object.entries(groupedMatches).map(([date, matches]) => (
+                        <div key={date} className="ml-2 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
+                          <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {formatDate(date)}
+                          </div>
+                          <div className="space-y-3">
+                            {matches.map((match) => (
+                              <div 
+                                key={match.id} 
+                                className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                      <div className="font-medium text-gray-900 dark:text-white truncate">
+                                        {match.home_team_name}
+                                      </div>
+                                      <div className="text-gray-500 dark:text-gray-400 mx-2">vs</div>
+                                      <div className="font-medium text-gray-900 dark:text-white truncate">
+                                        {match.away_team_name}
+                                      </div>
                                     </div>
-                                    <div className="text-gray-500 dark:text-gray-400 mx-2">vs</div>
-                                    <div className="font-medium text-gray-900 dark:text-white truncate">
-                                      {match.away_team_name}
+                                    
+                                    <div className="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                      <Clock className="w-4 h-4 mr-1" />
+                                      <span>{formatTime(match.scheduled_at)}</span>
+                                      <MapPin className="w-4 h-4 ml-3 mr-1" />
+                                      <span className="truncate">{match.venue}</span>
                                     </div>
                                   </div>
                                   
-                                  <div className="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                    <Clock className="w-4 h-4 mr-1" />
-                                    <span>{formatTime(match.scheduled_at)}</span>
-                                    <MapPin className="w-4 h-4 ml-3 mr-1" />
-                                    <span className="truncate">{match.venue}</span>
+                                  <div className="ml-3">
+                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                      match.status === 'completed' 
+                                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' 
+                                        : match.status === 'live' 
+                                          ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100' 
+                                          : match.status === 'cancelled' 
+                                            ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' 
+                                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100'
+                                    }`}>
+                                      {match.status.charAt(0).toUpperCase() + match.status.slice(1)}
+                                    </span>
                                   </div>
                                 </div>
-                                
-                                <div className="ml-3">
-                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                    match.status === 'completed' 
-                                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' 
-                                      : match.status === 'live' 
-                                        ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100' 
-                                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100'
-                                  }`}>
-                                    {match.status.charAt(0).toUpperCase() + match.status.slice(1)}
-                                  </span>
-                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ));
-                  })()}
+                      ));
+                    })()
+                  )}
                 </div>
               )}
             </div>
