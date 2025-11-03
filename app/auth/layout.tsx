@@ -11,7 +11,7 @@ export default function AuthLayout({
       <Header variant="auth" />
       
       {/* Content */}
-      <div className="relative z-10 w-full flex flex-col items-center px-6 pb-10 pt-16 md:pt-20 min-h-screen justify-end max-w-6xl mx-auto">
+      <div className="relative z-10 w-full flex flex-col items-center px-6 pb-10 pt-16 md:pt-20 flex-grow">
         {children}
       </div>
     </div>
