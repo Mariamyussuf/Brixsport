@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Star, Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { io } from 'socket.io-client';
 
 interface Team {
   id: string;
@@ -46,6 +47,43 @@ const IntelligentMatchHeader: React.FC<IntelligentMatchHeaderProps> = ({
   onToggleFavorite
 }) => {
   const router = useRouter();
+  const [liveMatch, setLiveMatch] = useState(match);
+
+  // Real-time updates using WebSocket
+  useEffect(() => {
+    if (!match.id || match.status !== 'live') return;
+
+    // Connect to WebSocket server
+    const socket = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001');
+    
+    // Join match room
+    socket.emit('joinMatch', { matchId: match.id });
+    
+    // Listen for score updates
+    socket.on('match:scoreUpdate', (update: any) => {
+      setLiveMatch(prev => ({
+        ...prev,
+        homeScore: update.homeScore,
+        awayScore: update.awayScore,
+        time: update.currentMinute ? `${update.currentMinute}'` : prev.time
+      }));
+    });
+    
+    // Listen for status updates
+    socket.on('match:statusUpdate', (update: any) => {
+      setLiveMatch(prev => ({
+        ...prev,
+        status: update.status,
+        time: update.status === 'completed' ? 'FT' : prev.time
+      }));
+    });
+    
+    // Cleanup function
+    return () => {
+      socket.emit('leaveMatch', { matchId: match.id });
+      socket.disconnect();
+    };
+  }, [match.id, match.status]);
 
   return (
     <div className={`bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-white/10 w-full px-0 sm:px-6 transition-all duration-300 ease-in-out ${
@@ -86,28 +124,28 @@ const IntelligentMatchHeader: React.FC<IntelligentMatchHeaderProps> = ({
       }`}>
         <div className="flex items-center justify-between">
           <div className="flex flex-col items-center">
-            <TeamFlag flagColors={match.homeFlagColors} />
-            <span className="text-lg font-medium text-gray-900 dark:text-gray-100 mt-2">{match.homeTeam.name}</span>
+            <TeamFlag flagColors={liveMatch.homeFlagColors} />
+            <span className="text-lg font-medium text-gray-900 dark:text-gray-100 mt-2">{liveMatch.homeTeam.name}</span>
           </div>
 
           <div className="text-center">
             <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-              {match.homeScore !== undefined && match.awayScore !== undefined 
-                ? `${match.homeScore} - ${match.awayScore}` 
+              {liveMatch.homeScore !== undefined && liveMatch.awayScore !== undefined 
+                ? `${liveMatch.homeScore} - ${liveMatch.awayScore}` 
                 : 'vs'}
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">{match.time}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">{liveMatch.time}</div>
           </div>
 
           <div className="flex flex-col items-center">
-            <TeamFlag flagColors={match.awayFlagColors} />
-            <span className="text-lg font-medium text-gray-900 dark:text-gray-100 mt-2">{match.awayTeam.name}</span>
+            <TeamFlag flagColors={liveMatch.awayFlagColors} />
+            <span className="text-lg font-medium text-gray-900 dark:text-gray-100 mt-2">{liveMatch.awayTeam.name}</span>
           </div>
         </div>
         
         <div className="text-center mt-3">
-          <div className="text-sm text-gray-600 dark:text-gray-400">{match.competition}</div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">{match.date} • {match.venue}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{liveMatch.competition}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{liveMatch.date} • {liveMatch.venue}</div>
         </div>
       </div>
 
@@ -117,26 +155,26 @@ const IntelligentMatchHeader: React.FC<IntelligentMatchHeaderProps> = ({
       }`}>
         <div className="flex items-center space-x-2">
           <div className="flex items-center">
-            <TeamFlag flagColors={match.homeFlagColors} />
-            <span className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[80px]">{match.homeTeam.name}</span>
+            <TeamFlag flagColors={liveMatch.homeFlagColors} />
+            <span className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[80px]">{liveMatch.homeTeam.name}</span>
           </div>
           
           <div className="text-center mx-2">
             <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-              {match.homeScore !== undefined && match.awayScore !== undefined 
-                ? `${match.homeScore} - ${match.awayScore}` 
+              {liveMatch.homeScore !== undefined && liveMatch.awayScore !== undefined 
+                ? `${liveMatch.homeScore} - ${liveMatch.awayScore}` 
                 : 'vs'}
             </div>
           </div>
           
           <div className="flex items-center">
-            <span className="mr-2 text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[80px]">{match.awayTeam.name}</span>
-            <TeamFlag flagColors={match.awayFlagColors} />
+            <span className="mr-2 text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[80px]">{liveMatch.awayTeam.name}</span>
+            <TeamFlag flagColors={liveMatch.awayFlagColors} />
           </div>
         </div>
         
         <div className="text-sm text-gray-600 dark:text-gray-400">
-          {match.time}
+          {liveMatch.time}
         </div>
       </div>
     </div>

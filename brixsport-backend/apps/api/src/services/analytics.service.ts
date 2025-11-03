@@ -67,7 +67,7 @@ export const analyticsService = {
       logger.info('Comparing players analytics', { playerIds });
 
       // Get real player comparison data from database
-      const comparisonData = [];
+      const comparisonData: { playerId: string; stats: any }[] = [];
       
       for (const playerId of playerIds) {
         const playerStatsResult = await supabaseService.getPlayerStats(playerId);
@@ -78,6 +78,41 @@ export const analyticsService = {
             stats: playerStatsResult.data
           });
         }
+      }
+
+      // Enhance comparison with dynamic calculations
+      if (comparisonData.length > 1) {
+        // Calculate relative performance metrics
+        const enhancedComparison = comparisonData.map((player, index) => {
+          // Calculate averages for other players
+          const otherPlayers = comparisonData.filter((_, i) => i !== index);
+          
+          if (otherPlayers.length > 0) {
+            const avgGoals = otherPlayers.reduce((sum, p) => sum + (p.stats.goals || 0), 0) / otherPlayers.length;
+            const avgAssists = otherPlayers.reduce((sum, p) => sum + (p.stats.assists || 0), 0) / otherPlayers.length;
+            const avgMatches = otherPlayers.reduce((sum, p) => sum + (p.stats.matchesPlayed || 0), 0) / otherPlayers.length;
+            
+            return {
+              ...player,
+              comparison: {
+                goalsVsAverage: player.stats.goals ? ((player.stats.goals - avgGoals) / avgGoals * 100) : 0,
+                assistsVsAverage: player.stats.assists ? ((player.stats.assists - avgAssists) / avgAssists * 100) : 0,
+                efficiency: player.stats.matchesPlayed ? 
+                  ((player.stats.goals + player.stats.assists) / player.stats.matchesPlayed) : 0,
+                efficiencyVsAverage: avgMatches ? 
+                  (((player.stats.goals + player.stats.assists) / player.stats.matchesPlayed) - 
+                  ((avgGoals + avgAssists) / avgMatches)) / ((avgGoals + avgAssists) / avgMatches) * 100 : 0
+              }
+            };
+          }
+          
+          return player;
+        });
+
+        return {
+          success: true,
+          data: enhancedComparison
+        };
       }
 
       return {
@@ -132,7 +167,7 @@ export const analyticsService = {
       logger.info('Comparing teams analytics', { teamIds });
 
       // Get real team comparison data from database
-      const comparisonData = [];
+      const comparisonData: { teamId: string; stats: any }[] = [];
       
       for (const teamId of teamIds) {
         const teamStatsResult = await supabaseService.getTeamStats(teamId);
@@ -143,6 +178,41 @@ export const analyticsService = {
             stats: teamStatsResult.data
           });
         }
+      }
+
+      // Enhance comparison with dynamic calculations
+      if (comparisonData.length > 1) {
+        // Calculate relative performance metrics
+        const enhancedComparison = comparisonData.map((team, index) => {
+          // Calculate averages for other teams
+          const otherTeams = comparisonData.filter((_, i) => i !== index);
+          
+          if (otherTeams.length > 0) {
+            const avgWins = otherTeams.reduce((sum, t) => sum + (t.stats.wins || 0), 0) / otherTeams.length;
+            const avgGoals = otherTeams.reduce((sum, t) => sum + (t.stats.goalsFor || 0), 0) / otherTeams.length;
+            const avgMatches = otherTeams.reduce((sum, t) => sum + (t.stats.matchesPlayed || 0), 0) / otherTeams.length;
+            
+            return {
+              ...team,
+              comparison: {
+                winsVsAverage: team.stats.wins ? ((team.stats.wins - avgWins) / avgWins * 100) : 0,
+                goalsVsAverage: team.stats.goalsFor ? ((team.stats.goalsFor - avgGoals) / avgGoals * 100) : 0,
+                efficiency: team.stats.matchesPlayed ? 
+                  (team.stats.wins / team.stats.matchesPlayed) : 0,
+                efficiencyVsAverage: avgMatches ? 
+                  ((team.stats.wins / team.stats.matchesPlayed) - 
+                  (avgWins / avgMatches)) / (avgWins / avgMatches) * 100 : 0
+              }
+            };
+          }
+          
+          return team;
+        });
+
+        return {
+          success: true,
+          data: enhancedComparison
+        };
       }
 
       return {

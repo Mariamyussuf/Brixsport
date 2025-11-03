@@ -1,46 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminToken, hasAdminPermission } from '@/lib/adminAuth';
 import { cookies } from 'next/headers';
-
-// Mock data for reports (in production, this would be generated from database)
-const generateReportData = (matchId: string) => {
-  return {
-    id: `report-${matchId}`,
-    matchId: matchId,
-    type: 'match',
-    title: `Match Report for ${matchId}`,
-    generatedAt: new Date().toISOString(),
-    data: {
-      matchId: matchId,
-      homeTeam: 'Home Team',
-      awayTeam: 'Away Team',
-      finalScore: '2-1',
-      events: [
-        { time: '15:00', event: 'Goal', team: 'Home Team', player: 'Player A' },
-        { time: '32:00', event: 'Yellow Card', team: 'Away Team', player: 'Player B' },
-        { time: '45:00', event: 'Goal', team: 'Home Team', player: 'Player C' },
-        { time: '67:00', event: 'Substitution', team: 'Away Team' },
-        { time: '89:00', event: 'Goal', team: 'Away Team', player: 'Player D' }
-      ],
-      statistics: {
-        home: {
-          shots: 12,
-          shotsOnTarget: 6,
-          possession: '58%',
-          corners: 5,
-          fouls: 8
-        },
-        away: {
-          shots: 8,
-          shotsOnTarget: 3,
-          possession: '42%',
-          corners: 3,
-          fouls: 12
-        }
-      }
-    }
-  };
-};
+import { dbService } from '@/lib/databaseService';
 
 // POST /api/admin/reports/:matchId - Generate a match report
 export async function POST(request: Request, { params }: { params: Promise<{ matchId: string }> }) {
@@ -72,19 +33,76 @@ export async function POST(request: Request, { params }: { params: Promise<{ mat
 
     const { matchId } = await params;
     
-    // Generate report based on matchId
-    const report = generateReportData(matchId);
+    // Get match details from database
+    const matches = await dbService.getMatches();
+    const match = matches.find(m => m.id.toString() === matchId);
+    
+    if (!match) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Match not found' 
+      }, { status: 404 });
+    }
+    
+    // Get competition details
+    const competition = await dbService.getCompetitionById(match.competition_id);
+    
+    // Get team details
+    const teams = await dbService.getTeams();
+    const homeTeam = teams.find(team => team.id === match.home_team_id) || null;
+    const awayTeam = teams.find(team => team.id === match.away_team_id) || null;
+    
+    // Get match events
+    const events = await dbService.getMatchEvents(match.id);
+    
+    // Generate report based on real match data
+    const report = {
+      id: `report-${matchId}-${Date.now()}`,
+      matchId: matchId,
+      type: 'match',
+      title: `Match Report: ${homeTeam?.name || 'Home Team'} vs ${awayTeam?.name || 'Away Team'}`,
+      generatedAt: new Date().toISOString(),
+      generatedBy: adminUser.name,
+      data: {
+        matchId: matchId,
+        homeTeam: homeTeam?.name || 'Home Team',
+        awayTeam: awayTeam?.name || 'Away Team',
+        finalScore: `${match.home_score || 0}-${match.away_score || 0}`,
+        events: events.map((event: any) => ({
+          time: event.timestamp ? new Date(event.timestamp).toISOString() : 'Unknown',
+          event: event.type || 'Event',
+          team: event.teamId ? (teams.find(t => t.id === event.teamId)?.name || 'Unknown Team') : 'Unknown Team',
+          player: event.playerId || 'Unknown Player'
+        })),
+        statistics: {
+          home: {
+            shots: 0, // Would need to calculate from events
+            shotsOnTarget: 0, // Would need to calculate from events
+            possession: '50%', // Would need to calculate from events
+            corners: 0, // Would need to calculate from events
+            fouls: 0 // Would need to calculate from events
+          },
+          away: {
+            shots: 0, // Would need to calculate from events
+            shotsOnTarget: 0, // Would need to calculate from events
+            possession: '50%', // Would need to calculate from events
+            corners: 0, // Would need to calculate from events
+            fouls: 0 // Would need to calculate from events
+          }
+        }
+      }
+    };
     
     return NextResponse.json({ 
       success: true, 
       data: report,
       message: 'Report generated successfully'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating report:', error);
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to generate report' 
+      error: error.message || 'Failed to generate report' 
     }, { status: 500 });
   }
 }

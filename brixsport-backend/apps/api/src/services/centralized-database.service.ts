@@ -1,7 +1,7 @@
 import { logger } from '@utils/logger';
 import { databaseSecurityService } from './security/database-security.service';
 import { authorizationService } from './security/authorization.service';
-import { supabaseService } from './supabase.service';
+import { supabaseService, supabase } from './supabase.service';
 import { ValidationError, DatabaseError } from './error.handler.service';
 
 // Centralized Database Service with enhanced security features
@@ -59,8 +59,22 @@ export const centralizedDatabaseService: CentralizedDatabaseService = {
       if (typeof (supabaseService as any)[methodName] === 'function') {
         result = await (supabaseService as any)[methodName](data);
       } else {
-        // If no specific method exists, throw an error
-        throw new DatabaseError(`Operation 'create' not implemented for table '${table}'`, 'NOT_IMPLEMENTED', 501);
+        // Fallback to generic insert operation
+        logger.info(`Using generic create for table ${table}`);
+        const { data: createdData, error } = await supabase
+          .from(table)
+          .insert(data)
+          .select()
+          .single();
+        
+        if (error) {
+          throw new DatabaseError(`Failed to create record: ${error.message}`, 'CREATE_FAILED', 500);
+        }
+        
+        result = {
+          success: true,
+          data: createdData
+        };
       }
       
       if (!result?.success) {
@@ -104,8 +118,29 @@ export const centralizedDatabaseService: CentralizedDatabaseService = {
           result.data = Array.isArray(result.data) ? result.data : [result.data];
         }
       } else {
-        // If no specific method exists, throw an error
-        throw new DatabaseError(`Operation 'read' not implemented for table '${table}'`, 'NOT_IMPLEMENTED', 501);
+        // Fallback to generic select operation
+        logger.info(`Using generic read for table ${table}`);
+        let query = supabase.from(table).select('*');
+        
+        // Apply filters if provided
+        if (filters) {
+          Object.keys(filters).forEach(key => {
+            if (key !== 'id' || !filters.id) { // Skip 'id' as it's handled specially
+              query = query.eq(key, filters[key]);
+            }
+          });
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          throw new DatabaseError(`Failed to read records: ${error.message}`, 'READ_FAILED', 500);
+        }
+        
+        result = {
+          success: true,
+          data: data || []
+        };
       }
       
       if (!result?.success) {
@@ -143,8 +178,27 @@ export const centralizedDatabaseService: CentralizedDatabaseService = {
       if (typeof (supabaseService as any)[methodName] === 'function') {
         result = await (supabaseService as any)[methodName](id, data);
       } else {
-        // If no specific method exists, throw an error
-        throw new DatabaseError(`Operation 'update' not implemented for table '${table}'`, 'NOT_IMPLEMENTED', 501);
+        // Fallback to generic update operation
+        logger.info(`Using generic update for table ${table}`);
+        const { data: updatedData, error } = await supabase
+          .from(table)
+          .update(data)
+          .eq('id', id)
+          .select()
+          .single();
+        
+        if (error) {
+          throw new DatabaseError(`Failed to update record: ${error.message}`, 'UPDATE_FAILED', 500);
+        }
+        
+        if (!updatedData) {
+          throw new DatabaseError('Record not found', 'NOT_FOUND', 404);
+        }
+        
+        result = {
+          success: true,
+          data: updatedData
+        };
       }
       
       if (!result?.success) {
@@ -179,8 +233,21 @@ export const centralizedDatabaseService: CentralizedDatabaseService = {
       if (typeof (supabaseService as any)[methodName] === 'function') {
         result = await (supabaseService as any)[methodName](id);
       } else {
-        // If no specific method exists, throw an error
-        throw new DatabaseError(`Operation 'delete' not implemented for table '${table}'`, 'NOT_IMPLEMENTED', 501);
+        // Fallback to generic delete operation
+        logger.info(`Using generic delete for table ${table}`);
+        const { error } = await supabase
+          .from(table)
+          .delete()
+          .eq('id', id);
+        
+        if (error) {
+          throw new DatabaseError(`Failed to delete record: ${error.message}`, 'DELETE_FAILED', 500);
+        }
+        
+        result = {
+          success: true,
+          data: null
+        };
       }
       
       if (!result?.success) {

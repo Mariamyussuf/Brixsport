@@ -29,30 +29,8 @@ export async function POST(request: NextRequest) {
       lastLogin: dbLogger.lastActive || new Date().toISOString()
     } as LoggerUser : undefined;
     
-    // If we don't have a proper password field, let's allow access for development
-    // In a real implementation, you would properly hash and verify passwords
+    // If we don't have a proper password field, let's properly handle authentication
     if (!loggerUser) {
-      // For development, we can check if this is one of our known test users
-      if (email === 'logger@example.com' && password === 'logger123') {
-        const mockLoggerUser: LoggerUser = {
-          id: 'logger-1',
-          name: 'John Logger',
-          email: 'logger@example.com',
-          role: 'logger',
-          assignedCompetitions: ['comp-1', 'comp-2'],
-          permissions: ['log_matches', 'log_events', 'view_players', 'view_teams', 'view_competitions'],
-          lastLogin: new Date().toISOString()
-        };
-        return NextResponse.json({
-          success: true,
-          message: 'Login successful',
-          data: {
-            token: await generateLoggerToken(mockLoggerUser),
-            user: mockLoggerUser
-          }
-        });
-      }
-      
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }

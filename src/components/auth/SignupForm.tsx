@@ -246,13 +246,13 @@ const SignupForm: React.FC = () => {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <h1 className="text-3xl font-bold mb-8 text-center text-white">
-        Create Account
+      <h1 className="text-3xl font-bold mb-8 text-center text-neutral-900 dark:text-white">
+        Sign Up
       </h1>
       
       {/* Rate limiting warning */}
       {!rateLimiter.canAttempt() && (
-        <div className="mb-6 p-4 rounded-lg bg-red-900/50 border border-red-500 text-red-200">
+        <div className="mb-6 p-4 rounded-lg bg-red-900/50 dark:bg-red-900/30 border border-red-500 text-red-200 dark:text-red-300">
           <div className="flex items-center gap-2 mb-2">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
@@ -264,148 +264,95 @@ const SignupForm: React.FC = () => {
       )}
 
       <form
-        className="flex flex-col gap-6"
+        className="w-full max-w-md flex flex-col gap-8"
         onSubmit={handleSubmit}
+        id="signup-panel"
+        aria-labelledby="Sign Up"
         noValidate
       >
-        {/* Name Field */}
-        <div className="space-y-2">
-          <label htmlFor="name" className="block text-sm font-medium text-white/90">
-            Full Name
-          </label>
-          <div className="relative">
-            <input
-              id="name"
-              name="name"
-              type="text"
-              autoComplete="name"
-              className={`w-full bg-white/5 border-2 rounded-lg px-4 py-3 text-white placeholder-white/50 backdrop-blur-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent ${
-                errors.name 
-                  ? 'border-red-500 focus:ring-red-400' 
-                  : 'border-white/20 hover:border-white/30'
-              }`}
-              placeholder="Enter your full name"
-              value={form.name}
-              onChange={handleChange}
-              disabled={isLoading}
-              required
-              aria-invalid={!!errors.name}
-              aria-describedby={errors.name ? 'name-error' : undefined}
-            />
-            {form.name && !errors.name && validateName(form.name) && (
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-            )}
-          </div>
-          {errors.name && (
-            <p id="name-error" className="text-red-400 text-sm flex items-center gap-1">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              {errors.name}
-            </p>
-          )}
+        <div className="flex flex-col gap-2">
+          <label htmlFor="name" className="text-lg text-neutral-800 dark:text-neutral-200">Name</label>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            autoComplete="name"
+            className={`bg-transparent border-b border-neutral-400 dark:border-neutral-600 py-2 px-0 text-neutral-900 dark:text-white text-lg focus:outline-none focus:border-neutral-700 dark:focus:border-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-400 ${errors.name ? 'border-red-500' : ''}`}
+            placeholder="Name"
+            value={form.name}
+            onChange={handleChange}
+            required
+            aria-invalid={!!errors.name}
+            aria-describedby={errors.name ? 'name-error' : undefined}
+            disabled={isLoading}
+          />
+          {errors.name && <span id="name-error" className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.name}</span>}
         </div>
 
-        {/* Email Field */}
-        <div className="space-y-2">
-          <label htmlFor="email" className="block text-sm font-medium text-white/90">
-            Email Address
-          </label>
-          <div className="relative">
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              className={`w-full bg-white/5 border-2 rounded-lg px-4 py-3 text-white placeholder-white/50 backdrop-blur-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent ${
-                errors.email 
-                  ? 'border-red-500 focus:ring-red-400' 
-                  : 'border-white/20 hover:border-white/30'
-              }`}
-              placeholder="Enter your email"
-              value={form.email}
-              onChange={handleChange}
-              disabled={isLoading}
-              required
-              aria-invalid={!!errors.email}
-              aria-describedby={errors.email ? 'email-error' : undefined}
-            />
-            {form.email && !errors.email && validateEmail(form.email) && (
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-            )}
-          </div>
-          {errors.email && (
-            <p id="email-error" className="text-red-400 text-sm flex items-center gap-1">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              {errors.email}
-            </p>
-          )}
+        <div className="flex flex-col gap-2">
+          <label htmlFor="email" className="text-lg text-neutral-800 dark:text-neutral-200">Enter your email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            className={`bg-transparent border-b border-neutral-400 dark:border-neutral-600 py-2 px-0 text-neutral-900 dark:text-white text-lg focus:outline-none focus:border-neutral-700 dark:focus:border-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-400 ${errors.email ? 'border-red-500' : ''}`}
+            placeholder="Enter your email"
+            value={form.email}
+            onChange={handleChange}
+            required
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? 'email-error' : undefined}
+            disabled={isLoading}
+          />
+          {errors.email && <span id="email-error" className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.email}</span>}
         </div>
 
-        {/* Password Field */}
-        <div className="space-y-2">
-          <label htmlFor="password" className="block text-sm font-medium text-white/90">
-            Password
-          </label>
-          <div className="relative">
-            <input
-              id="password"
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              className={`w-full bg-white/5 border-2 rounded-lg px-4 py-3 pr-12 text-white placeholder-white/50 backdrop-blur-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent ${
-                errors.password 
-                  ? 'border-red-500 focus:ring-red-400' 
-                  : 'border-white/20 hover:border-white/30'
-              }`}
-              placeholder="Create a strong password"
-              value={form.password}
-              onChange={handleChange}
-              disabled={isLoading}
-              required
-              aria-invalid={!!errors.password}
-              aria-describedby={errors.password ? 'password-error' : undefined}
-            />
-            <button
-              type="button"
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 rounded p-1"
-              onClick={() => setShowPassword(!showPassword)}
-              disabled={isLoading}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              )}
-            </button>
-          </div>
+        <div className="flex flex-col gap-2 relative">
+          <label htmlFor="password" className="text-lg text-neutral-800 dark:text-neutral-200">Enter password</label>
+          <input
+            id="password"
+            name="password"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="new-password"
+            className={`bg-transparent border-b border-neutral-400 dark:border-neutral-600 py-2 px-0 text-neutral-900 dark:text-white text-lg focus:outline-none focus:border-neutral-700 dark:focus:border-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-400 pr-10 ${errors.password ? 'border-red-500' : ''}`}
+            placeholder="Enter password"
+            value={form.password}
+            onChange={handleChange}
+            required
+            aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? 'password-error' : undefined}
+            disabled={isLoading}
+          />
+          <button
+            type="button"
+            className="absolute right-0 top-8 text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 focus:outline-none"
+            tabIndex={0}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            onClick={() => setShowPassword(v => !v)}
+          >
+            {showPassword ? (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M9.88 9.88A3 3 0 0012 15a3 3 0 002.12-5.12M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.36 6.36A9.956 9.956 0 0021 12c0-5.523-4.477-10-10-10a9.956 9.956 0 00-6.36 2.36M3 3l18 18z" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.36 6.36A9.956 9.956 0 0021 12c0-5.523-4.477-10-10-10a9.956 9.956 0 00-6.36 2.36M3 3l18 18z" />
+              </svg>
+            )}
+          </button>
+          {errors.password && <span id="password-error" className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.password}</span>}
           
           {/* Password Strength Indicator */}
           {showPasswordStrength && passwordStrength && (
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-white/70">Password strength:</span>
+                <span className="text-xs text-neutral-700 dark:text-neutral-300">Password strength:</span>
                 <span className={`text-xs font-medium capitalize ${
-                  passwordStrength.strength === 'strong' ? 'text-green-400' :
-                  passwordStrength.strength === 'good' ? 'text-yellow-400' :
-                  passwordStrength.strength === 'fair' ? 'text-orange-400' :
-                  'text-red-400'
+                  passwordStrength.strength === 'strong' ? 'text-green-600 dark:text-green-400' :
+                  passwordStrength.strength === 'good' ? 'text-yellow-600 dark:text-yellow-400' :
+                  passwordStrength.strength === 'fair' ? 'text-orange-600 dark:text-orange-400' :
+                  'text-red-600 dark:text-red-400'
                 }`}>
                   {passwordStrength.strength}
                 </span>
@@ -417,129 +364,80 @@ const SignupForm: React.FC = () => {
                     className={`h-1 flex-1 rounded ${
                       level <= (['weak', 'fair', 'good', 'strong'].indexOf(passwordStrength.strength) + 1)
                         ? getStrengthColor(passwordStrength.strength)
-                        : 'bg-white/20'
+                        : 'bg-neutral-200 dark:bg-neutral-700'
                     } transition-colors duration-200`}
                   />
                 ))}
               </div>
               {passwordStrength.errors.length > 0 && (
-                <div className="text-xs text-white/60">
+                <div className="text-xs text-neutral-600 dark:text-neutral-400">
                   <span>Missing: </span>
                   <span>{passwordStrength.errors.join(', ')}</span>
                 </div>
               )}
             </div>
           )}
-
-          {errors.password && (
-            <p id="password-error" className="text-red-400 text-sm flex items-center gap-1">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              {errors.password}
-            </p>
-          )}
         </div>
 
-        {/* Confirm Password Field */}
-        <div className="space-y-2">
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/90">
-            Confirm Password
-          </label>
-          <div className="relative">
-            <input
-              id="confirmPassword"
-              name="confirmPassword"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              className={`w-full bg-white/5 border-2 rounded-lg px-4 py-3 text-white placeholder-white/50 backdrop-blur-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent ${
-                errors.confirmPassword 
-                  ? 'border-red-500 focus:ring-red-400' 
-                  : 'border-white/20 hover:border-white/30'
-              }`}
-              placeholder="Confirm your password"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              disabled={isLoading}
-              required
-              aria-invalid={!!errors.confirmPassword}
-              aria-describedby={errors.confirmPassword ? 'confirmPassword-error' : undefined}
-            />
-            {form.confirmPassword && form.password && form.confirmPassword === form.password && (
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-            )}
-          </div>
-          {errors.confirmPassword && (
-            <p id="confirmPassword-error" className="text-red-400 text-sm flex items-center gap-1">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              {errors.confirmPassword}
-            </p>
-          )}
+        <div className="flex flex-col gap-2">
+          <label htmlFor="confirmPassword" className="text-lg text-neutral-800 dark:text-neutral-200">Confirm password</label>
+          <input
+            id="confirmPassword"
+            name="confirmPassword"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="new-password"
+            className={`bg-transparent border-b border-neutral-400 dark:border-neutral-600 py-2 px-0 text-neutral-900 dark:text-white text-lg focus:outline-none focus:border-neutral-700 dark:focus:border-neutral-300 placeholder:text-neutral-500 dark:placeholder:text-neutral-400 ${errors.confirmPassword ? 'border-red-500' : ''}`}
+            placeholder="Confirm password"
+            value={form.confirmPassword}
+            onChange={handleChange}
+            required
+            aria-invalid={!!errors.confirmPassword}
+            aria-describedby={errors.confirmPassword ? 'confirmPassword-error' : undefined}
+            disabled={isLoading}
+          />
+          {errors.confirmPassword && <span id="confirmPassword-error" className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.confirmPassword}</span>}
         </div>
 
-        {/* Submit Error */}
-        {submitError && (
-          <div className="p-4 rounded-lg bg-red-900/50 border border-red-500 text-red-200">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              <span className="text-sm">{submitError}</span>
-            </div>
-            {rateLimiter.getRemainingAttempts() > 0 && (
-              <p className="text-xs mt-1 text-red-300">
-                {rateLimiter.getRemainingAttempts()} attempt(s) remaining
-              </p>
-            )}
-          </div>
-        )}
+        {submitError && <div className="text-red-500 dark:text-red-400 text-center text-sm mt-2">{submitError}</div>}
 
         {/* Terms and Privacy */}
-        <div className="text-xs text-white/60 leading-relaxed">
+        <div className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
           By creating an account, you agree to our{' '}
-          <Link href="/terms" className="text-blue-400 hover:text-blue-300 hover:underline">
+          <Link href="/terms" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline">
             Terms of Service
           </Link>{' '}
           and{' '}
-          <Link href="/privacy" className="text-blue-400 hover:text-blue-300 hover:underline">
+          <Link href="/privacy" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline">
             Privacy Policy
           </Link>
           .
         </div>
 
-        {/* Submit Button */}
         <button
           type="submit"
+          className="w-full py-4 rounded-full bg-neutral-200/50 dark:bg-white/20 backdrop-blur-sm border border-neutral-300 dark:border-white/30 text-neutral-900 dark:text-white text-xl font-semibold mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all hover:bg-neutral-300/50 dark:hover:bg-white/30 shadow-md hover:shadow-lg active:scale-98 mt-8 disabled:opacity-50"
+          aria-label="Sign Up"
           disabled={isLoading || !rateLimiter.canAttempt()}
-          className="relative w-full py-4 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold text-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-transparent disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-purple-700 transform hover:scale-[1.02] active:scale-[0.98]"
         >
           {isLoading ? (
-            <div className="flex items-center justify-center gap-3">
-              <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            <div className="flex items-center justify-center">
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-neutral-900 dark:text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <span>Creating Account...</span>
+              Processing...
             </div>
-          ) : (
-            'Create Account'
-          )}
+          ) : 'Sign Up'}
         </button>
 
         {/* Sign In Link */}
-        <div className="text-center pt-6 border-t border-white/10">
-          <span className="text-white/70">Already have an account? </span>
+        <div className="text-center pt-6 border-t border-neutral-300 dark:border-neutral-700">
+          <span className="text-neutral-700 dark:text-neutral-300">Already have an account? </span>
           <Link 
             href="/auth/login" 
-            className="text-blue-400 hover:text-blue-300 hover:underline font-medium transition-colors duration-200"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-medium transition-colors duration-200"
           >
-            Sign in instead
+            Log in
           </Link>
         </div>
       </form>

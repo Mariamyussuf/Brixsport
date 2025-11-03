@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Search, Bell, Clock, Star, Calendar, Trophy, ArrowLeft, Menu, X, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Favouritesscreen from './Favouritesscreen';
@@ -14,6 +15,7 @@ import TrackEventCard from '../shared/TrackEventCard';
 import NotificationsBadge from '../shared/NotificationsBadge';
 import { useHomeData, useSportMatches } from '@/hooks/useHomeData';
 import CompetitionScreen from './CompetitionScreen';
+import BrixSportLogo from '@/assets/BRIX-SPORT-LOGO.png';
 
 import { 
   Match, 
@@ -463,7 +465,16 @@ const Homescreen: React.FC = () => {
                 </button>
               )}
               <div className="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">{t('app_title')}</h1>
+                <div className="flex items-center">
+                  <img 
+                    src="/BRIX-SPORT-LOGO.png" 
+                    alt="Brixsport Logo" 
+                    width={32} 
+                    height={32} 
+                    className="mr-2 sm:mr-3"
+                  />
+                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white truncate">{t('app_title')}</h1>
+                </div>
                 <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
                   <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 bg-white rounded-full"></div>
                 </div>

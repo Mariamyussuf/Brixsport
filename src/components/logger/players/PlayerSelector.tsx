@@ -15,6 +15,9 @@ export interface PlayerSelectorProps {
   variant?: 'dropdown' | 'grid' | 'list' | 'compact';
   allowDeselect?: boolean;
   groupBy?: 'position' | 'status' | 'team' | 'college' | 'department' | null;
+  trackRecords?: Record<string, any[]>; // Track records for each player
+  showTrackInfo?: boolean; // Whether to show track info in the selector
+  loadingTrackRecords?: boolean; // Whether track records are currently loading
 }
 
 /**
@@ -39,6 +42,9 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
   variant = 'dropdown',
   allowDeselect = true,
   groupBy = null,
+  trackRecords = {},
+  showTrackInfo = false,
+  loadingTrackRecords = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -262,6 +268,9 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
                 />
               </div>
             )}
+            {loadingTrackRecords && (
+              <div className="text-xs text-muted-foreground px-4 py-2">Loading athlete records...</div>
+            )}
             
             <div className="max-h-64 overflow-y-auto">
               {allowDeselect && selectedPlayerId && (
@@ -354,6 +363,20 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
                                 {player.department}
                               </span>
                             )}
+                            {/* Show track info if available */}
+                            {showTrackInfo && trackRecords[player.id] && trackRecords[player.id].length > 0 && (
+                              (() => {
+                                const records = trackRecords[player.id];
+                                const bestTimes = records.map(r => r.personalBest).filter(t => t !== undefined) as number[];
+                                const bestTime = bestTimes.length > 0 ? Math.min(...bestTimes) : null;
+                                
+                                return (
+                                  <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                                    {records.length} events {bestTime ? `| PB: ${bestTime.toFixed(2)}s` : ''}
+                                  </span>
+                                );
+                              })()
+                            )}
                           </div>
                         </div>
                         
@@ -432,6 +455,20 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
                   {player.department}
                 </span>
               )}
+              {/* Show track info if available */}
+              {showTrackInfo && trackRecords[player.id] && trackRecords[player.id].length > 0 && (
+                (() => {
+                  const records = trackRecords[player.id];
+                  const bestTimes = records.map(r => r.personalBest).filter(t => t !== undefined) as number[];
+                  const bestTime = bestTimes.length > 0 ? Math.min(...bestTimes) : null;
+                  
+                  return (
+                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                      PB: {bestTime ? `${bestTime.toFixed(2)}s` : `${records.length} events`}
+                    </span>
+                  );
+                })()
+              )}
             </div>
             {player.team && (
               <div 
@@ -463,6 +500,9 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
               disabled={disabled}
             />
           </div>
+        )}
+        {loadingTrackRecords && (
+          <div className="text-xs text-muted-foreground mb-2">Loading athlete records...</div>
         )}
         {filteredPlayers.length > 30 ? (
           <Grid
@@ -551,6 +591,20 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
                   {player.department}
                 </span>
               )}
+              {/* Show track info if available */}
+              {showTrackInfo && trackRecords[player.id] && trackRecords[player.id].length > 0 && (
+                (() => {
+                  const records = trackRecords[player.id];
+                  const bestTimes = records.map(r => r.personalBest).filter(t => t !== undefined) as number[];
+                  const bestTime = bestTimes.length > 0 ? Math.min(...bestTimes) : null;
+                  
+                  return (
+                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                      PB: {bestTime ? `${bestTime.toFixed(2)}s` : `${records.length} events`}
+                    </span>
+                  );
+                })()
+              )}
             </div>
           </div>
           {isSelected && (
@@ -574,6 +628,9 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
               disabled={disabled}
             />
           </div>
+        )}
+        {loadingTrackRecords && (
+          <div className="text-xs text-muted-foreground mb-2">Loading athlete records...</div>
         )}
         {filteredPlayers.length > 30 ? (
           <List
@@ -645,6 +702,20 @@ export const PlayerSelector: React.FC<PlayerSelectorProps> = ({
                   {player.college && <span>{player.college}</span>}
                   {player.college && player.department && <span>•</span>}
                   {player.department && <span>{player.department}</span>}
+                  {/* Show track info if available */}
+                  {showTrackInfo && trackRecords[player.id] && trackRecords[player.id].length > 0 && (
+                    (() => {
+                      const records = trackRecords[player.id];
+                      const bestTimes = records.map(r => r.personalBest).filter(t => t !== undefined) as number[];
+                      const bestTime = bestTimes.length > 0 ? Math.min(...bestTimes) : null;
+                      
+                      return (
+                        <span className="text-xs text-purple-600">
+                          PB: {bestTime ? `${bestTime.toFixed(2)}s` : `${records.length} events`}
+                        </span>
+                      );
+                    })()
+                  )}
                 </div>
               </div>
             </button>

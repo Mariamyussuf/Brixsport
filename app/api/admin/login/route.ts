@@ -2,49 +2,27 @@ import { NextResponse } from 'next/server';
 import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 
-// Secret key for JWT verification - in production, use environment variables
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET || 'admin_secret_key_for_development'
-);
+// Secret key for JWT verification - use environment variables
+const JWT_SECRET = new TextEncoder().encode(process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET);
 
-// In-memory storage for admins (in production, this would be a database)
-let admins = [
-  {
-    id: '1',
-    name: process.env.NEXT_PUBLIC_ADMIN_DEFAULT_NAME || 'John Admin',
-    email: process.env.NEXT_PUBLIC_ADMIN_DEFAULT_EMAIL || 'john.admin@example.com',
-    password: process.env.NEXT_PUBLIC_ADMIN_DEFAULT_HASHED_PASSWORD || 'hashed_admin_password_123', // In production, use proper password hashing
-    role: 'admin',
-    managedLoggers: ['logger1', 'logger2'],
-    adminLevel: 'basic',
-    permissions: ['manage_loggers', 'view_reports'],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    name: process.env.NEXT_PUBLIC_ADMIN_SUPER_NAME || 'Sarah SuperAdmin',
-    email: process.env.NEXT_PUBLIC_ADMIN_SUPER_EMAIL || 'sarah.super@example.com',
-    password: process.env.NEXT_PUBLIC_ADMIN_SUPER_HASHED_PASSWORD || 'hashed_superadmin_password_123', // In production, use proper password hashing
-    role: 'super-admin',
-    managedLoggers: [],
-    adminLevel: 'super',
-    permissions: ['*'],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-];
+// Fetch admins from database
+import { dbService } from '@/lib/databaseService';
 
-// Helper function to hash passwords (in production, use bcrypt or similar)
-function hashPassword(password: string): string {
-  // This is a placeholder - in production, use proper password hashing
-  return `hashed_${password}`;
+let adminsCache: any[] | null = null;
+let cacheTimestamp: number | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Helper function to hash passwords
+import bcrypt from 'bcrypt';
+
+async function hashPassword(password: string): Promise<string> {
+  const saltRounds = 10;
+  return await bcrypt.hash(password, saltRounds);
 }
 
-// Helper function to verify passwords (in production, use bcrypt or similar)
-function verifyPassword(password: string, hash: string): boolean {
-  // This is a placeholder - in production, use proper password verification
-  return hash === `hashed_${password}`;
+// Helper function to verify passwords
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return await bcrypt.compare(password, hash);
 }
 
 // POST /api/admin/login - Admin login
@@ -60,8 +38,16 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
     
+    // Fetch admins from database if cache is invalid
+    if (!adminsCache || !cacheTimestamp || (Date.now() - cacheTimestamp) > CACHE_DURATION) {
+      // Fetch all users and filter for admins
+      const allUsers = await dbService.getUsers();
+      adminsCache = allUsers.filter(user => user.role === 'admin' || user.role === 'super-admin');
+      cacheTimestamp = Date.now();
+    }
+    
     // Find admin by email
-    const admin = admins.find(a => a.email === body.email);
+    const admin = adminsCache.find(a => a.email === body.email);
     if (!admin) {
       return NextResponse.json({ 
         success: false, 
@@ -70,7 +56,7 @@ export async function POST(req: Request) {
     }
     
     // Verify password
-    const passwordValid = verifyPassword(body.password, admin.password);
+    const passwordValid = await verifyPassword(body.password, admin.password);
     if (!passwordValid) {
       return NextResponse.json({ 
         success: false, 

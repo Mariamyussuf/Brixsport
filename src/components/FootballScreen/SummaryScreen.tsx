@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
+import { io } from 'socket.io-client';
 
 interface MatchSummaryProps {
+  matchId: string;
   homeTeam: string;
   awayTeam: string;
   homeScore: number;
@@ -168,6 +170,7 @@ const EventItem: React.FC<{
 };
 
 const SummaryScreen: React.FC<MatchSummaryProps> = ({
+  matchId,
   homeTeam = "Arsenal",
   awayTeam = "Manchester United",
   homeScore,
@@ -176,18 +179,69 @@ const SummaryScreen: React.FC<MatchSummaryProps> = ({
   matchVenue,
   events
 }) => {
-  // Sample events if none provided
-  const displayEvents = events && events.length > 0 ? [...events].sort((a, b) => a.time - b.time) : [
-    { time: 21, team: 'home', player: 'Calafiori', eventType: 'yellow' },
-    { time: 33, team: 'away', player: 'McTominay', eventType: 'yellow' },
-    { time: 45, team: 'home', player: '', eventType: 'half-time' },
-    { time: 59, team: 'home', player: 'Saka', eventType: 'goal', assistBy: 'Ødegaard', score: '1-0' },
-    { time: 71, team: 'away', player: 'Rashford', eventType: 'goal', score: '1-1' },
-    { time: 72, team: 'away', player: 'Antony', eventType: 'substitution', inPlayer: 'Garnacho', outPlayer: 'Antony' },
-    { time: 85, team: 'home', player: 'Jesus', eventType: 'goal', assistBy: 'Martinelli', score: '2-1' },
-    { time: 90, team: 'away', player: 'Bruno Fernandes', eventType: 'goal', score: '2-2' },
-    { time: 90, team: 'away', player: '', eventType: 'full-time' }
-  ];
+  const [displayEvents, setDisplayEvents] = useState(() => {
+    // Sample events if none provided
+    const initialEvents = events && events.length > 0 ? [...events].sort((a, b) => a.time - b.time) : [
+      { time: 21, team: 'home', player: 'Calafiori', eventType: 'yellow' },
+      { time: 33, team: 'away', player: 'McTominay', eventType: 'yellow' },
+      { time: 45, team: 'home', player: '', eventType: 'half-time' },
+      { time: 59, team: 'home', player: 'Saka', eventType: 'goal', assistBy: 'Ødegaard', score: '1-0' },
+      { time: 71, team: 'away', player: 'Rashford', eventType: 'goal', score: '1-1' },
+      { time: 72, team: 'away', player: 'Antony', eventType: 'substitution', inPlayer: 'Garnacho', outPlayer: 'Antony' },
+      { time: 85, team: 'home', player: 'Jesus', eventType: 'goal', assistBy: 'Martinelli', score: '2-1' },
+      { time: 90, team: 'away', player: 'Bruno Fernandes', eventType: 'goal', score: '2-2' },
+      { time: 90, team: 'away', player: '', eventType: 'full-time' }
+    ];
+    return initialEvents;
+  });
+
+  // Real-time event updates using WebSocket
+  useEffect(() => {
+    if (!matchId) return;
+
+    // Connect to WebSocket server
+    const socket = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001');
+    
+    // Join match room
+    socket.emit('joinMatch', { matchId });
+    
+    // Listen for new events
+    socket.on('match:event', (newEvent: any) => {
+      setDisplayEvents(prev => {
+        // Check if event already exists to prevent duplicates
+        const exists = prev.some(event => 
+          event.time === newEvent.minute && 
+          event.player === newEvent.player_name &&
+          event.eventType === newEvent.event_type
+        );
+        
+        if (!exists) {
+          const transformedEvent = {
+            time: newEvent.minute,
+            team: newEvent.team_name === homeTeam ? 'home' : 'away',
+            player: newEvent.player_name || '',
+            eventType: newEvent.event_type.replace('_', '') as 'goal' | 'yellow' | 'red' | 'substitution',
+            assistBy: newEvent.assist_by || undefined,
+            inPlayer: newEvent.in_player || undefined,
+            outPlayer: newEvent.out_player || undefined,
+            score: newEvent.score || undefined
+          };
+          
+          // Add new event and sort by time
+          const updatedEvents = [...prev, transformedEvent];
+          return updatedEvents.sort((a, b) => a.time - b.time);
+        }
+        
+        return prev;
+      });
+    });
+    
+    // Cleanup function
+    return () => {
+      socket.emit('leaveMatch', { matchId });
+      socket.disconnect();
+    };
+  }, [matchId, homeTeam]);
 
   return (
     <div className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700">

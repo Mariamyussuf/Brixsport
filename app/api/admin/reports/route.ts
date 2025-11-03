@@ -1,108 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminToken, hasAdminPermission } from '@/lib/adminAuth';
 import { cookies } from 'next/headers';
-
-// Mock data for reports (in production, this would be generated from database)
-const generateReportData = (reportType: string, id?: string) => {
-  switch (reportType) {
-    case 'match':
-      return {
-        id: id || 'report1',
-        type: 'match',
-        title: `Match Report ${id || '1'}`,
-        generatedAt: new Date().toISOString(),
-        data: {
-          matchId: id || 'match1',
-          homeTeam: 'Home Team',
-          awayTeam: 'Away Team',
-          finalScore: '2-1',
-          events: [
-            { time: '15:00', event: 'Goal', team: 'Home Team', player: 'Player A' },
-            { time: '32:00', event: 'Yellow Card', team: 'Away Team', player: 'Player B' },
-            { time: '45:00', event: 'Goal', team: 'Home Team', player: 'Player C' },
-            { time: '67:00', event: 'Substitution', team: 'Away Team' },
-            { time: '89:00', event: 'Goal', team: 'Away Team', player: 'Player D' }
-          ],
-          statistics: {
-            home: {
-              shots: 12,
-              shotsOnTarget: 6,
-              possession: '58%',
-              corners: 5,
-              fouls: 8
-            },
-            away: {
-              shots: 8,
-              shotsOnTarget: 3,
-              possession: '42%',
-              corners: 3,
-              fouls: 12
-            }
-          }
-        }
-      };
-    case 'competition':
-      return {
-        id: id || 'report2',
-        type: 'competition',
-        title: `Competition Report ${id || '1'}`,
-        generatedAt: new Date().toISOString(),
-        data: {
-          competitionId: id || 'comp1',
-          name: 'Premier League',
-          totalMatches: 20,
-          completedMatches: 15,
-          upcomingMatches: 5,
-          topScorers: [
-            { player: 'Player A', team: 'Team 1', goals: 15 },
-            { player: 'Player B', team: 'Team 2', goals: 12 },
-            { player: 'Player C', team: 'Team 3', goals: 10 }
-          ],
-          standings: [
-            { position: 1, team: 'Team 1', points: 45, played: 15, wins: 14, draws: 3, losses: 2 },
-            { position: 2, team: 'Team 2', points: 42, played: 15, wins: 13, draws: 3, losses: 3 },
-            { position: 3, team: 'Team 3', points: 38, played: 15, wins: 11, draws: 5, losses: 4 }
-          ]
-        }
-      };
-    case 'logger':
-      return {
-        id: id || 'report3',
-        type: 'logger',
-        title: `Logger Performance Report ${id || '1'}`,
-        generatedAt: new Date().toISOString(),
-        data: {
-          loggerId: id || 'logger1',
-          name: 'John Logger',
-          matchesLogged: 25,
-          eventsLogged: 120,
-          accuracy: '95%',
-          activity: [
-            { date: '2023-09-01', matches: 2, events: 15 },
-            { date: '2023-09-02', matches: 1, events: 8 },
-            { date: '2023-09-03', matches: 3, events: 22 },
-            { date: '2023-09-04', matches: 0, events: 0 },
-            { date: '2023-09-05', matches: 2, events: 18 }
-          ]
-        }
-      };
-    default:
-      return {
-        id: 'report4',
-        type: 'system',
-        title: 'System Report',
-        generatedAt: new Date().toISOString(),
-        data: {
-          totalLoggers: 12,
-          activeLoggers: 8,
-          totalMatches: 120,
-          matchesToday: 8,
-          eventsLogged: 480,
-          systemHealth: 'Good'
-        }
-      };
-  }
-};
+import { dbService } from '@/lib/databaseService';
 
 // GET /api/admin/reports - Get all reports
 export async function GET() {
@@ -132,23 +31,91 @@ export async function GET() {
       }, { status: 403 });
     }
 
-    // Generate sample reports
-    const reports = [
-      generateReportData('match', 'match1'),
-      generateReportData('competition', 'comp1'),
-      generateReportData('logger', 'logger1'),
-      generateReportData('system')
-    ];
+    // Get real data for reports
+    const matches = await dbService.getMatches();
+    const competitions = await dbService.getCompetitions();
+    const teams = await dbService.getTeams();
+    
+    // Generate sample reports based on real data
+    const reports = [];
+    
+    // Generate match reports for live matches
+    const liveMatches = matches.filter(match => match.status === 'live');
+    for (const match of liveMatches.slice(0, 3)) { // Limit to first 3 live matches
+      const homeTeam = teams.find(team => team.id === match.home_team_id) || null;
+      const awayTeam = teams.find(team => team.id === match.away_team_id) || null;
+      const competition = competitions.find(comp => comp.id === match.competition_id) || null;
+      
+      reports.push({
+        id: `match-report-${match.id}-${Date.now()}`,
+        type: 'match',
+        title: `Live Match Report: ${homeTeam?.name || 'Home Team'} vs ${awayTeam?.name || 'Away Team'}`,
+        generatedAt: new Date().toISOString(),
+        data: {
+          matchId: match.id,
+          homeTeam: homeTeam?.name || 'Home Team',
+          awayTeam: awayTeam?.name || 'Away Team',
+          finalScore: `${match.home_score || 0}-${match.away_score || 0}`,
+          competition: competition?.name || 'Unknown Competition',
+          status: match.status,
+          period: match.period || 'Not started'
+        }
+      });
+    }
+    
+    // Generate competition reports
+    for (const competition of competitions.slice(0, 2)) { // Limit to first 2 competitions
+      const competitionMatches = matches.filter(match => match.competition_id === competition.id);
+      
+      reports.push({
+        id: `competition-report-${competition.id}-${Date.now()}`,
+        type: 'competition',
+        title: `Competition Report: ${competition.name}`,
+        generatedAt: new Date().toISOString(),
+        data: {
+          competitionId: competition.id,
+          name: competition.name,
+          totalMatches: competitionMatches.length,
+          completedMatches: competitionMatches.filter(m => m.status === 'completed').length,
+          upcomingMatches: competitionMatches.filter(m => m.status === 'scheduled').length,
+          // Would need to calculate top scorers and standings from real data
+          topScorers: [],
+          standings: []
+        }
+      });
+    }
+    
+    // Generate system report
+    reports.push({
+      id: `system-report-${Date.now()}`,
+      type: 'system',
+      title: 'System Report',
+      generatedAt: new Date().toISOString(),
+      data: {
+        totalLoggers: 0, // Would need to get from database
+        activeLoggers: 0, // Would need to get from database
+        totalMatches: matches.length,
+        matchesToday: matches.filter(m => {
+          const today = new Date();
+          const matchDate = new Date(m.match_date);
+          return matchDate.getDate() === today.getDate() && 
+                 matchDate.getMonth() === today.getMonth() && 
+                 matchDate.getFullYear() === today.getFullYear();
+        }).length,
+        eventsLogged: 0, // Would need to get from database
+        systemHealth: 'Good'
+      }
+    });
 
     return NextResponse.json({ 
       success: true, 
       data: reports 
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching reports:', error);
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to fetch reports' 
+      error: error.message || 'Failed to fetch reports' 
     }, { status: 500 });
   }
 }
@@ -184,19 +151,123 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { type, id } = body;
     
-    // Generate report based on type
-    const report = generateReportData(type, id);
+    let report;
+    
+    switch (type) {
+      case 'match':
+        if (!id) {
+          throw new Error('Match ID is required for match reports');
+        }
+        
+        // Get match details
+        const matches = await dbService.getMatches();
+        const match = matches.find(m => m.id.toString() === id);
+        
+        if (!match) {
+          throw new Error('Match not found');
+        }
+        
+        // Get team details
+        const teams = await dbService.getTeams();
+        const homeTeam = teams.find(team => team.id === match.home_team_id) || null;
+        const awayTeam = teams.find(team => team.id === match.away_team_id) || null;
+        
+        // Get competition details
+        const competition = await dbService.getCompetitionById(match.competition_id);
+        
+        report = {
+          id: `match-report-${id}-${Date.now()}`,
+          type: 'match',
+          title: `Match Report: ${homeTeam?.name || 'Home Team'} vs ${awayTeam?.name || 'Away Team'}`,
+          generatedAt: new Date().toISOString(),
+          generatedBy: adminUser.name,
+          data: {
+            matchId: id,
+            homeTeam: homeTeam?.name || 'Home Team',
+            awayTeam: awayTeam?.name || 'Away Team',
+            finalScore: `${match.home_score || 0}-${match.away_score || 0}`,
+            competition: competition?.name || 'Unknown Competition',
+            status: match.status,
+            period: match.period || 'Not started'
+          }
+        };
+        break;
+        
+      case 'competition':
+        if (!id) {
+          throw new Error('Competition ID is required for competition reports');
+        }
+        
+        // Get competition details
+        const comp = await dbService.getCompetitionById(parseInt(id));
+        
+        if (!comp) {
+          throw new Error('Competition not found');
+        }
+        
+        // Get matches for this competition
+        const compMatches = await dbService.getMatchesByCompetition(parseInt(id));
+        
+        report = {
+          id: `competition-report-${id}-${Date.now()}`,
+          type: 'competition',
+          title: `Competition Report: ${comp.name}`,
+          generatedAt: new Date().toISOString(),
+          generatedBy: adminUser.name,
+          data: {
+            competitionId: id,
+            name: comp.name,
+            totalMatches: compMatches.length,
+            completedMatches: compMatches.filter(m => m.status === 'completed').length,
+            upcomingMatches: compMatches.filter(m => m.status === 'scheduled').length,
+            // Would need to calculate top scorers and standings from real data
+            topScorers: [],
+            standings: []
+          }
+        };
+        break;
+        
+      case 'system':
+        // Generate system report
+        const allMatches = await dbService.getMatches();
+        
+        report = {
+          id: `system-report-${Date.now()}`,
+          type: 'system',
+          title: 'System Report',
+          generatedAt: new Date().toISOString(),
+          generatedBy: adminUser.name,
+          data: {
+            totalLoggers: 0, // Would need to get from database
+            activeLoggers: 0, // Would need to get from database
+            totalMatches: allMatches.length,
+            matchesToday: allMatches.filter(m => {
+              const today = new Date();
+              const matchDate = new Date(m.match_date);
+              return matchDate.getDate() === today.getDate() && 
+                     matchDate.getMonth() === today.getMonth() && 
+                     matchDate.getFullYear() === today.getFullYear();
+            }).length,
+            eventsLogged: 0, // Would need to get from database
+            systemHealth: 'Good'
+          }
+        };
+        break;
+        
+      default:
+        throw new Error('Invalid report type');
+    }
     
     return NextResponse.json({ 
       success: true, 
       data: report,
       message: 'Report generated successfully'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating report:', error);
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to generate report' 
+      error: error.message || 'Failed to generate report' 
     }, { status: 500 });
   }
 }

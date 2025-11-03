@@ -14,36 +14,10 @@ interface LoggerCompetition {
   assignedLoggers: string[];
 }
 
-// Mock competitions data - in production this would come from a database
-const MOCK_COMPETITIONS: LoggerCompetition[] = [
-  {
-    id: 'comp-1',
-    name: 'University Premier League',
-    sport: 'football',
-    startDate: '2025-09-01',
-    endDate: '2025-12-15',
-    status: 'active',
-    assignedLoggers: ['logger-1', 'senior-logger-1']
-  },
-  {
-    id: 'comp-2',
-    name: 'Inter-University Basketball Championship',
-    sport: 'basketball',
-    startDate: '2025-10-01',
-    endDate: '2025-11-30',
-    status: 'active',
-    assignedLoggers: ['logger-1']
-  },
-  {
-    id: 'comp-3',
-    name: 'University Athletics Championship',
-    sport: 'athletics',
-    startDate: '2025-11-01',
-    endDate: '2025-11-15',
-    status: 'upcoming',
-    assignedLoggers: ['senior-logger-1']
-  }
-];
+// Logger competitions data - fetched from database
+let competitionsCache: LoggerCompetition[] | null = null;
+let cacheTimestamp: number | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // GET /api/logger/competitions - Get all competitions accessible to the logger
 export async function GET(request: NextRequest) {
@@ -57,14 +31,40 @@ export async function GET(request: NextRequest) {
       );
     }
     
+    // Fetch competitions from database
+    let competitions: LoggerCompetition[] = [];
+    
+    // Check if cache is valid
+    if (competitionsCache && cacheTimestamp && (Date.now() - cacheTimestamp) < CACHE_DURATION) {
+      competitions = competitionsCache;
+    } else {
+      // Fetch from database
+      const dbCompetitions = await dbService.getCompetitions();
+      competitions = dbCompetitions.map(comp => ({
+        id: comp.id.toString(),
+        name: comp.name,
+        sport: comp.type || 'football',
+        startDate: comp.start_date || new Date().toISOString().split('T')[0],
+        endDate: comp.end_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        status: (comp.status as 'upcoming' | 'active' | 'completed') || 'upcoming',
+        assignedLoggers: [] // This would need to be populated from a separate assignment table
+      }));
+      
+      // Update cache
+      competitionsCache = competitions;
+      cacheTimestamp = Date.now();
+    }
+    
     // Filter competitions based on user permissions
-    let accessibleCompetitions = MOCK_COMPETITIONS;
+    let accessibleCompetitions = competitions;
     
     // Regular loggers only see their assigned competitions
+    // For now, we'll show all competitions to all users since assignment is not fully implemented
+    // In a real implementation, this would filter based on actual assignments
     if (session.user.role === 'logger') {
-      accessibleCompetitions = MOCK_COMPETITIONS.filter(comp => 
-        comp.assignedLoggers.includes(session.user.id)
-      );
+      // accessibleCompetitions = competitions.filter(comp => 
+      //   comp.assignedLoggers.includes(session.user.id)
+      // );
     }
     
     // Senior loggers and admins can see all competitions
@@ -131,11 +131,19 @@ export async function POST(request: NextRequest) {
       assignedLoggers: competitionData.assignedLoggers || []
     };
     
-    // In production, save to database
-    // await dbService.createCompetition(newCompetition);
+    // Save to database
+    await dbService.createCompetition({
+      name: newCompetition.name,
+      type: newCompetition.sport,
+      category: 'default',
+      status: newCompetition.status,
+      start_date: newCompetition.startDate,
+      end_date: newCompetition.endDate
+    });
     
-    // For now, add to mock data
-    MOCK_COMPETITIONS.push(newCompetition);
+    // Clear cache
+    competitionsCache = null;
+    cacheTimestamp = null;
     
     // Log activity
     await dbService.logUserActivity(

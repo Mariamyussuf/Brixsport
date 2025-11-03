@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { TeamStats, PlayerStats } from '@/types/matchEvents';
+import { io } from 'socket.io-client';
 
 interface MatchStatsProps {
+  matchId: string;
   homeTeamStats?: TeamStats;
   awayTeamStats?: TeamStats;
   playerStats: Record<string, PlayerStats>;
@@ -9,11 +11,16 @@ interface MatchStatsProps {
 }
 
 export const MatchStats: React.FC<MatchStatsProps> = ({ 
+  matchId,
   homeTeamStats, 
   awayTeamStats, 
-  playerStats, 
+  playerStats,
   players 
 }) => {
+  const [liveHomeStats, setLiveHomeStats] = useState(homeTeamStats);
+  const [liveAwayStats, setLiveAwayStats] = useState(awayTeamStats);
+  const [livePlayerStats, setLivePlayerStats] = useState(playerStats);
+
   // Default stats if not provided
   const defaultStats: TeamStats = {
     goals: 0,
@@ -41,8 +48,43 @@ export const MatchStats: React.FC<MatchStatsProps> = ({
     dangerousAttacks: 0
   };
 
-  const homeStats = homeTeamStats || defaultStats;
-  const awayStats = awayTeamStats || defaultStats;
+  const homeStats = liveHomeStats || defaultStats;
+  const awayStats = liveAwayStats || defaultStats;
+
+  // Real-time updates using WebSocket
+  useEffect(() => {
+    if (!matchId) return;
+
+    // Connect to WebSocket server
+    const socket = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001');
+    
+    // Join match room
+    socket.emit('joinMatch', { matchId });
+    
+    // Listen for stats updates
+    socket.on('match:stats', (updatedStats: any) => {
+      setLiveHomeStats(updatedStats.homeTeam);
+      setLiveAwayStats(updatedStats.awayTeam);
+      setLivePlayerStats(prev => ({
+        ...prev,
+        ...updatedStats.playerStats
+      }));
+    });
+    
+    // Listen for player stat updates
+    socket.on('match:playerStats', (updatedPlayerStats: Record<string, PlayerStats>) => {
+      setLivePlayerStats(prev => ({
+        ...prev,
+        ...updatedPlayerStats
+      }));
+    });
+    
+    // Cleanup function
+    return () => {
+      socket.emit('leaveMatch', { matchId });
+      socket.disconnect();
+    };
+  }, [matchId]);
 
   return (
     <div className="match-stats">

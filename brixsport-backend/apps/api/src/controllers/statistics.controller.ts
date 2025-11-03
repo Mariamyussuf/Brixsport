@@ -294,7 +294,8 @@ export const statisticsController = {
         playerId,
         timeRange as string,
         startDate ? new Date(startDate as string) : undefined,
-        endDate ? new Date(endDate as string) : undefined
+        endDate ? new Date(endDate as string) : undefined,
+        undefined // filters - would need to extract from request if supported
       );
       
       return res.status(200).json({
@@ -324,7 +325,8 @@ export const statisticsController = {
         teamId,
         timeRange as string,
         startDate ? new Date(startDate as string) : undefined,
-        endDate ? new Date(endDate as string) : undefined
+        endDate ? new Date(endDate as string) : undefined,
+        undefined // filters - would need to extract from request if supported
       );
       
       return res.status(200).json({

@@ -2,6 +2,7 @@ import { logger } from '../utils/logger';
 import { supabase } from './supabase.service';
 import { queueService } from './queue.service';
 import { cloudMessagingService } from './cloud-messaging.service';
+import { emailService } from './email.service';
 
 // Define notification interfaces
 interface Notification {
@@ -718,22 +719,44 @@ export const notificationService = {
         case 'FAVORITES':
           // Fetch users who favorited specific teams/players
           // This would require joining with the favorites table
-          // For now, we'll return an empty array as a placeholder
-          recipientUserIds = [];
+          const { data: favoriteUsers, error: favoriteUsersError } = await supabase
+            .from('favorites')
+            .select('user_id')
+            .or(`team_id.eq.${recipients.teamId},player_id.eq.${recipients.competitionId}`);
+          
+          if (favoriteUsersError) {
+            throw new Error(`Failed to fetch favorite users: ${favoriteUsersError.message}`);
+          }
+          
+          recipientUserIds = favoriteUsers?.map(fav => fav.user_id) || [];
           break;
           
         case 'TEAM':
           // Fetch users who follow the specified team
-          // This would require joining with the favorites table
-          // For now, we'll return an empty array as a placeholder
-          recipientUserIds = [];
+          const { data: teamUsers, error: teamUsersError } = await supabase
+            .from('favorites')
+            .select('user_id')
+            .eq('team_id', recipients.teamId);
+          
+          if (teamUsersError) {
+            throw new Error(`Failed to fetch team users: ${teamUsersError.message}`);
+          }
+          
+          recipientUserIds = teamUsers?.map(fav => fav.user_id) || [];
           break;
           
         case 'COMPETITION':
           // Fetch users who follow the specified competition
-          // This would require joining with the favorites table
-          // For now, we'll return an empty array as a placeholder
-          recipientUserIds = [];
+          const { data: competitionUsers, error: competitionUsersError } = await supabase
+            .from('favorites')
+            .select('user_id')
+            .eq('competition_id', recipients.competitionId);
+          
+          if (competitionUsersError) {
+            throw new Error(`Failed to fetch competition users: ${competitionUsersError.message}`);
+          }
+          
+          recipientUserIds = competitionUsers?.map(fav => fav.user_id) || [];
           break;
           
         case 'ADMINS':
@@ -794,30 +817,24 @@ async function sendEmailNotification(userId: string, notification: any) {
       return;
     }
     
-    // In a real implementation, this would integrate with an email service like SendGrid, SES, etc.
-    // For now, we'll log the email content
-    logger.info('Email notification sent', {
+    // Send actual email using the email service
+    await emailService.sendEmail({
       to: user.email,
       subject: notification.title,
-      body: notification.content,
+      html: `
+        <h2>${notification.title}</h2>
+        <p>${notification.content}</p>
+        <p><strong>Notification ID:</strong> ${notification.id}</p>
+        <p><em>This is an automated message from Brixsport.</em></p>
+      `
+    });
+    
+    logger.info('Email notification sent successfully', {
+      to: user.email,
+      subject: notification.title,
       userId,
       notificationId: notification.id
     });
-    
-    // TODO: Implement actual email sending with a service like SendGrid
-    // Example with SendGrid:
-    /*
-    const sgMail = require('@sendgrid/mail');
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    const msg = {
-      to: user.email,
-      from: 'notifications@brixsport.com',
-      subject: notification.title,
-      text: notification.content,
-      html: `<strong>${notification.content}</strong>`,
-    };
-    await sgMail.send(msg);
-    */
   } catch (error: any) {
     logger.error('Error sending email notification', { 
       error: error.message, 

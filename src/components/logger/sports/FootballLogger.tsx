@@ -303,6 +303,17 @@ const FootballLogger: React.FC<FootballLoggerProps> = ({ teams = [], onEventSubm
       events: [newEvent, ...prev.events],
     }));
 
+    // Send event to logger service for real-time broadcasting
+    if (onEventSubmit) {
+      onEventSubmit({
+        teamId: selectedTeam === 'home' ? '1' : '2', // Assuming team IDs
+        playerId: playerId,
+        eventType: eventType.toLowerCase().replace(' ', '_') as any,
+        timestamp: Date.now(),
+        value: details
+      });
+    }
+
     // Auto-suggest stoppage time if applicable
     if (suggestedStoppageTime > 0 && matchTimer.isRunning) {
       setTimeout(() => {

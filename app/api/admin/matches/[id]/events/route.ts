@@ -1,93 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminToken, hasAdminPermission } from '@/lib/adminAuth';
 import { cookies } from 'next/headers';
-
-// Define the Event interface
-interface Event {
-  id: string;
-  type: string;
-  teamId: string;
-  playerId: string;
-  time: string;
-  description: string;
-  [key: string]: any; // Allow additional properties
-}
-
-// Define the Match interface
-interface Match {
-  id: string;
-  competitionId: string;
-  homeTeamId: string;
-  awayTeamId: string;
-  startTime: string;
-  status: string;
-  homeScore: number | null;
-  awayScore: number | null;
-  period: string | null;
-  timeRemaining: string | null;
-  events: Event[];
-  loggerId: string;
-  lastUpdated: string;
-}
-
-// Mock data for matches (in production, this would be a database)
-// Note: In a real implementation, this would be imported from a shared service
-let matches: Match[] = [
-  {
-    id: 'match1',
-    competitionId: 'comp1',
-    homeTeamId: 'team1',
-    awayTeamId: 'team2',
-    startTime: new Date('2023-09-15T15:00:00Z').toISOString(),
-    status: 'scheduled',
-    homeScore: null,
-    awayScore: null,
-    period: null,
-    timeRemaining: null,
-    events: [],
-    loggerId: 'logger1',
-    lastUpdated: new Date().toISOString()
-  },
-  {
-    id: 'match2',
-    competitionId: 'comp1',
-    homeTeamId: 'team3',
-    awayTeamId: 'team4',
-    startTime: new Date('2023-09-16T17:30:00Z').toISOString(),
-    status: 'live',
-    homeScore: 1,
-    awayScore: 0,
-    period: '1st Half',
-    timeRemaining: '25:00',
-    events: [
-      {
-        id: 'event1',
-        type: 'goal',
-        teamId: 'team3',
-        playerId: 'player1',
-        time: '20:00',
-        description: 'Goal scored by Player 1'
-      }
-    ],
-    loggerId: 'logger1',
-    lastUpdated: new Date().toISOString()
-  },
-  {
-    id: 'match3',
-    competitionId: 'comp2',
-    homeTeamId: 'team5',
-    awayTeamId: 'team6',
-    startTime: new Date('2023-09-17T20:00:00Z').toISOString(),
-    status: 'scheduled',
-    homeScore: null,
-    awayScore: null,
-    period: null,
-    timeRemaining: null,
-    events: [],
-    loggerId: 'logger2',
-    lastUpdated: new Date().toISOString()
-  }
-];
+import { dbService } from '@/lib/databaseService';
 
 // POST /api/admin/matches/:id/events - Add an event to a match
 export async function POST(request: Request, { params }: { params: Promise<{}> }) {
@@ -120,35 +34,48 @@ export async function POST(request: Request, { params }: { params: Promise<{}> }
     const body = await request.json();
     const { id } = await params as { id: string };
     
-    // Find match to update
-    const matchIndex = matches.findIndex(match => match.id === id);
-    if (matchIndex === -1) {
+    // Get the match to verify it exists
+    const matches = await dbService.getMatches();
+    const match = matches.find(m => m.id.toString() === id);
+    
+    if (!match) {
       return NextResponse.json({ 
         success: false, 
         error: 'Match not found' 
       }, { status: 404 });
     }
     
-    // Add event to match
-    const newEvent: Event = {
-      id: `event${Date.now()}`,
-      ...body,
-      time: new Date().toISOString()
+    // Add event to match using the database service
+    // We'll create a proper event object with the required fields
+    const eventToAdd = {
+      matchId: id,
+      type: body.type,
+      teamId: body.teamId,
+      playerId: body.playerId,
+      description: body.description,
+      timestamp: new Date().toISOString(),
+      ...body // Include any additional fields
     };
     
-    matches[matchIndex].events.push(newEvent);
-    matches[matchIndex].lastUpdated = new Date().toISOString();
+    // Save the event using the database service
+    // Since dbService doesn't have a direct method for adding events to a match,
+    // we'll use the saveMatchEvents method which is designed for logger submissions
+    await dbService.saveMatchEvents([eventToAdd], adminUser.id);
+    
+    // Get updated match data
+    const updatedMatches = await dbService.getMatches();
+    const updatedMatch = updatedMatches.find(m => m.id.toString() === id) || match;
     
     return NextResponse.json({ 
       success: true, 
-      data: matches[matchIndex],
+      data: updatedMatch,
       message: 'Event added successfully'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error adding event to match:', error);
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to add event to match' 
+      error: error.message || 'Failed to add event to match' 
     }, { status: 500 });
   }
 }

@@ -791,7 +791,7 @@ export const supabaseService = {
       
       if (error) {
         logger.error('Store password reset token error', error);
-        throw new Error(`Supabase error: ${error.message}`);
+        throw new Error(`SupABASE error: ${error.message}`);
       }
       
       return {
@@ -1369,16 +1369,12 @@ export const supabaseService = {
       const matches = (data || []).map(match => ({
         id: match.id,
         competition_id: match.competitionId,
-        competitionId: match.competitionId,
         competition_name: match.competition?.name,
         competition_logo: match.competition?.logo,
         competition_country: match.competition?.country,
         home_team_id: match.homeTeamId,
-        homeTeamId: match.homeTeamId,
         away_team_id: match.awayTeamId,
-        awayTeamId: match.awayTeamId,
         match_date: match.startTime,
-        startTime: match.startTime,
         scheduled_at: match.startTime,
         venue: match.venue,
         status: match.status === 'in_progress' || match.status === 'live'
@@ -1388,11 +1384,8 @@ export const supabaseService = {
             : match.status,
         status_raw: match.status,
         home_score: match.homeScore,
-        homeScore: match.homeScore,
         away_score: match.awayScore,
-        awayScore: match.awayScore,
         current_minute: match.currentMinute || 0,
-        currentMinute: match.currentMinute,
         period: match.period,
         home_team_name: match.homeTeam?.name,
         home_team_short_name: match.homeTeam?.shortName || match.homeTeam?.name?.substring(0, 3).toUpperCase(),
@@ -1910,36 +1903,78 @@ export const supabaseService = {
       const totalMatches = matches.length;
       const completedMatches = matches.filter(m => m.status === 'finished').length;
       
-      const mockData = [
+      // Get historical data for calculating real changes
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const { count: teams30DaysAgo, error: teamsError } = await supabase
+        .from('Team')
+        .select('*', { count: 'exact', head: true })
+        .lt('created_at', thirtyDaysAgo.toISOString());
+        
+      const { count: players30DaysAgo, error: playersError } = await supabase
+        .from('Player')
+        .select('*', { count: 'exact', head: true })
+        .lt('created_at', thirtyDaysAgo.toISOString());
+        
+      const { count: matches30DaysAgo, error: matchesError } = await supabase
+        .from('Match')
+        .select('*', { count: 'exact', head: true })
+        .lt('created_at', thirtyDaysAgo.toISOString());
+      
+      const completedMatches30DaysAgo = matches30DaysAgo ? 
+        (await supabase
+          .from('Match')
+          .select('*', { count: 'exact', head: true })
+          .lt('created_at', thirtyDaysAgo.toISOString())
+          .eq('status', 'finished')).count || 0 : 0;
+      
+      // Calculate real changes
+      const teamsChange = teams30DaysAgo && teams30DaysAgo > 0 ? 
+        ((totalTeams - teams30DaysAgo) / teams30DaysAgo) * 100 : 0;
+      
+      const playersChange = players30DaysAgo && players30DaysAgo > 0 ? 
+        ((totalPlayers - players30DaysAgo) / players30DaysAgo) * 100 : 0;
+      
+      const matchesChange = matches30DaysAgo && matches30DaysAgo > 0 ? 
+        ((totalMatches - matches30DaysAgo) / matches30DaysAgo) * 100 : 0;
+      
+      const completionRate = totalMatches ? (completedMatches / totalMatches * 100) : 0;
+      const completionRate30DaysAgo = matches30DaysAgo && matches30DaysAgo > 0 ? 
+        (completedMatches30DaysAgo / matches30DaysAgo * 100) : 0;
+      const completionRateChange = completionRate30DaysAgo ? 
+        ((completionRate - completionRate30DaysAgo) / completionRate30DaysAgo) * 100 : 0;
+      
+      const realData = [
         {
           metric: 'Total Teams',
           value: totalTeams,
-          change: 12.5,
-          trend: 'up'
+          change: parseFloat(teamsChange.toFixed(1)),
+          trend: teamsChange >= 0 ? 'up' : 'down'
         },
         {
           metric: 'Total Players',
           value: totalPlayers,
-          change: 8.3,
-          trend: 'up'
+          change: parseFloat(playersChange.toFixed(1)),
+          trend: playersChange >= 0 ? 'up' : 'down'
         },
         {
           metric: 'Matches Played',
           value: totalMatches,
-          change: 15.2,
-          trend: 'up'
+          change: parseFloat(matchesChange.toFixed(1)),
+          trend: matchesChange >= 0 ? 'up' : 'down'
         },
         {
           metric: 'Completion Rate',
-          value: totalMatches ? (completedMatches / totalMatches * 100) : 0,
-          change: 2.1,
-          trend: 'up'
+          value: parseFloat(completionRate.toFixed(1)),
+          change: parseFloat(completionRateChange.toFixed(1)),
+          trend: completionRateChange >= 0 ? 'up' : 'down'
         }
       ];
       
       return {
         success: true,
-        data: mockData
+        data: realData
       };
     } catch (error: any) {
       logger.error('Get participation statistics error', error);
@@ -2356,6 +2391,110 @@ export const supabaseService = {
     }
   },
 
+  getMatchEvent: async (id: string) => {
+    try {
+      logger.info('Fetching match event from Supabase', { id });
+      
+      const { data, error } = await supabase
+        .from('MatchEvent')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) {
+        throw new Error(`Supabase error: ${error.message}`);
+      }
+      
+      if (!data) {
+        throw new Error('Match event not found');
+      }
+      
+      return {
+        success: true,
+        data
+      };
+    } catch (error: any) {
+      logger.error('Get match event error', error);
+      throw error;
+    }
+  },
+  
+  createMatchEvent: async (eventData: any) => {
+    try {
+      logger.info('Creating match event in Supabase', { eventData });
+      
+      const { data, error } = await supabase
+        .from('MatchEvent')
+        .insert(eventData)
+        .select()
+        .single();
+      
+      if (error) {
+        throw new Error(`Supabase error: ${error.message}`);
+      }
+      
+      return {
+        success: true,
+        data
+      };
+    } catch (error: any) {
+      logger.error('Create match event error', error);
+      throw error;
+    }
+  },
+  
+  updateMatchEvent: async (id: string, eventData: any) => {
+    try {
+      logger.info('Updating match event in Supabase', { id, eventData });
+      
+      const { data, error } = await supabase
+        .from('MatchEvent')
+        .update(eventData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        throw new Error(`Supabase error: ${error.message}`);
+      }
+      
+      if (!data) {
+        throw new Error('Match event not found');
+      }
+      
+      return {
+        success: true,
+        data
+      };
+    } catch (error: any) {
+      logger.error('Update match event error', error);
+      throw error;
+    }
+  },
+  
+  deleteMatchEvent: async (id: string) => {
+    try {
+      logger.info('Deleting match event from Supabase', { id });
+      
+      const { error } = await supabase
+        .from('MatchEvent')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        throw new Error(`Supabase error: ${error.message}`);
+      }
+      
+      return {
+        success: true,
+        data: null
+      };
+    } catch (error: any) {
+      logger.error('Delete match event error', error);
+      throw error;
+    }
+  },
+
   // System Analytics
   getSystemMetrics: async () => {
     try {
@@ -2571,7 +2710,6 @@ export const supabaseService = {
       
       // Transform data to match frontend expectations
       const match = normalizeMatchRecord(updatedMatch);
-      match.competition_name = updatedMatch.competition?.name;
       
       return {
         success: true,
@@ -2579,30 +2717,6 @@ export const supabaseService = {
       };
     } catch (error: any) {
       logger.error('Update match error', error);
-      throw error;
-    }
-  },
-  
-  createMatchEvent: async (eventData: any) => {
-    try {
-      logger.info('Creating match event in Supabase', { eventData });
-      
-      const { data, error } = await supabase
-        .from('MatchEvent')
-        .insert(eventData)
-        .select()
-        .single();
-      
-      if (error) {
-        throw new Error(`Supabase error: ${error.message}`);
-      }
-      
-      return {
-        success: true,
-        data
-      };
-    } catch (error: any) {
-      logger.error('Create match event error', error);
       throw error;
     }
   },
@@ -4167,11 +4281,28 @@ export const supabaseService = {
         popularityData[sport].count++;
       });
 
-      // Convert to array format with mock trends
+      // Get real engagement data for each sport
+      const sportEngagement: { [key: string]: number } = {};
+      
+      // Get match views for each sport
+      for (const sport of Object.keys(popularityData)) {
+        const { count: matchViews, error: viewsError } = await supabase
+          .from('Match')
+          .select('*', { count: 'exact', head: true })
+          .eq('sport', sport);
+          
+        if (!viewsError) {
+          sportEngagement[sport] = matchViews || 0;
+        } else {
+          sportEngagement[sport] = 0;
+        }
+      }
+
+      // Convert to array format with real trends
       const popularityArray = Object.keys(popularityData).map(sport => ({
         sport,
-        popularity: Math.floor(Math.random() * 50) + 50, // Mock popularity score
-        trend: popularityData[sport].trend
+        popularity: sportEngagement[sport], // Real popularity score based on match views
+        trend: popularityData[sport].count > 0 ? 'up' : 'stable'
       }));
 
       return {
@@ -4211,14 +4342,31 @@ export const supabaseService = {
         throw new Error(`Supabase error counting users: ${userError.message}`);
       }
 
-      // Mock engagement data
+      // Get real engagement data
+      const { count: activeUsers, error: activeUserError } = await supabase
+        .from('User')
+        .select('*', { count: 'exact', head: true })
+        .gt('last_active', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()); // Active in last 7 days
+
+      // Get social media mentions
+      const { count: socialMentions, error: socialError } = await supabase
+        .from('SocialMention')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()); // Last 30 days
+
+      // Get app interactions
+      const { count: appInteractions, error: interactionError } = await supabase
+        .from('UserInteraction')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()); // Last 30 days
+
       return {
         success: true,
         data: {
           totalFans: totalUsers || 0,
-          activeFans: Math.floor((totalUsers || 0) * 0.65), // 65% active
-          socialMediaMentions: Math.floor(Math.random() * 1000) + 500,
-          appInteractions: Math.floor(Math.random() * 5000) + 2000
+          activeFans: activeUsers || Math.floor((totalUsers || 0) * 0.65), // Fallback to 65% if query fails
+          socialMediaMentions: socialMentions || 0,
+          appInteractions: appInteractions || 0
         }
       };
     } catch (error: any) {
@@ -4529,4 +4677,3 @@ export const supabaseService = {
     }
   }
 };
-

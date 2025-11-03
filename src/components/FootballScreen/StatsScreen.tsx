@@ -3,6 +3,7 @@ import { Activity, Target, CornerDownLeft, AlertTriangle } from 'lucide-react';
 import { getMatchById } from '@/lib/userMatchService';
 import { loggerService } from '@/lib/loggerService';
 import { TeamStats, MatchStatsResponse } from '@/types/matchEvents';
+import { io } from 'socket.io-client';
 
 interface StatRowProps {
   label: string;
@@ -197,6 +198,76 @@ const StatsScreen: React.FC<{
     };
 
     fetchStats();
+  }, [matchId]);
+
+  // Real-time stats updates using WebSocket
+  useEffect(() => {
+    if (!matchId) return;
+
+    // Connect to WebSocket server
+    const socket = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001');
+    
+    // Join match room
+    socket.emit('joinMatch', { matchId });
+    
+    // Listen for stats updates
+    socket.on('match:stats', (updatedStats: MatchStatsResponse) => {
+      const homeTeamData = updatedStats.homeTeam;
+      const awayTeamData = updatedStats.awayTeam;
+      
+      setStats({
+        possession: [
+          homeTeamData?.possession || 50,
+          awayTeamData?.possession || 50
+        ],
+        shots: [
+          homeTeamData?.shots || 0,
+          awayTeamData?.shots || 0
+        ],
+        shotsOnTarget: [
+          homeTeamData?.shotsOnTarget || 0,
+          awayTeamData?.shotsOnTarget || 0
+        ],
+        corners: [
+          homeTeamData?.corners || 0,
+          awayTeamData?.corners || 0
+        ],
+        fouls: [
+          homeTeamData?.fouls || homeTeamData?.foulsCommitted || 0,
+          awayTeamData?.fouls || awayTeamData?.foulsCommitted || 0
+        ],
+        passes: [
+          homeTeamData?.passes || 0,
+          awayTeamData?.passes || 0
+        ],
+        passAccuracy: [
+          homeTeamData?.passAccuracy || 0,
+          awayTeamData?.passAccuracy || 0
+        ],
+        offsides: [
+          homeTeamData?.offsides || homeTeamData?.offside || 0,
+          awayTeamData?.offsides || awayTeamData?.offside || 0
+        ],
+        throwIns: [
+          homeTeamData?.throwIns || 0,
+          awayTeamData?.throwIns || 0
+        ],
+        yellowCards: [
+          homeTeamData?.yellowCards || 0,
+          awayTeamData?.yellowCards || 0
+        ],
+        redCards: [
+          homeTeamData?.redCards || 0,
+          awayTeamData?.redCards || 0
+        ]
+      });
+    });
+    
+    // Cleanup function
+    return () => {
+      socket.emit('leaveMatch', { matchId });
+      socket.disconnect();
+    };
   }, [matchId]);
 
   if (loading) {

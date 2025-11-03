@@ -3,9 +3,7 @@ import { logger } from '../utils/logger';
 import { matchEventRules } from '../services/matchEventRules.service';
 import { validate, validationSchemas } from '../middleware';
 import { errorHandlerService } from '../services/error.handler.service';
-
-// Mock database
-const matchEvents: any[] = [];
+import { supabaseService } from '../services/supabase.service';
 
 export const matchEventController = {
   // Create a new match event
@@ -49,20 +47,18 @@ export const matchEventController = {
         });
       }
       
-      // Create the event
-      const newEvent = {
-        id: Date.now().toString(),
-        ...validatedData,
-        createdAt: new Date()
-      };
+      // Create the event in the database
+      const result = await supabaseService.createMatchEvent(validatedData);
       
-      matchEvents.push(newEvent);
+      if (!result.success) {
+        throw new Error('Failed to create match event');
+      }
       
-      logger.info('Match event created successfully', { eventId: newEvent.id });
+      logger.info('Match event created successfully', { eventId: result.data.id });
       
       return res.status(201).json({
         success: true,
-        data: newEvent
+        data: result.data
       });
     } catch (error: any) {
       logger.error('Create match event error', { error: error.message, stack: error.stack });
@@ -91,7 +87,14 @@ export const matchEventController = {
       
       logger.info('Fetching match events', { matchId });
       
-      const events = matchEvents.filter(e => e.matchId === matchId);
+      // Get events from the database
+      const result = await supabaseService.getMatchEventsByMatch(matchId);
+      
+      if (!result.success) {
+        throw new Error('Failed to fetch match events');
+      }
+      
+      const events = result.data;
       
       // Validate chronology of events
       const chronologyErrors = matchEventRules.validateEventChronology(events);
@@ -119,8 +122,9 @@ export const matchEventController = {
       
       logger.info('Updating match event', { eventId, updateData });
       
-      const eventIndex = matchEvents.findIndex(e => e.id === eventId);
-      if (eventIndex === -1) {
+      // First, check if the event exists
+      const eventResult = await supabaseService.getMatchEvent(eventId);
+      if (!eventResult.success || !eventResult.data) {
         return res.status(404).json({
           error: 'Event not found'
         });
@@ -156,18 +160,18 @@ export const matchEventController = {
         });
       }
       
-      // Update the event
-      matchEvents[eventIndex] = {
-        ...matchEvents[eventIndex],
-        ...updateData,
-        updatedAt: new Date()
-      };
+      // Update the event in the database
+      const result = await supabaseService.updateMatchEvent(eventId, updateData);
+      
+      if (!result.success) {
+        throw new Error('Failed to update match event');
+      }
       
       logger.info('Match event updated successfully', { eventId });
       
       return res.status(200).json({
         success: true,
-        data: matchEvents[eventIndex]
+        data: result.data
       });
     } catch (error: any) {
       logger.error('Update match event error', { error: error.message, stack: error.stack });
@@ -183,14 +187,20 @@ export const matchEventController = {
       
       logger.info('Deleting match event', { eventId });
       
-      const eventIndex = matchEvents.findIndex(e => e.id === eventId);
-      if (eventIndex === -1) {
+      // First, check if the event exists
+      const eventResult = await supabaseService.getMatchEvent(eventId);
+      if (!eventResult.success || !eventResult.data) {
         return res.status(404).json({
           error: 'Event not found'
         });
       }
       
-      matchEvents.splice(eventIndex, 1);
+      // Delete the event from the database
+      const result = await supabaseService.deleteMatchEvent(eventId);
+      
+      if (!result.success) {
+        throw new Error('Failed to delete match event');
+      }
       
       logger.info('Match event deleted successfully', { eventId });
       

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from './I18nProvider';
+import { io } from 'socket.io-client';
 
 export interface Match {
   id: string;
@@ -36,11 +37,12 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
   const [isAnimating, setIsAnimating] = useState(false);
   const [displayHomeScore, setDisplayHomeScore] = useState(match.homeScore ?? match.score1 ?? 0);
   const [displayAwayScore, setDisplayAwayScore] = useState(match.awayScore ?? match.score2 ?? 0);
+  const [liveMatch, setLiveMatch] = useState(match);
 
   // Handle score animations
   useEffect(() => {
-    const newHomeScore = match.homeScore ?? match.score1 ?? 0;
-    const newAwayScore = match.awayScore ?? match.score2 ?? 0;
+    const newHomeScore = liveMatch.homeScore ?? liveMatch.score1 ?? 0;
+    const newAwayScore = liveMatch.awayScore ?? liveMatch.score2 ?? 0;
 
     if (newHomeScore !== displayHomeScore || newAwayScore !== displayAwayScore) {
       setIsAnimating(true);
@@ -51,7 +53,43 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [match.homeScore, match.score1, match.awayScore, match.score2, displayHomeScore, displayAwayScore]);
+  }, [liveMatch.homeScore, liveMatch.score1, liveMatch.awayScore, liveMatch.score2, displayHomeScore, displayAwayScore]);
+
+  // Real-time updates using WebSocket
+  useEffect(() => {
+    if (!match.id || match.status !== 'live') return;
+
+    // Connect to WebSocket server
+    const socket = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001');
+    
+    // Join match room
+    socket.emit('joinMatch', { matchId: match.id });
+    
+    // Listen for score updates
+    socket.on('match:scoreUpdate', (update: any) => {
+      setLiveMatch(prev => ({
+        ...prev,
+        homeScore: update.homeScore,
+        awayScore: update.awayScore,
+        current_minute: update.currentMinute,
+        period: update.period
+      }));
+    });
+    
+    // Listen for status updates
+    socket.on('match:statusUpdate', (update: any) => {
+      setLiveMatch(prev => ({
+        ...prev,
+        status: update.status
+      }));
+    });
+    
+    // Cleanup function
+    return () => {
+      socket.emit('leaveMatch', { matchId: match.id });
+      socket.disconnect();
+    };
+  }, [match.id, match.status]);
 
   const getTeamIcon = (team: string | undefined, color?: string) => {
     // Handle case where team is undefined
@@ -108,8 +146,8 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
     <div 
       className="bg-white dark:bg-gray-900 rounded-xl p-4 mb-4 shadow-lg border border-gray-200 dark:border-gray-700 touch-manipulation cursor-pointer hover:shadow-xl transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800"
       onClick={() => {
-        if (match.id) {
-          router.push(`/match/${match.id}`);
+        if (liveMatch.id) {
+          router.push(`/match/${liveMatch.id}`);
         } else {
           router.push(`/match/1`);
         }
@@ -118,18 +156,18 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
       {/* Header with status and sport info */}
       <div className="flex justify-between items-center mb-3">
         <div className="flex items-center space-x-2">
-          <span className={`${getStatusColor(match.status)} text-white px-2 py-1 rounded-full text-xs font-medium ${match.status.toLowerCase() === 'live' ? 'animate-pulse' : ''}`}>
-            {t(match.status.toLowerCase()) || match.status}
+          <span className={`${getStatusColor(liveMatch.status)} text-white px-2 py-1 rounded-full text-xs font-medium ${liveMatch.status.toLowerCase() === 'live' ? 'animate-pulse' : ''}`}>
+            {t(liveMatch.status.toLowerCase()) || liveMatch.status}
           </span>
-          {match.sport && (
+          {liveMatch.sport && (
             <span className="text-gray-600 dark:text-gray-300 font-medium text-xs">
-              {match.sport.charAt(0).toUpperCase() + match.sport.slice(1)}
+              {liveMatch.sport.charAt(0).toUpperCase() + liveMatch.sport.slice(1)}
             </span>
           )}
         </div>
-        {match.match_date && (
+        {liveMatch.match_date && (
           <span className="text-gray-500 dark:text-gray-400 text-xs">
-            {formatDate(match.match_date)}
+            {formatDate(liveMatch.match_date)}
           </span>
         )}
       </div>
@@ -137,25 +175,25 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
       {/* Teams and scores */}
       <div className="flex items-center justify-between py-2">
         <div className="flex items-center space-x-3 flex-1 min-w-0">
-          {getTeamIcon(match.homeTeam || match.team1, match.team1Color)}
+          {getTeamIcon(liveMatch.homeTeam || liveMatch.team1, liveMatch.team1Color)}
           <span className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate">
-            {match.homeTeam || match.team1 || 'Home Team'}
+            {liveMatch.homeTeam || liveMatch.team1 || 'Home Team'}
           </span>
         </div>
         
         <div className="px-4 min-w-[100px] flex flex-col items-center">
-          {(match.status === 'live' || match.status === 'Live' || 
-            match.status === 'finished' || match.status === 'Finished' || 
-            match.status === 'ended' || match.status === 'completed') && 
-           ((match.homeScore !== undefined && match.awayScore !== undefined) || 
-            (match.score1 !== undefined && match.score2 !== undefined)) ? (
+          {(liveMatch.status === 'live' || liveMatch.status === 'Live' || 
+            liveMatch.status === 'finished' || liveMatch.status === 'Finished' || 
+            liveMatch.status === 'ended' || liveMatch.status === 'completed') && 
+           ((liveMatch.homeScore !== undefined && liveMatch.awayScore !== undefined) || 
+            (liveMatch.score1 !== undefined && liveMatch.score2 !== undefined)) ? (
             <>
               <div className={`text-2xl font-bold text-gray-800 dark:text-gray-100 transition-all duration-300 ${isAnimating ? 'scale-125 text-yellow-500' : 'scale-100'}`}>
                 {displayHomeScore} - {displayAwayScore}
               </div>
-              {match.quarter && (
+              {liveMatch.quarter && (
                 <span className="text-gray-500 dark:text-gray-400 text-xs mt-1">
-                  {match.quarter}
+                  {liveMatch.quarter}
                 </span>
               )}
             </>
@@ -166,19 +204,19 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
         
         <div className="flex items-center space-x-3 justify-end flex-1 min-w-0">
           <span className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate text-right">
-            {match.awayTeam || match.team2 || 'Away Team'}
+            {liveMatch.awayTeam || liveMatch.team2 || 'Away Team'}
           </span>
-          {getTeamIcon(match.awayTeam || match.team2, match.team2Color)}
+          {getTeamIcon(liveMatch.awayTeam || liveMatch.team2, liveMatch.team2Color)}
         </div>
       </div>
       
       {/* Additional info */}
       <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
         <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-          {match.venue || 'Venue TBA'}
+          {liveMatch.venue || 'Venue TBA'}
         </div>
         <div className="text-xs text-gray-500 dark:text-gray-400">
-          {match.time || formatDate(match.match_date)}
+          {liveMatch.time || formatDate(liveMatch.match_date)}
         </div>
       </div>
     </div>

@@ -110,8 +110,7 @@ const ResetPasswordClient = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4" 
-         style={{ background: 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.6)), url(/onboarding-bg-1.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900 p-4">
       <div className="w-full max-w-md bg-black/30 backdrop-blur-sm rounded-lg shadow-xl p-8 border border-white/10">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Reset Password</h1>

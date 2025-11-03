@@ -182,4 +182,36 @@ export const matchSocketHandler = (io: Server, socket: Socket) => {
       logger.error('Error updating match status', { error: error.message });
     }
   });
+  
+  // Handle event broadcast from frontend
+  socket.on('match:broadcastEvent', async (data: any) => {
+    try {
+      const { matchId, event } = data;
+      logger.info('Match event broadcast received', { matchId, event });
+      
+      // Broadcast to all users in match room
+      io.to(`match:${matchId}`).emit('match:event', event);
+      
+      // Also broadcast to live matches rooms if it's a significant event
+      if (event.type === 'goal' || event.type === 'card' || event.type === 'substitution') {
+        const matchResult = await supabaseService.getMatch(matchId);
+        if (matchResult.success) {
+          const match = matchResult.data as EnrichedMatch;
+          const eventUpdate = {
+            matchId,
+            eventType: event.type,
+            playerName: event.playerId || 'Unknown',
+            teamId: event.teamId,
+            minute: event.minute,
+            timestamp: new Date()
+          };
+          
+          io.to(`live:${match.competition_name}`).emit('live:event', eventUpdate);
+          io.to('live:all').emit('live:event', eventUpdate);
+        }
+      }
+    } catch (error: any) {
+      logger.error('Error broadcasting match event', { error: error.message });
+    }
+  });
 };

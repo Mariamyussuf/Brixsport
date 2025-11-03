@@ -144,9 +144,16 @@ export const liveService = {
     try {
       logger.info('Updating match event', { matchId, eventId, eventData });
       
+      // First validate that the event belongs to this match
+      const validation = await liveService.validateEvent(matchId, eventId);
+      if (!validation.success) {
+        throw new Error(validation.error || 'Event validation failed');
+      }
+      
       // Update event in Supabase
-      // This would require an update method in supabaseService
-      throw new Error('Not implemented: Update event method not available in supabaseService');
+      const result = await supabaseService.updateMatchEvent(eventId, eventData);
+      
+      return result;
     } catch (error: any) {
       logger.error('Update event error', error);
       throw error;
@@ -157,9 +164,16 @@ export const liveService = {
     try {
       logger.info('Deleting match event', { matchId, eventId });
       
+      // First validate that the event belongs to this match
+      const validation = await liveService.validateEvent(matchId, eventId);
+      if (!validation.success) {
+        throw new Error(validation.error || 'Event validation failed');
+      }
+      
       // Delete event from Supabase
-      // This would require a delete method in supabaseService
-      throw new Error('Not implemented: Delete event method not available in supabaseService');
+      const result = await supabaseService.deleteMatchEvent(eventId);
+      
+      return result;
     } catch (error: any) {
       logger.error('Delete event error', error);
       throw error;

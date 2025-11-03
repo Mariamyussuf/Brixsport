@@ -15,7 +15,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col justify-start items-center text-white overflow-hidden" style={{ background: 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.6)), url(/onboarding-bg-1.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+    <div className="relative min-h-screen w-full flex flex-col justify-start items-center text-white overflow-hidden bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900">
       {/* BrixSports Logo */}
       <div className="absolute top-4 sm:top-6 md:top-8 left-0 right-0 flex justify-center z-20">
         <div className="flex items-center gap-1">

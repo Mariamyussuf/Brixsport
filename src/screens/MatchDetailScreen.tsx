@@ -60,6 +60,60 @@ const MatchDetailScreen: React.FC<{ matchId: number }> = ({ matchId }) => {
     fetchMatchData();
   }, [matchId]);
 
+  // Real-time updates using WebSocket
+  useEffect(() => {
+    if (!matchId || !match) return;
+
+    // Connect to WebSocket server
+    const socket = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001');
+    
+    // Join match room
+    socket.emit('joinMatch', { matchId });
+    
+    // Listen for score updates
+    socket.on('match:scoreUpdate', (update: any) => {
+      setMatch(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          home_score: update.homeScore,
+          away_score: update.awayScore,
+          current_minute: update.currentMinute,
+          period: update.period,
+          status: update.status || prev.status
+        };
+      });
+    });
+    
+    // Listen for new events
+    socket.on('match:event', (newEvent: any) => {
+      setMatch(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          events: [...prev.events, newEvent]
+        };
+      });
+    });
+    
+    // Listen for match status updates
+    socket.on('match:statusUpdate', (update: any) => {
+      setMatch(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          status: update.status
+        };
+      });
+    });
+    
+    // Cleanup function
+    return () => {
+      socket.emit('leaveMatch', { matchId });
+      socket.disconnect();
+    };
+  }, [matchId, match]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">

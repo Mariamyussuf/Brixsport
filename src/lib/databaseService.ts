@@ -1322,6 +1322,23 @@ export class DatabaseService {
       throw new DatabaseError(`Failed to fetch match events: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
+
+  // Users
+  async getUsers(): Promise<any[]> {
+    logOperation('GET_USERS_START');
+    try {
+      const response = await apiCall('/admin/users', {}, 'admin');
+      logOperation('GET_USERS_SUCCESS', { count: response.data?.length || 0 });
+      return response.data || [];
+    } catch (error) {
+      logOperation('GET_USERS_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in getUsers:', error);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to fetch users: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
 }
 
 // Export a singleton instance

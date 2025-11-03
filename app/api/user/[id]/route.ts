@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuth } from '@/lib/auth';
-
-// Mock user database - in a real application, this would be a real database
-
+import { getUserById } from '@/lib/userService';
 
 // GET /api/user/[id] - Get user by ID
 export async function GET(request: Request, { params }: { params: Promise<{}> }) {
@@ -15,9 +13,29 @@ export async function GET(request: Request, { params }: { params: Promise<{}> })
     }
 
     const { id } = await params as { id: string };
-  
-  } catch (error) {
+    
+    // Get user from database
+    const user = await getUserById(id);
+    
+    if (!user) {
+      return NextResponse.json({ 
+        success: false,
+        message: 'User not found' 
+      }, { status: 404 });
+    }
+    
+    // Remove sensitive information before returning
+    const { password, ...publicUser } = user as any;
+    
+    return NextResponse.json({ 
+      success: true,
+      data: publicUser
+    });
+  } catch (error: any) {
     console.error('Error fetching user:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      success: false,
+      message: error.message || 'Internal server error' 
+    }, { status: 500 });
   }
 }

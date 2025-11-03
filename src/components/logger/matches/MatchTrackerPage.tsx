@@ -18,6 +18,7 @@ import TeamService from '@/services/TeamService';
 import { ScoreUpdateForm } from './ScoreUpdateForm';
 import { LiveEventForm } from './LiveEventForm';
 import { Match as BrixMatch, LiveEvent } from '@/types/brixsports';
+import { loggerService } from '@/lib/loggerService';
 
 interface MatchForm {
   name: string;
@@ -639,11 +640,32 @@ export default function MatchTrackerPage() {
           <SportLogger
             sportType={sportType}
             teams={teams as any}
-            onEventSubmit={(event) => {
+            onEventSubmit={async (event) => {
               // Handle event submission by adding it to the match
               console.log('Event submitted:', event);
+              
               // Call the API to save the event (cast to partial to match service signature)
-              MatchTrackerService.addEvent(selectedMatch.id, event as Partial<import('@/types/matchTracker').MatchEvent>);
+              const result = await MatchTrackerService.addEvent(selectedMatch.id, event as Partial<import('@/types/matchTracker').MatchEvent>);
+              
+              // Also send to logger service for real-time broadcasting
+              try {
+                await loggerService.addEvent(selectedMatch.id, {
+                  type: event.eventType as any,
+                  teamId: event.teamId,
+                  playerId: event.playerId,
+                  description: event.value?.toString() || '',
+                  minute: Math.floor((event.timestamp || Date.now()) / 60000), // Approximate minute
+                  second: 0,
+                  millisecond: 0,
+                  metadata: {
+                    notes: event.value?.toString()
+                  }
+                });
+              } catch (error) {
+                console.error('Error broadcasting event:', error);
+              }
+              
+              return result;
             }}
             disabled={selectedMatch.status !== 'live'}
           />
