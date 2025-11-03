@@ -173,12 +173,15 @@ The application includes a comprehensive basketball schedule system with the fol
 
 - **Fixture Viewing**: Users can view the complete basketball league schedule organized by rounds and dates
 - **Admin Import**: Administrators can import official schedules through a dedicated admin interface
+- **Schedule Management**: Administrators can update match details including dates, times, venues, and status
+- **Match Cancellation**: Administrators can cancel matches when necessary
 - **API Integration**: Schedule data is stored in the Supabase database and accessible through REST API endpoints
 - **Responsive UI**: Mobile-friendly schedule display with expandable rounds and match details
 
 ### Accessing the Schedule
 - Users can access the basketball schedule through the "Fixtures" tab in the main navigation
 - Administrators can import schedules through the admin dashboard at `/admin`
+- Administrators can manage schedules through the admin dashboard at `/admin/basketball-schedule/manage`
 - Developers can access schedule data through the API endpoint at `/api/basketball-schedule`
 
 ### Schedule Data Structure
@@ -188,6 +191,22 @@ The basketball schedule is stored in `basketball_schedule.json` with the followi
 - Rounds with dates and matches
 - Special events (draft combine, all-star games)
 - Trading period information
+
+### Managing Schedule Changes
+Administrators can update the basketball schedule through the admin interface:
+1. Navigate to the Admin Dashboard
+2. Click on the "Schedule" tab
+3. Click "Manage Schedule" to access the schedule management page
+4. Select a match from the list to update its details
+5. Modify the date, time, venue, or status as needed
+6. Click "Update Match" to save changes
+7. To cancel a match, click "Cancel Match"
+
+The system supports the following match statuses:
+- **Scheduled**: The match is planned for the specified date and time
+- **Live**: The match is currently in progress
+- **Completed**: The match has finished
+- **Cancelled**: The match has been cancelled
 
 ## Logger System Access
 To access the logger system:

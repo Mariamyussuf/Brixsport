@@ -11,6 +11,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // Load schedule data
 const scheduleData = require('@/../basketball_schedule.json');
 
+// Handle POST request - import schedule
 export async function POST() {
   try {
     // Get basketball competition
@@ -115,6 +116,102 @@ export async function POST() {
     });
   } catch (error: any) {
     console.error('Error importing basketball schedule:', error);
+    return NextResponse.json(
+      { error: 'Internal server error', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// Handle PUT request - update match details
+export async function PUT(request: Request) {
+  try {
+    const { matchId, updates } = await request.json();
+
+    // Validate input
+    if (!matchId) {
+      return NextResponse.json(
+        { error: 'Match ID is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!updates || Object.keys(updates).length === 0) {
+      return NextResponse.json(
+        { error: 'Updates are required' },
+        { status: 400 }
+      );
+    }
+
+    // Update the match
+    const { data, error } = await supabase
+      .from('Match')
+      .update(updates)
+      .eq('id', matchId)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json(
+        { error: 'Failed to update match', details: error },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      message: 'Match updated successfully',
+      match: data
+    });
+  } catch (error: any) {
+    console.error('Error updating basketball match:', error);
+    return NextResponse.json(
+      { error: 'Internal server error', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// Handle PATCH request - update match status
+export async function PATCH(request: Request) {
+  try {
+    const { matchId, status } = await request.json();
+
+    // Validate input
+    if (!matchId) {
+      return NextResponse.json(
+        { error: 'Match ID is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!status) {
+      return NextResponse.json(
+        { error: 'Status is required' },
+        { status: 400 }
+      );
+    }
+
+    // Update only the status
+    const { data, error } = await supabase
+      .from('Match')
+      .update({ status })
+      .eq('id', matchId)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json(
+        { error: 'Failed to update match status', details: error },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      message: `Match status updated to ${status}`,
+      match: data
+    });
+  } catch (error: any) {
+    console.error('Error updating basketball match status:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }

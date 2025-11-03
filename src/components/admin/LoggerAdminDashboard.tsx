@@ -144,9 +144,15 @@ const LoggerAdminDashboard = () => {
           </p>
           <a 
             href="/admin/basketball-schedule" 
-            className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors mr-3"
           >
             Import Basketball Schedule
+          </a>
+          <a 
+            href="/admin/basketball-schedule/manage" 
+            className="inline-block px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+          >
+            Manage Schedule
           </a>
         </div>
       )}
