@@ -850,11 +850,23 @@ export class DatabaseService {
   async getMatches(): Promise<Match[]> {
     logOperation('GET_MATCHES_START');
     try {
+      // Check if Supabase client is properly initialized
+      if (!supabase) {
+        throw new DatabaseError('Supabase client is not initialized', 'INIT_ERROR', 500);
+      }
+      
       const { data, error } = await supabase
         .from('Match')
         .select('*');
       
       if (error) {
+        // Log more detailed error information
+        console.error('Supabase error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
         throw new DatabaseError(`Failed to fetch matches: ${error.message}`, 'FETCH_ERROR', 500);
       }
       
@@ -963,12 +975,24 @@ export class DatabaseService {
       // Validate input using enhanced validation
       validate.string(sport, 'Sport', { required: true, minLength: 1 });
       
+      // Check if Supabase client is properly initialized
+      if (!supabase) {
+        throw new DatabaseError('Supabase client is not initialized', 'INIT_ERROR', 500);
+      }
+      
       const { data, error } = await supabase
         .from('Match')
         .select('*')
         .eq('sport', sport);
       
       if (error) {
+        // Log more detailed error information
+        console.error('Supabase error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
         throw new DatabaseError(`Failed to fetch matches: ${error.message}`, 'FETCH_ERROR', 500);
       }
       
@@ -992,6 +1016,11 @@ export class DatabaseService {
   async getLiveMatches(): Promise<{ football: Match[]; basketball: Match[]; track: Match[] }> {
     logOperation('GET_LIVE_MATCHES_START');
     try {
+      // Check if Supabase client is properly initialized
+      if (!supabase) {
+        throw new DatabaseError('Supabase client is not initialized', 'INIT_ERROR', 500);
+      }
+      
       // Fetch live matches for each sport
       const [{ data: footballMatches, error: footballError }, { data: basketballMatches, error: basketballError }, { data: trackMatches, error: trackError }] = await Promise.all([
         supabase.from('Match').select('*').eq('sport', 'football').eq('status', 'live'),
@@ -1000,6 +1029,32 @@ export class DatabaseService {
       ]);
       
       if (footballError || basketballError || trackError) {
+        // Log more detailed error information
+        if (footballError) {
+          console.error('Football matches error:', {
+            message: footballError.message,
+            code: footballError.code,
+            details: footballError.details,
+            hint: footballError.hint
+          });
+        }
+        if (basketballError) {
+          console.error('Basketball matches error:', {
+            message: basketballError.message,
+            code: basketballError.code,
+            details: basketballError.details,
+            hint: basketballError.hint
+          });
+        }
+        if (trackError) {
+          console.error('Track matches error:', {
+            message: trackError.message,
+            code: trackError.code,
+            details: trackError.details,
+            hint: trackError.hint
+          });
+        }
+        
         const errorMessage = [footballError?.message, basketballError?.message, trackError?.message].filter(Boolean).join('; ');
         throw new DatabaseError(`Failed to fetch live matches: ${errorMessage}`, 'FETCH_ERROR', 500);
       }
