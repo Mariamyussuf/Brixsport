@@ -10,7 +10,14 @@ export async function GET() {
     return NextResponse.json({ matches }, { status: 200 });
   } catch (error) {
     console.error('Failed to fetch matches:', error);
-    return NextResponse.json({ error: 'Failed to fetch matches' }, { status: 500 });
+    // Provide more detailed error information
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch matches';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    return NextResponse.json({ 
+      error: errorMessage,
+      stack: errorStack
+    }, { status: 500 });
   }
 }
 
