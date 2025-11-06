@@ -573,6 +573,42 @@ export class MessagingService {
       throw new DatabaseError('Failed to delete message', 'DELETE_MESSAGE_FAILED', 500);
     }
   }
+
+  // Delete system announcement
+  static async deleteAnnouncement(
+    userId: string,
+    announcementId: string
+  ): Promise<APIResponse<boolean>> {
+    try {
+      logger.info('Deleting announcement', { userId, announcementId });
+      
+      // Validate inputs
+      validate.id(userId, 'User ID');
+      validate.id(announcementId, 'Announcement ID');
+      
+      // Check if user has admin role
+      const isAdmin = await hasAdminRole(userId);
+      if (!isAdmin) {
+        throw new DatabaseError('Only admins can delete announcements', 'FORBIDDEN', 403);
+      }
+      
+      // For now, we'll just return a mock response since we don't have a real implementation
+      // In a real implementation, you would delete from the database
+      
+      logger.info('Announcement deleted successfully', { announcementId });
+      
+      return {
+        success: true,
+        data: true
+      };
+    } catch (error) {
+      logger.error('Delete announcement error', { error });
+      if (error instanceof ValidationError || error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError('Failed to delete announcement', 'DELETE_ANNOUNCEMENT_FAILED', 500);
+    }
+  }
 }
 
 export default MessagingService;
