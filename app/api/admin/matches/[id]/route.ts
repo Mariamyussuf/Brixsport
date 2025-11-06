@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyAdminToken, hasAdminPermission } from '@/lib/adminAuth';
 import { cookies } from 'next/headers';
 import { dbService } from '@/lib/databaseService';
+import { supabase } from '@/lib/supabaseClient';
 
 // PUT /api/admin/matches/:id - Update a match
 export async function PUT(request: Request, { params }: { params: Promise<{}> }) {
@@ -64,61 +65,41 @@ export async function PUT(request: Request, { params }: { params: Promise<{}> })
       }, { status: 400 });
     }
     
-    // Update match with real database operation
-    const matchData = {
-      ...(body.competitionId && { competitionId: parseInt(body.competitionId) }),
-      ...(body.homeTeamId && { homeTeamId: parseInt(body.homeTeamId) }),
-      ...(body.awayTeamId && { awayTeamId: parseInt(body.awayTeamId) }),
-      ...(body.startTime && { startTime: body.startTime }),
-      ...(body.status && { status: body.status }),
-      ...(body.homeScore !== undefined && { homeScore: parseInt(body.homeScore) || 0 }),
-      ...(body.awayScore !== undefined && { awayScore: parseInt(body.awayScore) || 0 }),
-      ...(body.currentMinute !== undefined && { currentMinute: parseInt(body.currentMinute) || 0 }),
-      ...(body.period && { period: body.period }),
-      ...(body.venue && { venue: body.venue }),
-    };
+    // Prepare update data
+    const updateData: any = {};
     
-    // Make API call to update match
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
-    const adminToken = (await cookies()).get('admin_token')?.value;
+    if (body.competitionId) updateData.competition_id = parseInt(body.competitionId);
+    if (body.homeTeamId) updateData.home_team_id = parseInt(body.homeTeamId);
+    if (body.awayTeamId) updateData.away_team_id = parseInt(body.awayTeamId);
+    if (body.startTime) updateData.match_date = body.startTime;
+    if (body.status) updateData.status = body.status;
+    if (body.homeScore !== undefined) updateData.home_score = parseInt(body.homeScore) || 0;
+    if (body.awayScore !== undefined) updateData.away_score = parseInt(body.awayScore) || 0;
+    if (body.currentMinute !== undefined) updateData.current_minute = parseInt(body.currentMinute) || 0;
+    if (body.period) updateData.period = body.period;
+    if (body.venue) updateData.venue = body.venue;
     
-    const response = await fetch(`${API_BASE_URL}/v1/matches/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${adminToken}`
-      },
-      body: JSON.stringify(matchData)
-    });
+    // Update match using Supabase directly since databaseService doesn't have an update method
+    const { data, error } = await supabase
+      .from('Match')
+      .update(updateData)
+      .eq('id', parseInt(id))
+      .select()
+      .single();
     
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      if (response.status === 401) {
-        return NextResponse.json({ 
-          success: false, 
-          error: 'Unauthorized' 
-        }, { status: 401 });
-      }
-      if (response.status === 403) {
-        return NextResponse.json({ 
-          success: false, 
-          error: 'Forbidden' 
-        }, { status: 403 });
-      }
-      if (response.status === 404) {
+    if (error) {
+      if (error.code === 'PGRST116') {
         return NextResponse.json({ 
           success: false, 
           error: 'Match not found' 
         }, { status: 404 });
       }
-      throw new Error(errorData.error || `API call failed: ${response.status} ${response.statusText}`);
+      throw new Error(`Database error: ${error.message}`);
     }
-    
-    const result = await response.json();
     
     return NextResponse.json({ 
       success: true, 
-      data: result.data 
+      data 
     });
   } catch (error) {
     console.error('Error updating match:', error);
@@ -167,39 +148,20 @@ export async function DELETE(request: Request, { params }: { params: Promise<{}>
       }, { status: 400 });
     }
     
-    // Delete match with real database operation
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
-    const adminToken = (await cookies()).get('admin_token')?.value;
+    // Delete match using Supabase directly
+    const { error } = await supabase
+      .from('Match')
+      .delete()
+      .eq('id', parseInt(id));
     
-    const response = await fetch(`${API_BASE_URL}/v1/matches/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${adminToken}`
-      }
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      if (response.status === 401) {
-        return NextResponse.json({ 
-          success: false, 
-          error: 'Unauthorized' 
-        }, { status: 401 });
-      }
-      if (response.status === 403) {
-        return NextResponse.json({ 
-          success: false, 
-          error: 'Forbidden' 
-        }, { status: 403 });
-      }
-      if (response.status === 404) {
+    if (error) {
+      if (error.code === 'PGRST116') {
         return NextResponse.json({ 
           success: false, 
           error: 'Match not found' 
         }, { status: 404 });
       }
-      throw new Error(errorData.error || `API call failed: ${response.status} ${response.statusText}`);
+      throw new Error(`Database error: ${error.message}`);
     }
     
     return NextResponse.json({ 

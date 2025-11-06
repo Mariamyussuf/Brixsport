@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminToken, hasAdminPermission } from '@/lib/adminAuth';
 import { cookies } from 'next/headers';
+import { supabase } from '@/lib/supabaseClient';
 
-// POST /api/admin/alerts - Resolve an alert
-export async function POST(request: Request) {
+// POST /api/admin/alerts/:id/resolve - Resolve a security alert
+export async function POST(request: Request, { params }: { params: Promise<{}> }) {
   try {
     // Verify admin token
     const token = (await cookies()).get('admin_token')?.value;
@@ -22,47 +23,51 @@ export async function POST(request: Request) {
       }, { status: 401 });
     }
 
-    // Check if admin has permission to resolve alerts
-    if (!hasAdminPermission(adminUser, 'resolve_alerts')) {
+    // Check if admin has permission to manage security alerts
+    if (!hasAdminPermission(adminUser, 'manage_security')) {
       return NextResponse.json({ 
         success: false, 
         error: 'Forbidden' 
       }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { alertId } = body;
+    const { id } = await params as { id: string };
+    const alertId = parseInt(id, 10);
     
-    if (!alertId) {
+    // Validate alert ID
+    if (isNaN(alertId)) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Alert ID is required' 
+        error: 'Invalid alert ID' 
       }, { status: 400 });
     }
     
-    // Call the backend service to resolve the alert
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
+    // Update the alert in Supabase to mark it as resolved
+    const { data, error } = await supabase
+      .from('SecurityAlert')
+      .update({ 
+        status: 'resolved',
+        resolvedBy: adminUser.id,
+        resolvedAt: new Date().toISOString()
+      })
+      .eq('id', alertId)
+      .select()
+      .single();
     
-    const response = await fetch(`${API_BASE_URL}/v1/security-alerts/${alertId}/resolve`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ resolvedBy: adminUser.id })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return NextResponse.json({ 
-        success: false, 
-        error: errorData.error || 'Failed to resolve alert in backend service'
-      }, { status: response.status });
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Alert not found' 
+        }, { status: 404 });
+      }
+      throw new Error(`Database error: ${error.message}`);
     }
     
-    const result = await response.json();
-    
-    return NextResponse.json(result);
+    return NextResponse.json({ 
+      success: true,
+      data
+    });
   } catch (error) {
     console.error('Error resolving alert:', error);
     return NextResponse.json({ 

@@ -90,55 +90,26 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
     
-    // Create new match with real database operation
+    // Create new match with databaseService
     const matchData = {
-      competitionId: parseInt(body.competitionId),
-      homeTeamId: parseInt(body.homeTeamId),
-      awayTeamId: parseInt(body.awayTeamId),
-      startTime: body.startTime,
+      competition_id: parseInt(body.competitionId),
+      home_team_id: parseInt(body.homeTeamId),
+      away_team_id: parseInt(body.awayTeamId),
+      match_date: body.startTime,
       status: body.status || 'scheduled',
-      homeScore: body.homeScore || 0,
-      awayScore: body.awayScore || 0,
-      currentMinute: 0,
+      home_score: body.homeScore || 0,
+      away_score: body.awayScore || 0,
+      current_minute: 0,
       period: null,
       venue: body.venue || null,
     };
     
-    // Make API call to create match
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
-    const adminToken = (await cookies()).get('admin_token')?.value;
-    
-    const response = await fetch(`${API_BASE_URL}/v1/matches`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${adminToken}`
-      },
-      body: JSON.stringify(matchData)
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      if (response.status === 401) {
-        return NextResponse.json({ 
-          success: false, 
-          error: 'Unauthorized' 
-        }, { status: 401 });
-      }
-      if (response.status === 403) {
-        return NextResponse.json({ 
-          success: false, 
-          error: 'Forbidden' 
-        }, { status: 403 });
-      }
-      throw new Error(errorData.error || `API call failed: ${response.status} ${response.statusText}`);
-    }
-    
-    const result = await response.json();
+    // Create match using databaseService
+    const newMatch = await dbService.createMatch(matchData);
     
     return NextResponse.json({ 
       success: true, 
-      data: result.data 
+      data: newMatch
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating match:', error);

@@ -4,25 +4,19 @@ import { Competition } from '@/types/favorites';
 class CompetitionService {
   async createCompetition(data: Partial<Omit<Competition, 'id'>>): Promise<any> {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/v1/competitions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-        },
-        body: JSON.stringify(data),
+      // Use databaseService to create competition
+      const newCompetition = await databaseService.createCompetition({
+        name: data.name || '',
+        type: data.type || '',
+        category: data.category || '',
+        status: data.status || 'active',
+        start_date: data.start_date || null,
+        end_date: data.end_date || null
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to create competition: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
+      
       return {
         success: true,
-        data: result.data
+        data: newCompetition
       };
     } catch (error) {
       console.error('Error creating competition:', error);
