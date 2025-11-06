@@ -1,5 +1,5 @@
 import { APIResponse } from '@/types/api';
-import { ValidationError, DatabaseError } from '@/lib/databaseService';
+import { ValidationError, DatabaseError, databaseService } from '@/lib/databaseService';
 
 // Logger utility
 const logger = {
@@ -329,29 +329,33 @@ export class MessagingService {
       validate.id(userId, 'User ID');
       validate.id(conversationId, 'Conversation ID');
       
-      // For now, we'll just return a mock response since we don't have a real implementation
-      // In a real implementation, you would fetch from the database
-      const mockConversation: Conversation = {
-        id: conversationId,
-        title: `Conversation ${conversationId}`,
-        type: 'private',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        lastMessageAt: new Date().toISOString(),
-        participants: [
-          {
-            id: userId,
-            role: 'admin',
-            joinedAt: new Date().toISOString()
-          }
-        ]
+      // Fetch conversation details from database
+      const conversationData = await databaseService.getConversationDetails(conversationId);
+      
+      if (!conversationData) {
+        throw new DatabaseError('Conversation not found', 'NOT_FOUND', 404);
+      }
+      
+      // Transform database data to match Conversation interface
+      const conversation: Conversation = {
+        id: conversationData.id,
+        title: conversationData.name || `Conversation ${conversationData.id}`,
+        type: conversationData.type,
+        createdAt: conversationData.created_at,
+        updatedAt: conversationData.updated_at,
+        lastMessageAt: conversationData.updated_at, // In a real implementation, this would be the timestamp of the last message
+        participants: conversationData.participants?.map((p: any) => ({
+          id: p.user_id,
+          role: p.role,
+          joinedAt: p.joined_at
+        })) || []
       };
       
       logger.info('Conversation details fetched successfully', { conversationId });
       
       return {
         success: true,
-        data: mockConversation
+        data: conversation
       };
     } catch (error) {
       logger.error('Get conversation details error', { error });
@@ -589,6 +593,59 @@ export class MessagingService {
     }
   }
   
+  // Update conversation
+  static async updateConversation(
+    userId: string,
+    conversationId: string,
+    updates: {
+      name?: string;
+      isMuted?: boolean;
+      isArchived?: boolean;
+    }
+  ): Promise<APIResponse<Conversation>> {
+    try {
+      logger.info('Updating conversation', { userId, conversationId, updates });
+      
+      // Validate inputs
+      validate.id(userId, 'User ID');
+      validate.id(conversationId, 'Conversation ID');
+      
+      // For now, we'll just return a mock response since we don't have a real implementation
+      // In a real implementation, you would update the database
+      const mockConversation: Conversation = {
+        id: conversationId,
+        title: updates.name || `Conversation ${conversationId}`,
+        type: 'private',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastMessageAt: new Date().toISOString(),
+        participants: [
+          {
+            id: userId,
+            role: 'admin',
+            joinedAt: new Date().toISOString()
+          }
+        ]
+      };
+      
+      // Clear cache
+      cacheService.delete(`conversation:${conversationId}`);
+      
+      logger.info('Conversation updated successfully', { conversationId });
+      
+      return {
+        success: true,
+        data: mockConversation
+      };
+    } catch (error) {
+      logger.error('Update conversation error', { error });
+      if (error instanceof ValidationError || error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError('Failed to update conversation', 'UPDATE_CONVERSATION_FAILED', 500);
+    }
+  }
+
   // Delete message
   static async deleteMessage(
     userId: string,
