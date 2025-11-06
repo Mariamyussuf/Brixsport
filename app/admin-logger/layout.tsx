@@ -1,7 +1,7 @@
 import React from 'react';
 import '../../app/globals.css';
 import Header from "@/components/shared/glassmorphic/Header";
-import BottomNav from "@/components/shared/glassmorphic/BottomNav";
+
 
 export const metadata = {
   title: 'BrixSports Admin/Logger Platform',
@@ -21,7 +21,6 @@ export default function AdminLoggerLayout({
           <main className="flex-grow pb-[80px] pt-[70px]">
             {children}
           </main>
-          <BottomNav />
         </div>
       </body>
     </html>

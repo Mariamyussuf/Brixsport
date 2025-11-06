@@ -8,7 +8,7 @@ import { cookies } from 'next/headers';
 import { verifyAdminToken } from '@/lib/adminAuth';
 import type { AdminUser } from '@/lib/adminAuth';
 import Header from "@/components/shared/glassmorphic/Header";
-import BottomNav from "@/components/shared/glassmorphic/BottomNav";
+
 
 export const viewport = {
   width: 'device-width',
@@ -63,7 +63,6 @@ export default async function AdminLayout({
               <main className="flex-grow pb-[80px] pt-[70px]">
                 {children}
               </main>
-              <BottomNav />
             </div>
           </AdminProvider>
         </ThemeProvider>

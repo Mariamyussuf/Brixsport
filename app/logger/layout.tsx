@@ -12,7 +12,7 @@ import DataSaverGate from "@/components/shared/DataSaverGate";
 import { LoggerProvider } from "@/contexts/LoggerContext";
 import { LoggerAuthProvider } from "@/contexts/LoggerAuthContext";
 import Header from "@/components/shared/glassmorphic/Header";
-import BottomNav from "@/components/shared/glassmorphic/BottomNav";
+
 
 // Client-only LoggerProvider wrapper
 const ClientLoggerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -89,7 +89,6 @@ export default async function LoggerLayout({
                       <main className="flex-grow pb-[80px] pt-[70px]">
                         {children}
                       </main>
-                      <BottomNav />
                     </div>
                   </NotificationsProvider>
                 </ClientLoggerProvider>
