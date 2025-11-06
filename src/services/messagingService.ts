@@ -621,6 +621,62 @@ export class MessagingService {
     }
   }
 
+  // Send broadcast message to all users or specific groups
+  static async sendBroadcastMessage(
+    userId: string,
+    payload: {
+      title: string;
+      content: string;
+      type?: string;
+      priority: string;
+      recipients?: string[];
+      scheduledAt?: string;
+      tags?: string[];
+    }
+  ): Promise<APIResponse<Announcement>> {
+    try {
+      logger.info('Sending broadcast message', { userId, payload });
+      
+      // Validate inputs
+      validate.id(userId, 'User ID');
+      
+      if (!payload.title) {
+        throw new ValidationError('Broadcast title is required', 'title');
+      }
+      
+      if (!payload.content) {
+        throw new ValidationError('Broadcast content is required', 'content');
+      }
+      
+      if (!payload.priority) {
+        throw new ValidationError('Broadcast priority is required', 'priority');
+      }
+      
+      // Check if user has admin role
+      const isAdmin = await hasAdminRole(userId);
+      if (!isAdmin) {
+        throw new DatabaseError('Only admins can send broadcast messages', 'FORBIDDEN', 403);
+      }
+      
+      // Create announcement using existing method
+      const announcementPayload = {
+        title: payload.title,
+        content: payload.content,
+        priority: payload.priority,
+        scheduledAt: payload.scheduledAt,
+        tags: payload.tags
+      };
+      
+      return await this.createAnnouncement(userId, announcementPayload);
+    } catch (error) {
+      logger.error('Send broadcast message error', { error });
+      if (error instanceof ValidationError || error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError('Failed to send broadcast message', 'SEND_BROADCAST_FAILED', 500);
+    }
+  }
+
   // Delete system announcement
   static async deleteAnnouncement(
     userId: string,
