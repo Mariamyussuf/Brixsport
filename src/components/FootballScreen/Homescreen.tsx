@@ -442,7 +442,7 @@ const Homescreen: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-neutral-900 dark:text-neutral-100 pb-24 sm:pb-28">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-neutral-900 dark:text-neutral-100 pb-20">
       {/* Favorites Auth Dialog */}
       <FavoritesAuthDialog 
         isOpen={showFavoritesDialog} 
@@ -652,12 +652,12 @@ const Homescreen: React.FC = () => {
 
       {/* Enhanced Bottom Navigation - all badge counts removed as requested */}
       <div className="fixed bottom-0 left-0 right-0 z-20 glassmorphic-nav mx-2 mb-2">
-        <div className="flex justify-around items-center w-full max-w-7xl mx-auto px-2 sm:px-4">
+        <div className="flex justify-around items-center w-full max-w-7xl mx-auto px-2 sm:px-4 py-2">
           {tabs.map((tab) => (
             <button
               key={tab.name}
               onClick={() => handleTabClick(tab.name)}
-              className={`flex flex-col items-center justify-center space-y-1 px-3 py-1 rounded-lg transition-all duration-200 min-w-0 flex-1 max-w-16 sm:max-w-20 md:max-w-24 ${
+              className={`flex flex-col items-center justify-center space-y-1 px-2 py-1 rounded-lg transition-all duration-200 min-w-0 flex-1 max-w-16 sm:max-w-20 md:max-w-24 ${
                 activeTab === tab.name
                   ? 'text-blue-600 dark:text-blue-400 glow-blue scale-105'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'

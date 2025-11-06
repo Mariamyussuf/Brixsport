@@ -122,7 +122,8 @@ const StatsScreen: React.FC<{
         const response = await loggerService.getMatchStats(matchId);
         
         // Transform the stats data to match our component's expected format
-        if (response.success && response.data) {
+        // Fix: Properly check if response is successful and has data before accessing properties
+        if (response && response.success && response.data) {
           // Fix: Correctly access the homeTeam and awayTeam properties from the actual response structure
           const homeTeamData = response.data.homeTeam;
           const awayTeamData = response.data.awayTeam;
@@ -191,7 +192,7 @@ const StatsScreen: React.FC<{
         }
       } catch (err: any) {
         console.error('Error fetching match stats:', err);
-        setError(err.message || 'Failed to load match statistics');
+        setError(err.message || 'Failed to load match statistso i ics');
       } finally {
         setLoading(false);
       }
@@ -212,6 +213,9 @@ const StatsScreen: React.FC<{
     
     // Listen for stats updates
     socket.on('match:stats', (updatedStats: MatchStatsResponse) => {
+      // Fix: Add proper validation before accessing properties
+      if (!updatedStats) return;
+      
       const homeTeamData = updatedStats.homeTeam;
       const awayTeamData = updatedStats.awayTeam;
       

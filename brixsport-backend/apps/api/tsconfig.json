@@ -31,8 +31,9 @@
       "@utils/*": ["src/utils/*"],
       "@services/*": ["src/services/*"],
       "@types/*": ["src/types/*"]
-    }
+    },
+    "typeRoots": ["./src/types", "./node_modules/@types"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/types/**/*"],
   "exclude": ["node_modules", "dist", "tests", "node_modules/rate-limit-redis"]
 }

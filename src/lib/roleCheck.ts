@@ -49,6 +49,12 @@ export const API_ACCESS_MAP: EndpointAccess[] = [
   { path: '/track/events', method: 'POST', roles: ['logger', 'admin', 'super-admin'] },
   { path: '/track/events/:id/status', method: 'PATCH', roles: ['logger', 'admin', 'super-admin'] },
   
+  // Basketball Schedule
+  { path: '/basketball-schedule', method: 'GET', roles: ['user', 'logger', 'admin', 'super-admin'] },
+  { path: '/basketball-schedule', method: 'POST', roles: ['admin', 'super-admin'] },
+  { path: '/basketball-schedule/update', method: 'PUT', roles: ['admin', 'super-admin'] },
+  { path: '/basketball-schedule/update', method: 'PATCH', roles: ['admin', 'super-admin'] },
+  
   // Admin specific endpoints
   { path: '/admin/loggers', method: 'GET', roles: ['admin', 'super-admin'] },
   { path: '/admin/loggers/:id', method: 'GET', roles: ['admin', 'super-admin'] },

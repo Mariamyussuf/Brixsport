@@ -223,20 +223,20 @@ model Team {
   description     String?
   logo            String?
   color           String?
-  foundedYear     Int?
+  foundedYear     Int?       @map("founded_year")
   website         String?
-  socialMedia     Json?
+  socialMedia     Json?      @map("social_media")
   
   // Computed statistics (updated via triggers/jobs)
-  totalWins       Int        @default(0)
-  totalLosses     Int        @default(0)
-  totalDraws      Int        @default(0)
-  winPercentage   Decimal    @default(0) @db.Decimal(5,2)
+  totalWins       Int        @default(0)     @map("total_wins")
+  totalLosses     Int        @default(0)     @map("total_losses")
+  totalDraws      Int        @default(0)     @map("total_draws")
+  winPercentage   Decimal    @default(0) @db.Decimal(5,2) @map("win_percentage")
   
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt      @map("updated_at")
   deleted         Boolean    @default(false)
-  deletedAt       DateTime?
+  deletedAt       DateTime?                  @map("deleted_at")
   
   // Relationships
   matchesAsHome   Match[]    @relation("HomeTeam")
@@ -259,31 +259,31 @@ model Team {
 // Player model with enhanced validation
 model Player {
   id                String     @id @default(uuid())
-  firstName         String
-  lastName          String?
-  displayName       String?
-  dateOfBirth       DateTime?
-  nationality       String?    // ISO 3166-1 alpha-2 code
-  gender            String?    // "male", "female", "other"
-  sport             String     // "football", "basketball", "track_events", etc.
-  position          String?
-  number            Int?
-  height            Int?       // in cm
-  weight            Int?       // in kg
-  teamId            String?
-  status            String     @default("active") // "active", "injured", "suspended", "retired"
-  profilePictureUrl String?
-  biography         String?
-  socialMediaLinks  Json?
-  careerStats       Json?
-  marketValue       Decimal?   @db.Money
-  salary            Decimal?   @db.Money
-  contractStart     DateTime?
-  contractEnd       DateTime?
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
-  deleted           Boolean    @default(false)
-  deletedAt         DateTime?
+  firstName         String     @map("first_name")
+  lastName          String?    @map("last_name")
+  displayName       String?    @map("display_name")
+  dateOfBirth       DateTime?  @map("date_of_birth")
+  nationality       String?    // ISO 3166-1 alpha-2 code @map("nationality")
+  gender            String?    // "male", "female", "other" @map("gender")
+  sport             String     @map("sport") // "football", "basketball", "track_events", etc.
+  position          String?    @map("position")
+  number            Int?       @map("jersey_number")
+  height            Int?       // in cm @map("height_cm")
+  weight            Int?       // in kg @map("weight_kg")
+  teamId            String?    @map("team_id")
+  status            String     @default("active") @map("status") // "active", "injured", "suspended", "retired"
+  profilePictureUrl String?    @map("photo_url")
+  biography         String?    @map("bio")
+  socialMediaLinks  Json?      @map("social_media")
+  careerStats       Json?      @map("career_stats")
+  marketValue       Decimal?   @db.Money @map("market_value")
+  salary            Decimal?   @db.Money @map("salary")
+  contractStart     DateTime?  @map("contract_start")
+  contractEnd       DateTime?  @map("contract_end")
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+  deleted           Boolean    @default(false) @map("deleted")
+  deletedAt         DateTime?  @map("deleted_at")
   
   // Relationships
   team              Team?      @relation(fields: [teamId], references: [id], onDelete: SetNull)

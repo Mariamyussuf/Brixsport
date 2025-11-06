@@ -23,12 +23,12 @@ export const matchService = {
           *,
           homeTeam:Team!homeTeamId(name, logo),
           awayTeam:Team!awayTeamId(name, logo),
-          competition:Competition(name)
+          competition:Competition(name, sportType)
         `);
       
-      // Apply sport filter if provided
+      // Apply sport filter if provided by joining with Competition table
       if (filters.sport) {
-        query = query.eq('sport', filters.sport);
+        query = query.eq('competition.sportType', filters.sport);
       }
       
       // Apply status filter if provided
@@ -40,7 +40,7 @@ export const matchService = {
       query = query.range(offset, offset + limit - 1);
       
       // Order by match date
-      query = query.order('startTime', { ascending: true });
+      query = query.order('scheduled_at', { ascending: true });
       
       const { data, error, count } = await query;
       
@@ -51,11 +51,11 @@ export const matchService = {
       // Transform data to match frontend expectations
       const matches = data.map((match: any) => ({
         id: match.id,
-        sport: match.sport,
+        sport: match.competition?.sportType,
         competition_id: match.competitionId,
         home_team_id: match.homeTeamId,
         away_team_id: match.awayTeamId,
-        match_date: match.startTime,
+        match_date: match.scheduled_at,
         venue: match.venue,
         status: match.status,
         home_score: match.homeScore,
@@ -95,17 +95,17 @@ export const matchService = {
           *,
           homeTeam:Team!homeTeamId(name, logo),
           awayTeam:Team!awayTeamId(name, logo),
-          competition:Competition(name)
+          competition:Competition(name, sportType)
         `)
         .eq('status', 'live');
       
-      // Apply sport filter if provided
+      // Apply sport filter if provided by joining with Competition table
       if (sport) {
-        query = query.eq('sport', sport);
+        query = query.eq('competition.sportType', sport);
       }
       
       // Order by match date
-      query = query.order('startTime', { ascending: true });
+      query = query.order('scheduled_at', { ascending: true });
       
       const { data, error } = await query;
       
@@ -127,7 +127,7 @@ export const matchService = {
           competition_id: match.competitionId,
           home_team_id: match.homeTeamId,
           away_team_id: match.awayTeamId,
-          match_date: match.startTime,
+          match_date: match.scheduled_at,
           venue: match.venue,
           status: match.status,
           home_score: match.homeScore,
@@ -142,13 +142,13 @@ export const matchService = {
         };
         
         // Add sport-specific fields
-        if (match.sport === 'football') {
+        if (match.competition?.sportType === 'football') {
           groupedMatches.football.push(matchData);
-        } else if (match.sport === 'basketball') {
+        } else if (match.competition?.sportType === 'basketball') {
           // Add basketball-specific period values
           matchData.period = match.period || 'Q1';
           groupedMatches.basketball.push(matchData);
-        } else if (match.sport === 'track') {
+        } else if (match.competition?.sportType === 'track') {
           // For track events, we need different data structure
           const trackEvent = {
             id: match.id,
@@ -156,7 +156,7 @@ export const matchService = {
             event_name: match.eventName || 'Track Event',
             event_type: match.eventType || 'sprint',
             gender: match.gender || 'male',
-            scheduled_time: match.startTime,
+            scheduled_time: match.scheduled_at,
             status: match.status,
             results: match.results || []
           };
@@ -185,7 +185,7 @@ export const matchService = {
           *,
           homeTeam:Team!homeTeamId(name, logo),
           awayTeam:Team!awayTeamId(name, logo),
-          competition:Competition(name)
+          competition:Competition(name, sportType)
         `)
         .eq('id', id)
         .single();
@@ -201,11 +201,11 @@ export const matchService = {
       // Transform data to match frontend expectations
       const match = {
         id: data.id,
-        sport: data.sport,
+        sport: data.competition?.sportType,
         competition_id: data.competitionId,
         home_team_id: data.homeTeamId,
         away_team_id: data.awayTeamId,
-        match_date: data.startTime,
+        match_date: data.scheduled_at,
         venue: data.venue,
         status: data.status,
         home_score: data.homeScore,
@@ -252,10 +252,10 @@ export const matchService = {
           *,
           homeTeam:Team!homeTeamId(name, logo),
           awayTeam:Team!awayTeamId(name, logo),
-          competition:Competition(name)
+          competition:Competition(name, sportType)
         `)
         .eq('id', id)
-        .eq('sport', 'football')
+        .eq('competition.sportType', 'football')
         .single();
       
       if (error) {
@@ -269,11 +269,11 @@ export const matchService = {
       // Transform data to match frontend expectations
       const match = {
         id: data.id,
-        sport: data.sport,
+        sport: data.competition?.sportType,
         competition_id: data.competitionId,
         home_team_id: data.homeTeamId,
         away_team_id: data.awayTeamId,
-        match_date: data.startTime,
+        match_date: data.scheduled_at,
         venue: data.venue,
         status: data.status,
         home_score: data.homeScore,
@@ -325,10 +325,10 @@ export const matchService = {
           *,
           homeTeam:Team!homeTeamId(name, logo),
           awayTeam:Team!awayTeamId(name, logo),
-          competition:Competition(name)
+          competition:Competition(name, sportType)
         `)
         .eq('id', id)
-        .eq('sport', 'basketball')
+        .eq('competition.sportType', 'basketball')
         .single();
       
       if (error) {
@@ -342,11 +342,11 @@ export const matchService = {
       // Transform data to match frontend expectations
       const match = {
         id: data.id,
-        sport: data.sport,
+        sport: data.competition?.sportType,
         competition_id: data.competitionId,
         home_team_id: data.homeTeamId,
         away_team_id: data.awayTeamId,
-        match_date: data.startTime,
+        match_date: data.scheduled_at,
         venue: data.venue,
         status: data.status,
         home_score: data.homeScore,

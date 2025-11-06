@@ -10,6 +10,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     const ip = req.ip || 'unknown';
     const isAccountLocked = await accountSecurityService.isAccountLocked(ip);
     if (isAccountLocked) {
+      logger.warn('Account creation blocked due to rate limiting', { ip });
       res.status(429).json({
         success: false,
         error: 'Too many requests',
@@ -18,10 +19,46 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       return;
     }
     
+    // Validate request body
+    if (!req.body || !req.body.name || !req.body.email || !req.body.password) {
+      logger.warn('Signup failed: Missing required fields', { 
+        ip, 
+        hasName: !!req.body?.name,
+        hasEmail: !!req.body?.email,
+        hasPassword: !!req.body?.password
+      });
+      res.status(400).json({
+        success: false,
+        error: 'Validation error',
+        message: 'Name, email, and password are required'
+      });
+      return;
+    }
+    
+    logger.info('Processing signup request', { email: req.body.email, ip });
+    
     const result = await authService.signup(req.body);
     res.status(201).json(result);
   } catch (error: any) {
-    logger.error('Signup error', { error: error.message, stack: error.stack });
+    logger.error('Signup error', { 
+      error: error.message, 
+      stack: error.stack,
+      email: req.body?.email,
+      ip: req.ip
+    });
+    
+    // Provide more specific error messages for common issues
+    if (error.message.includes('environment variables')) {
+      const errorResponse = {
+        success: false,
+        error: 'Configuration error',
+        message: error.message,
+        code: 'CONFIG_ERROR'
+      };
+      res.status(500).json(errorResponse);
+      return;
+    }
+    
     const errorResponse = errorHandlerService.createErrorResponse(error);
     res.status(errorResponse.statusCode || 500).json(errorResponse);
   }

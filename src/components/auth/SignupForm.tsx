@@ -216,7 +216,20 @@ const SignupForm: React.FC = () => {
 
       if (!response.ok) {
         rateLimiter.recordAttempt();
-        throw new Error(data.error?.message || 'Signup failed');
+        
+        // Provide more specific error messages
+        let errorMessage = 'Signup failed';
+        if (data.error?.message) {
+          errorMessage = data.error.message;
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (response.status === 500) {
+          errorMessage = 'Server error. Please try again later.';
+        } else if (response.status === 429) {
+          errorMessage = 'Too many requests. Please try again later.';
+        }
+        
+        throw new Error(errorMessage);
       }
 
       // After successful signup, automatically log the user in
@@ -224,7 +237,20 @@ const SignupForm: React.FC = () => {
       router.push('/onboarding');
     } catch (error: any) {
       rateLimiter.recordAttempt();
-      setSubmitError(error.message || 'Network error. Please check your connection and try again.');
+      
+      // Provide more user-friendly error messages
+      let errorMessage = error.message || 'Network error. Please check your connection and try again.';
+      
+      // Handle specific error cases
+      if (errorMessage.includes('already exists')) {
+        errorMessage = 'An account with this email already exists. Please use a different email or try logging in.';
+      } else if (errorMessage.includes('environment variables') || errorMessage.includes('configuration')) {
+        errorMessage = 'Service temporarily unavailable. Please try again later.';
+      } else if (errorMessage.includes('password')) {
+        errorMessage = `Password error: ${errorMessage}`;
+      }
+      
+      setSubmitError(errorMessage);
       console.error('Signup error:', error);
     } finally {
       setIsLoading(false);

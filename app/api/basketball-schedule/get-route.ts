@@ -37,16 +37,16 @@ export async function GET() {
       .from('Match')
       .select(`
         id,
-        home_team_id,
-        away_team_id,
-        scheduled_at,
+        homeTeamId:home_team_id,
+        awayTeamId:away_team_id,
+        startTime:scheduled_at,
         venue,
         status,
         homeTeam:Team!home_team_id(name),
         awayTeam:Team!away_team_id(name)
       `)
-      .eq('competition_id', competition.id)
-      .order('scheduled_at', { ascending: true });
+      .eq('competitionId', competition.id)
+      .order('startTime', { ascending: true });
 
     if (matchesError) {
       return NextResponse.json(
@@ -75,7 +75,7 @@ const transformMatchesToRounds = (matches: any[]) => {
   const matchesByDate: Record<string, any[]> = {};
   
   matches.forEach(match => {
-    const date = match.scheduled_at.split('T')[0];
+    const date = match.startTime.split('T')[0];
     if (!matchesByDate[date]) {
       matchesByDate[date] = [];
     }
@@ -83,7 +83,7 @@ const transformMatchesToRounds = (matches: any[]) => {
       id: match.id,
       home_team_name: match.homeTeam?.name || 'TBD',
       away_team_name: match.awayTeam?.name || 'TBD',
-      scheduled_at: match.scheduled_at,
+      scheduled_at: match.startTime,
       venue: match.venue,
       status: match.status
     });

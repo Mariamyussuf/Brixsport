@@ -233,7 +233,7 @@ export const supabaseService = {
           *,
           homeTeam:Team!Match_homeTeamId_fkey(name, shortName:short_name, logo_url),
           awayTeam:Team!Match_awayTeamId_fkey(name, shortName:short_name, logo_url),
-          competition:Competition!Match_competitionId_fkey(name, sport, logo_url, country)
+          competition:Competition!Match_competitionId_fkey(name, sportType, logo_url, country)
         `)
         .eq('id', id)
         .maybeSingle();
@@ -573,7 +573,7 @@ export const supabaseService = {
           *,
           homeTeam:Team!Match_homeTeamId_fkey(name, shortName:short_name, logo_url),
           awayTeam:Team!Match_awayTeamId_fkey(name, shortName:short_name, logo_url),
-          competition:Competition!Match_competitionId_fkey(name, sport, logo_url, country)
+          competition:Competition!Match_competitionId_fkey(name, sportType, logo_url, country)
         `, { count: 'exact' });
       
       // Apply filters if provided
@@ -595,15 +595,15 @@ export const supabaseService = {
       }
 
       if (filters.sport) {
-        query = query.eq('sport', filters.sport);
+        query = query.eq('competition.sportType', filters.sport);
       }
 
       if (filters.dateFrom) {
-        query = query.gte('startTime', filters.dateFrom);
+        query = query.gte('scheduled_at', filters.dateFrom);
       }
 
       if (filters.dateTo) {
-        query = query.lte('startTime', filters.dateTo);
+        query = query.lte('scheduled_at', filters.dateTo);
       }
 
       // Apply pagination
@@ -611,7 +611,7 @@ export const supabaseService = {
 
       // Sort by start time (ascending for upcoming/live, descending for finished)
       const sortAscending = !(typeof filters.status === 'string' && filters.status.toLowerCase() === 'finished');
-      query = query.order('startTime', { ascending: sortAscending });
+      query = query.order('scheduled_at', { ascending: sortAscending });
 
       const { data, error, count } = await query;
 
@@ -689,7 +689,12 @@ export const supabaseService = {
   
   createUser: async (userData: any) => {
     try {
-      logger.info('Creating user in Supabase', { userData });
+      logger.info('Creating user in Supabase', { 
+        email: userData.email,
+        name: userData.name,
+        hasPassword: !!userData.password,
+        role: userData.role
+      });
       
       const { data, error } = await supabase
         .from('User')
@@ -698,13 +703,28 @@ export const supabaseService = {
         .single();
       
       if (error) {
-        logger.error('Create user error', error);
+        logger.error('Create user error in Supabase', { 
+          error: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+          email: userData.email
+        });
         throw new Error(`Supabase error: ${error.message}`);
       }
       
+      logger.info('User created successfully in Supabase', { 
+        userId: data.id,
+        email: data.email
+      });
+      
       return data;
     } catch (error: any) {
-      logger.error('Create user error', error);
+      logger.error('Create user error', { 
+        error: error.message,
+        stack: error.stack,
+        email: userData?.email
+      });
       throw error;
     }
   },

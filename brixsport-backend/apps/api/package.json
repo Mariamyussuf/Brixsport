@@ -13,7 +13,8 @@
     "lint": "eslint --config .eslintrc.js src/**/*.ts",
     "lint:fix": "eslint --fix src/**/*.ts",
     "lint:ci": "eslint --config .eslintrc.js src/**/*.ts",
-    "prettier": "prettier --write src/**/*.ts"
+    "prettier": "prettier --write src/**/*.ts",
+    "validate-env": "node ../../scripts/validate-environment.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

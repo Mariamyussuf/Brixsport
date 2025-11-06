@@ -80,9 +80,22 @@ export const sessionService: SessionService = {
   },
   
   createRefreshSession: async (refreshToken: string, sessionData: RefreshTokenSession, ttl: number): Promise<void> => {
-    const sessionKey = `refreshToken:${refreshToken}`;
-    await redisService.set(sessionKey, JSON.stringify(sessionData), ttl);
-    logger.info('Refresh token session stored', { refreshToken });
+    try {
+      const sessionKey = `refreshToken:${refreshToken}`;
+      await redisService.set(sessionKey, JSON.stringify(sessionData), ttl);
+      logger.info('Refresh token session stored', { 
+        refreshToken: refreshToken.substring(0, 10) + '...', // Log only part of the token for security
+        userId: sessionData.userId,
+        ttl
+      });
+    } catch (error: any) {
+      logger.error('Error creating refresh session', { 
+        error: error.message,
+        stack: error.stack,
+        userId: sessionData.userId
+      });
+      throw error;
+    }
   },
 
   getRefreshSession: async (refreshToken: string): Promise<RefreshTokenSession | null> => {

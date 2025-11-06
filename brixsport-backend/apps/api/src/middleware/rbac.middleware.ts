@@ -1,5 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '@utils/logger';
+import { JwtPayload } from 'jsonwebtoken';
+
+// Extend the Express Request interface locally
+interface CustomRequest extends Request {
+  user?: JwtPayload & { 
+    id?: string;
+    userId?: string;
+    email?: string;
+    role?: string;
+    [key: string]: any; // Allow additional properties
+  };
+}
 
 // Role-based access control middleware
 export enum UserRole {
@@ -24,7 +36,7 @@ const PERMISSIONS: Record<string, UserRole[]> = {
 
 // Check if user has a specific role
 export const hasRole = (requiredRole: UserRole) => {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (req: CustomRequest, res: Response, next: NextFunction): void => {
     try {
       // Get user from request (added by auth middleware)
       const user = req.user;
@@ -64,7 +76,7 @@ export const hasRole = (requiredRole: UserRole) => {
 
 // Check if user has specific permission
 export const hasPermission = (permission: string) => {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (req: CustomRequest, res: Response, next: NextFunction): void => {
     try {
       // Get user from request (added by auth middleware)
       const user = req.user;

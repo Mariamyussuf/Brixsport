@@ -173,16 +173,20 @@ export const encryptionService: EncryptionService = {
   
   hashPassword: async (password: string): Promise<string> => {
     try {
-      logger.debug('Hashing password');
+      logger.debug('Hashing password in encryption service', { passwordLength: password.length });
       
       const saltRounds = 12; // Increased from 10 for better security
       const hashedPassword = await bcrypt.hash(password, saltRounds);
       
-      logger.debug('Password hashed');
+      logger.debug('Password hashed successfully in encryption service');
       
       return hashedPassword;
     } catch (error: any) {
-      logger.error('Password hashing error', error);
+      logger.error('Password hashing error in encryption service', { 
+        error: error.message,
+        stack: error.stack,
+        passwordLength: password?.length
+      });
       throw error;
     }
   },

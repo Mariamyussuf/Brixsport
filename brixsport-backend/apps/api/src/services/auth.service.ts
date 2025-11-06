@@ -11,25 +11,50 @@ import { v4 as uuidv4 } from 'uuid';
 export const authService = {
   signup: async (userData: any) => {
     try {
-      logger.info('User signup attempt', userData);
+      logger.info('User signup attempt', { email: userData.email });
       
       // Check if user already exists
       const existingUser = await supabaseService.getUserByEmail(userData.email);
       if (existingUser) {
+        logger.warn('Signup failed: User already exists', { email: userData.email });
         throw new Error('User already exists with this email');
       }
       
+      // Validate required environment variables
+      const requiredEnvVars = ['JWT_SECRET', 'REFRESH_TOKEN_SECRET', 'EMAIL_VERIFICATION_SECRET'];
+      const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+      if (missingEnvVars.length > 0) {
+        logger.error('Signup failed: Missing environment variables', { missingEnvVars });
+        throw new Error(`Server configuration error: Missing environment variables: ${missingEnvVars.join(', ')}`);
+      }
+      
+      // Validate user data
+      if (!userData.name || !userData.email || !userData.password) {
+        logger.warn('Signup failed: Missing required user data', { 
+          hasName: !!userData.name,
+          hasEmail: !!userData.email,
+          hasPassword: !!userData.password,
+          email: userData.email
+        });
+        throw new Error('Name, email, and password are required');
+      }
+      
       // Hash password using the centralized database service
+      logger.info('Hashing password for user', { email: userData.email });
       const hashedPassword = await centralizedDatabaseService.hashPassword(userData.password);
+      logger.info('Password hashed successfully', { email: userData.email });
       
       // Create user
+      logger.info('Creating user record in database', { email: userData.email });
       const user = await supabaseService.createUser({
         ...userData,
         password: hashedPassword,
         role: userData.role || 'user'
       });
+      logger.info('User record created successfully', { userId: user.id, email: user.email });
       
       // Generate tokens
+      logger.info('Generating authentication tokens', { userId: user.id });
       const token = jwt.sign(
         { userId: user.id, email: user.email, role: user.role },
         process.env.JWT_SECRET || 'fallback_secret',
@@ -41,29 +66,48 @@ export const authService = {
         process.env.REFRESH_TOKEN_SECRET || 'fallback_refresh_secret',
         { expiresIn: '7d' }
       );
+      logger.info('Authentication tokens generated', { userId: user.id });
       
       // Store refresh token in Redis with expiration
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
       
+      logger.info('Storing refresh token in Redis', { userId: user.id });
       await sessionService.createRefreshSession(refreshToken, {
         userId: user.id,
         createdAt: new Date(),
         expiresAt
       }, 7 * 24 * 60 * 60);
+      logger.info('Refresh token stored in Redis', { userId: user.id });
       
       // Generate verification token
+      logger.info('Generating email verification token', { userId: user.id });
       const verificationToken = jwt.sign(
         { userId: user.id, email: user.email },
         process.env.EMAIL_VERIFICATION_SECRET || 'fallback_email_secret',
         { expiresIn: '24h' }
       );
+      logger.info('Email verification token generated', { userId: user.id });
       
       // Send verification email
-      await emailService.sendVerificationEmail(user.email, verificationToken);
+      try {
+        logger.info('Sending verification email', { userId: user.id, email: user.email });
+        await emailService.sendVerificationEmail(user.email, verificationToken);
+        logger.info('Verification email sent successfully', { userId: user.id, email: user.email });
+      } catch (emailError: any) {
+        logger.error('Failed to send verification email', { 
+          userId: user.id, 
+          email: user.email, 
+          error: emailError.message,
+          stack: emailError.stack
+        });
+        // Don't fail the signup if email sending fails, but log the error
+      }
       
       // Remove sensitive information
       const { password, ...publicUser } = user;
+      
+      logger.info('Signup completed successfully', { userId: user.id, email: user.email });
       
       return {
         success: true,
@@ -75,7 +119,11 @@ export const authService = {
         message: 'User registered successfully. Please check your email for verification.'
       };
     } catch (error: any) {
-      logger.error('Signup error', error);
+      logger.error('Signup error', { 
+        error: error.message, 
+        stack: error.stack,
+        email: userData.email
+      });
       throw error;
     }
   },

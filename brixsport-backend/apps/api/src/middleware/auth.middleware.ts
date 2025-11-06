@@ -2,6 +2,17 @@ import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { logger } from '@utils/logger';
 
+// Extend the Express Request interface locally
+interface CustomRequest extends Request {
+  user?: JwtPayload & { 
+    id?: string;
+    userId?: string;
+    email?: string;
+    role?: string;
+    [key: string]: any; // Allow additional properties
+  };
+}
+
 const verifyToken = (token: string) => {
   try {
     // Verify JWT token
@@ -15,7 +26,7 @@ const verifyToken = (token: string) => {
   }
 };
 
-export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
+export const authenticate = (req: CustomRequest, res: Response, next: NextFunction): void => {
   try {
     // Get token from header
     const authHeader = req.headers.authorization;
@@ -51,7 +62,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
 };
 
 export const authorize = (roles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (req: CustomRequest, res: Response, next: NextFunction): void => {
     try {
       // Check if user is authenticated
       if (!req.user) {

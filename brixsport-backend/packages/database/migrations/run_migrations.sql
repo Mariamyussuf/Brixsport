@@ -87,6 +87,26 @@ To run migrations manually, execute the following files in order:
 6. 005_notifications_messaging.sql - Notifications and messaging system
 7. 006_media_content.sql - Media management and content system
 8. 007_advanced_features.sql - Advanced features (webhooks, feature flags, etc.)
+9. 008_add_user_roles.sql - Add user roles and permissions
+10. 009_add_user_settings.sql - Add user settings table
+11. 010_add_user_profile.sql - Add user profile table
+12. 011_add_user_activity.sql - Add user activity table
+13. 012_add_user_notifications.sql - Add user notifications table
+14. 013_add_user_messages.sql - Add user messages table
+15. 014_add_user_media.sql - Add user media table
+16. 015_add_user_features.sql - Add user features table
+17. 016_add_user_security.sql - Add user security table
+18. 017_add_user_analytics.sql - Add user analytics table
+19. 018_add_user_chat.sql - Add user chat table
+20. 019_add_user_performance.sql - Add user performance table
+21. 020_add_user_retention.sql - Add user retention table
+22. 021_add_user_notifications_messaging.sql - Add user notifications and messaging table
+23. 022_add_user_media_content.sql - Add user media and content table
+24. 023_add_user_advanced_features.sql - Add user advanced features table
+25. 024_add_player_weight_column.sql - Add weight column to Player table
+26. 025_add_missing_player_columns.sql - Add missing columns to Player table
+27. 026_sync_competition_table_with_prisma_schema.sql - Sync Competition table with Prisma schema
+28. 027_add_match_importance_column.sql - Add importance column to Match table
 
 After running each migration, record it using:
 SELECT record_migration('migration_name', execution_time_ms, success, error_message);
@@ -143,7 +163,9 @@ INSERT INTO migration_history (migration_name, success, error_message) VALUES
 ('004_security_audit', FALSE, 'Not executed - run manually'),
 ('005_notifications_messaging', FALSE, 'Not executed - run manually'),
 ('006_media_content', FALSE, 'Not executed - run manually'),
-('007_advanced_features', FALSE, 'Not executed - run manually')
+('007_advanced_features', FALSE, 'Not executed - run manually'),
+('026_sync_competition_table_with_prisma_schema', FALSE, 'Not executed - run manually'),
+('027_add_match_importance_column', FALSE, 'Not executed - run manually')
 ON CONFLICT (migration_name) DO NOTHING;
 
 -- Display current migration status

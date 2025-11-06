@@ -103,7 +103,7 @@ export const databaseSecurityService: DatabaseSecurityService = {
   
   hashPassword: async (password: string): Promise<string> => {
     try {
-      logger.debug('Hashing password in database security service');
+      logger.debug('Hashing password in database security service', { passwordLength: password.length });
       
       const hashedPassword = await encryptionService.hashPassword(password);
       
@@ -111,7 +111,10 @@ export const databaseSecurityService: DatabaseSecurityService = {
       
       return hashedPassword;
     } catch (error: any) {
-      logger.error('Password hashing error in database security service', error);
+      logger.error('Password hashing error in database security service', { 
+        error: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   },
