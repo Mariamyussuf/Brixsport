@@ -1394,6 +1394,549 @@ export class DatabaseService {
       throw new DatabaseError(`Failed to fetch users: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
+
+  // Messaging methods
+
+  // Get conversation details
+  async getConversationDetails(conversationId: string): Promise<any> {
+    logOperation('GET_CONVERSATION_DETAILS_START', { conversationId });
+    try {
+      // Validate input using enhanced validation
+      validate.id(conversationId, 'Conversation ID');
+      
+      const { data, error } = await supabase
+        .from('conversations')
+        .select(`
+          *,
+          participants:conversation_participants(
+            user_id,
+            role,
+            joined_at
+          )
+        `)
+        .eq('id', conversationId)
+        .single();
+      
+      if (error) {
+        throw new DatabaseError(`Failed to fetch conversation: ${error.message}`, 'FETCH_ERROR', 500);
+      }
+      
+      logOperation('GET_CONVERSATION_DETAILS_SUCCESS', { conversationId });
+      return data || null;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('GET_CONVERSATION_DETAILS_VALIDATION_ERROR', { conversationId, error: error.message });
+        console.error('Validation error in getConversationDetails:', error.message);
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('GET_CONVERSATION_DETAILS_ERROR', { conversationId, error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in getConversationDetails:', error);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to fetch conversation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Get user conversations
+  async getUserConversations(userId: string, filters: { type?: string; sortBy?: string; sortOrder?: 'ASC' | 'DESC' }, pagination: { page: number; limit: number }): Promise<any[]> {
+    logOperation('GET_USER_CONVERSATIONS_START', { userId, filters, pagination });
+    try {
+      // Validate input using enhanced validation
+      validate.id(userId, 'User ID');
+      
+      const { page, limit } = pagination;
+      const offset = (page - 1) * limit;
+      
+      let query = supabase
+        .from('conversations')
+        .select(`
+          *,
+          participants:conversation_participants(
+            user_id,
+            role,
+            joined_at,
+            last_read_at
+          )
+        `)
+        .eq('participants.user_id', userId)
+        .is('participants.left_at', null)
+        .range(offset, offset + limit - 1);
+      
+      // Apply filters
+      if (filters.type) {
+        query = query.eq('type', filters.type);
+      }
+      
+      // Apply sorting
+      const sortBy = filters.sortBy || 'updated_at';
+      const sortOrder = filters.sortOrder || 'DESC';
+      query = query.order(sortBy, { ascending: sortOrder === 'ASC' });
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        throw new DatabaseError(`Failed to fetch conversations: ${error.message}`, 'FETCH_ERROR', 500);
+      }
+      
+      logOperation('GET_USER_CONVERSATIONS_SUCCESS', { userId, count: data?.length || 0 });
+      return data || [];
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('GET_USER_CONVERSATIONS_VALIDATION_ERROR', { userId, error: error.message });
+        console.error('Validation error in getUserConversations:', error.message);
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('GET_USER_CONVERSATIONS_ERROR', { userId, error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in getUserConversations:', error);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to fetch conversations: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Create conversation
+  async createConversation(creatorId: string, type: string, name: string, participantIds: string[]): Promise<any> {
+    logOperation('CREATE_CONVERSATION_START', { creatorId, type, name, participantCount: participantIds.length });
+    try {
+      // Validate input using enhanced validation
+      validate.id(creatorId, 'Creator ID');
+      validate.string(type, 'Conversation type', { required: true, maxLength: 50 });
+      if (name) validate.string(name, 'Conversation name', { required: false, maxLength: 255 });
+      validate.array(participantIds, 'Participant IDs', { required: true, maxLength: 100 });
+      
+      // Validate each participant ID
+      for (const participantId of participantIds) {
+        validate.id(participantId, 'Participant ID');
+      }
+      
+      // Create the conversation
+      const { data: conversationData, error: conversationError } = await supabase
+        .from('conversations')
+        .insert([
+          {
+            type,
+            name: name || null,
+            created_by: creatorId
+          }
+        ])
+        .select()
+        .single();
+      
+      if (conversationError) {
+        throw new DatabaseError(`Failed to create conversation: ${conversationError.message}`, 'CREATE_ERROR', 500);
+      }
+      
+      const conversationId = conversationData.id;
+      
+      // Add participants
+      const participantsToInsert = [
+        { conversation_id: conversationId, user_id: creatorId, role: 'owner' },
+        ...participantIds.map(participantId => ({
+          conversation_id: conversationId,
+          user_id: participantId,
+          role: 'member'
+        }))
+      ];
+      
+      const { error: participantsError } = await supabase
+        .from('conversation_participants')
+        .insert(participantsToInsert);
+      
+      if (participantsError) {
+        throw new DatabaseError(`Failed to add participants to conversation: ${participantsError.message}`, 'CREATE_ERROR', 500);
+      }
+      
+      // Fetch the complete conversation with participants
+      const { data: fullConversation, error: fetchError } = await supabase
+        .from('conversations')
+        .select(`
+          *,
+          participants:conversation_participants(
+            user_id,
+            role,
+            joined_at
+          )
+        `)
+        .eq('id', conversationId)
+        .single();
+      
+      if (fetchError) {
+        throw new DatabaseError(`Failed to fetch created conversation: ${fetchError.message}`, 'FETCH_ERROR', 500);
+      }
+      
+      logOperation('CREATE_CONVERSATION_SUCCESS', { conversationId, creatorId });
+      return fullConversation;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('CREATE_CONVERSATION_VALIDATION_ERROR', { creatorId, error: error.message });
+        console.error('Validation error in createConversation:', error.message);
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('CREATE_CONVERSATION_ERROR', { creatorId, error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in createConversation:', error);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to create conversation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Send message
+  async sendMessage(conversationId: string, userId: string, content: string, contentType: string = 'text', parentId: string | null = null): Promise<any> {
+    logOperation('SEND_MESSAGE_START', { conversationId, userId, contentLength: content.length });
+    try {
+      // Validate input using enhanced validation
+      validate.id(conversationId, 'Conversation ID');
+      validate.id(userId, 'User ID');
+      validate.string(content, 'Message content', { required: true, maxLength: 10000 });
+      validate.string(contentType, 'Content type', { required: true, maxLength: 50 });
+      if (parentId) validate.id(parentId, 'Parent message ID');
+      
+      // Verify user is a participant in the conversation
+      const { data: participantData, error: participantError } = await supabase
+        .from('conversation_participants')
+        .select('id')
+        .eq('conversation_id', conversationId)
+        .eq('user_id', userId)
+        .is('left_at', null)
+        .single();
+      
+      if (participantError || !participantData) {
+        throw new DatabaseError('User is not a participant in this conversation', 'FORBIDDEN', 403);
+      }
+      
+      // Create the message
+      const { data: messageData, error: messageError } = await supabase
+        .from('messages')
+        .insert([
+          {
+            conversation_id: conversationId,
+            user_id: userId,
+            content,
+            content_type: contentType,
+            parent_message_id: parentId
+          }
+        ])
+        .select()
+        .single();
+      
+      if (messageError) {
+        throw new DatabaseError(`Failed to send message: ${messageError.message}`, 'CREATE_ERROR', 500);
+      }
+      
+      // Update conversation timestamp
+      const { error: updateError } = await supabase
+        .from('conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', conversationId);
+      
+      if (updateError) {
+        console.warn('Failed to update conversation timestamp:', updateError);
+      }
+      
+      logOperation('SEND_MESSAGE_SUCCESS', { messageId: messageData.id, conversationId, userId });
+      return messageData;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('SEND_MESSAGE_VALIDATION_ERROR', { conversationId, userId, error: error.message });
+        console.error('Validation error in sendMessage:', error.message);
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('SEND_MESSAGE_ERROR', { conversationId, userId, error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in sendMessage:', error);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Get conversation messages
+  async getMessages(conversationId: string, pagination: { page: number; limit: number }): Promise<any[]> {
+    logOperation('GET_MESSAGES_START', { conversationId, pagination });
+    try {
+      // Validate input using enhanced validation
+      validate.id(conversationId, 'Conversation ID');
+      
+      const { page, limit } = pagination;
+      const offset = (page - 1) * limit;
+      
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .eq('deleted', false)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+      
+      if (error) {
+        throw new DatabaseError(`Failed to fetch messages: ${error.message}`, 'FETCH_ERROR', 500);
+      }
+      
+      logOperation('GET_MESSAGES_SUCCESS', { conversationId, count: data?.length || 0 });
+      return data || [];
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('GET_MESSAGES_VALIDATION_ERROR', { conversationId, error: error.message });
+        console.error('Validation error in getMessages:', error.message);
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('GET_MESSAGES_ERROR', { conversationId, error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in getMessages:', error);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to fetch messages: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Update message
+  async updateMessage(messageId: string, userId: string, content: string): Promise<any> {
+    logOperation('UPDATE_MESSAGE_START', { messageId, userId });
+    try {
+      // Validate input using enhanced validation
+      validate.id(messageId, 'Message ID');
+      validate.id(userId, 'User ID');
+      validate.string(content, 'Message content', { required: true, maxLength: 10000 });
+      
+      // Verify user is the owner of the message
+      const { data: messageData, error: fetchError } = await supabase
+        .from('messages')
+        .select('user_id')
+        .eq('id', messageId)
+        .eq('user_id', userId)
+        .single();
+      
+      if (fetchError || !messageData) {
+        throw new DatabaseError('Message not found or user is not the owner', 'FORBIDDEN', 403);
+      }
+      
+      // Update the message
+      const { data, error } = await supabase
+        .from('messages')
+        .update({
+          content,
+          edited: true,
+          edited_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', messageId)
+        .select()
+        .single();
+      
+      if (error) {
+        throw new DatabaseError(`Failed to update message: ${error.message}`, 'UPDATE_ERROR', 500);
+      }
+      
+      logOperation('UPDATE_MESSAGE_SUCCESS', { messageId, userId });
+      return data;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('UPDATE_MESSAGE_VALIDATION_ERROR', { messageId, userId, error: error.message });
+        console.error('Validation error in updateMessage:', error.message);
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('UPDATE_MESSAGE_ERROR', { messageId, userId, error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in updateMessage:', error);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to update message: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Delete message
+  async deleteMessage(messageId: string, userId: string): Promise<boolean> {
+    logOperation('DELETE_MESSAGE_START', { messageId, userId });
+    try {
+      // Validate input using enhanced validation
+      validate.id(messageId, 'Message ID');
+      validate.id(userId, 'User ID');
+      
+      // Verify user is the owner of the message or an admin
+      const { data: messageData, error: fetchError } = await supabase
+        .from('messages')
+        .select('user_id')
+        .eq('id', messageId)
+        .single();
+      
+      if (fetchError || !messageData) {
+        throw new DatabaseError('Message not found', 'NOT_FOUND', 404);
+      }
+      
+      // In a real implementation, you would also check if the user is an admin
+      // For now, we'll just check if they're the owner
+      if (messageData.user_id !== userId) {
+        throw new DatabaseError('User is not the owner of this message', 'FORBIDDEN', 403);
+      }
+      
+      // Soft delete the message
+      const { error } = await supabase
+        .from('messages')
+        .update({
+          deleted: true,
+          deleted_at: new Date().toISOString(),
+          deleted_by: userId,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', messageId);
+      
+      if (error) {
+        throw new DatabaseError(`Failed to delete message: ${error.message}`, 'DELETE_ERROR', 500);
+      }
+      
+      logOperation('DELETE_MESSAGE_SUCCESS', { messageId, userId });
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('DELETE_MESSAGE_VALIDATION_ERROR', { messageId, userId, error: error.message });
+        console.error('Validation error in deleteMessage:', error.message);
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('DELETE_MESSAGE_ERROR', { messageId, userId, error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in deleteMessage:', error);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to delete message: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Create announcement
+  async createAnnouncement(userId: string, title: string, content: string, priority: string): Promise<any> {
+    logOperation('CREATE_ANNOUNCEMENT_START', { userId, title });
+    try {
+      // Validate input using enhanced validation
+      validate.id(userId, 'User ID');
+      validate.string(title, 'Announcement title', { required: true, maxLength: 255 });
+      validate.string(content, 'Announcement content', { required: true, maxLength: 10000 });
+      validate.string(priority, 'Announcement priority', { required: true, maxLength: 20 });
+      
+      // In a real implementation, you would check if the user has admin permissions
+      
+      // Create the broadcast message
+      const { data, error } = await supabase
+        .from('broadcast_messages')
+        .insert([
+          {
+            sender_id: userId,
+            title,
+            content,
+            priority,
+            target_type: 'all_users',
+            status: 'sent',
+            sent_at: new Date().toISOString()
+          }
+        ])
+        .select()
+        .single();
+      
+      if (error) {
+        throw new DatabaseError(`Failed to create announcement: ${error.message}`, 'CREATE_ERROR', 500);
+      }
+      
+      logOperation('CREATE_ANNOUNCEMENT_SUCCESS', { announcementId: data.id, userId });
+      return data;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('CREATE_ANNOUNCEMENT_VALIDATION_ERROR', { userId, error: error.message });
+        console.error('Validation error in createAnnouncement:', error.message);
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('CREATE_ANNOUNCEMENT_ERROR', { userId, error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in createAnnouncement:', error);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to create announcement: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Get announcements
+  async getAnnouncements(userId: string, pagination: { page: number; limit: number }): Promise<any> {
+    logOperation('GET_ANNOUNCEMENTS_START', { userId, pagination });
+    try {
+      // Validate input using enhanced validation
+      validate.id(userId, 'User ID');
+      
+      const { page, limit } = pagination;
+      const offset = (page - 1) * limit;
+      
+      // In a real implementation, you would check if the user has admin permissions
+      
+      const { data, error } = await supabase
+        .from('broadcast_messages')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+      
+      if (error) {
+        throw new DatabaseError(`Failed to fetch announcements: ${error.message}`, 'FETCH_ERROR', 500);
+      }
+      
+      logOperation('GET_ANNOUNCEMENTS_SUCCESS', { userId, count: data?.length || 0 });
+      return {
+        announcements: data || [],
+        pagination: {
+          page,
+          limit,
+          total: data?.length || 0,
+          hasNext: false
+        }
+      };
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('GET_ANNOUNCEMENTS_VALIDATION_ERROR', { userId, error: error.message });
+        console.error('Validation error in getAnnouncements:', error.message);
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('GET_ANNOUNCEMENTS_ERROR', { userId, error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in getAnnouncements:', error);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to fetch announcements: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Delete announcement
+  async deleteAnnouncement(userId: string, announcementId: string): Promise<boolean> {
+    logOperation('DELETE_ANNOUNCEMENT_START', { userId, announcementId });
+    try {
+      // Validate input using enhanced validation
+      validate.id(userId, 'User ID');
+      validate.id(announcementId, 'Announcement ID');
+      
+      // In a real implementation, you would check if the user has admin permissions
+      
+      // Delete the broadcast message
+      const { error } = await supabase
+        .from('broadcast_messages')
+        .delete()
+        .eq('id', announcementId);
+      
+      if (error) {
+        throw new DatabaseError(`Failed to delete announcement: ${error.message}`, 'DELETE_ERROR', 500);
+      }
+      
+      logOperation('DELETE_ANNOUNCEMENT_SUCCESS', { userId, announcementId });
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('DELETE_ANNOUNCEMENT_VALIDATION_ERROR', { userId, announcementId, error: error.message });
+        console.error('Validation error in deleteAnnouncement:', error.message);
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('DELETE_ANNOUNCEMENT_ERROR', { userId, announcementId, error: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in deleteAnnouncement:', error);
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to delete announcement: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
 }
 
 // Export a singleton instance
