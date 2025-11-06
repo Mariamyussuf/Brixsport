@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Search, Bell, Clock, Star, Calendar, Trophy, ArrowLeft, Menu, X, User } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import Favouritesscreen from './Favouritesscreen';
 import LiveMatchesScreen from './LiveMatchesScreen';
 import { useI18n } from '../shared/I18nProvider';
@@ -68,10 +69,25 @@ interface EnhancedMatch extends UI_Match {
 const Homescreen: React.FC = () => {
   const { t } = useI18n();
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated } = useAuth();
   
+  // Determine active tab based on current pathname
+  const getActiveTabFromPath = (): TabType => {
+    switch (pathname) {
+      case '/favorites':
+        return 'Favourites';
+      case '/competition':
+        return 'Competition';
+      case '/profile':
+        return 'Profile';
+      default:
+        return 'Fixtures';
+    }
+  };
+  
   // State management - enhanced with status and date filtering
-  const [activeTab, setActiveTab] = useState<TabType>('Fixtures');
+  const [activeTab, setActiveTab] = useState<TabType>(getActiveTabFromPath());
   const [activeSport, setActiveSport] = useState<SportType | 'all'>('all');
   const [activeStatus, setActiveStatus] = useState<'all' | 'live' | 'upcoming' | 'completed'>('all');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -325,53 +341,30 @@ const Homescreen: React.FC = () => {
   );
 
   // Enhanced tabs with counters from File B
-  const tabs: { name: TabType; icon: React.ReactNode; badge?: number }[] = [
+  const tabs: { name: TabType; icon: React.ReactNode; path: string }[] = [
     { 
       name: 'Fixtures', 
-      icon: <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+      icon: <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />,
+      path: '/'
     },
     { 
       name: 'Favourites', 
-      icon: <Star className="w-4 h-4 sm:w-5 sm:h-5" />
+      icon: <Star className="w-4 h-4 sm:w-5 sm:h-5" />,
+      path: '/favorites'
     },
     { 
       name: 'Competition', 
-      icon: <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
+      icon: <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />,
+      path: '/competition'
     },
     { 
       name: 'Profile', 
-      icon: <User className="w-4 h-4 sm:w-5 sm:h-5" />
+      icon: <User className="w-4 h-4 sm:w-5 sm:h-5" />,
+      path: '/profile'
     }
   ];
 
   const sportTabs: (SportType | 'all')[] = ['all', 'football', 'basketball', 'track_events'];
-
-  const handleTabClick = (tab: TabType): void => {
-    if (tab === 'Favourites' && !isAuthenticated) {
-      setShowFavoritesDialog(true);
-      return;
-    }
-    
-    if (tab === 'Competition' && !isAuthenticated) {
-      setShowCompetitionsDialog(true);
-      return;
-    }
-    
-    if (tab === 'Profile') {
-      router.push('/profile');
-      return;
-    }
-
-    // Instead of redirecting to /fixtures, just set the active tab
-    setActiveTab(tab);
-    
-    // If clicking on already active Fixtures tab, reset to default view
-    if (tab === 'Fixtures' && activeTab === 'Fixtures') {
-      setActiveSport('all');
-    }
-    
-    setMobileMenuOpen(false); 
-  };
 
   const handleSportClick = (sport: SportType | 'all'): void => {
     setActiveSport(sport);
@@ -653,27 +646,46 @@ const Homescreen: React.FC = () => {
       {/* Enhanced Bottom Navigation - all badge counts removed as requested */}
       <div className="fixed bottom-0 left-0 right-0 z-20 glassmorphic-nav mx-2 mb-2">
         <div className="flex justify-around items-center w-full max-w-7xl mx-auto px-2 sm:px-4 py-2">
-          {tabs.map((tab) => (
-            <button
-              key={tab.name}
-              onClick={() => handleTabClick(tab.name)}
-              className={`flex flex-col items-center justify-center space-y-1 px-2 py-1 rounded-lg transition-all duration-200 min-w-0 flex-1 max-w-16 sm:max-w-20 md:max-w-24 ${
-                activeTab === tab.name
-                  ? 'text-blue-600 dark:text-blue-400 glow-blue scale-105'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-              role="tab"
-              aria-selected={activeTab === tab.name}
-              aria-controls={`${tab.name.toLowerCase()}-panel`}
-            >
-              <div className={activeTab === tab.name ? 'scale-110' : ''}>
-                <div className="w-5 h-5 sm:w-6 sm:h-6">
-                  {tab.icon}
+          {tabs.map((tab) => {
+            const isActive = pathname === tab.path;
+            return (
+              <Link
+                key={tab.name}
+                href={tab.path}
+                onClick={(e) => {
+                  if (tab.name === 'Favourites' && !isAuthenticated) {
+                    e.preventDefault();
+                    setShowFavoritesDialog(true);
+                    return;
+                  }
+                  
+                  if (tab.name === 'Competition' && !isAuthenticated) {
+                    e.preventDefault();
+                    setShowCompetitionsDialog(true);
+                    return;
+                  }
+                  
+                  // Close mobile menu if open
+                  setMobileMenuOpen(false);
+                }}
+                className={`flex flex-col items-center justify-center space-y-1 px-2 py-1 rounded-lg transition-all duration-200 min-w-0 flex-1 max-w-16 sm:max-w-20 md:max-w-24 ${
+              isActive
+                ? 'text-blue-600 dark:text-blue-400 glow-blue scale-105'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`${tab.name.toLowerCase()}-panel`}
+              >
+                <div className={isActive ? 'scale-110' : ''}>
+                  <div className="w-5 h-5 sm:w-6 sm:h-6">
+                    {tab.icon}
+                  </div>
                 </div>
-              </div>
-              <span className="text-xs font-medium">{tab.name}</span>
-            </button>
-          ))}
+                <span className="text-xs font-medium">{tab.name}</span>
+              </Link>
+            );
+          })}
         </div>
       </div>
 
