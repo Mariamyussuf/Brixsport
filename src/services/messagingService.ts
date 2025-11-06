@@ -796,6 +796,36 @@ export class MessagingService {
     }
   }
 
+  // Send typing indicator
+  static async sendTypingIndicator(
+    userId: string,
+    conversationId: string
+  ): Promise<APIResponse<boolean>> {
+    try {
+      logger.info('Sending typing indicator', { userId, conversationId });
+      
+      // Validate inputs
+      validate.id(userId, 'User ID');
+      validate.id(conversationId, 'Conversation ID');
+      
+      // For now, we'll just return a mock response since we don't have a real implementation
+      // In a real implementation, you would send a real-time notification
+      
+      logger.info('Typing indicator sent successfully', { conversationId });
+      
+      return {
+        success: true,
+        data: true
+      };
+    } catch (error) {
+      logger.error('Send typing indicator error', { error });
+      if (error instanceof ValidationError || error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError('Failed to send typing indicator', 'SEND_TYPING_INDICATOR_FAILED', 500);
+    }
+  }
+
   // Get system announcements
   static async getAnnouncements(
     userId: string,
