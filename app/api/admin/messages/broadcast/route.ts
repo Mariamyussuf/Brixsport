@@ -23,24 +23,23 @@ export async function POST(req: NextRequest) {
 
     const { title, content, type, priority, recipients, scheduledAt, tags } = await req.json();
 
-    // Validate required fields
-    if (!title || !content || !type || !priority || !recipients) {
+    // Validate required fields for announcement
+    if (!title || !content || !priority) {
       return NextResponse.json({ 
         error: { 
           code: 'INVALID_REQUEST', 
-          message: 'Title, content, type, priority, and recipients are required' 
+          message: 'Title, content, and priority are required' 
         } 
       }, { status: 400 });
     }
 
-    const result = await MessagingService.sendBroadcastMessage(
+    // Use createAnnouncement method instead of sendBroadcastMessage
+    const result = await MessagingService.createAnnouncement(
       session.user.id,
       {
         title,
         content,
-        type,
-        priority,
-        recipients,
+        priority: priority || 'normal', // Map priority to match the expected format
         scheduledAt,
         tags
       }
