@@ -34,10 +34,14 @@ export const getHomeData = async (options?: { signal?: AbortSignal; authToken?: 
     return response;
   } catch (error) {
     console.error('Error in getHomeData:', error);
+    // Include error code for better debugging
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch home data';
+    
     return {
       success: false,
       error: {
-        message: error instanceof Error ? error.message : 'Failed to fetch home data'
+        message: errorMessage,
+        code: 'FETCH_HOME_DATA_ERROR'
       }
     };
   }
@@ -70,10 +74,14 @@ export const getMatchesBySport = async (
     };
   } catch (error) {
     console.error(`Error in getMatchesBySport for ${sport} with status ${status}:`, error);
+    // Include error code for better debugging
+    const errorMessage = error instanceof Error ? error.message : `Failed to fetch ${sport} matches`;
+    
     return {
       success: false,
       error: {
-        message: error instanceof Error ? error.message : `Failed to fetch ${sport} matches`
+        message: errorMessage,
+        code: 'FETCH_MATCHES_BY_SPORT_ERROR'
       }
     };
   }
@@ -113,10 +121,14 @@ export const getLiveMatches = async (options?: { signal?: AbortSignal; authToken
     };
   } catch (error) {
     console.error('Error in getLiveMatches:', error);
+    // Include error code for better debugging
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch live matches';
+    
     return {
       success: false,
       error: {
-        message: error instanceof Error ? error.message : 'Failed to fetch live matches'
+        message: errorMessage,
+        code: 'FETCH_LIVE_MATCHES_ERROR'
       }
     };
   }

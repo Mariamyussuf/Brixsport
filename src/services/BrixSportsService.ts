@@ -223,6 +223,7 @@ class BrixSportsService {
         success: false, 
         error: { 
           message: errorMessage,
+          code: 'FETCH_MATCHES_BY_SPORT_ERROR',
           isAbortError
         } 
       };
@@ -246,10 +247,14 @@ class BrixSportsService {
       };
     } catch (error) {
       console.error('Failed to fetch live matches:', error);
+      // Include error code for better debugging
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch live matches';
+      
       return { 
         success: false, 
         error: { 
-          message: error instanceof Error ? error.message : 'Failed to fetch live matches' 
+          message: errorMessage,
+          code: 'FETCH_LIVE_MATCHES_ERROR'
         } 
       };
     }
