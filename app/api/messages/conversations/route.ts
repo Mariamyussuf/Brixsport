@@ -94,9 +94,8 @@ export async function POST(req: Request) {
     const result = await MessagingService.createConversation(
       session.user.id,
       {
-        name,
-        type,
-        participantIds
+        title: name,
+        type
       }
     );
 

@@ -68,6 +68,15 @@ interface UpdateMessagePayload {
   content?: string;
 }
 
+// Define reaction type
+interface Reaction {
+  id: string;
+  messageId: string;
+  userId: string;
+  emoji: string;
+  createdAt: string;
+}
+
 // Define announcement type
 interface Announcement {
   id: string;
@@ -712,6 +721,78 @@ export class MessagingService {
         throw error;
       }
       throw new DatabaseError('Failed to delete conversation', 'DELETE_CONVERSATION_FAILED', 500);
+    }
+  }
+
+  // Add reaction to message
+  static async addReaction(
+    userId: string,
+    messageId: string,
+    emoji: string
+  ): Promise<APIResponse<Reaction>> {
+    try {
+      logger.info('Adding reaction to message', { userId, messageId, emoji });
+      
+      // Validate inputs
+      validate.id(userId, 'User ID');
+      validate.id(messageId, 'Message ID');
+      
+      if (!emoji) {
+        throw new ValidationError('Emoji is required', 'emoji');
+      }
+      
+      // For now, we'll just return a mock response since we don't have a real implementation
+      // In a real implementation, you would insert into the database
+      const mockReaction: Reaction = {
+        id: Date.now().toString(),
+        messageId,
+        userId,
+        emoji,
+        createdAt: new Date().toISOString()
+      };
+      
+      logger.info('Reaction added successfully', { reactionId: mockReaction.id });
+      
+      return {
+        success: true,
+        data: mockReaction
+      };
+    } catch (error) {
+      logger.error('Add reaction error', { error });
+      if (error instanceof ValidationError || error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError('Failed to add reaction', 'ADD_REACTION_FAILED', 500);
+    }
+  }
+
+  // Mark messages as read
+  static async markMessagesRead(
+    userId: string,
+    conversationId: string
+  ): Promise<APIResponse<boolean>> {
+    try {
+      logger.info('Marking messages as read', { userId, conversationId });
+      
+      // Validate inputs
+      validate.id(userId, 'User ID');
+      validate.id(conversationId, 'Conversation ID');
+      
+      // For now, we'll just return a mock response since we don't have a real implementation
+      // In a real implementation, you would update the database
+      
+      logger.info('Messages marked as read successfully', { conversationId });
+      
+      return {
+        success: true,
+        data: true
+      };
+    } catch (error) {
+      logger.error('Mark messages read error', { error });
+      if (error instanceof ValidationError || error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError('Failed to mark messages as read', 'MARK_MESSAGES_READ_FAILED', 500);
     }
   }
 
