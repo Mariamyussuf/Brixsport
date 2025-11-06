@@ -1,8 +1,19 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
 
-// Load schedule data using relative path from the route file
-import scheduleData from '../../../brixsport-backend/packages/database/basketball_schedule.json';
+// Function to load schedule data dynamically
+async function loadScheduleData() {
+  try {
+    const filePath = path.join(process.cwd(), 'brixsport-backend', 'packages', 'database', 'basketball_schedule.json');
+    const fileContents = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(fileContents);
+  } catch (error) {
+    console.error('Error loading schedule data:', error);
+    throw new Error('Failed to load schedule data');
+  }
+}
 
 // Load environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -14,6 +25,9 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // Handle POST request - import schedule
 export async function POST() {
   try {
+    // Load schedule data dynamically
+    const scheduleData = await loadScheduleData();
+    
     // Get basketball competition
     const { data: competition, error: competitionError } = await supabase
       .from('Competition')
