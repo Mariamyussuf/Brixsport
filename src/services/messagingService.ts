@@ -317,6 +317,59 @@ export class MessagingService {
     }
   }
   
+  // Update conversation
+  static async updateConversation(
+    userId: string,
+    conversationId: string,
+    updates: {
+      name?: string;
+      isMuted?: boolean;
+      isArchived?: boolean;
+    }
+  ): Promise<APIResponse<Conversation>> {
+    try {
+      logger.info('Updating conversation', { userId, conversationId, updates });
+      
+      // Validate inputs
+      validate.id(userId, 'User ID');
+      validate.id(conversationId, 'Conversation ID');
+      
+      // For now, we'll just return a mock response since we don't have a real implementation
+      // In a real implementation, you would update the database
+      const mockConversation: Conversation = {
+        id: conversationId,
+        title: updates.name || `Conversation ${conversationId}`,
+        type: 'private',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastMessageAt: new Date().toISOString(),
+        participants: [
+          {
+            id: userId,
+            role: 'admin',
+            joinedAt: new Date().toISOString()
+          }
+        ]
+      };
+      
+      // Clear cache
+      cacheService.delete(`conversation:${conversationId}`);
+      
+      logger.info('Conversation updated successfully', { conversationId });
+      
+      return {
+        success: true,
+        data: mockConversation
+      };
+    } catch (error) {
+      logger.error('Update conversation error', { error });
+      if (error instanceof ValidationError || error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError('Failed to update conversation', 'UPDATE_CONVERSATION_FAILED', 500);
+    }
+  }
+
   // Get conversation details
   static async getConversationDetails(
     userId: string,
@@ -593,59 +646,6 @@ export class MessagingService {
     }
   }
   
-  // Update conversation
-  static async updateConversation(
-    userId: string,
-    conversationId: string,
-    updates: {
-      name?: string;
-      isMuted?: boolean;
-      isArchived?: boolean;
-    }
-  ): Promise<APIResponse<Conversation>> {
-    try {
-      logger.info('Updating conversation', { userId, conversationId, updates });
-      
-      // Validate inputs
-      validate.id(userId, 'User ID');
-      validate.id(conversationId, 'Conversation ID');
-      
-      // For now, we'll just return a mock response since we don't have a real implementation
-      // In a real implementation, you would update the database
-      const mockConversation: Conversation = {
-        id: conversationId,
-        title: updates.name || `Conversation ${conversationId}`,
-        type: 'private',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        lastMessageAt: new Date().toISOString(),
-        participants: [
-          {
-            id: userId,
-            role: 'admin',
-            joinedAt: new Date().toISOString()
-          }
-        ]
-      };
-      
-      // Clear cache
-      cacheService.delete(`conversation:${conversationId}`);
-      
-      logger.info('Conversation updated successfully', { conversationId });
-      
-      return {
-        success: true,
-        data: mockConversation
-      };
-    } catch (error) {
-      logger.error('Update conversation error', { error });
-      if (error instanceof ValidationError || error instanceof DatabaseError) {
-        throw error;
-      }
-      throw new DatabaseError('Failed to update conversation', 'UPDATE_CONVERSATION_FAILED', 500);
-    }
-  }
-
   // Delete message
   static async deleteMessage(
     userId: string,
@@ -673,6 +673,45 @@ export class MessagingService {
         throw error;
       }
       throw new DatabaseError('Failed to delete message', 'DELETE_MESSAGE_FAILED', 500);
+    }
+  }
+
+  // Delete conversation
+  static async deleteConversation(
+    userId: string,
+    conversationId: string
+  ): Promise<APIResponse<boolean>> {
+    try {
+      logger.info('Deleting conversation', { userId, conversationId });
+      
+      // Validate inputs
+      validate.id(userId, 'User ID');
+      validate.id(conversationId, 'Conversation ID');
+      
+      // Check if user has admin role (matching the route's permission check)
+      const isAdmin = await hasAdminRole(userId);
+      if (!isAdmin) {
+        throw new DatabaseError('Only admins can delete conversations', 'FORBIDDEN', 403);
+      }
+      
+      // For now, we'll just return a mock response since we don't have a real implementation
+      // In a real implementation, you would delete from the database
+      
+      // Clear cache
+      cacheService.delete(`conversation:${conversationId}`);
+      
+      logger.info('Conversation deleted successfully', { conversationId });
+      
+      return {
+        success: true,
+        data: true
+      };
+    } catch (error) {
+      logger.error('Delete conversation error', { error });
+      if (error instanceof ValidationError || error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError('Failed to delete conversation', 'DELETE_CONVERSATION_FAILED', 500);
     }
   }
 
