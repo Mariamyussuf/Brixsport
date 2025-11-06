@@ -24,9 +24,7 @@ export async function GET(req: Request, { params }: { params: Promise<{}> }) {
       conversationId,
       {
         page,
-        limit,
-        before: before || undefined,
-        after: after || undefined
+        limit
       }
     );
 
@@ -99,9 +97,7 @@ export async function POST(req: Request, { params }: { params: Promise<{}> }) {
       conversationId,
       {
         content,
-        type,
-        attachments,
-        replyTo
+        contentType: type
       }
     );
 
