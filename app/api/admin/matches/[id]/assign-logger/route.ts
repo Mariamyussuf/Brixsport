@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminToken, hasAdminPermission } from '@/lib/adminAuth';
 import { cookies } from 'next/headers';
-import { dbService } from '@/lib/databaseService';
+import { supabase } from '@/lib/supabaseClient';
 
 // POST /api/admin/matches/:id/assign-logger - Assign a logger to a match
 export async function POST(request: Request, { params }: { params: Promise<{}> }) {
@@ -36,10 +36,11 @@ export async function POST(request: Request, { params }: { params: Promise<{}> }
     const { loggerId } = body;
     
     // Validate match ID
-    if (!id || isNaN(parseInt(id))) {
+    const matchId = parseInt(id, 10);
+    if (isNaN(matchId)) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Valid match ID is required' 
+        error: 'Invalid match ID' 
       }, { status: 400 });
     }
     
@@ -52,8 +53,13 @@ export async function POST(request: Request, { params }: { params: Promise<{}> }
     }
     
     // Check if the logger exists
-    const logger = await dbService.getLoggerById(loggerId);
-    if (!logger) {
+    const { data: logger, error: loggerError } = await supabase
+      .from('Logger')
+      .select('id, name')
+      .eq('id', loggerId)
+      .single();
+    
+    if (loggerError || !logger) {
       return NextResponse.json({ 
         success: false, 
         error: 'Logger not found' 
@@ -61,67 +67,34 @@ export async function POST(request: Request, { params }: { params: Promise<{}> }
     }
     
     // Check if the match exists
-    // Make API call to get match
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
-    const adminToken = (await cookies()).get('admin_token')?.value;
+    const { data: match, error: matchError } = await supabase
+      .from('Match')
+      .select('id')
+      .eq('id', matchId)
+      .single();
     
-    const matchResponse = await fetch(`${API_BASE_URL}/v1/matches/${id}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${adminToken}`
-      }
-    });
-    
-    if (!matchResponse.ok) {
-      if (matchResponse.status === 404) {
-        return NextResponse.json({ 
-          success: false, 
-          error: 'Match not found' 
-        }, { status: 404 });
-      }
-      throw new Error(`Failed to fetch match: ${matchResponse.status} ${matchResponse.statusText}`);
+    if (matchError || !match) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Match not found' 
+      }, { status: 404 });
     }
     
     // Assign the logger to the match
-    // In a real implementation, you would update the match record in the database
-    // to include the loggerId field
-    const updateResponse = await fetch(`${API_BASE_URL}/v1/matches/${id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${adminToken}`
-      },
-      body: JSON.stringify({ loggerId })
-    });
+    const { data: updatedMatch, error: updateError } = await supabase
+      .from('Match')
+      .update({ loggerId })
+      .eq('id', matchId)
+      .select()
+      .single();
     
-    if (!updateResponse.ok) {
-      const errorData = await updateResponse.json().catch(() => ({}));
-      if (updateResponse.status === 401) {
-        return NextResponse.json({ 
-          success: false, 
-          error: 'Unauthorized' 
-        }, { status: 401 });
-      }
-      if (updateResponse.status === 403) {
-        return NextResponse.json({ 
-          success: false, 
-          error: 'Forbidden' 
-        }, { status: 403 });
-      }
-      if (updateResponse.status === 404) {
-        return NextResponse.json({ 
-          success: false, 
-          error: 'Match not found' 
-        }, { status: 404 });
-      }
-      throw new Error(errorData.error || `Failed to assign logger to match: ${updateResponse.status} ${updateResponse.statusText}`);
+    if (updateError) {
+      throw new Error(`Failed to assign logger to match: ${updateError.message}`);
     }
-    
-    const result = await updateResponse.json();
     
     return NextResponse.json({ 
       success: true, 
-      data: result.data,
+      data: updatedMatch,
       message: `Logger ${logger.name} assigned to match successfully`
     });
   } catch (error) {
