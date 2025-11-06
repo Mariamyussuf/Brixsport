@@ -34,6 +34,6 @@
     },
     "typeRoots": ["./src/types", "./node_modules/@types"]
   },
-  "include": ["src/**/*", "src/types/**/*"],
+  "include": ["src/**/*", "src/types/**/*", "../../packages/database/setup-admin-logger.js"],
   "exclude": ["node_modules", "dist", "tests", "node_modules/rate-limit-redis"]
 }

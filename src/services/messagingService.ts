@@ -317,6 +317,51 @@ export class MessagingService {
     }
   }
   
+  // Get conversation details
+  static async getConversationDetails(
+    userId: string,
+    conversationId: string
+  ): Promise<APIResponse<Conversation>> {
+    try {
+      logger.info('Fetching conversation details', { userId, conversationId });
+      
+      // Validate inputs
+      validate.id(userId, 'User ID');
+      validate.id(conversationId, 'Conversation ID');
+      
+      // For now, we'll just return a mock response since we don't have a real implementation
+      // In a real implementation, you would fetch from the database
+      const mockConversation: Conversation = {
+        id: conversationId,
+        title: `Conversation ${conversationId}`,
+        type: 'private',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastMessageAt: new Date().toISOString(),
+        participants: [
+          {
+            id: userId,
+            role: 'admin',
+            joinedAt: new Date().toISOString()
+          }
+        ]
+      };
+      
+      logger.info('Conversation details fetched successfully', { conversationId });
+      
+      return {
+        success: true,
+        data: mockConversation
+      };
+    } catch (error) {
+      logger.error('Get conversation details error', { error });
+      if (error instanceof ValidationError || error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError('Failed to fetch conversation details', 'FETCH_CONVERSATION_FAILED', 500);
+    }
+  }
+
   // Get user conversations
   static async getUserConversations(
     userId: string,
