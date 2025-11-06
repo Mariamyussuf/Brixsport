@@ -67,10 +67,14 @@ class BrixSportsService {
       };
     } catch (error) {
       console.error(`Failed to fetch matches with status ${status}:`, error);
+      // Include error code for better debugging
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch matches';
+      
       return { 
         success: false, 
         error: { 
-          message: error instanceof Error ? error.message : 'Failed to fetch matches' 
+          message: errorMessage,
+          code: 'FETCH_MATCHES_ERROR'
         } 
       };
     }
