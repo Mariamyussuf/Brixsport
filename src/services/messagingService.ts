@@ -574,6 +574,53 @@ export class MessagingService {
     }
   }
 
+  // Get system announcements
+  static async getAnnouncements(
+    userId: string,
+    pagination: {
+      page: number;
+      limit: number;
+    }
+  ): Promise<APIResponse<{ announcements: Announcement[]; pagination: { page: number; limit: number; total: number; hasNext: boolean } }>> {
+    try {
+      logger.info('Fetching announcements', { userId, pagination });
+      
+      // Validate inputs
+      validate.id(userId, 'User ID');
+      
+      // Check if user has admin role
+      const isAdmin = await hasAdminRole(userId);
+      if (!isAdmin) {
+        throw new DatabaseError('Only admins can fetch announcements', 'FORBIDDEN', 403);
+      }
+      
+      // For now, we'll just return a mock response since we don't have a real implementation
+      // In a real implementation, you would fetch from the database
+      const mockAnnouncements: Announcement[] = [];
+      
+      logger.info('Announcements fetched successfully', { count: mockAnnouncements.length });
+      
+      return {
+        success: true,
+        data: {
+          announcements: mockAnnouncements,
+          pagination: {
+            page: pagination.page,
+            limit: pagination.limit,
+            total: 0,
+            hasNext: false
+          }
+        }
+      };
+    } catch (error) {
+      logger.error('Get announcements error', { error });
+      if (error instanceof ValidationError || error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError('Failed to fetch announcements', 'FETCH_ANNOUNCEMENTS_FAILED', 500);
+    }
+  }
+
   // Delete system announcement
   static async deleteAnnouncement(
     userId: string,
