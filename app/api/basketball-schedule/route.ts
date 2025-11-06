@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import scheduleData from '@/../../brixsport-backend/packages/database/basketball_schedule.json';
 
 // Load environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -7,9 +8,6 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 // Create Supabase client
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-// Load schedule data
-const scheduleData = require('@/../basketball_schedule.json');
 
 // Handle POST request - import schedule
 export async function POST() {
