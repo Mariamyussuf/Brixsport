@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import scheduleData from '@/../../brixsport-backend/packages/database/basketball_schedule.json';
+
+// Load schedule data using relative path from the route file
+import scheduleData from '../../../brixsport-backend/packages/database/basketball_schedule.json';
 
 // Load environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
