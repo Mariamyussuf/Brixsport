@@ -3,17 +3,17 @@
   "builds": [
     {
       "src": "package.json",
-      "use": "@vercel/next",
-      "config": {
-        "includeFiles": [
-          "brixsport-backend/**"
-        ]
-      }
+      "use": "@vercel/next"
     }
   ],
-  "build": {
-    "env": {
-      "ENABLE_FILE_SYSTEM_API": "1"
+  "routes": [
+    {
+      "src": "/api/proxy(.*)",
+      "dest": "/api/proxy"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/proxy?path=$1"
     }
-  }
+  ]
 }

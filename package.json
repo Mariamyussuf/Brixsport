@@ -63,12 +63,15 @@
     "setup": "node -e \"console.log('Run setup-environment.bat (Windows) or ./setup-environment.sh (Linux/Mac) to configure environment')\"",
     "check-env": "node -e \"const fs=require('fs'); if(!fs.existsSync('.env.local')){console.error('❌ .env.local not found. Run setup script first.'); process.exit(1);} console.log('✅ Environment configured');\"",
     "validate-env": "node scripts/validate-environment.js",
+    "validate-deployment": "node scripts/validate-deployment.js",
     "setup-admin-logger": "node setup-admin-logger.js",
     "test-supabase": "node test-supabase-connection.js",
     "prepare": "husky install",
     "pre-commit": "lint-staged",
     "docker:build": "docker build -t brixsport-frontend .",
-    "docker:run": "docker run -p 3000:3000 brixsport-frontend"
+    "docker:run": "docker run -p 3000:3000 brixsport-frontend",
+    "deploy:vercel": "echo 'Deploy frontend to Vercel using: vercel --prod'",
+    "deploy:backend": "echo 'Deploy backend separately to Render, Heroku, or similar platform'"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.5.3",

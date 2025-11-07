@@ -118,7 +118,10 @@ const hasAdminRole = async (userId: string): Promise<boolean> => {
 };
 
 // API base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+// In production, this will use the Vercel proxy route
+// In development, this will use the local backend
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
+  (process.env.NODE_ENV === 'production' ? '/api/proxy' : 'http://localhost:4000/api');
 const API_V1_URL = `${API_BASE_URL}/v1`;
 
 // Helper function to make authenticated API calls
