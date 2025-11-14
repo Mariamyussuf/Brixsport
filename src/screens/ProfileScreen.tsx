@@ -27,7 +27,7 @@ import {
   Trophy,
   Plus,
   Wifi,
-  ArrowLeft,
+
   BookOpen,
   MessageCircle
 } from 'lucide-react';
@@ -195,13 +195,6 @@ const ProfileScreen = () => {
         {/* Header */}
         <header className="flex items-center justify-between py-3 px-4 sm:px-6">
           <div className="flex items-center space-x-2">
-            <button
-              onClick={() => router.back()}
-              className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
-              aria-label="Back"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-            </button>
             <h1 className="text-2xl sm:text-3xl font-bold">Profile</h1>
           </div>
           <SettingsLauncher />

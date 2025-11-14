@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { X, ArrowLeft, Bell, Search, Filter, MoreVertical } from 'lucide-react';
+import { X, Bell, Search, Filter, MoreVertical } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import SmartImage from '@/components/shared/SmartImage';
 import { useI18n } from '@/components/shared/I18nProvider';
@@ -190,13 +190,7 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
       <div className="sticky top-0 z-50 bg-white dark:bg-gray-900 shadow-sm">
         {/* Top Bar */}
         <div className="flex items-center justify-between px-3 sm:px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors touch-manipulation"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-            </button>
+          <div className="flex items-center space-x-2 min-w-0 flex-1">
             <div className="flex items-center space-x-2 min-w-0">
               <h1 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">BrixSports</h1>
               <div className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0"></div>
