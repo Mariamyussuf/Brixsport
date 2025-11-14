@@ -313,7 +313,7 @@ export default BasketballSchedule;
     'the storm': require('@/assets/the storm.jpg').default?.src || require('@/assets/the storm.jpg').src,
     'tbk': require('@/assets/tbk.jpg').default?.src || require('@/assets/tbk.jpg').src,
     'siberia': require('@/assets/siberia.jpg').default?.src || require('@/assets/siberia.jpg').src,
-    'rim reapears': require('@/assets/rim reapears.jpg').default?.src || require('@/assets/rim reapears.jpg').src,
+    'rim reapers': require('@/assets/rim-reapers.jpg').default?.src || require('@/assets/rim-reapers.jpg').src,
   } as any;
 
   const resolveAssetLogo = (teamName?: string): string | undefined => {
