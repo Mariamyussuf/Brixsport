@@ -864,8 +864,8 @@ export class DatabaseService {
         .from('Match')
         .select(`
           *,
-          homeTeam:Team!Match_homeTeamId_fkey(name, logo),
-          awayTeam:Team!Match_awayTeamId_fkey(name, logo),
+          homeTeam:Team!Match_homeTeamId_fkey(name, logo, logo_url),
+          awayTeam:Team!Match_awayTeamId_fkey(name, logo, logo_url),
           competition:Competition!Match_competitionId_fkey(name, sportType)
         `);
       
@@ -893,9 +893,9 @@ export class DatabaseService {
         current_minute: match.currentMinute || match.current_minute || 0,
         period: match.period || null,
         home_team_name: match.homeTeam?.name,
-        home_team_logo: match.homeTeam?.logo || null,
+        home_team_logo: match.homeTeam?.logo || match.homeTeam?.logo_url || null,
         away_team_name: match.awayTeam?.name,
-        away_team_logo: match.awayTeam?.logo || null,
+        away_team_logo: match.awayTeam?.logo || match.awayTeam?.logo_url || null,
         competition_name: match.competition?.name,
         sport: match.competition?.sportType
       }));

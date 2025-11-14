@@ -54,8 +54,8 @@ export const useBasketballSchedule = () => {
           startTime,
           venue,
           status,
-          homeTeam:Team!Match_homeTeamId_fkey(name, logo),
-          awayTeam:Team!Match_awayTeamId_fkey(name, logo)
+          homeTeam:Team!Match_homeTeamId_fkey(name, logo, logo_url),
+          awayTeam:Team!Match_awayTeamId_fkey(name, logo, logo_url)
         `)
         .eq('competitionId', competition.id)
         .order('startTime', { ascending: true });
@@ -91,8 +91,8 @@ export const useBasketballSchedule = () => {
         scheduled_at: match.startTime,
         venue: match.venue,
         status: match.status,
-        home_team_logo: match.homeTeam?.logo || null,
-        away_team_logo: match.awayTeam?.logo || null
+        home_team_logo: match.homeTeam?.logo || match.homeTeam?.logo_url || null,
+        away_team_logo: match.awayTeam?.logo || match.awayTeam?.logo_url || null
       });
     });
 

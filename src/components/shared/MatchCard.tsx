@@ -12,12 +12,16 @@ export interface Match {
   score2?: number;
   team1Color?: string;
   team2Color?: string;
+  team1Logo?: string;
+  team2Logo?: string;
   sportType?: string;
   // FixturesScreen properties
   homeTeam?: string;
   awayTeam?: string;
   homeScore?: number;
   awayScore?: number;
+  homeTeamLogo?: string;
+  awayTeamLogo?: string;
   time?: string;
   status: 'live' | 'scheduled' | 'ended' | 'Live' | 'Upcoming' | 'Finished' | 'finished' | 'paused' | 'completed';
   quarter?: string;
@@ -91,7 +95,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
     };
   }, [match.id, match.status]);
 
-  const getTeamIcon = (team: string | undefined, color?: string) => {
+  const getTeamIcon = (team: string | undefined, color?: string, logoUrl?: string) => {
     // Handle case where team is undefined
     if (!team) {
       return (
@@ -100,18 +104,25 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
         </div>
       );
     }
-    
+
     const baseClasses = "w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0";
-    
+
     // Use provided color or fallback to team-based color
     const bgColor = color ? color : 
       (team.includes('Pirates') || team.includes('Los Blancos') || team.includes('Phoenix') || team.includes('Kings')) 
         ? 'bg-blue-600' 
         : 'bg-red-600';
-    
+
     return (
       <div className={`${baseClasses} ${bgColor}`}>
-        <div className="w-5 h-5 bg-white dark:bg-gray-800 rounded-sm opacity-80"></div>
+        {logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logoUrl} alt={team} className="w-5 h-5 rounded-sm object-contain bg-white dark:bg-gray-800" onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = 'none';
+          }} />
+        ) : (
+          <div className="w-5 h-5 bg-white dark:bg-gray-800 rounded-sm opacity-80"></div>
+        )}
       </div>
     );
   };
@@ -175,7 +186,11 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
       {/* Teams and scores */}
       <div className="flex items-center justify-between py-2">
         <div className="flex items-center space-x-3 flex-1 min-w-0">
-          {getTeamIcon(liveMatch.homeTeam || liveMatch.team1, liveMatch.team1Color)}
+          {getTeamIcon(
+            liveMatch.homeTeam || liveMatch.team1,
+            liveMatch.team1Color,
+            (liveMatch.homeTeamLogo || liveMatch.team1Logo)
+          )}
           <span className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate">
             {liveMatch.homeTeam || liveMatch.team1 || 'Home Team'}
           </span>
@@ -206,7 +221,11 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
           <span className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate text-right">
             {liveMatch.awayTeam || liveMatch.team2 || 'Away Team'}
           </span>
-          {getTeamIcon(liveMatch.awayTeam || liveMatch.team2, liveMatch.team2Color)}
+          {getTeamIcon(
+            liveMatch.awayTeam || liveMatch.team2,
+            liveMatch.team2Color,
+            (liveMatch.awayTeamLogo || liveMatch.team2Logo)
+          )}
         </div>
       </div>
       
