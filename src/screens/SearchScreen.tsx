@@ -1,14 +1,12 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { X, Bell, Search, Filter, MoreVertical } from 'lucide-react';
+import { X, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import SmartImage from '@/components/shared/SmartImage';
-import { useI18n } from '@/components/shared/I18nProvider';
 import { useSearch } from '@/hooks/useSearch';
-import { Player, Team } from '@/types/brixsports';
 
 interface FilterOption {
-  id: 'all' | 'team' | 'player' | 'match' | 'competition';
+  id: 'all' | 'team' | 'player' | 'competition';
   active: boolean;
 }
 
@@ -25,7 +23,6 @@ interface CompetitionItem {
   id: string;
   name: string;
   league: string;
-  logo: string;
   type: 'competition';
 }
 
@@ -54,7 +51,6 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
   const [activeFilter, setActiveFilter] = useState<FilterOption['id']>('all');
   const [selectedItems, setSelectedItems] = useState<FilterableItem[]>(items);
   const [query, setQuery] = useState('');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const { results, loading, error, search } = useSearch();
 
   // Fetch search results when query changes
@@ -106,20 +102,19 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
             id: team.id.toString(),
             name: team.name,
             logo: team.logo_url,
-            sport: 'football', // Default sport, would be dynamic in real implementation
+            sport: 'football',
             type: 'team'
           });
         });
       }
       
-      // Add competitions to results (using matches as competitions for now)
+      // Add competitions to results
       if (results.competitions) {
         results.competitions.forEach(competition => {
           newItems.push({
             id: competition.id.toString(),
             name: competition.competition_name || 'Competition',
-            league: 'League', // Would be dynamic in real implementation
-            logo: '', // Would be dynamic in real implementation
+            league: 'League',
             type: 'competition'
           });
         });
@@ -147,105 +142,59 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
   };
 
   const getFilteredItems = () => {
-    const byType = (() => {
-      if (activeFilter === 'all') return selectedItems;
-      if (activeFilter === 'player') return selectedItems.filter(item => item.type === 'player');
-      if (activeFilter === 'team') return selectedItems.filter(item => item.type === 'team');
-      if (activeFilter === 'competition') return selectedItems.filter(item => item.type === 'competition');
-      return selectedItems;
-    })();
-
-    if (!query.trim()) return byType;
-    const q = query.toLowerCase();
-    return byType.filter(item => {
-      if (item.type === 'player') {
-        const p = item as PlayerItem;
-        return (
-          p.name.toLowerCase().includes(q) ||
-          p.team.toLowerCase().includes(q) ||
-          p.sport.toLowerCase().includes(q)
-        );
-      } else if (item.type === 'team') {
-        const t = item as TeamItem;
-        return (
-          t.name.toLowerCase().includes(q) ||
-          t.sport.toLowerCase().includes(q)
-        );
-      } else {
-        const c = item as CompetitionItem;
-        return (
-          c.name.toLowerCase().includes(q) ||
-          c.league.toLowerCase().includes(q)
-        );
-      }
-    });
+    if (activeFilter === 'all') return selectedItems;
+    if (activeFilter === 'player') return selectedItems.filter(item => item.type === 'player');
+    if (activeFilter === 'team') return selectedItems.filter(item => item.type === 'team');
+    if (activeFilter === 'competition') return selectedItems.filter(item => item.type === 'competition');
+    return selectedItems;
   };
 
   const filteredItems = getFilteredItems();
-  const { t } = useI18n();
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
-      {/* Header with Search */}
-      <div className="sticky top-0 z-50 bg-white dark:bg-gray-900 shadow-sm">
-        {/* Top Bar */}
-        <div className="flex items-center justify-between px-3 sm:px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-          <div className="flex items-center space-x-2 min-w-0 flex-1">
-            <div className="flex items-center space-x-2 min-w-0">
-              <h1 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">BrixSports</h1>
-              <div className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0"></div>
-            </div>
+      {/* Search Bar */}
+      <div className="px-3 sm:px-4 py-3 sm:py-4">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
           </div>
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors touch-manipulation flex-shrink-0 ml-2">
-            <Bell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-          </button>
-        </div>
-
-        {/* Search Bar */}
-        <div className="px-3 sm:px-4 py-3 sm:py-4">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-              placeholder="Search players, teams, competitions..."
-              className="block w-full pl-9 sm:pl-10 pr-10 py-3 sm:py-3.5 border border-gray-200 dark:border-gray-700 rounded-lg sm:rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base touch-manipulation"
-            />
-            {query && (
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <button
-                  onClick={() => setQuery('')}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 touch-manipulation p-1"
-                >
-                  <X className="h-4 w-4 sm:h-5 sm:w-5" />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="px-3 sm:px-4 pb-3 sm:pb-4">
-          <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide pb-1">
-            {filterOptions.map((option) => (
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search players, teams, competitions..."
+            className="block w-full pl-9 sm:pl-10 pr-10 py-3 sm:py-3.5 border border-gray-200 dark:border-gray-700 rounded-lg sm:rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+          />
+          {query && (
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
               <button
-                key={option.id}
-                onClick={() => handleFilterClick(option.id)}
-                className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all touch-manipulation ${
-                  option.active
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
+                onClick={() => setQuery('')}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
               >
-                {option.id.charAt(0).toUpperCase() + option.id.slice(1)}
+                <X className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
-            ))}
-          </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="px-3 sm:px-4 pb-3 sm:pb-4">
+        <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide pb-1">
+          {filterOptions.map((option) => (
+            <button
+              key={option.id}
+              onClick={() => handleFilterClick(option.id)}
+              className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                option.active
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+            >
+              {option.id.charAt(0).toUpperCase() + option.id.slice(1)}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -293,7 +242,8 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
             filteredItems.map((item) => (
               <div
                 key={item.id}
-                className="px-3 sm:px-4 py-3 sm:py-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors active:bg-gray-100 dark:active:bg-gray-800"
+                className="px-3 sm:px-4 py-3 sm:py-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+                onClick={() => router.push(`/${item.type}/${item.id}`)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3 min-w-0 flex-1">
@@ -356,46 +306,22 @@ const SearchScreen: React.FC<SportsFilterInterfaceProps> = ({
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center space-x-1 sm:space-x-2 ml-2 sm:ml-3 flex-shrink-0">
-                    <button
-                      onClick={() => handleRemoveItem(item.id)}
-                      className="p-1.5 sm:p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors touch-manipulation"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                    <button className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors touch-manipulation">
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-                  </div>
+                  {/* Remove Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveItem(item.id);
+                    }}
+                    className="ml-2 p-1.5 sm:p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors flex-shrink-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))
           )}
         </div>
       </div>
-
-      {/* Bottom Bar */}
-      {selectedItems.length > 0 && (
-        <div className="sticky bottom-0 bg-blue-600 px-3 sm:px-4 py-3 sm:py-4 shadow-lg">
-          <div className="flex items-center justify-between text-white">
-            <span className="text-xs sm:text-sm font-medium truncate">
-              {filteredItems.length} of {selectedItems.length} selected
-            </span>
-            <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0 ml-3">
-              <button
-                onClick={() => setSelectedItems([])}
-                className="text-xs sm:text-sm text-blue-100 hover:text-white touch-manipulation py-1"
-              >
-                Clear
-              </button>
-              <button className="px-3 sm:px-4 py-2 bg-white text-blue-600 rounded-lg text-xs sm:text-sm font-medium hover:bg-gray-100 transition-colors touch-manipulation">
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
