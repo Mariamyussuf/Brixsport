@@ -714,7 +714,7 @@ const Homescreen: React.FC = () => {
                 }}
                 className={`flex flex-col items-center justify-center space-y-1 px-2 py-1 rounded-lg transition-all duration-200 min-w-0 flex-1 max-w-16 sm:max-w-20 md:max-w-24 ${
               isActive
-                ? 'text-blue-600 dark:text-blue-400 glow-blue scale-105'
+                ? 'text-gray-900 dark:text-white scale-105'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
                 role="tab"
