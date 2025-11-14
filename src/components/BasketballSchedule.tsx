@@ -29,19 +29,25 @@ const BasketballSchedule: React.FC<BasketballScheduleProps> = ({ rounds: initial
   const [loading, setLoading] = useState(!initialRounds);
   const [error, setError] = useState<string | null>(null);
   const [expandedRounds, setExpandedRounds] = useState<Record<string, boolean>>({});
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const d = new Date();
+    const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString();
+    return iso.split('T')[0];
+  });
 
   useEffect(() => {
     if (!initialRounds) {
-      fetchSchedule();
+      fetchSchedule(selectedDate);
     }
-  }, []);
+  }, [selectedDate]);
 
-  const fetchSchedule = async () => {
+  const fetchSchedule = async (date?: string) => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/basketball-schedule');
+      const url = date ? `/api/basketball-schedule?date=${date}` : '/api/basketball-schedule';
+      const response = await fetch(url);
       const data = await response.json();
       
       if (response.ok) {
@@ -70,7 +76,7 @@ const BasketballSchedule: React.FC<BasketballScheduleProps> = ({ rounds: initial
       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-center">
         <p className="text-red-700 dark:text-red-300">{error}</p>
         <button 
-          onClick={fetchSchedule}
+          onClick={() => fetchSchedule(selectedDate)}
           className="mt-2 px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
         >
           Retry
@@ -124,9 +130,19 @@ const BasketballSchedule: React.FC<BasketballScheduleProps> = ({ rounds: initial
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-          {t('basketball_section')} Schedule
-        </h2>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+            {t('basketball_section')} Schedule
+          </h2>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+        </div>
       </div>
       
       <div className="divide-y divide-gray-200 dark:divide-gray-700">

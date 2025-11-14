@@ -112,7 +112,7 @@ Full API connectivity has been implemented:
 - **Matches**: Real-time match data and updates
 - **Teams**: Team information and rosters
 - **Players**: Player profiles and statistics
-- **Documentation**: See `docs/API_INTEGRATION_SUMMARY.md` for details
+- **Documentation**: See [API Documentation](./docs/API_OVERVIEW.md) for comprehensive API documentation
 
 ## Scripts (from package.json)
 - `dev`: `next dev` - Run development server
@@ -160,13 +160,60 @@ Use imports like `import { AuthScreen } from '@/screens/AuthScreen'`.
 To register the service worker in UI, use `PWARegister` component or ensure registration is handled in `app/layout.tsx`.
 
 ## Deployment
+
+### Vercel Frontend Deployment
 - Recommended: Vercel (optimized for Next.js)
 - Ensure `next.config.js` and `manifest.json` are committed
 - Icons must exist for install prompts on devices
 - Static export mode is enabled for better offline capabilities
 - Configure Supabase environment variables in Vercel project settings
 - For logger system, set `LOGGER_JWT_SECRET` environment variable in Vercel
-- See `vercel.env.example` for a complete list of required environment variables
+- See `.env.local.example` for a complete list of required environment variables
+
+### Railway Backend Deployment
+- The backend is configured to deploy to Railway with proper environment variables
+- Railway will automatically use the `railway.json` configuration
+- Environment variables are pre-configured for production deployment
+- The backend will listen on the PORT specified by Railway (default: 4000)
+
+### Environment Variables
+Create a `.env.local` file in the root directory with your configuration:
+
+```env
+# API Configuration for Vercel Frontend connecting to Railway Backend
+NEXT_PUBLIC_API_URL=https://brixsport-backend-again-production.up.railway.app
+NEXT_PUBLIC_SOCKET_URL=https://brixsport-backend-again-production.up.railway.app
+
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# App Configuration
+NEXT_PUBLIC_APP_URL=https://brixsport.vercel.app
+```
+
+### Production Checklist
+
+Backend (Railway):
+- [ ] Environment variables set via Railway dashboard or CLI:
+  - `NODE_ENV=production`
+  - `DATABASE_URL=your_supabase_postgres_url`
+  - `SUPABASE_URL=https://your-project.supabase.co`
+  - `SUPABASE_SERVICE_KEY=your_service_key`
+  - `CLIENT_URL=https://brixsport.vercel.app`
+  - `ALLOWED_ORIGINS=https://brixsport.vercel.app,https://brixsport-*.vercel.app`
+- [ ] CORS configured in Express
+- [ ] Socket.IO CORS configured
+- [ ] Database connected
+- [ ] Redis configured (optional)
+
+Frontend (Vercel):
+- [ ] `NEXT_PUBLIC_API_URL` set to Railway URL
+- [ ] `NEXT_PUBLIC_SOCKET_URL` set to Railway URL
+- [ ] `withCredentials: true` in API client
+- [ ] Socket.IO client configured with Railway URL
+- [ ] Environment variables added to Vercel project
+- [ ] Redeployed after env var changes
 
 ## Basketball Schedule System
 The application includes a comprehensive basketball schedule system with the following features:
