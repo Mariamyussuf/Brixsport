@@ -354,7 +354,7 @@ export const supabaseService = {
       query = query.range(offset, offset + limit - 1);
       
       // Sort by start time (oldest first by default)
-      query = query.order('scheduled_at', { ascending: true });
+      query = query.order('startTime', { ascending: true });
       
       const { data, error, count } = await query;
       
@@ -599,11 +599,11 @@ export const supabaseService = {
       }
 
       if (filters.dateFrom) {
-        query = query.gte('scheduled_at', filters.dateFrom);
+        query = query.gte('startTime', filters.dateFrom);
       }
 
       if (filters.dateTo) {
-        query = query.lte('scheduled_at', filters.dateTo);
+        query = query.lte('startTime', filters.dateTo);
       }
 
       // Apply pagination
@@ -611,7 +611,7 @@ export const supabaseService = {
 
       // Sort by start time (ascending for upcoming/live, descending for finished)
       const sortAscending = !(typeof filters.status === 'string' && filters.status.toLowerCase() === 'finished');
-      query = query.order('scheduled_at', { ascending: sortAscending });
+      query = query.order('startTime', { ascending: sortAscending });
 
       const { data, error, count } = await query;
 

@@ -91,10 +91,10 @@ export async function POST() {
         
         // Create a match record
         const match = {
-          competition_id: competition.id,
-          home_team_id: teamMap[matchData.home_team].id,
-          away_team_id: teamMap[matchData.away_team].id,
-          scheduled_at: scheduledDateTime.toISOString(),
+          competitionId: competition.id,
+          homeTeamId: teamMap[matchData.home_team].id,
+          awayTeamId: teamMap[matchData.away_team].id,
+          startTime: scheduledDateTime.toISOString(),
           venue: matchData.venue || teamMap[matchData.home_team].stadium || 'Bells University Sports Complex',
           status: 'scheduled'
         };
@@ -158,9 +158,15 @@ export async function PUT(request: Request) {
     }
 
     // Update the match
+    const mappedUpdates: any = { ...updates };
+    if (mappedUpdates.scheduled_at) {
+      mappedUpdates.startTime = mappedUpdates.scheduled_at;
+      delete mappedUpdates.scheduled_at;
+    }
+
     const { data, error } = await supabase
       .from('Match')
-      .update(updates)
+      .update(mappedUpdates)
       .eq('id', matchId)
       .select()
       .single();

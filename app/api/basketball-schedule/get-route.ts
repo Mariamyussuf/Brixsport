@@ -37,13 +37,13 @@ export async function GET() {
       .from('Match')
       .select(`
         id,
-        homeTeamId:home_team_id,
-        awayTeamId:away_team_id,
-        startTime:scheduled_at,
+        homeTeamId,
+        awayTeamId,
+        startTime,
         venue,
         status,
-        homeTeam:Team!home_team_id(name),
-        awayTeam:Team!away_team_id(name)
+        homeTeam:Team!Match_homeTeamId_fkey(name),
+        awayTeam:Team!Match_awayTeamId_fkey(name)
       `)
       .eq('competitionId', competition.id)
       .order('startTime', { ascending: true });

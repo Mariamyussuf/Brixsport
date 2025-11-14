@@ -35,7 +35,7 @@ export const matchService = {
       query = query.range(offset, offset + limit - 1);
       
       // Order by match date
-      query = query.order('scheduled_at', { ascending: true });
+      query = query.order('startTime', { ascending: true });
       
       const { data, error, count } = await query;
       
@@ -50,7 +50,7 @@ export const matchService = {
         competition_id: match.competitionId,
         home_team_id: match.homeTeamId,
         away_team_id: match.awayTeamId,
-        match_date: match.scheduled_at,
+        match_date: match.startTime || match.scheduled_at,
         venue: match.venue,
         status: match.status,
         home_score: match.homeScore,
@@ -100,7 +100,7 @@ export const matchService = {
       }
       
       // Order by match date
-      query = query.order('scheduled_at', { ascending: true });
+      query = query.order('startTime', { ascending: true });
       
       const { data, error } = await query;
       
@@ -122,7 +122,7 @@ export const matchService = {
           competition_id: match.competitionId,
           home_team_id: match.homeTeamId,
           away_team_id: match.awayTeamId,
-          match_date: match.scheduled_at,
+          match_date: match.startTime || match.scheduled_at,
           venue: match.venue,
           status: match.status,
           home_score: match.homeScore,
@@ -200,7 +200,7 @@ export const matchService = {
         competition_id: data.competitionId,
         home_team_id: data.homeTeamId,
         away_team_id: data.awayTeamId,
-        match_date: data.scheduled_at,
+        match_date: data.startTime || data.scheduled_at,
         venue: data.venue,
         status: data.status,
         home_score: data.homeScore,
@@ -268,7 +268,7 @@ export const matchService = {
         competition_id: data.competitionId,
         home_team_id: data.homeTeamId,
         away_team_id: data.awayTeamId,
-        match_date: data.scheduled_at,
+        match_date: data.startTime || data.scheduled_at,
         venue: data.venue,
         status: data.status,
         home_score: data.homeScore,
@@ -341,7 +341,7 @@ export const matchService = {
         competition_id: data.competitionId,
         home_team_id: data.homeTeamId,
         away_team_id: data.awayTeamId,
-        match_date: data.scheduled_at,
+        match_date: data.startTime || data.scheduled_at,
         venue: data.venue,
         status: data.status,
         home_score: data.homeScore,

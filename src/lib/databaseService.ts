@@ -1027,7 +1027,7 @@ export class DatabaseService {
           )
         `)
         .in('competitionId', competitionIds)
-        .order('scheduled_at', { ascending: true, nullsFirst: false });
+        .order('startTime', { ascending: true, nullsFirst: false });
       
       if (error) {
         // Log more detailed error information
