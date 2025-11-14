@@ -607,7 +607,8 @@ const Homescreen: React.FC = () => {
             <CompetitionScreen />
           </section>
         )}
-        {activeTab === 'Profile' && (
+        {/* Profile tab content - only show if not already on /profile route */}
+        {activeTab === 'Profile' && pathname !== '/profile' && (
           <div className="flex flex-col items-center justify-center py-8">
             <div className="bg-white dark:bg-gray-900 rounded-lg p-6 shadow-sm border border-gray-100 dark:border-gray-700 w-full max-w-md">
               <div className="text-center">

@@ -46,12 +46,16 @@ const ProfileScreen = () => {
     }
   }, [authLoading.initializing]);
 
-  // Handle navigation error case
+  // Handle navigation error case - only redirect on actual auth errors, not for unauthenticated users
+  // Unauthenticated users should see the guest view, not be redirected
   useEffect(() => {
-    if (error && error.type === 'UNAUTHORIZED') {
+    // Only redirect if there's an actual error AND the user was previously authenticated
+    // This prevents redirecting unauthenticated users who should see the guest view
+    if (error && error.type === 'UNAUTHORIZED' && user) {
+      // User was authenticated but session expired - redirect to login
       router.push('/auth/login');
     }
-  }, [error, router]);
+  }, [error, router, user]);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showModal, setShowModal] = useState<string | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
