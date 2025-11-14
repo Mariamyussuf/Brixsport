@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { User, Camera, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import SettingsLauncher from './SettingsLauncher';
 
 interface UserProfileProps {
   playerImage?: string;
@@ -63,6 +64,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Profile</h3>
         <div className="flex space-x-2">
+          <SettingsLauncher />
           {onLogout && (
             <Button
               variant="outline"

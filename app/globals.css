@@ -1,32 +1,9 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Define a custom variant for dark mode */
-@variant dark (&:is(.dark *));
-
-/* Ensure dark mode works properly with system preference */
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-  }
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color-scheme: light;
-  }
-}
-
-/* Base tweaks */
 @layer base {
-  :root { 
-    color-scheme: light dark; 
-  }
-  
-  html, body { 
-    height: 100%;
-  }
-
-  body {
+  :root {
     @apply bg-white text-neutral-900 dark:bg-black dark:text-neutral-100 antialiased;
   }
 }
@@ -34,15 +11,15 @@
 /* Glassmorphism utilities */
 @layer utilities {
   .glassmorphic-header {
-    @apply bg-white/10 dark:bg-black/10 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-2xl shadow-lg;
+    @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border border-white/30 dark:border-gray-700/50 rounded-2xl shadow-lg;
   }
   
   .glassmorphic-nav {
-    @apply bg-white/10 dark:bg-black/10 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-2xl shadow-lg mx-2 mb-2;
+    @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border border-white/30 dark:border-gray-700/50 rounded-2xl shadow-lg mx-2 mb-2;
   }
   
   .glassmorphic-card {
-    @apply bg-white/10 dark:bg-black/10 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-lg;
+    @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border border-white/30 dark:border-gray-700/50 shadow-lg;
   }
   
   .glow-blue {

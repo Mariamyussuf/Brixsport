@@ -191,9 +191,10 @@ const ProfileScreen = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-slate-900 dark:text-white">
       <div className="py-2 max-w-full">
-        {/* Header */}
-        <header className="flex items-center justify-end py-2 px-4">
-          <SettingsLauncher />
+        {/* Header - Fixed dark mode colors */}
+        <header className="flex items-center justify-between py-2 px-4 bg-white dark:bg-gray-800">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Profile</h1>
+          {/* Settings button in the user profile section */}
         </header>
 
         {/* Main Content - Mobile-first responsive grid */}
@@ -207,6 +208,7 @@ const ProfileScreen = () => {
                 <p className="text-red-500">{error.message}</p>
               ) : user ? (
                 <>
+                  {/* Added settings button here, next to logout in UserProfile */}
                   <UserProfile
                     playerImage={user?.image || ''}
                     playerName={user?.name || 'Guest'}

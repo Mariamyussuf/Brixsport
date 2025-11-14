@@ -16,7 +16,7 @@ const Header: React.FC<HeaderProps> = ({ variant = 'main' }) => {
           {variant === 'auth' ? (
             // Auth variant - centered title
             <div className="flex-1 flex justify-center">
-              <h1 className="text-xl font-bold text-navy-900 dark:text-white">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                 BrixSports
               </h1>
             </div>
@@ -24,7 +24,7 @@ const Header: React.FC<HeaderProps> = ({ variant = 'main' }) => {
             // Main variant - left title, right icons
             <>
               <div className="flex items-center">
-                <h1 className="text-xl font-bold text-navy-900 dark:text-white">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                   BrixSports
                 </h1>
               </div>
@@ -32,18 +32,18 @@ const Header: React.FC<HeaderProps> = ({ variant = 'main' }) => {
               <div className="flex items-center space-x-4">
                 <Link 
                   href="/search"
-                  className="p-2 rounded-full hover:bg-white/20 transition-colors"
+                  className="p-2 rounded-full hover:bg-white/20 dark:hover:bg-gray-700/30 transition-colors"
                   aria-label="Search"
                 >
-                  <Search className="h-5 w-5 text-navy-900 dark:text-white" />
+                  <Search className="h-5 w-5 text-gray-900 dark:text-white" />
                 </Link>
                 
                 <Link 
                   href="/notifications"
-                  className="p-2 rounded-full hover:bg-white/20 transition-colors relative"
+                  className="p-2 rounded-full hover:bg-white/20 dark:hover:bg-gray-700/30 transition-colors relative"
                   aria-label="Notifications"
                 >
-                  <Bell className="h-5 w-5 text-navy-900 dark:text-white" />
+                  <Bell className="h-5 w-5 text-gray-900 dark:text-white" />
                   <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
                 </Link>
                 
