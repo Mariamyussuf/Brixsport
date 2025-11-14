@@ -181,8 +181,43 @@ const MatchDetailScreen: React.FC<{ matchId: string }> = ({ matchId }) => {
     });
   };
 
+  const formatMatchStartMessage = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const isSameDay = date.toDateString() === today.toDateString();
+    const timePart = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return isSameDay ? `Match starts today at ${timePart}` : `Match starts on ${date.toLocaleDateString([], { month: 'short', day: 'numeric' })} at ${timePart}`;
+  };
+
   // Get event display info
   const getEventDisplay = (event: import('@/types/brixsports').LiveEvent) => {
+    const sport = (match as any)?.sport || '';
+    if (sport === 'basketball') {
+      switch (event.event_type) {
+        case 'field_goal':
+          return { icon: '🏀', text: 'FIELD GOAL', color: 'bg-green-500' };
+        case 'three_pointer':
+          return { icon: '🔥', text: 'THREE POINTER', color: 'bg-orange-500' };
+        case 'free_throw':
+          return { icon: '🎯', text: 'FREE THROW', color: 'bg-blue-500' };
+        case 'rebound':
+          return { icon: '⬆️', text: 'REBOUND', color: 'bg-blue-500' };
+        case 'assist':
+          return { icon: '🤝', text: 'ASSIST', color: 'bg-blue-500' };
+        case 'steal':
+          return { icon: '🕵️', text: 'STEAL', color: 'bg-purple-500' };
+        case 'block':
+          return { icon: '🛑', text: 'BLOCK', color: 'bg-indigo-500' };
+        case 'turnover':
+          return { icon: '🔁', text: 'TURNOVER', color: 'bg-yellow-500' };
+        case 'foul':
+          return { icon: '⚠️', text: 'FOUL', color: 'bg-yellow-500' };
+        case 'timeout':
+          return { icon: '⏱️', text: 'TIMEOUT', color: 'bg-gray-500' };
+        default:
+          return { icon: '🏀', text: event.event_type.toUpperCase().replace('_', ' '), color: 'bg-gray-500' };
+      }
+    }
     switch (event.event_type) {
       case 'goal':
         return { icon: '⚽', text: 'GOAL', color: 'bg-green-500' };
@@ -248,53 +283,62 @@ const MatchDetailScreen: React.FC<{ matchId: string }> = ({ matchId }) => {
         />
 
         {/* Events Section */}
-        <div className="px-4 py-6 bg-gray-50 dark:bg-gray-900">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-xl font-bold mb-4">Match Events</h2>
-            
-            {sortedEvents.length > 0 ? (
-              <div className="space-y-4">
-                {sortedEvents.map((event) => {
-                  const eventDisplay = getEventDisplay(event);
-                  
-                  return (
-                    <div key={event.id} className="flex items-center bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
-                      <div className="flex-shrink-0 w-12 text-center">
-                        <div className="text-sm font-bold text-gray-500 dark:text-gray-400">
-                          {event.minute}'
+        {(match.status !== 'scheduled') && (
+          <div className="px-4 py-6 bg-gray-50 dark:bg-gray-900">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-xl font-bold mb-4">{((match as any)?.sport === 'basketball') ? 'Game Events' : 'Match Events'}</h2>
+              
+              {sortedEvents.length > 0 ? (
+                <div className="space-y-4">
+                  {sortedEvents.map((event) => {
+                    const eventDisplay = getEventDisplay(event);
+                    
+                    return (
+                      <div key={event.id} className="flex items-center bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
+                        <div className="flex-shrink-0 w-12 text-center">
+                          <div className="text-sm font-bold text-gray-500 dark:text-gray-400">
+                            {event.minute}'
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className={`w-3 h-3 rounded-full ${eventDisplay.color} mr-3 mt-1`}></div>
-                      
-                      <div className="flex-1">
-                        <div className="flex items-center">
-                          <span className="text-2xl mr-2">
-                            {eventDisplay.icon}
-                          </span>
-                          <div>
-                            <p className="font-bold">
-                              {eventDisplay.text}
-                            </p>
-                            {event.description && (
-                              <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                {event.description}
+                        
+                        <div className={`w-3 h-3 rounded-full ${eventDisplay.color} mr-3 mt-1`}></div>
+                        
+                        <div className="flex-1">
+                          <div className="flex items-center">
+                            <span className="text-2xl mr-2">
+                              {eventDisplay.icon}
+                            </span>
+                            <div>
+                              <p className="font-bold">
+                                {eventDisplay.text}
                               </p>
-                            )}
+                              {event.description && (
+                                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                  {event.description}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                <p>No events recorded for this match</p>
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <p>{((match as any)?.sport === 'basketball') ? 'No plays recorded' : 'No events recorded for this match'}</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
+        {match.status === 'scheduled' && (
+          <div className="px-4 py-6 bg-gray-50 dark:bg-gray-900">
+            <div className="max-w-4xl mx-auto text-center text-gray-600 dark:text-gray-300">
+              {formatMatchStartMessage(match.match_date)}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

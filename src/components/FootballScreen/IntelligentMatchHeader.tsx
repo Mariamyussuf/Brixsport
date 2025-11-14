@@ -60,6 +60,34 @@ const IntelligentMatchHeader: React.FC<IntelligentMatchHeaderProps> = ({
   const router = useRouter();
   const [liveMatch, setLiveMatch] = useState(match);
 
+  const formatScheduleLabel = (dateStr: string): string => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const today = new Date();
+    const isSameDay = date.toDateString() === today.toDateString();
+    const timePart = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    if (isSameDay) {
+      return `Today at ${timePart}`;
+    }
+    const datePart = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    return `${datePart}, ${timePart}`;
+  };
+
+  const isLiveStatus = (status: string) => {
+    const s = (status || '').toLowerCase();
+    return s === 'live';
+  };
+
+  const isFinishedStatus = (status: string) => {
+    const s = (status || '').toLowerCase();
+    return s === 'finished' || s === 'completed' || s === 'ended';
+  };
+
+  const isScheduledStatus = (status: string) => {
+    const s = (status || '').toLowerCase();
+    return s === 'scheduled' || s === 'upcoming';
+  };
+
   // Real-time updates using WebSocket
   useEffect(() => {
     if (!match.id || match.status !== 'live') return;
@@ -137,11 +165,15 @@ const IntelligentMatchHeader: React.FC<IntelligentMatchHeaderProps> = ({
           <TeamBadge team={liveMatch.homeTeam} flagColors={liveMatch.homeFlagColors} />
           <div className="text-center">
             <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-              {liveMatch.homeScore !== undefined && liveMatch.awayScore !== undefined 
-                ? `${liveMatch.homeScore} - ${liveMatch.awayScore}` 
+              {isLiveStatus(liveMatch.status) || isFinishedStatus(liveMatch.status)
+                ? (liveMatch.homeScore !== undefined && liveMatch.awayScore !== undefined
+                    ? `${liveMatch.homeScore} - ${liveMatch.awayScore}`
+                    : 'vs')
                 : 'vs'}
             </div>
-            <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{liveMatch.time}</div>
+            <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+              {isLiveStatus(liveMatch.status) ? (liveMatch.time || 'Live') : formatScheduleLabel(liveMatch.date)}
+            </div>
           </div>
           <TeamBadge team={liveMatch.awayTeam} flagColors={liveMatch.awayFlagColors} />
         </div>
@@ -195,7 +227,7 @@ const IntelligentMatchHeader: React.FC<IntelligentMatchHeaderProps> = ({
         </div>
         
         <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-          {liveMatch.time}
+          {isLiveStatus(liveMatch.status) ? (liveMatch.time || 'Live') : formatScheduleLabel(liveMatch.date)}
         </div>
       </div>
     </div>
