@@ -191,9 +191,9 @@ const ProfileScreen = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-slate-900 dark:text-white">
 
-      <div className="py-4 max-w-full">
+      <div className="py-2 max-w-full">
         {/* Header */}
-        <header className="flex items-center justify-end py-3 px-4 sm:px-6">
+        <header className="flex items-center justify-end py-2 px-4 sm:px-6">
           <SettingsLauncher />
         </header>
 
@@ -201,7 +201,7 @@ const ProfileScreen = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 px-2 sm:px-4">
           {/* User Profile Section - Full width on mobile, 2/3 on desktop */}
           <div className="lg:col-span-2">
-            <div className="flex flex-col items-center text-center mb-4 bg-white dark:bg-gray-800 rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+            <div className="flex flex-col items-center text-center mb-4 bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
               {loading ? (
                 <p>Loading...</p>
               ) : error ? (
@@ -223,28 +223,24 @@ const ProfileScreen = () => {
                 </>
               ) : (
                 <>
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                  <div className="w-20 h-20 sm:w-28 sm:h-28 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
+                    <div className="w-14 h-14 sm:w-20 sm:h-20 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                      <div className="w-7 h-7 sm:w-10 sm:h-10 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
                     </div>
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-medium mb-2">
-                    Your home for sports insights
-                  </h2>
-                  <p className="text-slate-600 dark:text-gray-400 mb-6 max-w-md">
-                    Sign up or log in to access your favorites, track events, and more.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+                  <h2 className="text-lg sm:text-2xl font-medium mb-2 text-center">Your home for sports insights</h2>
+                  <p className="text-slate-600 dark:text-gray-400 mb-5 max-w-xs sm:max-w-md text-center text-sm sm:text-base">Sign up or log in to access your favorites, track events, and more.</p>
+                  <div className="flex flex-col gap-3 w-full max-w-xs sm:max-w-md">
                     <Button 
                       onClick={() => router.push('/auth/signup')}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg"
                     >
                       Sign Up
                     </Button>
                     <Button 
                       onClick={() => router.push('/auth/login')}
                       variant="outline"
-                      className="flex-1 py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600"
+                      className="w-full py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600"
                     >
                       Log In
                     </Button>
