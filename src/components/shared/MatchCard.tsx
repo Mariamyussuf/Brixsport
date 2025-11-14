@@ -50,6 +50,8 @@ export interface Match {
   venue?: string;
   match_date?: string;
   sport?: string;
+  home_team_id?: number;
+  away_team_id?: number;
 }
 
 interface MatchCardProps {
@@ -217,16 +219,25 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
       
       {/* Teams and scores */}
       <div className="flex items-center justify-between py-2">
-        <div className="flex items-center space-x-3 flex-1 min-w-0">
-          {getTeamIcon(
-            liveMatch.homeTeam || liveMatch.team1,
-            liveMatch.team1Color,
-            (liveMatch.homeTeamLogo || liveMatch.team1Logo)
-          )}
-          <span className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate">
-            {liveMatch.homeTeam || liveMatch.team1 || 'Home Team'}
-          </span>
-        </div>
+      <div
+        className="flex items-center space-x-3 flex-1 min-w-0"
+        onClick={(e) => {
+          e.stopPropagation();
+          const teamId = (liveMatch as any).home_team_id;
+          if (teamId) router.push(`/teams/test-team-detail?id=${teamId}`);
+        }}
+        role="button"
+        aria-label="Open home team profile"
+      >
+        {getTeamIcon(
+          liveMatch.homeTeam || liveMatch.team1,
+          liveMatch.team1Color,
+          (liveMatch.homeTeamLogo || liveMatch.team1Logo)
+        )}
+        <span className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate">
+          {liveMatch.homeTeam || liveMatch.team1 || 'Home Team'}
+        </span>
+      </div>
         
         <div className="px-4 min-w-[100px] flex flex-col items-center">
           {(liveMatch.status === 'live' || liveMatch.status === 'Live' || 
@@ -249,16 +260,25 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
           )}
         </div>
         
-        <div className="flex items-center space-x-3 justify-end flex-1 min-w-0">
-          <span className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate text-right">
-            {liveMatch.awayTeam || liveMatch.team2 || 'Away Team'}
-          </span>
-          {getTeamIcon(
-            liveMatch.awayTeam || liveMatch.team2,
-            liveMatch.team2Color,
-            (liveMatch.awayTeamLogo || liveMatch.team2Logo)
-          )}
-        </div>
+      <div
+        className="flex items-center space-x-3 justify-end flex-1 min-w-0"
+        onClick={(e) => {
+          e.stopPropagation();
+          const teamId = (liveMatch as any).away_team_id;
+          if (teamId) router.push(`/teams/test-team-detail?id=${teamId}`);
+        }}
+        role="button"
+        aria-label="Open away team profile"
+      >
+        <span className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate text-right">
+          {liveMatch.awayTeam || liveMatch.team2 || 'Away Team'}
+        </span>
+        {getTeamIcon(
+          liveMatch.awayTeam || liveMatch.team2,
+          liveMatch.team2Color,
+          (liveMatch.awayTeamLogo || liveMatch.team2Logo)
+        )}
+      </div>
       </div>
       
       {/* Additional info */}
