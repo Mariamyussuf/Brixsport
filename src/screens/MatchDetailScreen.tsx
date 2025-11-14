@@ -217,7 +217,7 @@ const MatchDetailScreen: React.FC<{ matchId: string }> = ({ matchId }) => {
       <LoginPrompt isOpen={isLoginPromptOpen} onClose={() => setIsLoginPromptOpen(false)} />
       
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 w-full">
-        {/* Intelligent Header */}
+        
         <IntelligentMatchHeader
           match={{
             id: match.id.toString(),
@@ -246,82 +246,6 @@ const MatchDetailScreen: React.FC<{ matchId: string }> = ({ matchId }) => {
           onBack={() => router.back()}
           onToggleFavorite={toggleFavorite}
         />
-
-        {/* Match Info */}
-        <div className="px-4 py-6 bg-white dark:bg-gray-800">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex flex-col items-center mb-6">
-              <div className="text-lg font-medium text-gray-500 dark:text-gray-400 mb-2">
-                {match.competition_name || 'Competition'}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                {formatDate(match.match_date)}
-              </div>
-              
-              <div className="flex items-center justify-between w-full max-w-md">
-                <div className="flex flex-col items-center">
-                  {match.home_team_logo && (
-                    <img 
-                      src={match.home_team_logo} 
-                      alt={match.home_team_name || `Home Team ${match.home_team_id}`} 
-                      className="w-16 h-16 rounded-full mb-2"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
-                    />
-                  )}
-                  <div className="text-center font-bold">{match.home_team_name || `Home Team ${match.home_team_id}`}</div>
-                </div>
-                
-                <div className="flex flex-col items-center mx-4">
-                  <div className="text-3xl font-bold">
-                    {match.status === 'completed' || match.status === 'live'
-                      ? `${match.home_score} - ${match.away_score}`
-                      : 'vs'}
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-sm font-medium mt-2 ${
-                    match.status === 'scheduled' 
-                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' 
-                      : match.status === 'live' 
-                        ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' 
-                        : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                  }`}>
-                    {match.status.toUpperCase()}
-                  </div>
-                  {match.status === 'live' && (
-                    <div className="flex items-center mt-1">
-                      <span className="flex w-2 h-2 bg-red-500 rounded-full mr-1 animate-pulse"></span>
-                      <span className="text-red-500 text-sm font-medium">
-                        LIVE
-                      </span>
-                      {match.current_minute > 0 && (
-                        <span className="ml-2 text-gray-500 dark:text-gray-400 text-sm">
-                          {match.current_minute}' {match.period && `• ${match.period}`}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex flex-col items-center">
-                  {match.away_team_logo && (
-                    <img 
-                      src={match.away_team_logo} 
-                      alt={match.away_team_name || `Away Team ${match.away_team_id}`} 
-                      className="w-16 h-16 rounded-full mb-2"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
-                    />
-                  )}
-                  <div className="text-center font-bold">{match.away_team_name || `Away Team ${match.away_team_id}`}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Events Section */}
         <div className="px-4 py-6 bg-gray-50 dark:bg-gray-900">

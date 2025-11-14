@@ -288,23 +288,35 @@ const Homescreen: React.FC = () => {
   };
 
   // Get and sort matches with live matches first, then by league and time
-  const getFilteredMatches = (sportType: SportType): UI_Match[] => {
+  const getFilteredMatches = (sportType: SportType | 'all'): UI_Match[] => {
     let matches: UI_Match[] = [];
     
     // Get all matches from API
-    if (sportType === 'football' && (homeData?.liveFootball || homeData?.upcomingFootball)) {
+    if ((sportType === 'football' || sportType === 'all') && (homeData?.liveFootball || homeData?.upcomingFootball)) {
       const day = selectedDate;
       const live = (homeData?.liveFootball || []).filter(m => (m.match_date || '').split('T')[0] === day);
       const upcoming = (homeData?.upcomingFootball || []).filter(m => (m.match_date || '').split('T')[0] === day);
       matches = [
+        ...matches,
         ...live.map(convertMatchToUI),
         ...upcoming.map(convertMatchToUI)
       ];
-    } else if (sportType === 'basketball' && sportMatches?.length) {
+    }
+    
+    if (sportType === 'basketball' && sportMatches?.length) {
       const day = selectedDate;
-      matches = sportMatches
+      const bb = sportMatches
         .filter(m => (m.match_date || '').split('T')[0] === day)
         .map(convertMatchToUI);
+      matches = [...matches, ...bb];
+    }
+    
+    if (sportType === 'all' && homeData?.liveBasketball) {
+      const day = selectedDate;
+      const liveBB = (homeData.liveBasketball || [])
+        .filter(m => (m.match_date || '').split('T')[0] === day)
+        .map(convertMatchToUI);
+      matches = [...matches, ...liveBB];
     } else if (sportType === 'track_events' && sportTrackEvents?.length) {
       // Track events are handled separately
       return [];
@@ -505,13 +517,31 @@ const Homescreen: React.FC = () => {
                 </button>
               ))}
             </div>
-            <div className="mt-3 flex items-center justify-end">
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
-              />
+            <div className="mt-3 flex items-center justify-end gap-2">
+              {(() => {
+                const toISODate = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+                const todayIso = toISODate(new Date());
+                const tomorrowIso = toISODate(new Date(Date.now() + 24 * 60 * 60 * 1000));
+                const chipBase = 'px-3 py-1 rounded-full text-sm transition-colors';
+                const activeCls = 'bg-blue-600 text-white';
+                const inactiveCls = 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700';
+                return (
+                  <>
+                    <button
+                      onClick={() => setSelectedDate(todayIso)}
+                      className={`${chipBase} ${selectedDate === todayIso ? activeCls : inactiveCls}`}
+                    >
+                      Today
+                    </button>
+                    <button
+                      onClick={() => setSelectedDate(tomorrowIso)}
+                      className={`${chipBase} ${selectedDate === tomorrowIso ? activeCls : inactiveCls}`}
+                    >
+                      Tomorrow
+                    </button>
+                  </>
+                );
+              })()}
             </div>
           </div>
         )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, AlertTriangle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useI18n } from '@/components/shared/I18nProvider';
 
 interface ScheduleMatch {
@@ -25,6 +26,7 @@ interface BasketballScheduleProps {
 
 const BasketballSchedule: React.FC<BasketballScheduleProps> = ({ rounds: initialRounds }) => {
   const { t } = useI18n();
+  const router = useRouter();
   const [rounds, setRounds] = useState<ScheduleRound[]>(initialRounds || []);
   const [loading, setLoading] = useState(!initialRounds);
   const [error, setError] = useState<string | null>(null);
@@ -135,12 +137,30 @@ const BasketballSchedule: React.FC<BasketballScheduleProps> = ({ rounds: initial
             {t('basketball_section')} Schedule
           </h2>
           <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
-            />
+            {(() => {
+              const toISODate = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+              const todayIso = toISODate(new Date());
+              const tomorrowIso = toISODate(new Date(Date.now() + 24 * 60 * 60 * 1000));
+              const chipBase = 'px-3 py-1 rounded-full text-sm transition-colors';
+              const activeCls = 'bg-blue-600 text-white';
+              const inactiveCls = 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+              return (
+                <>
+                  <button
+                    onClick={() => setSelectedDate(todayIso)}
+                    className={`${chipBase} ${selectedDate === todayIso ? activeCls : inactiveCls}`}
+                  >
+                    Today
+                  </button>
+                  <button
+                    onClick={() => setSelectedDate(tomorrowIso)}
+                    className={`${chipBase} ${selectedDate === tomorrowIso ? activeCls : inactiveCls}`}
+                  >
+                    Tomorrow
+                  </button>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -210,7 +230,8 @@ const BasketballSchedule: React.FC<BasketballScheduleProps> = ({ rounds: initial
                             {matches.map((match) => (
                               <div 
                                 key={match.id} 
-                                className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                onClick={() => router.push(`/match/${match.id}`)}
                               >
                                 <div className="flex items-center justify-between">
                                   <div className="flex-1 min-w-0">
