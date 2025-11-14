@@ -69,7 +69,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, showDetails = true }) 
             'titans': require('@/assets/titans.jpg').default?.src || require('@/assets/titans.jpg').src,
             'the storm': require('@/assets/the storm.jpg').default?.src || require('@/assets/the storm.jpg').src,
             'siberia': require('@/assets/siberia.jpg').default?.src || require('@/assets/siberia.jpg').src,
-            'rim reapears': require('@/assets/rim reapears.jpg').default?.src || require('@/assets/rim reapears.jpg').src,
+            'rim reapers': require('@/assets/rim-reapers.jpg').default?.src || require('@/assets/rim-reapers.jpg').src,
             'tbk': require('@/assets/tbk.jpg').default?.src || require('@/assets/tbk.jpg').src,
           };
           const key = normalizeName(team.name) || '';
