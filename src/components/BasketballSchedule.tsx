@@ -239,10 +239,18 @@ const BasketballSchedule: React.FC<BasketballScheduleProps> = ({ rounds: initial
                                       <div className="flex items-center min-w-0">
                                         {(match.home_team_logo || resolveAssetLogo(match.home_team_name)) && (
                                           <img
-                                            src={match.home_team_logo || resolveAssetLogo(match.home_team_name) as string}
+                                            src={match.home_team_logo || (resolveAssetLogo(match.home_team_name) as string)}
                                             alt={match.home_team_name}
                                             className="w-6 h-6 rounded-full mr-2"
-                                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                            onError={(e) => {
+                                              const target = e.currentTarget as HTMLImageElement;
+                                              const fallback = resolveAssetLogo(match.home_team_name) as string | undefined;
+                                              if (fallback && target.src !== fallback) {
+                                                target.src = fallback;
+                                              } else {
+                                                target.style.display = 'none';
+                                              }
+                                            }}
                                           />
                                         )}
                                         <div className="font-medium text-gray-900 dark:text-white truncate">
@@ -253,10 +261,18 @@ const BasketballSchedule: React.FC<BasketballScheduleProps> = ({ rounds: initial
                                       <div className="flex items-center min-w-0">
                                         {(match.away_team_logo || resolveAssetLogo(match.away_team_name)) && (
                                           <img
-                                            src={match.away_team_logo || resolveAssetLogo(match.away_team_name) as string}
+                                            src={match.away_team_logo || (resolveAssetLogo(match.away_team_name) as string)}
                                             alt={match.away_team_name}
                                             className="w-6 h-6 rounded-full mr-2"
-                                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                            onError={(e) => {
+                                              const target = e.currentTarget as HTMLImageElement;
+                                              const fallback = resolveAssetLogo(match.away_team_name) as string | undefined;
+                                              if (fallback && target.src !== fallback) {
+                                                target.src = fallback;
+                                              } else {
+                                                target.style.display = 'none';
+                                              }
+                                            }}
                                           />
                                         )}
                                         <div className="font-medium text-gray-900 dark:text-white truncate">
@@ -335,6 +351,7 @@ export default BasketballSchedule;
     'tbk': require('@/assets/tbk.jpg').default?.src || require('@/assets/tbk.jpg').src,
     'siberia': require('@/assets/siberia.jpg').default?.src || require('@/assets/siberia.jpg').src,
     'rim reapers': require('@/assets/rim-reapers.jpg').default?.src || require('@/assets/rim-reapers.jpg').src,
+    'rim reapears': require('@/assets/rim-reapers.jpg').default?.src || require('@/assets/rim-reapers.jpg').src,
   } as any;
 
   const resolveAssetLogo = (teamName?: string): string | undefined => {

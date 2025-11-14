@@ -138,9 +138,20 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
     return (
       <div className={`${baseClasses} ${bgColor}`}>
         {logoUrl || resolveAssetLogo(team) ? (
-          <img src={logoUrl || resolveAssetLogo(team)} alt={team} className="w-5 h-5 rounded-sm object-contain" onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = 'none';
-          }} />
+          <img
+            src={logoUrl || resolveAssetLogo(team)}
+            alt={team}
+            className="w-5 h-5 rounded-sm object-contain"
+            onError={(e) => {
+              const target = e.currentTarget as HTMLImageElement;
+              const fallback = resolveAssetLogo(team);
+              if (fallback && target.src !== fallback) {
+                target.src = fallback;
+              } else {
+                target.style.display = 'none';
+              }
+            }}
+          />
         ) : (
           <div className="w-5 h-5 rounded-sm"></div>
         )}

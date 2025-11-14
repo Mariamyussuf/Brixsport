@@ -70,6 +70,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, showDetails = true }) 
             'the storm': require('@/assets/the storm.jpg').default?.src || require('@/assets/the storm.jpg').src,
             'siberia': require('@/assets/siberia.jpg').default?.src || require('@/assets/siberia.jpg').src,
             'rim reapers': require('@/assets/rim-reapers.jpg').default?.src || require('@/assets/rim-reapers.jpg').src,
+            'rim reapears': require('@/assets/rim-reapers.jpg').default?.src || require('@/assets/rim-reapers.jpg').src,
             'tbk': require('@/assets/tbk.jpg').default?.src || require('@/assets/tbk.jpg').src,
           };
           const key = normalizeName(team.name) || '';
@@ -81,8 +82,12 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, showDetails = true }) 
               alt={team.name}
               className="w-20 h-20 rounded-full object-contain border-2 border-gray-200 dark:border-gray-700"
               onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
+                const target = e.currentTarget as HTMLImageElement;
+                if (/^https?:\/\//.test(displayLogo) && assetLogo && target.src !== assetLogo) {
+                  target.src = assetLogo;
+                } else {
+                  target.style.display = 'none';
+                }
               }}
             />
           ) : (
