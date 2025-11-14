@@ -283,18 +283,18 @@ const MatchDetailScreen: React.FC<{ matchId: string }> = ({ matchId }) => {
         />
 
         {/* Tabs Section - Always visible */}
-        <div className="px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex space-x-6 overflow-x-auto">
-            <button className="py-2 border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap">
+        <div className="px-2 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex space-x-4 overflow-x-auto scrollbar-hide">
+            <button className="py-3 px-1 border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap text-sm">
               Events
             </button>
-            <button className="py-2 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
+            <button className="py-3 px-1 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap text-sm">
               Lineups
             </button>
-            <button className="py-2 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
+            <button className="py-3 px-1 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap text-sm">
               Statistics
             </button>
-            <button className="py-2 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
+            <button className="py-3 px-1 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap text-sm">
               H2H
             </button>
           </div>
@@ -312,7 +312,7 @@ const MatchDetailScreen: React.FC<{ matchId: string }> = ({ matchId }) => {
                   
                   return (
                     <div key={event.id} className="flex items-center bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
-                      <div className="flex-shrink-0 w-12 text-center">
+                      <div className="flex-shrink-0 w-10 text-center">
                         <div className="text-sm font-bold text-gray-500 dark:text-gray-400">
                           {event.minute}'
                         </div>
@@ -320,17 +320,17 @@ const MatchDetailScreen: React.FC<{ matchId: string }> = ({ matchId }) => {
                       
                       <div className={`w-3 h-3 rounded-full ${eventDisplay.color} mr-3 mt-1`}></div>
                       
-                      <div className="flex-1">
-                        <div className="flex items-center">
-                          <span className="text-2xl mr-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start">
+                          <span className="text-xl mr-2 mt-0.5">
                             {eventDisplay.icon}
                           </span>
-                          <div>
-                            <p className="font-bold">
+                          <div className="min-w-0">
+                            <p className="font-bold truncate">
                               {eventDisplay.text}
                             </p>
                             {event.description && (
-                              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                              <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
                                 {event.description}
                               </p>
                             )}
