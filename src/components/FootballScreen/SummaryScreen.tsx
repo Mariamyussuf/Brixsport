@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { SOCKET_URL } from '@/config/api';
 
 interface BaseEvent {
   time: number;
@@ -222,7 +223,7 @@ const SummaryScreen: React.FC<MatchSummaryProps> = ({
     if (!matchId) return;
 
     // Connect to WebSocket server
-    const socket = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001');
+    const socket = io(SOCKET_URL);
     
     // Join match room
     socket.emit('joinMatch', { matchId });

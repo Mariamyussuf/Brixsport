@@ -20,7 +20,7 @@ import titans from '@/assets/titans.jpg';
 import theStorm from '@/assets/the storm.jpg';
 import tbk from '@/assets/tbk.jpg';
 import siberia from '@/assets/siberia.jpg';
-import rimReapears from '@/assets/rim reapears.jpg';
+import rimReapears from '@/assets/rim-reapers.jpg';
 import { useRouter } from 'next/navigation';
 import { useI18n } from './I18nProvider';
 import { io } from 'socket.io-client';

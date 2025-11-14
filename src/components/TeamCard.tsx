@@ -61,25 +61,38 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, showDetails = true }) 
         </button>
       </div>
 
-      {/* Team logo or initials */}
       <div className="px-4 py-2 flex justify-center">
-        {team.logo_url ? (
-          <img 
-            src={team.logo_url} 
-            alt={team.name} 
-            className="w-20 h-20 rounded-full object-contain border-2 border-gray-200 dark:border-gray-700"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-            }}
-          />
-        ) : (
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-            <span className="text-white text-2xl font-bold">
-              {getInitials(team.name)}
-            </span>
-          </div>
-        )}
+        {(() => {
+          const normalizeName = (name?: string) => name?.toLowerCase().replace(/\s+/g, ' ').trim();
+          const TEAM_ASSET_LOGOS: Record<string, string> = {
+            'vikings': require('@/assets/vikings.jpg').default?.src || require('@/assets/vikings.jpg').src,
+            'titans': require('@/assets/titans.jpg').default?.src || require('@/assets/titans.jpg').src,
+            'the storm': require('@/assets/the storm.jpg').default?.src || require('@/assets/the storm.jpg').src,
+            'siberia': require('@/assets/siberia.jpg').default?.src || require('@/assets/siberia.jpg').src,
+            'rim reapears': require('@/assets/rim reapears.jpg').default?.src || require('@/assets/rim reapears.jpg').src,
+            'tbk': require('@/assets/tbk.jpg').default?.src || require('@/assets/tbk.jpg').src,
+          };
+          const key = normalizeName(team.name) || '';
+          const assetLogo = TEAM_ASSET_LOGOS[key];
+          const displayLogo = team.logo_url && /^https?:\/\//.test(team.logo_url) ? team.logo_url : assetLogo;
+          return displayLogo ? (
+            <img
+              src={displayLogo}
+              alt={team.name}
+              className="w-20 h-20 rounded-full object-contain border-2 border-gray-200 dark:border-gray-700"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <span className="text-white text-2xl font-bold">
+                {getInitials(team.name)}
+              </span>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Team details */}

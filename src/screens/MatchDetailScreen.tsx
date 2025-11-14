@@ -10,6 +10,7 @@ import { LoginPrompt } from '@/components/shared/LoginPrompt';
 import { useScrollDetection } from '@/hooks/useScrollDetection';
 import IntelligentMatchHeader from '@/components/FootballScreen/IntelligentMatchHeader';
 import { io } from 'socket.io-client';
+import { SOCKET_URL } from '@/config/api';
 
 interface MatchEventDisplay {
   id: number;
@@ -66,7 +67,7 @@ const MatchDetailScreen: React.FC<{ matchId: string }> = ({ matchId }) => {
     if (!matchId || !match) return;
 
     // Connect to WebSocket server
-    const socket = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001');
+    const socket = io(SOCKET_URL);
     
     // Join match room
     socket.emit('joinMatch', { matchId });

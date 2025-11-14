@@ -1,6 +1,7 @@
 // useRealTimeTournamentUpdates.ts
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { SOCKET_URL } from '@/config/api';
 
 interface MatchUpdate {
   matchId: string;
@@ -21,7 +22,7 @@ export const useRealTimeTournamentUpdates = (competitionId: string) => {
     // Connect to WebSocket server
     setConnectionStatus('connecting');
     
-    const newSocket = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001');
+    const newSocket = io(SOCKET_URL);
     setSocket(newSocket);
     
     newSocket.on('connect', () => {

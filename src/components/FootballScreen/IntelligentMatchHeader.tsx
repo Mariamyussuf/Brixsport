@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Star, Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { io } from 'socket.io-client';
+import { SOCKET_URL } from '@/config/api';
 
 interface Team {
   id: string;
@@ -54,7 +55,7 @@ const IntelligentMatchHeader: React.FC<IntelligentMatchHeaderProps> = ({
     if (!match.id || match.status !== 'live') return;
 
     // Connect to WebSocket server
-    const socket = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001');
+    const socket = io(SOCKET_URL);
     
     // Join match room
     socket.emit('joinMatch', { matchId: match.id });
