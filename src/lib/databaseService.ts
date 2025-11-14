@@ -1026,7 +1026,7 @@ export class DatabaseService {
             logo_url
           )
         `)
-        .in('competition_id', competitionIds)
+        .in('competitionId', competitionIds)
         .order('scheduled_at', { ascending: true, nullsFirst: false });
       
       if (error) {
