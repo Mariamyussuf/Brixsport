@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { validationService } from '../services/security/validation.service';
 import { ValidationError } from '../types/errors';
-import { logger } from '@utils/logger';
+import { logger } from '../utils/logger';
 
 export const validateRequest = (schema: any) => {
   return async (req: Request, res: Response, next: NextFunction) => {

@@ -1,4 +1,4 @@
-import { logger } from '@utils/logger';
+import { logger } from '../../utils/logger';
 import * as bcrypt from 'bcryptjs';
 import { authenticator } from 'otplib';
 import QRCode from 'qrcode';

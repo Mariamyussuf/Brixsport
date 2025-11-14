@@ -17,6 +17,7 @@ export interface MediaFile {
     duration?: number;
     bitrate?: number;
     codec?: string;
+    thumbnails?: string[]; // Add thumbnails property
   };
   status: 'uploading' | 'processing' | 'ready' | 'failed';
   createdAt: Date;

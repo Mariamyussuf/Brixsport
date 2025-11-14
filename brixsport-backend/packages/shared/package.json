@@ -20,5 +20,9 @@
   "devDependencies": {
     "typescript": "^5.2.2",
     "zod": "^3.22.2"
+  },
+  "dependencies": {
+    "redis": "^5.8.2",
+    "zod": "^3.22.2"
   }
 }

@@ -136,15 +136,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
         body: JSON.stringify({ email: forgotEmail }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error?.message || 'Failed to send reset instructions');
-      }
-
+      // Always show success message for security (prevent email enumeration)
       setForgotSuccess(true);
+      setForgotEmail('');
     } catch (err: any) {
-      setForgotError(err.message || 'Failed to send reset instructions. Please try again.');
+      // Still show success for security
+      setForgotSuccess(true);
+      setForgotEmail('');
     } finally {
       setIsLoading(false);
     }

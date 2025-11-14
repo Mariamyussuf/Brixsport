@@ -16,25 +16,38 @@ const app = express();
 // Enhanced security middleware
 app.use(enhancedSecurityHeaders);
 
-// CORS configuration
-app.use(cors({
-  origin: function (origin, callback) {
+// CORS configuration for Vercel frontend
+const allowedOriginsForCORS = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:3000', 'http://localhost:5173']; // Fallback for development
+
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: (err: Error | null, origin?: boolean) => void) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-
-    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
+    
+    // Check if origin matches any allowed pattern
+    const isAllowed = allowedOriginsForCORS.some(allowed => {
+      if (allowed.includes('*')) {
+        // Handle wildcard patterns
+        const pattern = allowed.replace(/\*/g, '.*');
+        return new RegExp(pattern).test(origin);
+      }
+      return allowed === origin;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
     } else {
-      return callback(new Error('Not allowed by CORS'));
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-API-Key'],
-  exposedHeaders: ['X-CSRF-Token']
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+};
+
+app.use(cors(corsOptions));
 
 // Enhanced DDoS protection middleware
 app.use(ddosProtection.userAgentAnalysis());
@@ -65,6 +78,15 @@ app.post('/csp-report', (req, res) => {
 // API routes
 app.use('/api', routes);
 
+// Root endpoint for basic health check
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'Brixsport API is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ 
@@ -89,24 +111,39 @@ app.use(errorHandler);
 // Create HTTP server
 const server = createServer(app);
 
-// Create Socket.IO instance
+// Create Socket.IO instance with proper CORS for Vercel
+const allowedOriginsForSocket = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:3000'];
+
 const io = new Server(server, {
   cors: {
-    origin: function (origin, callback) {
+    origin: function (origin: string | undefined, callback: (err: Error | null, origin?: boolean) => void) {
       // Allow requests with no origin (mobile apps, etc.)
       if (!origin) return callback(null, true);
-
-      const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
+      
+      // Check if origin matches any allowed pattern
+      const isAllowed = allowedOriginsForSocket.some(allowed => {
+        if (allowed.includes('*')) {
+          // Handle wildcard patterns
+          const pattern = allowed.replace(/\*/g, '.*');
+          return new RegExp(pattern).test(origin);
+        }
+        return allowed === origin;
+      });
+      
+      if (isAllowed) {
+        callback(null, true);
       } else {
-        return callback(new Error('Not allowed by CORS'));
+        callback(new Error('Not allowed by CORS'));
       }
     },
-    methods: ["GET", "POST"],
+    methods: ['GET', 'POST'],
     credentials: true
-  }
+  },
+  transports: ['websocket', 'polling'], // Important for Vercel
+  pingTimeout: 60000,
+  pingInterval: 25000,
 });
 
 export default app;

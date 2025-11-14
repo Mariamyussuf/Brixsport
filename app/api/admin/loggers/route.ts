@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminToken, hasAdminPermission, canManageLogger } from '@/lib/adminAuth';
 import { cookies } from 'next/headers';
 import { dbService } from '@/lib/databaseService';
+import bcrypt from 'bcrypt';
 
 // GET /api/admin/loggers - Get all loggers
 export async function GET(request: Request) {
@@ -103,13 +104,22 @@ export async function POST(request: Request) {
     }
     
     // Create new logger in database
-    const newLogger = await dbService.createLogger({
+    // Generate a temporary password
+    const temporaryPassword = Math.random().toString(36).slice(-8);
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(temporaryPassword, saltRounds);
+    
+    // Create new logger in database with credentials
+    const newLogger = await dbService.createLoggerWithCredentials({
       name: body.name,
       email: body.email,
+      password: hashedPassword,
       role: 'logger',
       status: body.status || 'inactive',
       assignedCompetitions: body.assignedCompetitions || [],
       permissions: body.permissions || [],
+      createdAt: new Date().toISOString(),
+      lastActive: new Date().toISOString()
     });
     
     return NextResponse.json({ 

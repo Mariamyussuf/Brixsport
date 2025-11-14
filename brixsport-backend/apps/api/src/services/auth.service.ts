@@ -6,6 +6,8 @@ import { sessionService } from './security/session.service';
 import { emailService } from './email.service';
 import { mfaService } from './mfa.service';
 import { centralizedDatabaseService } from './centralized-database.service';
+import { passwordResetRateLimitService } from './password-reset-rate-limit.service';
+import { passwordResetAuditService } from './password-reset-audit.service';
 import { v4 as uuidv4 } from 'uuid';
 
 export const authService = {
@@ -390,35 +392,81 @@ export const authService = {
     }
   },
   
-  forgotPassword: async (email: string) => {
+  forgotPassword: async (email: string, ipAddress?: string, userAgent?: string) => {
     try {
-      logger.info('Password reset request', email);
+      logger.info('Password reset request', { email, ipAddress });
       
-      // Check if user exists
-      const user = await supabaseService.getUserByEmail(email);
-      if (!user) {
-        // For security, we don't reveal if the email exists
+      // Check rate limiting BEFORE doing anything else
+      const rateLimitCheck = await passwordResetRateLimitService.checkResetLimit(email, ipAddress);
+      
+      if (!rateLimitCheck.allowed) {
+        // Log rate limited attempt
+        await passwordResetAuditService.logRateLimited(email, ipAddress, userAgent, {
+          remaining: rateLimitCheck.remaining,
+          resetTime: rateLimitCheck.resetTime,
+          retryAfter: rateLimitCheck.retryAfter
+        });
+        
+        // Still return success to prevent email enumeration
         return {
           success: true,
           message: 'Password reset instructions sent'
         };
       }
       
-      // Generate reset token
+      // Record this attempt for rate limiting
+      await passwordResetRateLimitService.recordResetAttempt(email, ipAddress);
+      
+      // Log the reset request
+      await passwordResetAuditService.logResetRequest(email, ipAddress, userAgent);
+      
+      // Check if user exists
+      const user = await supabaseService.getUserByEmail(email);
+      if (!user) {
+        // For security, we don't reveal if the email exists
+        logger.info('Password reset requested for non-existent email', { email });
+        return {
+          success: true,
+          message: 'Password reset instructions sent'
+        };
+      }
+      
+      // Generate secure reset token with 1 hour expiry
       const resetToken = jwt.sign(
-        { userId: user.id, email: user.email },
+        { 
+          userId: user.id, 
+          email: user.email,
+          type: 'password_reset',
+          iat: Math.floor(Date.now() / 1000)
+        },
         process.env.PASSWORD_RESET_SECRET || 'fallback_reset_secret',
         { expiresIn: '1h' }
       );
       
-      // Store reset token in database
+      // Calculate expiry time
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1);
+      
+      // Store reset token in database with expiry
       const storeResult = await supabaseService.storePasswordResetToken(user.id, resetToken);
       if (!storeResult.success) {
+        logger.error('Failed to store password reset token', { userId: user.id });
         throw new Error('Failed to store password reset token');
       }
       
-      // Send reset email
-      await emailService.sendPasswordResetEmail(email, resetToken);
+      // Send reset email with enhanced template
+      await emailService.sendPasswordResetEmail(
+        email, 
+        resetToken,
+        user.name || 'User',
+        ipAddress || 'Unknown'
+      );
+      
+      logger.info('Password reset email sent successfully', { 
+        email, 
+        userId: user.id,
+        expiresAt 
+      });
       
       return {
         success: true,
@@ -430,20 +478,48 @@ export const authService = {
     }
   },
   
-  resetPassword: async (token: string, newPassword: string) => {
+  resetPassword: async (token: string, newPassword: string, ipAddress?: string, userAgent?: string) => {
     try {
-      logger.info('Password reset attempt', token);
+      logger.info('Password reset attempt with token');
       
-      // Verify the reset token
-      const decoded: any = jwt.verify(
-        token,
-        process.env.PASSWORD_RESET_SECRET || 'fallback_reset_secret'
-      );
+      let decoded: any;
+      let email = 'unknown';
       
-      // Check if token exists in database
+      try {
+        // Verify the reset token
+        decoded = jwt.verify(
+          token,
+          process.env.PASSWORD_RESET_SECRET || 'fallback_reset_secret'
+        );
+        
+        email = decoded.email || 'unknown';
+        
+        // Verify token type
+        if (decoded.type !== 'password_reset') {
+          await passwordResetAuditService.logTokenInvalid(email, ipAddress, userAgent);
+          throw new Error('Invalid token type');
+        }
+      } catch (jwtError: any) {
+        if (jwtError.name === 'TokenExpiredError') {
+          await passwordResetAuditService.logTokenExpired(email, ipAddress, userAgent);
+          throw new Error('Reset token has expired');
+        }
+        await passwordResetAuditService.logTokenInvalid(email, ipAddress, userAgent);
+        throw new Error('Invalid reset token');
+      }
+      
+      // Check if token exists and is not used in database
       const tokenValid = await supabaseService.validatePasswordResetToken(decoded.userId, token);
       if (!tokenValid) {
+        await passwordResetAuditService.logTokenInvalid(email, ipAddress, userAgent);
         throw new Error('Invalid or expired reset token');
+      }
+      
+      // Get user to verify they exist
+      const user = await supabaseService.getUserById(decoded.userId);
+      if (!user) {
+        await passwordResetAuditService.logResetFailed(email, 'User not found', ipAddress, userAgent);
+        throw new Error('User not found');
       }
       
       // Hash new password using the centralized database service
@@ -451,22 +527,50 @@ export const authService = {
       
       // Update password
       const updateResult = await supabaseService.updateUser(decoded.userId, { 
-        password: hashedPassword 
+        password: hashedPassword,
+        updatedAt: new Date()
       });
       
       if (!updateResult) {
+        await passwordResetAuditService.logResetFailed(
+          email, 
+          'Failed to update password', 
+          ipAddress, 
+          userAgent
+        );
         throw new Error('Failed to update password');
       }
       
-      // Remove reset token from database
+      // Mark token as used and remove from database
       await supabaseService.removePasswordResetToken(decoded.userId);
+      
+      // Send success confirmation email
+      await emailService.sendPasswordResetSuccessEmail(
+        user.email,
+        user.name || 'User',
+        ipAddress || 'Unknown'
+      );
+      
+      // Log successful reset
+      await passwordResetAuditService.logResetSuccess(
+        user.id,
+        user.email,
+        ipAddress,
+        userAgent
+      );
+      
+      logger.info('Password reset successful', { 
+        userId: user.id, 
+        email: user.email,
+        ipAddress 
+      });
       
       return {
         success: true,
         message: 'Password reset successfully'
       };
     } catch (error: any) {
-      logger.error('Reset password error', error);
+      logger.error('Reset password error', { error: error.message });
       throw error;
     }
   },

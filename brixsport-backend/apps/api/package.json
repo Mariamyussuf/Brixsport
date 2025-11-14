@@ -4,9 +4,10 @@
   "description": "Main API server for Brixsport",
   "main": "dist/server.js",
   "scripts": {
-    "build": "tsc",
+    "build": "npm run generate && tsc && tsc-alias && echo 'Build completed successfully'",
     "start": "node dist/server.js",
     "dev": "ts-node -r tsconfig-paths/register src/server.ts",
+    "generate": "cd ../../packages/database && npm run db:generate",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -14,10 +15,12 @@
     "lint:fix": "eslint --fix src/**/*.ts",
     "lint:ci": "eslint --config .eslintrc.js src/**/*.ts",
     "prettier": "prettier --write src/**/*.ts",
-    "validate-env": "node ../../scripts/validate-environment.js"
+    "validate-env": "node ../../scripts/validate-environment.js",
+    "deploy:railway": "echo 'Deploy to Railway using the railway.json configuration'"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0",
+    "@brixsport/database": "*",
+    "@prisma/client": "^6.16.2",
     "@sendgrid/mail": "^8.1.6",
     "@supabase/supabase-js": "^2.57.4",
     "@types/express-rate-limit": "^5.1.3",
@@ -41,12 +44,14 @@
     "helmet": "^7.0.0",
     "jsonwebtoken": "^9.0.2",
     "otplib": "^12.0.1",
+    "pdfkit": "^0.17.2",
     "qrcode": "^1.5.4",
     "rate-limit-redis": "^4.2.2",
     "redis": "^4.6.7",
     "sanitize-html": "^2.17.0",
     "sharp": "^0.34.4",
     "socket.io": "^4.7.2",
+    "tsconfig-paths": "^4.2.0",
     "uuid": "^10.0.0",
     "validator": "^13.15.15",
     "winston": "^3.10.0",
@@ -67,7 +72,7 @@
     "prisma": "^6.17.1",
     "ts-jest": "^29.4.3",
     "ts-node": "^10.9.1",
-    "tsconfig-paths": "^4.2.0",
+    "tsc-alias": "^1.8.16",
     "typescript": "^5.2.2"
   }
 }

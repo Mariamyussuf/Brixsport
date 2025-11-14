@@ -10,6 +10,7 @@ import LiveLoggerMonitoring from './LiveLoggerMonitoring';
 import StatisticsDashboard from './StatisticsDashboard';
 import SystemSettings from './SystemSettings';
 import PWAAdminManagement from './PWAAdminManagement';
+import FeaturedContentManagement from '@/components/admin/FeaturedContentManagement';
 
 const AdminDashboard = () => {
   const adminContext = useAdmin();
@@ -220,6 +221,17 @@ const AdminDashboard = () => {
               </div>
             )}
             
+            {/* Featured Content Management */}
+            {activeTab === 'featured-content' && (
+              <div className="bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-xl border border-gray-700/50 p-6">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-white mb-2">Featured Content Management</h2>
+                  <p className="text-gray-400">Manage featured content for the platform</p>
+                </div>
+                <FeaturedContentManagement />
+              </div>
+            )}
+            
             {/* Settings Content */}
             {activeTab === 'settings' && (
               <div className="bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-xl border border-gray-700/50 p-6">
@@ -243,6 +255,7 @@ const menuItems = [
   { id: 'live-logger', label: 'Live Logger', icon: '📝' },
   { id: 'statistics', label: 'Statistics', icon: '📊' },
   { id: 'reporters', label: 'Reporters/Admins', icon: '👥' },
+  { id: 'featured-content', label: 'Featured Content', icon: '⭐' },
   { id: 'pwa-admins', label: 'PWA Admins', icon: '📱' },
   { id: 'activity-logs', label: 'Activity Logs', icon: '📜' },
   { id: 'settings', label: 'Settings', icon: '⚙️' },

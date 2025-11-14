@@ -1,4 +1,4 @@
-import { logger } from '@utils/logger';
+import { logger } from '../../utils/logger';
 import { v4 as uuidv4 } from 'uuid';
 import rateLimit from 'express-rate-limit';
 import { redisService } from '../redis.service';

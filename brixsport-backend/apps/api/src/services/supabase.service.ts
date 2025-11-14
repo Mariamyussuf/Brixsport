@@ -2563,13 +2563,32 @@ export const supabaseService = {
       // This is a simplified approach - in a real system you might track this differently
       const systemUptime = process.uptime(); // Seconds since process started
       
+      // Get error count from system logs
+      let errorCount = 0;
+      try {
+        // Get system logs with error level in the last 24 hours
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const { count: errorLogsCount, error: logsError } = await supabase
+          .from('SystemLog')
+          .select('*', { count: 'exact', head: true })
+          .eq('level', 'error')
+          .gte('timestamp', twentyFourHoursAgo.toISOString());
+          
+        if (!logsError && errorLogsCount) {
+          errorCount = errorLogsCount;
+        }
+      } catch (error) {
+        logger.warn('Failed to fetch error count', { error });
+        // Continue with default value of 0
+      }
+      
       const data = {
         totalUsers: totalUsers || 0,
         activeUsers: activeUsers || 0,
         totalMatches: totalMatches || 0,
         totalEvents: totalEvents || 0,
         systemUptime: systemUptime,
-        errorCount: 0 // This would need to be tracked separately in a real implementation
+        errorCount: errorCount
       };
       
       return {

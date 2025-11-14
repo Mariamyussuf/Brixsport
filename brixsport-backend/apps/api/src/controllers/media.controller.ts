@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
 import { mediaService } from '../services/media.service';
+import { storageService } from '../services/storage.service';
+import { cdnService } from '../services/cdn.service';
 import { MediaFile } from '../types/media.types';
 import { authenticate } from '../middleware/auth.middleware';
 import { errorHandlerService } from '../services/error.handler.service';
@@ -143,9 +145,15 @@ export const mediaController = {
         });
       }
       
+      // If CDN is enabled, use CDN URLs
+      const responseFile = { ...mediaFile };
+      if (cdnService.isCDNEnabled() && mediaFile.url) {
+        responseFile.url = cdnService.generateCDNUrl(mediaFile.url);
+      }
+      
       return res.status(200).json({
         success: true,
-        data: mediaFile
+        data: responseFile
       });
     } catch (error: any) {
       logger.error('Get media file error', { error: error.message, stack: error.stack });
@@ -166,18 +174,24 @@ export const mediaController = {
         });
       }
       
-      const downloadInfo = await mediaService.downloadMediaFile(id);
+      const mediaFile = await mediaService.getMediaFileById(id);
       
-      if (!downloadInfo) {
+      if (!mediaFile) {
         return res.status(404).json({
           success: false,
           error: 'Media file not found'
         });
       }
       
+      // Generate a download URL
+      const downloadUrl = await storageService.generateSignedUrl(mediaFile.filename, 3600);
+      
       return res.status(200).json({
         success: true,
-        data: downloadInfo
+        data: {
+          fileName: mediaFile.originalName,
+          url: downloadUrl
+        }
       });
     } catch (error: any) {
       logger.error('Download media file error', { error: error.message, stack: error.stack });
@@ -192,6 +206,14 @@ export const mediaController = {
       const queryParams = req.query;
       
       const result = await mediaService.listMediaFiles(queryParams);
+      
+      // If CDN is enabled, update URLs to use CDN
+      if (cdnService.isCDNEnabled()) {
+        result.files = result.files.map(file => ({
+          ...file,
+          url: file.url ? cdnService.generateCDNUrl(file.url) : file.url
+        }));
+      }
       
       return res.status(200).json({
         success: true,
@@ -234,9 +256,15 @@ export const mediaController = {
         });
       }
       
+      // If CDN is enabled, use CDN URL
+      const responseFile = { ...mediaFile };
+      if (cdnService.isCDNEnabled() && mediaFile.url) {
+        responseFile.url = cdnService.generateCDNUrl(mediaFile.url);
+      }
+      
       return res.status(200).json({
         success: true,
-        data: mediaFile
+        data: responseFile
       });
     } catch (error: any) {
       logger.error('Update media file error', error);
@@ -339,9 +367,15 @@ export const mediaController = {
         });
       }
       
+      // If CDN is enabled, use CDN URLs for thumbnails
+      let responseThumbnails = thumbnails;
+      if (cdnService.isCDNEnabled()) {
+        responseThumbnails = thumbnails.map(url => cdnService.generateCDNUrl(url));
+      }
+      
       return res.status(200).json({
         success: true,
-        data: thumbnails
+        data: responseThumbnails
       });
     } catch (error: any) {
       logger.error('Get thumbnails error', error);
@@ -382,9 +416,12 @@ export const mediaController = {
         });
       }
       
+      // If CDN is enabled, use CDN URL
+      const responseUrl = cdnService.isCDNEnabled() ? cdnService.generateCDNUrl(resizedUrl) : resizedUrl;
+      
       return res.status(200).json({
         success: true,
-        data: { url: resizedUrl }
+        data: { url: responseUrl }
       });
     } catch (error: any) {
       logger.error('Resize media error', error);
@@ -425,9 +462,12 @@ export const mediaController = {
         });
       }
       
+      // If CDN is enabled, use CDN URL
+      const responseUrl = cdnService.isCDNEnabled() ? cdnService.generateCDNUrl(convertedUrl) : convertedUrl;
+      
       return res.status(200).json({
         success: true,
-        data: { url: convertedUrl }
+        data: { url: responseUrl }
       });
     } catch (error: any) {
       logger.error('Convert media error', error);
@@ -496,7 +536,7 @@ export const mediaController = {
   
   batchUpdateMetadata: async (req: Request, res: Response) => {
     try {
-      const updates = req.body.updates;
+      const { updates } = req.body;
       
       if (!Array.isArray(updates)) {
         return res.status(400).json({
@@ -505,7 +545,16 @@ export const mediaController = {
         });
       }
       
-      const updatedFiles = await mediaService.batchUpdateMetadata(updates);
+      const updatedFiles = [];
+      for (const update of updates) {
+        const { id, metadata } = update;
+        if (id && metadata) {
+          const updatedFile = await mediaService.updateMediaFile(id, { metadata });
+          if (updatedFile) {
+            updatedFiles.push(updatedFile);
+          }
+        }
+      }
       
       return res.status(200).json({
         success: true,
@@ -513,6 +562,125 @@ export const mediaController = {
       });
     } catch (error: any) {
       logger.error('Batch update metadata error', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error.message
+      });
+    }
+  },
+  
+  // Get upload progress
+  getUploadProgress: async (req: Request, res: Response) => {
+    try {
+      const { fileName } = req.params;
+      
+      if (!fileName) {
+        return res.status(400).json({
+          success: false,
+          error: 'File name is required'
+        });
+      }
+      
+      const progress = await storageService.getUploadProgress(fileName);
+      
+      if (!progress) {
+        return res.status(404).json({
+          success: false,
+          error: 'Upload progress not found'
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        data: progress
+      });
+    } catch (error: any) {
+      logger.error('Get upload progress error', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error.message
+      });
+    }
+  },
+  
+  // Initiate resumable upload
+  initiateResumableUpload: async (req: Request, res: Response) => {
+    try {
+      const { fileName, fileSize, contentType } = req.body;
+      
+      if (!fileName || !fileSize || !contentType) {
+        return res.status(400).json({
+          success: false,
+          error: 'File name, file size, and content type are required'
+        });
+      }
+      
+      const result = await storageService.initiateResumableUpload(fileName, fileSize, contentType);
+      
+      return res.status(200).json({
+        success: true,
+        data: result
+      });
+    } catch (error: any) {
+      logger.error('Initiate resumable upload error', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error.message
+      });
+    }
+  },
+  
+  // Upload resumable part
+  uploadResumablePart: async (req: Request, res: Response) => {
+    try {
+      const { uploadId, partNumber, content } = req.body;
+      
+      if (!uploadId || partNumber === undefined || !content) {
+        return res.status(400).json({
+          success: false,
+          error: 'Upload ID, part number, and content are required'
+        });
+      }
+      
+      const result = await storageService.uploadResumablePart(uploadId, partNumber, content);
+      
+      return res.status(200).json({
+        success: true,
+        data: result
+      });
+    } catch (error: any) {
+      logger.error('Upload resumable part error', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error.message
+      });
+    }
+  },
+  
+  // Complete resumable upload
+  completeResumableUpload: async (req: Request, res: Response) => {
+    try {
+      const { uploadId, parts } = req.body;
+      
+      if (!uploadId || !Array.isArray(parts)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Upload ID and parts array are required'
+        });
+      }
+      
+      const result = await storageService.completeResumableUpload(uploadId, parts);
+      
+      return res.status(200).json({
+        success: true,
+        data: result
+      });
+    } catch (error: any) {
+      logger.error('Complete resumable upload error', error);
       return res.status(500).json({
         success: false,
         error: 'Internal server error',

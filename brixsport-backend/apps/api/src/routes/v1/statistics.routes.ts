@@ -16,6 +16,9 @@ import {
   compareEntitiesValidationRules
 } from '../../validation/statistics.validation';
 
+// Import our new controller
+import { statisticsController as realtimeStatisticsController } from '../../controllers/realtime-statistics.controller';
+
 const router = Router();
 
 // All routes require authentication
@@ -39,8 +42,20 @@ router.get('/competitions/:id/top-performers', getTopPerformersValidationRules()
 // Analytics and Reports
 router.get('/analytics/player-performance/:id', getPlayerAnalyticsReportValidationRules(), statisticsController.getPlayerAnalyticsReport);
 router.get('/analytics/team-performance/:id', getTeamAnalyticsReportValidationRules(), statisticsController.getTeamAnalyticsReport);
-// Comparison endpoints are already available at:
-// - /players/:id/comparison
-// - /teams/:id/comparison
+
+// Real-time match statistics endpoints
+router.get('/matches/:matchId/stats', realtimeStatisticsController.getMatchStats);
+router.post('/matches/events', realtimeStatisticsController.processMatchEvent);
+
+// Heat map endpoints
+router.get('/matches/:matchId/heatmap', realtimeStatisticsController.getHeatMap);
+
+// Export endpoints
+router.get('/players/:playerId/export/csv', realtimeStatisticsController.exportPlayerStatsCSV);
+router.get('/players/:playerId/export/pdf', realtimeStatisticsController.exportPlayerStatsPDF);
+router.get('/teams/:teamId/export/csv', realtimeStatisticsController.exportTeamStatsCSV);
+router.get('/teams/:teamId/export/pdf', realtimeStatisticsController.exportTeamStatsPDF);
+router.get('/players/:playerId/compare/export/csv', realtimeStatisticsController.exportPlayerComparisonCSV);
+router.get('/players/:playerId/compare/export/pdf', realtimeStatisticsController.exportPlayerComparisonPDF);
 
 export default router;

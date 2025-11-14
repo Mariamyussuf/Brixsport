@@ -243,14 +243,16 @@ interface UserStats {
   upcomingMatches: number;
 }
 
-interface Logger {
+export interface Logger {
   id: string;
   name: string;
   email: string;
-  role: string;
+  password: string;
+  role: 'logger' | 'senior-logger' | 'logger-admin' | string;
   status: string;
   assignedCompetitions: string[];
   permissions: string[];
+  refreshToken?: string;
   createdAt: string;
   lastActive: string;
   updatedAt?: string;
@@ -444,13 +446,16 @@ export class DatabaseService {
         }
       }
       
-      // In a real implementation, you would hash the password here
-      // For now, we'll just store it as is (this is just for demonstration)
+      // Hash the password before storing
+      const bcrypt = require('bcrypt');
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(loggerData.password, saltRounds);
       
       const { data, error } = await supabase
         .from('Logger')
         .insert([{
           ...loggerData,
+          password: hashedPassword,
           createdAt: new Date().toISOString(),
           lastActive: new Date().toISOString()
         }])
@@ -1990,6 +1995,419 @@ export class DatabaseService {
         throw error;
       }
       throw new DatabaseError(`Failed to delete announcement: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // ============================================================
+  // LOGGER ASSIGNMENT METHODS
+  // ============================================================
+
+  /**
+   * Create a new logger assignment
+   * @param assignmentData - Logger assignment data
+   * @returns The created assignment or null
+   */
+  async createLoggerAssignment(assignmentData: {
+    logger_id: string;
+    competition_id?: number | null;
+    match_id?: number | null;
+    assigned_by?: string;
+    notes?: string;
+    status?: 'active' | 'completed' | 'cancelled';
+  }): Promise<any> {
+    logOperation('CREATE_LOGGER_ASSIGNMENT_START', { assignmentData });
+    try {
+      // Validate required fields
+      validate.id(assignmentData.logger_id, 'Logger ID');
+      
+      // Validate that at least one of competition_id or match_id is provided
+      if (!assignmentData.competition_id && !assignmentData.match_id) {
+        throw new ValidationError('Either competition_id or match_id must be provided', 'assignment');
+      }
+      
+      // Validate competition_id if provided
+      if (assignmentData.competition_id !== null && assignmentData.competition_id !== undefined) {
+        validate.positiveIntegerId(assignmentData.competition_id, 'Competition ID');
+      }
+      
+      // Validate match_id if provided
+      if (assignmentData.match_id !== null && assignmentData.match_id !== undefined) {
+        validate.positiveIntegerId(assignmentData.match_id, 'Match ID');
+      }
+      
+      // Check for conflicts if match_id is provided
+      if (assignmentData.match_id) {
+        const { data: conflictCheck, error: conflictError } = await supabase
+          .from('LoggerAssignments')
+          .select('*')
+          .eq('match_id', assignmentData.match_id)
+          .eq('status', 'active')
+          .single();
+        
+        if (conflictCheck) {
+          throw new DatabaseError(
+            'This match already has an active logger assigned',
+            'ASSIGNMENT_CONFLICT',
+            409
+          );
+        }
+      }
+      
+      const { data, error } = await supabase
+        .from('LoggerAssignments')
+        .insert([{
+          logger_id: assignmentData.logger_id,
+          competition_id: assignmentData.competition_id || null,
+          match_id: assignmentData.match_id || null,
+          assigned_by: assignmentData.assigned_by || null,
+          notes: assignmentData.notes || null,
+          status: assignmentData.status || 'active'
+        }])
+        .select()
+        .single();
+      
+      if (error) {
+        throw new DatabaseError(`Failed to create logger assignment: ${error.message}`, 'CREATE_ERROR', 500);
+      }
+      
+      logOperation('CREATE_LOGGER_ASSIGNMENT_SUCCESS', { assignmentId: data?.id });
+      return data;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('CREATE_LOGGER_ASSIGNMENT_VALIDATION_ERROR', { error: error.message });
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('CREATE_LOGGER_ASSIGNMENT_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' });
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to create logger assignment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get logger assignments with optional filters
+   * @param filters - Filter criteria
+   * @returns Array of logger assignments
+   */
+  async getLoggerAssignments(filters?: {
+    logger_id?: string;
+    competition_id?: number;
+    match_id?: number;
+    status?: 'active' | 'completed' | 'cancelled';
+    assigned_by?: string;
+  }): Promise<any[]> {
+    logOperation('GET_LOGGER_ASSIGNMENTS_START', { filters });
+    try {
+      let query = supabase.from('LoggerAssignments').select('*');
+      
+      if (filters?.logger_id) {
+        validate.id(filters.logger_id, 'Logger ID');
+        query = query.eq('logger_id', filters.logger_id);
+      }
+      
+      if (filters?.competition_id) {
+        validate.positiveIntegerId(filters.competition_id, 'Competition ID');
+        query = query.eq('competition_id', filters.competition_id);
+      }
+      
+      if (filters?.match_id) {
+        validate.positiveIntegerId(filters.match_id, 'Match ID');
+        query = query.eq('match_id', filters.match_id);
+      }
+      
+      if (filters?.status) {
+        query = query.eq('status', filters.status);
+      }
+      
+      if (filters?.assigned_by) {
+        validate.id(filters.assigned_by, 'Assigned By');
+        query = query.eq('assigned_by', filters.assigned_by);
+      }
+      
+      query = query.order('assigned_at', { ascending: false });
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        throw new DatabaseError(`Failed to fetch logger assignments: ${error.message}`, 'FETCH_ERROR', 500);
+      }
+      
+      logOperation('GET_LOGGER_ASSIGNMENTS_SUCCESS', { count: data?.length || 0 });
+      return data || [];
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('GET_LOGGER_ASSIGNMENTS_VALIDATION_ERROR', { error: error.message });
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('GET_LOGGER_ASSIGNMENTS_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' });
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to fetch logger assignments: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get logger assignments with full details (joined with Logger, Competition, Match)
+   * @param filters - Filter criteria
+   * @returns Array of logger assignments with details
+   */
+  async getLoggerAssignmentsWithDetails(filters?: {
+    logger_id?: string;
+    competition_id?: number;
+    match_id?: number;
+    status?: 'active' | 'completed' | 'cancelled';
+  }): Promise<any[]> {
+    logOperation('GET_LOGGER_ASSIGNMENTS_WITH_DETAILS_START', { filters });
+    try {
+      const assignments = await this.getLoggerAssignments(filters);
+      
+      // Enrich with logger, competition, and match details
+      const enrichedAssignments = await Promise.all(
+        assignments.map(async (assignment) => {
+          const enriched: any = { ...assignment };
+          
+          // Fetch logger details
+          if (assignment.logger_id) {
+            const logger = await this.getLoggerById(assignment.logger_id);
+            if (logger) {
+              enriched.logger = {
+                id: logger.id,
+                name: logger.name,
+                email: logger.email
+              };
+            }
+          }
+          
+          // Fetch competition details
+          if (assignment.competition_id) {
+            const competition = await this.getCompetitionById(assignment.competition_id);
+            if (competition) {
+              enriched.competition = {
+                id: competition.id,
+                name: competition.name,
+                type: competition.type
+              };
+            }
+          }
+          
+          // Fetch match details
+          if (assignment.match_id) {
+            const matches = await this.getMatches();
+            const match = matches.find(m => m.id === assignment.match_id);
+            if (match) {
+              enriched.match = {
+                id: match.id,
+                home_team_id: match.home_team_id,
+                away_team_id: match.away_team_id,
+                match_date: match.match_date,
+                status: match.status
+              };
+            }
+          }
+          
+          return enriched;
+        })
+      );
+      
+      logOperation('GET_LOGGER_ASSIGNMENTS_WITH_DETAILS_SUCCESS', { count: enrichedAssignments.length });
+      return enrichedAssignments;
+    } catch (error) {
+      logOperation('GET_LOGGER_ASSIGNMENTS_WITH_DETAILS_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' });
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to fetch logger assignments with details: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get a logger assignment by ID
+   * @param assignmentId - Assignment ID
+   * @returns Logger assignment or null
+   */
+  async getLoggerAssignmentById(assignmentId: string): Promise<any | null> {
+    logOperation('GET_LOGGER_ASSIGNMENT_BY_ID_START', { assignmentId });
+    try {
+      validate.id(assignmentId, 'Assignment ID');
+      
+      const { data, error } = await supabase
+        .from('LoggerAssignments')
+        .select('*')
+        .eq('id', assignmentId)
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null; // Not found
+        }
+        throw new DatabaseError(`Failed to fetch logger assignment: ${error.message}`, 'FETCH_ERROR', 500);
+      }
+      
+      logOperation('GET_LOGGER_ASSIGNMENT_BY_ID_SUCCESS', { assignmentId });
+      return data;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('GET_LOGGER_ASSIGNMENT_BY_ID_VALIDATION_ERROR', { error: error.message });
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('GET_LOGGER_ASSIGNMENT_BY_ID_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' });
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to fetch logger assignment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Update a logger assignment
+   * @param assignmentId - Assignment ID
+   * @param updates - Fields to update
+   * @returns Updated assignment or null
+   */
+  async updateLoggerAssignment(
+    assignmentId: string,
+    updates: {
+      status?: 'active' | 'completed' | 'cancelled';
+      notes?: string;
+    }
+  ): Promise<any | null> {
+    logOperation('UPDATE_LOGGER_ASSIGNMENT_START', { assignmentId, updates });
+    try {
+      validate.id(assignmentId, 'Assignment ID');
+      
+      const { data, error } = await supabase
+        .from('LoggerAssignments')
+        .update(updates)
+        .eq('id', assignmentId)
+        .select()
+        .single();
+      
+      if (error) {
+        throw new DatabaseError(`Failed to update logger assignment: ${error.message}`, 'UPDATE_ERROR', 500);
+      }
+      
+      logOperation('UPDATE_LOGGER_ASSIGNMENT_SUCCESS', { assignmentId });
+      return data;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('UPDATE_LOGGER_ASSIGNMENT_VALIDATION_ERROR', { error: error.message });
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('UPDATE_LOGGER_ASSIGNMENT_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' });
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to update logger assignment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Delete a logger assignment (unassign)
+   * @param assignmentId - Assignment ID
+   * @returns True if successful
+   */
+  async deleteLoggerAssignment(assignmentId: string): Promise<boolean> {
+    logOperation('DELETE_LOGGER_ASSIGNMENT_START', { assignmentId });
+    try {
+      validate.id(assignmentId, 'Assignment ID');
+      
+      const { error } = await supabase
+        .from('LoggerAssignments')
+        .delete()
+        .eq('id', assignmentId);
+      
+      if (error) {
+        throw new DatabaseError(`Failed to delete logger assignment: ${error.message}`, 'DELETE_ERROR', 500);
+      }
+      
+      logOperation('DELETE_LOGGER_ASSIGNMENT_SUCCESS', { assignmentId });
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        logOperation('DELETE_LOGGER_ASSIGNMENT_VALIDATION_ERROR', { error: error.message });
+        throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
+      }
+      logOperation('DELETE_LOGGER_ASSIGNMENT_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' });
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to delete logger assignment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get competitions assigned to a logger
+   * @param loggerId - Logger ID
+   * @param status - Optional status filter
+   * @returns Array of competition IDs
+   */
+  async getLoggerCompetitionIds(
+    loggerId: string,
+    status: 'active' | 'completed' | 'cancelled' = 'active'
+  ): Promise<number[]> {
+    logOperation('GET_LOGGER_COMPETITION_IDS_START', { loggerId, status });
+    try {
+      validate.id(loggerId, 'Logger ID');
+      
+      const assignments = await this.getLoggerAssignments({
+        logger_id: loggerId,
+        status
+      });
+      
+      // Extract unique competition IDs
+      const competitionIds = assignments
+        .filter(a => a.competition_id !== null)
+        .map(a => a.competition_id);
+      
+      const uniqueIds = [...new Set(competitionIds)];
+      
+      logOperation('GET_LOGGER_COMPETITION_IDS_SUCCESS', { count: uniqueIds.length });
+      return uniqueIds;
+    } catch (error) {
+      logOperation('GET_LOGGER_COMPETITION_IDS_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' });
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to fetch logger competition IDs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get matches assigned to a logger
+   * @param loggerId - Logger ID
+   * @param status - Optional status filter
+   * @returns Array of match IDs
+   */
+  async getLoggerMatchIds(
+    loggerId: string,
+    status: 'active' | 'completed' | 'cancelled' = 'active'
+  ): Promise<number[]> {
+    logOperation('GET_LOGGER_MATCH_IDS_START', { loggerId, status });
+    try {
+      validate.id(loggerId, 'Logger ID');
+      
+      const assignments = await this.getLoggerAssignments({
+        logger_id: loggerId,
+        status
+      });
+      
+      // Extract unique match IDs
+      const matchIds = assignments
+        .filter(a => a.match_id !== null)
+        .map(a => a.match_id);
+      
+      const uniqueIds = [...new Set(matchIds)];
+      
+      logOperation('GET_LOGGER_MATCH_IDS_SUCCESS', { count: uniqueIds.length });
+      return uniqueIds;
+    } catch (error) {
+      logOperation('GET_LOGGER_MATCH_IDS_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' });
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to fetch logger match IDs: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

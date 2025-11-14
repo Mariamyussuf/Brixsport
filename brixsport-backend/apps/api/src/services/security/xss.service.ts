@@ -1,4 +1,4 @@
-import { logger } from '@utils/logger';
+import { logger } from '../../utils/logger';
 import sanitizeHtml from 'sanitize-html';
 import validator from 'validator';
 import { redisService } from '../redis.service';

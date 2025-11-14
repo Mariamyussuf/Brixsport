@@ -31,6 +31,10 @@ export async function GET(request: NextRequest) {
       );
     }
     
+    // Get URL search params for filtering
+    const { searchParams } = new URL(request.url);
+    const filterByAssignments = searchParams.get('filterByAssignments') === 'true';
+    
     // Fetch competitions from database
     let competitions: LoggerCompetition[] = [];
     
@@ -47,7 +51,7 @@ export async function GET(request: NextRequest) {
         startDate: comp.start_date || new Date().toISOString().split('T')[0],
         endDate: comp.end_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         status: (comp.status as 'upcoming' | 'active' | 'completed') || 'upcoming',
-        assignedLoggers: [] // This would need to be populated from a separate assignment table
+        assignedLoggers: [] // This will be populated from assignments
       }));
       
       // Update cache
@@ -55,16 +59,47 @@ export async function GET(request: NextRequest) {
       cacheTimestamp = Date.now();
     }
     
-    // Filter competitions based on user permissions
+    // Get logger assignments to determine accessible competitions
     let accessibleCompetitions = competitions;
     
-    // Regular loggers only see their assigned competitions
-    // For now, we'll show all competitions to all users since assignment is not fully implemented
-    // In a real implementation, this would filter based on actual assignments
-    if (session.user.role === 'logger') {
-      // accessibleCompetitions = competitions.filter(comp => 
-      //   comp.assignedLoggers.includes(session.user.id)
-      // );
+    // If filtering by assignments is enabled, only show assigned competitions
+    if (filterByAssignments || session.user.role === 'logger') {
+      try {
+        // Get competition IDs assigned to this logger
+        const assignedCompetitionIds = await dbService.getLoggerCompetitionIds(
+          session.user.id,
+          'active'
+        );
+        
+        // Filter competitions to only those assigned
+        if (assignedCompetitionIds.length > 0) {
+          accessibleCompetitions = competitions.filter(comp => 
+            assignedCompetitionIds.includes(parseInt(comp.id))
+          );
+        } else {
+          // No assignments found, return empty array for regular loggers
+          if (session.user.role === 'logger') {
+            accessibleCompetitions = [];
+          }
+        }
+        
+        // Get all assignments to populate assignedLoggers field
+        const allAssignments = await dbService.getLoggerAssignments({ status: 'active' });
+        
+        // Populate assignedLoggers for each competition
+        accessibleCompetitions = accessibleCompetitions.map(comp => {
+          const compAssignments = allAssignments.filter(
+            a => a.competition_id === parseInt(comp.id)
+          );
+          return {
+            ...comp,
+            assignedLoggers: compAssignments.map(a => a.logger_id)
+          };
+        });
+      } catch (error) {
+        console.error('Error fetching logger assignments:', error);
+        // Continue without filtering on error
+      }
     }
     
     // Senior loggers and admins can see all competitions

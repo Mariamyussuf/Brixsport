@@ -1,43 +1,29 @@
 import { NextResponse } from 'next/server';
+import { adminAuthService } from '@/lib/adminAuthService';
 import { cookies } from 'next/headers';
 
-// POST /api/admin/logout - Admin logout
-export async function POST(request: Request) {
+// POST /api/admin/logout - Logout admin and revoke tokens
+export async function POST(req: Request) {
   try {
-    // Clear admin token cookie with domain-specific settings
     const cookieStore = await cookies();
-    const host = request.headers.get('host') || '';
+    const refreshTokenCookie = cookieStore.get('admin_refresh_token');
     
-    // Determine the domain for the cookie
-    let cookieDomain = undefined;
-    if (process.env.NODE_ENV === 'production') {
-      // For production, set domain to admin subdomain
-      if (host.includes('brixsport.vercel.app')) {
-        cookieDomain = '.brixsport.vercel.app';
-      } else if (host.includes('brixsports.com')) {
-        cookieDomain = '.brixsports.com';
-      }
+    if (refreshTokenCookie?.value) {
+      await adminAuthService.logout(refreshTokenCookie.value);
     }
     
-    cookieStore.delete('admin_token');
-    
-    // Return response with redirect URL based on domain
-    let redirectUrl = '/admin/login';
-    if (process.env.NODE_ENV === 'production') {
-      if (host.includes('brixsport.vercel.app')) {
-        redirectUrl = 'https://admin.brixsport.vercel.app/admin/login';
-      } else if (host.includes('brixsports.com')) {
-        redirectUrl = 'https://admin.brixsports.com/admin/login';
-      }
-    }
-    
-    return NextResponse.json({ 
+    // Clear all admin cookies
+    const response = NextResponse.json({ 
       success: true, 
-      message: 'Logged out successfully',
-      redirectUrl
+      message: 'Logged out successfully' 
     });
+    
+    response.cookies.delete('admin_refresh_token');
+    response.cookies.delete('admin_token');
+    
+    return response;
   } catch (error) {
-    console.error('Admin logout error:', error);
+    console.error('Logout error:', error);
     return NextResponse.json({ 
       success: false, 
       error: 'Logout failed' 

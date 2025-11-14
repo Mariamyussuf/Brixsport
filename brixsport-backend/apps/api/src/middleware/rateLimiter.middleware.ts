@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { logger } from '@utils/logger';
+import { logger } from '../utils/logger';
 import { redisService } from '../services/redis.service';
 
 // Rate limiting store using Redis for production environments

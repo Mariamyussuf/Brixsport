@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
 
+/**
+ * Forgot Password API Route
+ * Handles password reset requests
+ */
 export async function POST(req: NextRequest) {
   try {
     const { email } = await req.json();
@@ -13,35 +16,47 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user exists
-    const { data: user, error } = await supabase
-      .from('User')
-      .select('id, name, email')
-      .eq('email', email)
-      .single();
-
-    if (error || !user) {
-      // For security reasons, we don't reveal if the email exists
-      // We still return success to prevent email enumeration
-      return NextResponse.json({
-        success: true,
-        message: 'If an account exists with this email, password reset instructions have been sent.'
-      }, { status: 200 });
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { success: false, error: { message: 'Invalid email format' } },
+        { status: 400 }
+      );
     }
 
-    // In a real implementation, you would send an email with a reset token
-    // For now, we'll just return a success response
-    // You would typically generate a reset token and send it via email
-    
+    // Get IP address and user agent for security logging
+    const ipAddress = req.headers.get('x-forwarded-for') || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+
+    // Call backend API to initiate password reset
+    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:4000';
+    const response = await fetch(`${backendUrl}/api/v1/auth/forgot-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Forwarded-For': ipAddress,
+        'User-Agent': userAgent,
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+
+    // Always return success for security (prevent email enumeration)
+    // Even if the backend returns an error, we return success to the client
     return NextResponse.json({
       success: true,
-      message: 'If an account exists with this email, password reset instructions have been sent.'
+      message: 'If an account exists with this email, you will receive password reset instructions shortly.'
     }, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Forgot password API error:', error);
-    return NextResponse.json(
-      { success: false, error: { message: 'Internal server error' } },
-      { status: 500 }
-    );
+    // Still return success to prevent information leakage
+    return NextResponse.json({
+      success: true,
+      message: 'If an account exists with this email, you will receive password reset instructions shortly.'
+    }, { status: 200 });
   }
 }

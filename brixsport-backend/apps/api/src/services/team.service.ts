@@ -345,11 +345,36 @@ export class TeamService {
         filters.competitionId = competitionId;
       }
 
-      // Use OR condition to get matches where this team is either home or away
-      // Note: This is a simplified approach - in a real implementation, you might need to do two separate queries
-      const matchesResponse = await supabaseService.listMatches(filters);
+      // In a real implementation, we do two separate queries for better performance
+      // First query for matches where this team is the home team
+      const homeFilters = { ...filters };
+      homeFilters.homeTeamId = id;
+      const homeMatchesResponse = await supabaseService.listMatches(homeFilters);
+      
+      // Second query for matches where this team is the away team
+      const awayFilters = { ...filters };
+      awayFilters.awayTeamId = id;
+      const awayMatchesResponse = await supabaseService.listMatches(awayFilters);
+      
+      // Combine results from both queries
+      let combinedMatchesData: any[] = [];
+      if (homeMatchesResponse.success && Array.isArray(homeMatchesResponse.data)) {
+        combinedMatchesData = [...combinedMatchesData, ...homeMatchesResponse.data];
+      }
+      if (awayMatchesResponse.success && Array.isArray(awayMatchesResponse.data)) {
+        combinedMatchesData = [...combinedMatchesData, ...awayMatchesResponse.data];
+      }
+      
+      // Remove duplicates (in case a match appears in both results)
+      const uniqueMatches = Array.from(new Map(combinedMatchesData.map(item => [item.id, item])).values());
+      
+      // Create a mock response object with the combined data
+      const matchesResponse = {
+        success: true,
+        data: uniqueMatches
+      };
 
-      if (!matchesResponse.success || !matchesResponse.data || !Array.isArray(matchesResponse.data)) {
+      if (!matchesResponse.success || !Array.isArray(matchesResponse.data)) {
         throw new Error('Failed to fetch team matches from database');
       }
       
@@ -361,10 +386,8 @@ export class TeamService {
         [key: string]: any; // For other properties we might need
       }
       
-      // Filter matches to only include those where this team is participating
-      const teamMatches = (matchesResponse.data as MatchData[]).filter(match =>
-        match.home_team_id === id || match.away_team_id === id
-      );
+      // With separate queries, we don't need to filter as the queries already ensure team participation
+      const teamMatches = Array.isArray(matchesResponse.data) ? matchesResponse.data as MatchData[] : [];
 
       // Transform matches to match the expected interface
       const transformedMatches: Match[] = teamMatches.map((match: any) => ({

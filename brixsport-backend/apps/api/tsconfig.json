@@ -30,7 +30,8 @@
       "@routes/*": ["src/routes/*"],
       "@utils/*": ["src/utils/*"],
       "@services/*": ["src/services/*"],
-      "@types/*": ["src/types/*"]
+      "@types/*": ["src/types/*"],
+      "@brixsport/database": ["../../packages/database"]
     },
     "typeRoots": ["./src/types", "./node_modules/@types"]
   },

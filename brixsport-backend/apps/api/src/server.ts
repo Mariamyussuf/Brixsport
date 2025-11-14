@@ -7,33 +7,38 @@ const fs = require('fs');
 console.log('Current working directory:', process.cwd());
 console.log('__dirname:', __dirname);
 
-// Try to load .env from multiple possible locations
-const possibleEnvPaths = [
-  path.resolve(__dirname, '../../.env'),  // Root directory
-  path.resolve(__dirname, '../.env'),     // API directory
-  path.resolve(process.cwd(), '.env'),    // Current working directory
-];
+// Only try to load .env file in development/local environments
+// In production (like Railway), environment variables are set directly
+if (process.env.NODE_ENV !== 'production') {
+  // Try to load .env from multiple possible locations
+  const possibleEnvPaths = [
+    path.resolve(__dirname, '../../.env'),  // Root directory
+    path.resolve(__dirname, '../.env'),     // API directory
+    path.resolve(process.cwd(), '.env'),    // Current working directory
+  ];
 
-let envLoaded = false;
-for (const envPath of possibleEnvPaths) {
-  if (fs.existsSync(envPath)) {
-    console.log(`Loading .env from: ${envPath}`);
-    const envConfig = dotenv.config({ path: envPath });
-    if (envConfig.error) {
-      console.error(`❌ Error loading .env from ${envPath}:`, envConfig.error);
+  let envLoaded = false;
+  for (const envPath of possibleEnvPaths) {
+    if (fs.existsSync(envPath)) {
+      console.log(`Loading .env from: ${envPath}`);
+      const envConfig = dotenv.config({ path: envPath });
+      if (envConfig.error) {
+        console.error(`❌ Error loading .env from ${envPath}:`, envConfig.error);
+      } else {
+        console.log(`✅ Successfully loaded .env from ${envPath}`);
+        envLoaded = true;
+        break;
+      }
     } else {
-      console.log(`✅ Successfully loaded .env from ${envPath}`);
-      envLoaded = true;
-      break;
+      console.log(`ℹ️  .env not found at: ${envPath}`);
     }
-  } else {
-    console.log(`ℹ️  .env not found at: ${envPath}`);
   }
-}
 
-if (!envLoaded) {
-  console.error('❌ Failed to load .env file from any location');
-  process.exit(1);
+  if (!envLoaded) {
+    console.warn('⚠️  Warning: No .env file loaded. Assuming environment variables are set directly.');
+  }
+} else {
+  console.log('NODE_ENV is production, skipping .env file loading');
 }
 
 // Log environment variables for debugging (without sensitive values)
@@ -55,9 +60,9 @@ if (missingVars.length > 0) {
 // Import after dotenv config
 import { server, io } from './app';
 import { initSocket } from './sockets';
-import { logger } from '@utils/logger';
-import { connectRedis } from '@config/redis';
-import { connectDatabase } from '@config/database';
+import { logger } from './utils/logger';
+import { connectRedis } from './config/redis';
+import { connectDatabase } from './config/database';
 import { systemMonitorService } from './services/system-monitor.service';
 import { queueService } from './services/queue.service';
 
@@ -68,7 +73,10 @@ logger.info('Environment variables loaded:', {
   NODE_ENV: process.env.NODE_ENV
 });
 
-const PORT = process.env.PORT || 4000;
+// Use PORT from environment variables for Railway deployment
+// Default to 4000 for local development
+const PORT = parseInt(process.env.PORT || '4000', 10);
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Initialize Redis and Database connections
 Promise.all([
@@ -88,7 +96,7 @@ Promise.all([
     }
     
     // Start the server
-    server.listen(PORT, () => {
+    server.listen(PORT, HOST, () => {
       logger.info(`Server running on port ${PORT}`);
       
       // Initialize socket connections

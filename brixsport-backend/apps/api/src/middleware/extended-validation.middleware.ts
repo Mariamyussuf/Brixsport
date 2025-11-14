@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { logger } from '@utils/logger';
+import { logger } from '../utils/logger';
 import { z, ZodSchema } from 'zod';
 
 // Extended validation schemas for more complex business rules

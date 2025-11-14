@@ -17,6 +17,7 @@ import NotificationsBadge from '../shared/NotificationsBadge';
 import { useHomeData, useSportMatches } from '@/hooks/useHomeData';
 import CompetitionScreen from './CompetitionScreen';
 import BrixSportLogo from '@/assets/BRIX-SPORT-LOGO.png';
+import FeaturedContentDisplay from '@/components/FeaturedContentDisplay';
 
 import { 
   Match, 
@@ -628,19 +629,8 @@ const Homescreen: React.FC = () => {
           </div>
         )}
 
-        {/* Featured Content from File B - only show if API data is available */}
-        {homeData?.featuredContent && homeData.featuredContent.title && (
-          <section className="mt-8">
-            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Featured</h2>
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-              <h3 className="text-2xl font-bold mb-2">{homeData.featuredContent.title}</h3>
-              <p className="mb-4 opacity-90">{homeData.featuredContent.description}</p>
-              <button className="bg-white text-blue-600 font-medium py-2 px-4 rounded-lg hover:bg-gray-100 transition-colors">
-                Learn More
-              </button>
-            </div>
-          </section>
-        )}
+        {/* Featured Content */}
+        <FeaturedContentDisplay />
       </div>
 
       {/* Enhanced Bottom Navigation - all badge counts removed as requested */}

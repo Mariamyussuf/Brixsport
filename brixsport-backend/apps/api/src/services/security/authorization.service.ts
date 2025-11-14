@@ -1,4 +1,4 @@
-import { logger } from '@utils/logger';
+import { logger } from '../../utils/logger';
 import { supabaseService } from '../supabase.service';
 import { redisService } from '../redis.service';
 

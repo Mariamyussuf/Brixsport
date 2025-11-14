@@ -76,7 +76,7 @@ router.get('/conversations', async (req: Request, res: Response) => {
       }
     );
 
-    res.json({
+    return res.json({
       success: true,
       data: result.data,
       pagination: result.pagination
@@ -179,13 +179,13 @@ router.post('/conversations', async (req: Request, res: Response) => {
       participantIds
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: conversation
     });
   } catch (error: any) {
     logger.error('Error creating conversation', { error: error.message });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false, 
       error: { 
         code: 'INTERNAL_ERROR', 
@@ -248,7 +248,7 @@ router.get('/conversations/:id', async (req: Request, res: Response) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: conversation
     });
@@ -330,7 +330,7 @@ router.put('/conversations/:id', async (req: Request, res: Response) => {
       settings
     });
 
-    res.json({
+    return res.json({
       success: true,
       data: conversation
     });
@@ -401,7 +401,7 @@ router.delete('/conversations/:id', async (req: Request, res: Response) => {
 
     await messagingService.deleteConversation(userId, conversationId);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Conversation deleted successfully'
     });
@@ -505,7 +505,7 @@ router.post('/conversations/:id/participants', async (req: Request, res: Respons
       role
     );
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: participant
     });
@@ -592,7 +592,7 @@ router.delete('/conversations/:id/participants/:participantId', async (req: Requ
 
     await messagingService.removeParticipant(userId, conversationId, participantId);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Participant removed successfully'
     });
@@ -710,7 +710,7 @@ router.put('/conversations/:id/participants/:participantId/role', async (req: Re
       role
     );
 
-    res.json({
+    return res.json({
       success: true,
       data: participant
     });
@@ -826,7 +826,7 @@ router.get('/conversations/:id/messages', async (req: Request, res: Response) =>
       }
     );
 
-    res.json({
+    return res.json({
       success: true,
       data: result.data,
       pagination: result.pagination
@@ -965,7 +965,7 @@ router.post('/conversations/:id/messages', async (req: Request, res: Response) =
       mention_user_ids
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: message
     });
@@ -1061,7 +1061,7 @@ router.put('/messages/:id', async (req: Request, res: Response) => {
 
     const message = await messagingService.updateMessage(userId, messageId, content);
 
-    res.json({
+    return res.json({
       success: true,
       data: message
     });
@@ -1132,7 +1132,7 @@ router.delete('/messages/:id', async (req: Request, res: Response) => {
 
     await messagingService.deleteMessage(userId, messageId);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Message deleted successfully'
     });
@@ -1236,7 +1236,7 @@ router.post('/messages/:id/react', async (req: Request, res: Response) => {
 
     const message = await messagingService.addReaction(userId, messageId, emoji);
 
-    res.json({
+    return res.json({
       success: true,
       data: message
     });
@@ -1315,7 +1315,7 @@ router.post('/conversations/:id/read', async (req: Request, res: Response) => {
 
     await messagingService.markMessagesRead(userId, conversationId);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Messages marked as read'
     });

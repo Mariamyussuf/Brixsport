@@ -31,4 +31,12 @@ router.post('/batch', mediaController.batchUpload);
 router.delete('/batch', mediaController.batchDelete);
 router.put('/batch/metadata', mediaController.batchUpdateMetadata);
 
+// Progress tracking
+router.get('/upload/progress/:fileName', mediaController.getUploadProgress);
+
+// Resumable uploads
+router.post('/upload/resumable/initiate', mediaController.initiateResumableUpload);
+router.post('/upload/resumable/part', mediaController.uploadResumablePart);
+router.post('/upload/resumable/complete', mediaController.completeResumableUpload);
+
 export default router;

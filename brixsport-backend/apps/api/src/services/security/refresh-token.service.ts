@@ -1,4 +1,4 @@
-import { logger } from '@utils/logger';
+import { logger } from '../../utils/logger';
 import { redisService } from '../redis.service';
 
 export interface RefreshTokenSession {

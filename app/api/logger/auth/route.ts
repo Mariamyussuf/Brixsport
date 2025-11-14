@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateLoggerToken, getLoggerAuth, LoggerAuthRoles } from '@/lib/loggerAuthService';
 import { dbService } from '@/lib/databaseService';
 import { LoggerUser } from '@/lib/loggerAuth';
+import bcrypt from 'bcrypt';
+import { nanoid } from 'nanoid';
+import { Logger } from '@/lib/databaseService';
+import { supabase } from '@/lib/supabaseClient';
 
 // Logger user interface for login
 interface LoggerLoginData {
@@ -17,52 +21,72 @@ export async function POST(request: NextRequest) {
     // Get the logger user from the database
     const dbLogger = await dbService.getLoggerByEmail(email);
     
-    // For now, we'll check a simple password field, but in production this should be properly hashed
-    // Note: The current Logger type doesn't include a password field, so we're using a workaround
-    const loggerUser = dbLogger && (dbLogger as any).password === password ? {
-      id: dbLogger.id.toString(),
-      name: dbLogger.name || '',
-      email: dbLogger.email,
-      role: dbLogger.role || 'logger',
-      assignedCompetitions: dbLogger.assignedCompetitions || [],
-      permissions: ['log_matches', 'log_events', 'view_players', 'view_teams', 'view_competitions'],
-      lastLogin: dbLogger.lastActive || new Date().toISOString()
-    } as LoggerUser : undefined;
-    
-    // If we don't have a proper password field, let's properly handle authentication
-    if (!loggerUser) {
+    // If no logger found, return error
+    if (!dbLogger) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
       );
     }
     
-    // Generate JWT token for the logger user
-    const token = await generateLoggerToken(loggerUser);
+    // Verify password using bcrypt
+    const isPasswordValid = await bcrypt.compare(password, dbLogger.password);
     
-    // Update last login time
-    const updatedUser = {
-      ...loggerUser,
-      lastLogin: new Date().toISOString()
+    if (!isPasswordValid) {
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 }
+      );
+    }
+    
+    // Create logger user object
+    const loggerUser: LoggerUser = {
+      id: dbLogger.id.toString(),
+      name: dbLogger.name || '',
+      email: dbLogger.email,
+      role: (dbLogger.role as 'logger') || 'logger',
+      assignedCompetitions: dbLogger.assignedCompetitions || [],
+      permissions: dbLogger.permissions || ['log_matches', 'log_events', 'view_players', 'view_teams', 'view_competitions'],
+      lastLogin: dbLogger.lastActive || new Date().toISOString()
     };
     
-    // Update last login in database
-    await dbService.updateLogger(loggerUser.id, { lastActive: updatedUser.lastLogin });
+    // Generate access token
+    const accessToken = await generateLoggerToken(loggerUser);
     
-    // Return success response with token
+    // Generate refresh token
+    const refreshToken = nanoid(32);
+    
+    // Store refresh token in database (in production, you might want to use Redis or similar)
+    // For now, we'll store it in the logger record
+    await supabase
+      .from('Logger')
+      .update({ 
+        lastActive: new Date().toISOString(),
+        refreshToken: refreshToken
+      })
+      .eq('id', loggerUser.id);
+    
+    // Set token expiration times
+    const accessTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const refreshTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    
+    // Return success response with tokens
     return NextResponse.json({
       success: true,
       message: 'Login successful',
       data: {
-        token,
+        accessToken,
+        refreshToken,
+        accessTokenExpiry: accessTokenExpiry.toISOString(),
+        refreshTokenExpiry: refreshTokenExpiry.toISOString(),
         user: {
-          id: updatedUser.id,
-          name: updatedUser.name,
-          email: updatedUser.email,
-          role: updatedUser.role,
-          assignedCompetitions: updatedUser.assignedCompetitions,
-          permissions: updatedUser.permissions,
-          lastLogin: updatedUser.lastLogin
+          id: loggerUser.id,
+          name: loggerUser.name,
+          email: loggerUser.email,
+          role: loggerUser.role,
+          assignedCompetitions: loggerUser.assignedCompetitions,
+          permissions: loggerUser.permissions,
+          lastLogin: loggerUser.lastLogin
         }
       }
     });

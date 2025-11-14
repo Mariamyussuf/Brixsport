@@ -1,4 +1,4 @@
-import { supabase } from '@config/supabase.config';
+import { supabase } from '../config/supabase.config';
 import { logger } from '../utils/logger';
 import { DatabaseError } from '../errors/database.error';
 

@@ -3,36 +3,50 @@ import rateLimit from 'express-rate-limit';
 import RedisStore, { RedisReply } from 'rate-limit-redis';
 import Redis from 'ioredis';
 import { RateLimitError } from '../types/errors';
-import { logger } from '@utils/logger';
+import { logger } from '../utils/logger';
 
-// Initialize Redis client
-const redisClient = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-  retryStrategy: (times: number) => {
-    const delay = Math.min(times * 50, 2000);
-    return delay;
+// Check if Redis is configured
+const redisUrl = process.env.REDIS_URL;
+let rateLimitStore: any = undefined;
+
+if (redisUrl && redisUrl !== '' && redisUrl !== 'disabled') {
+  try {
+    // Initialize Redis client
+    const redisClient = new Redis(redisUrl, {
+      retryStrategy: (times: number) => {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      }
+    });
+
+    redisClient.on('error', (err) => {
+      logger.error('Redis client error:', err);
+    });
+
+    // Create Redis store for rate limiting
+    rateLimitStore = new RedisStore({
+      sendCommand: async (...args: string[]) => {
+        // Fix the type issue by properly typing the return value
+        const result = await redisClient.call(args[0], ...args.slice(1));
+        return result as RedisReply;
+      },
+    });
+    
+    logger.info('Rate limiting using Redis store');
+  } catch (error) {
+    logger.warn('Failed to initialize Redis for rate limiting, falling back to memory store:', error);
   }
-});
-
-redisClient.on('error', (err) => {
-  logger.error('Redis client error:', err);
-});
+} else {
+  logger.info('Redis not configured for rate limiting, using memory store');
+}
 
 // Define rate limit options
 const rateLimitOptions = {
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes default
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'), // 100 requests default
   standardHeaders: true,
   legacyHeaders: false,
-  store: new RedisStore({
-    sendCommand: async (...args: string[]) => {
-      // Fix the type issue by properly typing the return value
-      const result = await redisClient.call(args[0], ...args.slice(1));
-      return result as RedisReply;
-    },
-  }),
+  store: rateLimitStore, // Will be undefined if Redis is not available, falling back to memory store
   handler: (req: Request, res: Response) => {
     throw new RateLimitError('Too many requests from this IP, please try again later');
   }

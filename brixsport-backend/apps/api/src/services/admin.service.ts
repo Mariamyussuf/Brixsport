@@ -3,9 +3,7 @@ import { userRules } from './userRules.service';
 import { supabaseService } from './supabase.service';
 import * as fs from 'fs';
 import * as path from 'path';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma, PrismaClient } from '@brixsport/database';
 
 // Extend PrismaClient to include raw SQL access for migrations
 interface ExtendedPrismaClient extends PrismaClient {

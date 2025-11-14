@@ -93,8 +93,38 @@ This backend replaces the former Render-hosted backend that is no longer availab
 
 ## Deployment
 
+### Railway Deployment (Recommended)
+
+The backend is configured for deployment to Railway with the following setup:
+
+1. Railway will automatically detect and use the `railway.json` configuration
+2. Environment variables are pre-configured in the Railway configuration:
+   - `NODE_ENV=production`
+   - `PORT=4000`
+   - `CLIENT_URL=https://brixsport.vercel.app`
+   - `ALLOWED_ORIGINS=https://brixsport.vercel.app,https://brixsport-*.vercel.app`
+3. The application will start using `npm run start:api`
+
+### Manual Deployment
+
 1. Run `npm run deploy` to build and deploy the application
 2. Ensure Supabase environment variables are configured in your deployment environment
+
+### Environment Variables
+
+For Railway deployment, the following environment variables must be set via the Railway dashboard or CLI:
+
+```bash
+NODE_ENV=production
+PORT=4000
+DATABASE_URL=your_supabase_postgres_url
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_KEY=your_service_key
+
+# CORS Configuration for brixsport.vercel.app
+CLIENT_URL=https://brixsport.vercel.app
+ALLOWED_ORIGINS=https://brixsport.vercel.app,https://brixsport-*.vercel.app
+```
 
 ## API Documentation
 

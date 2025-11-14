@@ -1,0 +1,21 @@
+# Nixpacks configuration for Brixsport Backend API
+[phases.setup]
+name = "Setup Node.js"
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+name = "Install Dependencies"
+cmds = ["npm ci"]
+
+[phases.build]
+name = "Build Backend"
+cmds = [
+  "cd packages/shared && npm install",
+  "cd packages/database && npm install",
+  "cd packages/database && npx prisma generate",
+  "cd apps/api && npm run generate",
+  "npm run build"
+]
+
+[start]
+cmd = "npm run start:api"

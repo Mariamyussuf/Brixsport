@@ -4,7 +4,7 @@
     "module": "commonjs",
     "lib": ["ES2020"],
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "./",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -23,12 +23,9 @@
     "moduleResolution": "node",
     "baseUrl": "./",
     "paths": {
-      "@/*": ["src/*"],
-      "@schemas/*": ["src/schemas/*"],
-      "@types/*": ["src/types/*"],
-      "@constants/*": ["src/constants/*"]
+      "@/*": ["./*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["*.ts"],
   "exclude": ["node_modules", "dist"]
 }

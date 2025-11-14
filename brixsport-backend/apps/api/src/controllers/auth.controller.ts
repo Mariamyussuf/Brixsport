@@ -150,6 +150,9 @@ export const resendVerification = async (req: Request, res: Response): Promise<v
 
 export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
   try {
+    const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    
     // Check if password reset is allowed for this email
     const isAccountLocked = await accountSecurityService.isAccountLocked(req.body.email);
     if (isAccountLocked) {
@@ -160,7 +163,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       return;
     }
     
-    const result = await authService.forgotPassword(req.body.email);
+    const result = await authService.forgotPassword(req.body.email, ipAddress, userAgent);
     res.status(200).json(result);
   } catch (error: any) {
     logger.error('Forgot password error', { error: error.message, stack: error.stack });
@@ -171,7 +174,10 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
 
 export const resetPassword = async (req: Request, res: Response): Promise<void> => {
   try {
-    const result = await authService.resetPassword(req.body.token, req.body.newPassword);
+    const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    
+    const result = await authService.resetPassword(req.body.token, req.body.newPassword, ipAddress, userAgent);
     res.status(200).json(result);
   } catch (error: any) {
     logger.error('Reset password error', { error: error.message, stack: error.stack });

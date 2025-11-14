@@ -1,4 +1,4 @@
-import { logger } from '@utils/logger';
+import { logger } from '../../utils/logger';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import { redisService } from '../redis.service';

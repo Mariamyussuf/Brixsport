@@ -1,11 +1,6 @@
 import { logger } from '../utils/logger';
-import { createClient } from '@supabase/supabase-js';
 import { NotFoundError, ValidationError } from './error.handler.service';
-
-// Create Supabase client
-const supabaseUrl = process.env.SUPABASE_URL || 'https://db.rhtwjgvljbapkfmtuqdq.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from './supabase.service';
 
 interface TrackEvent {
   id?: string;

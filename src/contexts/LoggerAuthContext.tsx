@@ -52,7 +52,7 @@ class LoggerAuthService {
     return data.data.user;
   }
 
-  static async login(credentials: LoginCredentials): Promise<{ token: string; user: LoggerUser }> {
+  static async login(credentials: LoginCredentials): Promise<{ accessToken: string; refreshToken: string; user: LoggerUser; accessTokenExpiry: string; refreshTokenExpiry: string }> {
     const response = await fetch(`${this.API_BASE}`, {
       method: 'POST',
       headers: {
@@ -70,27 +70,34 @@ class LoggerAuthService {
 
     const data = await response.json();
     return {
-      token: data.data.token,
-      user: data.data.user
+      accessToken: data.data.accessToken,
+      refreshToken: data.data.refreshToken,
+      user: data.data.user,
+      accessTokenExpiry: data.data.accessTokenExpiry,
+      refreshTokenExpiry: data.data.refreshTokenExpiry
     };
   }
 
-  static async refreshToken(refreshToken: string): Promise<{ token: string }> {
-    // Logger system doesn't currently implement refresh tokens
-    // Instead of throwing an error, we'll implement a basic refresh mechanism
-    try {
-      // For logger system, we'll validate the current token and if it's still valid, extend it
-      // In a real implementation, this would call an API endpoint to get a new token
-      const userData = await LoggerAuthService.validateToken(refreshToken);
-      if (userData) {
-        // Token is still valid, we can "refresh" by returning the same token
-        return { token: refreshToken };
-      } else {
-        throw new Error('Token validation failed');
-      }
-    } catch (error) {
+  static async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string; accessTokenExpiry: string; refreshTokenExpiry: string }> {
+    const response = await fetch(`${this.API_BASE}/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
       throw new Error('Failed to refresh token');
     }
+
+    const data = await response.json();
+    return {
+      accessToken: data.data.accessToken,
+      refreshToken: data.data.refreshToken,
+      accessTokenExpiry: data.data.accessTokenExpiry,
+      refreshTokenExpiry: data.data.refreshTokenExpiry
+    };
   }
 
   static isTokenExpired(token: string): boolean {
@@ -124,24 +131,18 @@ export const LoggerAuthProvider: React.FC<LoggerAuthProviderProps> = ({ children
 
   // Refresh token function
   const refreshToken = useCallback(async (): Promise<void> => {
-    // Logger system doesn't currently implement refresh tokens
-    // Instead of throwing an error, we'll implement a basic refresh mechanism
     try {
-      const currentToken = TokenManager.getToken();
-      if (!currentToken) {
-        throw new Error('No token available for refresh');
+      const refreshTokenValue = TokenManager.getRefreshToken();
+      if (!refreshTokenValue) {
+        throw new Error('No refresh token available for refresh');
       }
 
-      // For logger system, we'll validate the current token and if it's still valid, extend it
-      // In a real implementation, this would call an API endpoint to get a new token
-      const userData = await LoggerAuthService.validateToken(currentToken);
-      if (userData) {
-        // Token is still valid, we can "refresh" by re-setting it
-        TokenManager.setTokens(currentToken, ''); // Logger system doesn't use refresh tokens
-        setUser(userData);
-      } else {
-        throw new Error('Token validation failed');
-      }
+      const { accessToken, refreshToken: newRefreshToken } = await LoggerAuthService.refreshToken(refreshTokenValue);
+      TokenManager.setTokens(accessToken, newRefreshToken);
+      
+      // Fetch updated user data
+      const userData = await LoggerAuthService.validateToken(accessToken);
+      setUser(userData);
     } catch (error) {
       TokenManager.clearTokens();
       setUser(null);
@@ -160,6 +161,17 @@ export const LoggerAuthProvider: React.FC<LoggerAuthProviderProps> = ({ children
           const userData = await LoggerAuthService.validateToken(token);
           if (isMounted) {
             setUser(userData);
+          }
+        } else if (token) {
+          // Token is expired, try to refresh
+          try {
+            await refreshToken();
+          } catch (refreshError) {
+            // If refresh fails, clear tokens and show error
+            TokenManager.clearTokens();
+            if (isMounted && refreshError instanceof Error) {
+              setError('Session expired. Please log in again.');
+            }
           }
         }
       } catch (err) {
@@ -181,7 +193,7 @@ export const LoggerAuthProvider: React.FC<LoggerAuthProviderProps> = ({ children
     return (): void => {
       isMounted = false;
     };
-  }, []);
+  }, [refreshToken]);
 
   // Login function
   const login = async (credentials: LoginCredentials): Promise<void> => {
@@ -189,8 +201,8 @@ export const LoggerAuthProvider: React.FC<LoggerAuthProviderProps> = ({ children
     setError(null);
 
     try {
-      const { token, user } = await LoggerAuthService.login(credentials);
-      TokenManager.setTokens(token, ''); // Logger system doesn't use refresh tokens
+      const { accessToken, refreshToken, user } = await LoggerAuthService.login(credentials);
+      TokenManager.setTokens(accessToken, refreshToken);
       setUser(user);
     } catch (err) {
       let errorMessage = 'Failed to log in.';
@@ -209,12 +221,27 @@ export const LoggerAuthProvider: React.FC<LoggerAuthProviderProps> = ({ children
   // Logout function
   const logout = useCallback(async (): Promise<void> => {
     try {
+      // Call backend logout endpoint to invalidate refresh token
+      const refreshToken = TokenManager.getRefreshToken();
+      if (refreshToken) {
+        await fetch(`/api/logger/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ refreshToken }),
+        });
+      }
+      
       // Clear tokens
       TokenManager.clearTokens();
       setUser(null);
       setError(null);
     } catch (error) {
       console.error('Error logging out:', error);
+      // Still clear tokens locally even if backend call fails
+      TokenManager.clearTokens();
+      setUser(null);
     }
   }, []);
 

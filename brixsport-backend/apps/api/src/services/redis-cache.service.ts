@@ -1,4 +1,5 @@
 import { withRedis } from '../config/redis';
+import { getOptionalRedisClient } from '../config/redis';
 import { logger } from '../utils/logger';
 import { RedisClientType, RedisModules, RedisFunctions, RedisScripts } from 'redis';
 
@@ -38,28 +39,31 @@ export class RedisCacheService {
     const cacheKey = this.getCacheKey(key);
     
     try {
-      return await withRedis(async (client: RedisClientType<RedisModules, RedisFunctions, RedisScripts>) => {
-        const cached = await client.get(cacheKey);
-        if (!cached) return null;
-        
-        const entry: CacheEntry<T> = JSON.parse(cached);
-        const now = Date.now();
-        
-        // Check if entry is expired
-        if (now > entry.metadata.expiresAt) {
-          // If we have stale-while-revalidate, return stale data while updating in background
-          if (options.staleWhileRevalidate && now < entry.metadata.expiresAt + (options.maxStaleAge || this.STALE_TTL) * 1000) {
-            // Trigger background refresh
-            this.refreshInBackground(key, options).catch(err => 
-              logger.error('Background refresh failed:', err)
-            );
-            return entry.data;
-          }
-          return null;
+      const client = await getOptionalRedisClient();
+      if (!client) {
+        return null;
+      }
+      
+      const cached = await client.get(cacheKey);
+      if (!cached) return null;
+      
+      const entry: CacheEntry<T> = JSON.parse(cached);
+      const now = Date.now();
+      
+      // Check if entry is expired
+      if (now > entry.metadata.expiresAt) {
+        // If we have stale-while-revalidate, return stale data while updating in background
+        if (options.staleWhileRevalidate && now < entry.metadata.expiresAt + (options.maxStaleAge || this.STALE_TTL) * 1000) {
+          // Trigger background refresh
+          this.refreshInBackground(key, options).catch(err => 
+            logger.error('Background refresh failed:', err)
+          );
+          return entry.data;
         }
-        
-        return entry.data;
-      });
+        return null;
+      }
+      
+      return entry.data;
     } catch (error) {
       logger.error('Cache get error:', { key, error });
       return null;
@@ -91,19 +95,22 @@ export class RedisCacheService {
     };
     
     try {
-      return await withRedis(async (client: RedisClientType<RedisModules, RedisFunctions, RedisScripts>) => {
-        const serialized = JSON.stringify(entry);
-        
-        // Set the main cache entry
-        await client.set(cacheKey, serialized, { PX: ttl * 1000 });
-        
-        // Store cache key in tag sets for invalidation
-        if (options.tags?.length) {
-          await this.addTagsToKey(cacheKey, options.tags, client);
-        }
-        
-        return true;
-      });
+      const client = await getOptionalRedisClient();
+      if (!client) {
+        return true; // Pretend it was successful
+      }
+      
+      const serialized = JSON.stringify(entry);
+      
+      // Set the main cache entry
+      await client.set(cacheKey, serialized, { PX: ttl * 1000 });
+      
+      // Store cache key in tag sets for invalidation
+      if (options.tags?.length) {
+        await this.addTagsToKey(cacheKey, options.tags, client);
+      }
+      
+      return true;
     } catch (error) {
       logger.error('Cache set error:', { key, error });
       return false;
@@ -117,20 +124,23 @@ export class RedisCacheService {
     const cacheKey = this.getCacheKey(key);
     
     try {
-      return await withRedis(async (client: RedisClientType<RedisModules, RedisFunctions, RedisScripts>) => {
-        // Get the entry to check for tags before deleting
-        const cached = await client.get(cacheKey);
-        if (cached) {
-          const entry = JSON.parse(cached);
-          if (entry.metadata?.tags?.length) {
-            await this.removeKeyFromTags(cacheKey, entry.metadata.tags, client);
-          }
+      const client = await getOptionalRedisClient();
+      if (!client) {
+        return true; // Pretend it was successful
+      }
+      
+      // Get the entry to check for tags before deleting
+      const cached = await client.get(cacheKey);
+      if (cached) {
+        const entry = JSON.parse(cached);
+        if (entry.metadata?.tags?.length) {
+          await this.removeKeyFromTags(cacheKey, entry.metadata.tags, client);
         }
-        
-        // Delete the main cache entry
-        const result = await client.del(cacheKey);
-        return result > 0;
-      });
+      }
+      
+      // Delete the main cache entry
+      const result = await client.del(cacheKey);
+      return result > 0;
     } catch (error) {
       logger.error('Cache delete error:', { key, error });
       return false;
@@ -144,25 +154,28 @@ export class RedisCacheService {
     if (!tags.length) return 0;
     
     try {
-      return await withRedis(async (client: RedisClientType<RedisModules, RedisFunctions, RedisScripts>) => {
-        let totalInvalidated = 0;
+      const client = await getOptionalRedisClient();
+      if (!client) {
+        return 0;
+      }
+      
+      let totalInvalidated = 0;
+      
+      for (const tag of tags) {
+        const tagKey = this.getTagKey(tag);
+        const cacheKeys = await client.sMembers(tagKey);
         
-        for (const tag of tags) {
-          const tagKey = this.getTagKey(tag);
-          const cacheKeys = await client.sMembers(tagKey);
+        if (cacheKeys.length > 0) {
+          // Delete all cache entries with this tag
+          const deleted = await client.del(cacheKeys);
+          totalInvalidated += deleted;
           
-          if (cacheKeys.length > 0) {
-            // Delete all cache entries with this tag
-            const deleted = await client.del(cacheKeys);
-            totalInvalidated += deleted;
-            
-            // Delete the tag set
-            await client.del(tagKey);
-          }
+          // Delete the tag set
+          await client.del(tagKey);
         }
-        
-        return totalInvalidated;
-      });
+      }
+      
+      return totalInvalidated;
     } catch (error) {
       logger.error('Cache invalidate tags error:', { tags, error });
       return 0;
@@ -174,51 +187,54 @@ export class RedisCacheService {
    */
   public static async clear(): Promise<boolean> {
     try {
-      return await withRedis(async (client: RedisClientType<RedisModules, RedisFunctions, RedisScripts>) => {
-        // Using SCAN to safely delete keys in batches
-        let cursor = 0;
-        let keys: string[] = [];
+      const client = await getOptionalRedisClient();
+      if (!client) {
+        return true; // Pretend it was successful
+      }
+      
+      // Using SCAN to safely delete keys in batches
+      let cursor = 0;
+      let keys: string[] = [];
+      
+      do {
+        const result = await client.scan(cursor, {
+          MATCH: `${this.CACHE_PREFIX}*`,
+          COUNT: 100
+        });
         
-        do {
-          const result = await client.scan(cursor, {
-            MATCH: `${this.CACHE_PREFIX}*`,
-            COUNT: 100
-          });
-          
-          cursor = result.cursor;
-          const scanKeys = result.keys;
-          keys = keys.concat(scanKeys);
-          
-          // Delete keys in batches of 1000
-          if (keys.length >= 1000) {
-            await client.del(keys);
-            keys = [];
-          }
-        } while (cursor !== 0);
+        cursor = result.cursor;
+        const scanKeys = result.keys;
+        keys = keys.concat(scanKeys);
         
-        // Delete any remaining keys
-        if (keys.length > 0) {
+        // Delete keys in batches of 1000
+        if (keys.length >= 1000) {
           await client.del(keys);
+          keys = [];
         }
+      } while (cursor !== 0);
+      
+      // Delete any remaining keys
+      if (keys.length > 0) {
+        await client.del(keys);
+      }
+      
+      // Clear all tag sets
+      let tagCursor = 0;
+      do {
+        const tagResult = await client.scan(tagCursor, {
+          MATCH: `${this.TAG_PREFIX}*`,
+          COUNT: 100
+        });
         
-        // Clear all tag sets
-        let tagCursor = 0;
-        do {
-          const tagResult = await client.scan(tagCursor, {
-            MATCH: `${this.TAG_PREFIX}*`,
-            COUNT: 100
-          });
-          
-          tagCursor = tagResult.cursor;
-          const tagKeys = tagResult.keys;
-          
-          if (tagKeys.length > 0) {
-            await client.del(tagKeys);
-          }
-        } while (tagCursor !== 0);
+        tagCursor = tagResult.cursor;
+        const tagKeys = tagResult.keys;
         
-        return true;
-      });
+        if (tagKeys.length > 0) {
+          await client.del(tagKeys);
+        }
+      } while (tagCursor !== 0);
+      
+      return true;
     } catch (error) {
       logger.error('Cache clear error:', error);
       return false;
@@ -243,19 +259,22 @@ export class RedisCacheService {
     } | null;
     
     try {
-      return await withRedis(async (client) => {
-        const [memory, keys, tags] = await Promise.all([
-          client.info('memory'),
-          this.getKeyStats(client),
-          this.getTagStats(client)
-        ]);
-        
-        return {
-          memory: this.parseInfo(memory),
-          keys,
-          tags
-        };
-      });
+      const client = await getOptionalRedisClient();
+      if (!client) {
+        return null;
+      }
+      
+      const [memory, keys, tags] = await Promise.all([
+        client.info('memory'),
+        this.getKeyStats(client),
+        this.getTagStats(client)
+      ]);
+      
+      return {
+        memory: this.parseInfo(memory),
+        keys,
+        tags
+      };
     } catch (error) {
       logger.error('Cache stats error:', error);
       return null;
@@ -288,7 +307,7 @@ export class RedisCacheService {
   private static async addTagsToKey(
     cacheKey: string, 
     tags: string[], 
-    client: RedisClient
+    client: RedisClientType<RedisModules, RedisFunctions, RedisScripts>
   ): Promise<void> {
     if (!tags.length) return;
     
@@ -312,7 +331,7 @@ export class RedisCacheService {
   private static async removeKeyFromTags(
     cacheKey: string, 
     tags: string[], 
-    client: RedisClient
+    client: RedisClientType<RedisModules, RedisFunctions, RedisScripts>
   ): Promise<void> {
     if (!tags.length) return;
     
@@ -340,7 +359,7 @@ export class RedisCacheService {
     logger.debug('Background refresh triggered for key:', key);
   }
   
-  private static async getKeyStats(client: RedisClient) {
+  private static async getKeyStats(client: RedisClientType<RedisModules, RedisFunctions, RedisScripts>) {
     try {
       const [totalKeys, expiredKeys] = await Promise.all([
         this.countKeys(client, this.CACHE_PREFIX + '*'),
@@ -362,7 +381,7 @@ export class RedisCacheService {
     }
   }
   
-  private static async getTagStats(client: RedisClient) {
+  private static async getTagStats(client: RedisClientType<RedisModules, RedisFunctions, RedisScripts>) {
     try {
       const tagKeys = await this.scanKeys(client, this.TAG_PREFIX + '*');
       let totalTaggedKeys = 0;
@@ -388,7 +407,7 @@ export class RedisCacheService {
   }
   
   private static async countKeys(
-    client: RedisClient, 
+    client: RedisClientType<RedisModules, RedisFunctions, RedisScripts>, 
     pattern: string, 
     checkTtl = false
   ): Promise<number> {
@@ -429,7 +448,7 @@ export class RedisCacheService {
   }
   
   private static async scanKeys(
-    client: RedisClient, 
+    client: RedisClientType<RedisModules, RedisFunctions, RedisScripts>, 
     pattern: string
   ): Promise<string[]> {
     let cursor = 0;

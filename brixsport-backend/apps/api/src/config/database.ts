@@ -1,12 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@brixsport/database';
 
 // Log the database URL for debugging (without the password)
 const dbUrl = process.env.DATABASE_URL || '';
 const safeDbUrl = dbUrl.replace(/:([^:]+)@/, ':***@');
 console.log('Connecting to database:', safeDbUrl);
-
-// Create a simple Prisma Client instance, just like in the test
-const prisma = new PrismaClient();
 
 export const connectDatabase = async (): Promise<void> => {
   try {

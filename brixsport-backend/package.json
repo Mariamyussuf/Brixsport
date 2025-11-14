@@ -7,6 +7,7 @@
     "packages/*"
   ],
   "scripts": {
+    "postinstall": "npm run build:shared",
     "dev": "docker-compose up",
     "dev:direct": "concurrently \"npm run dev:api:direct\" \"npm run dev:analytics:direct\"",
     "dev:direct:windows": "scripts\\dev-direct.bat",
@@ -26,7 +27,8 @@
     "db:studio": "cd packages/database && npm run db:studio",
     "setup": "bash scripts/dev-setup.sh",
     "deploy": "bash scripts/deploy.sh",
-    "migrate": "bash scripts/migrate.sh"
+    "migrate": "bash scripts/migrate.sh",
+    "start:api": "cd apps/api && npm run start"
   },
   "keywords": [
     "brixsport",
@@ -37,14 +39,20 @@
   "author": "Brixsport Team",
   "license": "MIT",
   "devDependencies": {
+    "@types/pdfkit": "^0.17.3",
     "@types/supertest": "^6.0.3",
     "@types/uuid": "^10.0.0",
     "concurrently": "^9.2.1",
     "supertest": "^7.1.4",
+    "tsc-alias": "^1.8.16",
     "typescript": "^5.2.2"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
+    "@types/qrcode": "^1.5.6",
+    "jose": "^6.1.1",
+    "otplib": "^12.0.1",
+    "qrcode": "^1.5.4",
     "redis": "^5.8.2",
     "web-vitals": "^5.1.0"
   }

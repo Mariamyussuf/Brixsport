@@ -1,4 +1,5 @@
 import { getRedisClient, getRedisMetrics, withRedis } from '../config/redis';
+import { getOptionalRedisClient } from '../config/redis';
 import { logger } from '../utils/logger';
 import { promisify } from 'util';
 import { RedisClientType } from 'redis';
@@ -20,10 +21,26 @@ export interface RedisExtendedInfo {
     lastConnectionTime: string;
     commandsExecuted: number;
     commandErrors: number;
-    poolSize: number;
-    maxPoolSize: number;
+    pool: {
+      size: number;
+      minSize: number;
+      maxSize: number;
+      hitRate: string;
+      stats: {
+        totalAcquired: number;
+        totalReleased: number;
+        totalCreated: number;
+        totalDestroyed: number;
+        waitingRequests: number;
+        maxWaitingTime: number;
+      };
+    };
+    poolHits: number;
+    poolMisses: number;
     connectionString: string;
     uptime: string;
+    circuitBreaker: any;
+    cacheMetrics: any;
   };
   
   // Health information
@@ -73,6 +90,15 @@ export class RedisInfoService {
     error?: string;
   }> {
     try {
+      // Try to get Redis client
+      const client = await getOptionalRedisClient();
+      if (!client) {
+        return {
+          success: false,
+          error: 'Redis is not configured or unavailable'
+        };
+      }
+      
       // Get basic Redis info
       const infoResult = await this.getRedisInfo();
       if (!infoResult.success || !infoResult.data) {
@@ -96,8 +122,11 @@ export class RedisInfoService {
           lastConnectionTime: metrics.lastConnectionTime,
           commandsExecuted: metrics.commandsExecuted,
           commandErrors: metrics.commandErrors,
-          poolSize: metrics.poolSize,
-          maxPoolSize: metrics.maxPoolSize,
+          pool: metrics.pool,
+          poolHits: metrics.poolHits,
+          poolMisses: metrics.poolMisses,
+          circuitBreaker: metrics.circuitBreaker,
+          cacheMetrics: metrics.cacheMetrics,
           connectionString: metrics.connectionString,
           uptime: metrics.uptime
         },
@@ -136,7 +165,24 @@ export class RedisInfoService {
     maxMemory: string;
     memoryFragmentationRatio: string;
   }> {
-    const client = await getRedisClient();
+    const client = await getOptionalRedisClient();
+    if (!client) {
+      return {
+        status: 'unhealthy',
+        latency: -1,
+        memoryUsage: -1,
+        connectedClients: 0,
+        blockedClients: 0,
+        opsPerSecond: 0,
+        keyspaceHits: 0,
+        keyspaceMisses: 0,
+        hitRate: 0,
+        usedMemory: '0 B',
+        maxMemory: '0 B',
+        memoryFragmentationRatio: '0.00'
+      };
+    }
+    
     const startTime = Date.now();
     
     try {
@@ -260,7 +306,11 @@ export class RedisInfoService {
    * Get memory information
    */
   private static async getMemoryInfo(): Promise<Record<string, any>> {
-    const client = await getRedisClient();
+    const client = await getOptionalRedisClient();
+    if (!client) {
+      return {};
+    }
+    
     const info = await client.info('memory');
     const lines = info.split('\r\n');
     const memoryInfo: Record<string, any> = {};
@@ -285,11 +335,11 @@ export class RedisInfoService {
     data?: RedisInfo;
     error?: string;
   }> {
-    const client = await getRedisClient();
+    const client = await getOptionalRedisClient();
     
     if (!client) {
-      logger.error('Redis client is not connected');
-      return { success: false, error: 'Redis client is not connected' };
+      logger.warn('Redis client is not connected or configured');
+      return { success: false, error: 'Redis client is not connected or configured' };
     }
 
     try {
@@ -318,11 +368,11 @@ export class RedisInfoService {
     data?: Record<string, Record<string, string>>;
     error?: string;
   }> {
-    const client = await getRedisClient();
+    const client = await getOptionalRedisClient();
     
     if (!client) {
-      logger.error('Redis client is not connected');
-      return { success: false, error: 'Redis client is not connected' };
+      logger.warn('Redis client is not connected or configured');
+      return { success: false, error: 'Redis client is not connected or configured' };
     }
 
     try {
@@ -464,10 +514,10 @@ export class RedisInfoService {
     status: 'connected' | 'disconnected';
     error?: string;
   }> {
-    const client = await getRedisClient();
+    const client = await getOptionalRedisClient();
     
     if (!client) {
-      return { success: false, status: 'disconnected', error: 'Redis client is not initialized' };
+      return { success: true, status: 'disconnected', error: 'Redis is not configured or unavailable' };
     }
 
     try {
@@ -485,4 +535,5 @@ export class RedisInfoService {
     }
   }
 }
+
 export default RedisInfoService;

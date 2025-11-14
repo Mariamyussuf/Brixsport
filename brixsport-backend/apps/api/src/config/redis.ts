@@ -1,15 +1,41 @@
-import { createClient, RedisClientOptions } from 'redis';
+import { createClient, RedisClientOptions, RedisClientType, RedisModules, RedisFunctions, RedisScripts } from 'redis';
 import { logger } from '../utils/logger';
 import { promisify } from 'util';
+import { CircuitBreakerFactory } from '@brixsport/shared/circuit-breaker';
+import { globalCacheMetrics } from '@brixsport/shared/cache-metrics';
 
-// Use a local alias for the concrete client type returned by createClient to avoid
-// cross-package generic type mismatches with other redis-related packages.
-type RedisClient = ReturnType<typeof createClient>;
+// Use a more specific type definition to avoid conflicts
+type RedisClient = RedisClientType<RedisModules, RedisFunctions, RedisScripts>;
+
+// Enhanced Redis client with metadata
+interface PooledRedisClient extends RedisClient {
+  lastUsed: number;
+  createdAt: number;
+  usageCount: number;
+  isHealthy: boolean;
+}
 
 // Redis client instances with proper type definition
 let redisClient: RedisClient | null = null;
-let redisClientsPool: RedisClient[] = [];
+let redisClientsPool: PooledRedisClient[] = [];
+const MIN_POOL_SIZE = parseInt(process.env.REDIS_MIN_POOL_SIZE || '2');
 const MAX_POOL_SIZE = parseInt(process.env.REDIS_POOL_SIZE || '10');
+const POOL_IDLE_TIMEOUT = parseInt(process.env.REDIS_POOL_IDLE_TIMEOUT || '300000'); // 5 minutes
+const POOL_ACQUIRE_TIMEOUT = parseInt(process.env.REDIS_POOL_ACQUIRE_TIMEOUT || '5000'); // 5 seconds
+const POOL_MAX_WAITING = parseInt(process.env.REDIS_POOL_MAX_WAITING || '50'); // Max waiting requests
+
+// Pool statistics
+const poolStats = {
+  totalAcquired: 0,
+  totalReleased: 0,
+  totalCreated: 0,
+  totalDestroyed: 0,
+  waitingRequests: 0,
+  maxWaitingTime: 0
+};
+
+// Waiting queue for pool acquisition
+const waitingQueue: Array<() => void> = [];
 
 // Redis configuration with defaults
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
@@ -31,29 +57,155 @@ const connectionMetrics = {
   lastConnectionTime: 0,
   commandsExecuted: 0,
   commandErrors: 0,
+  poolHits: 0,
+  poolMisses: 0,
 };
+
+// Circuit breaker for Redis operations
+const redisCircuitBreaker = CircuitBreakerFactory.create('redis-main', {
+  failureThreshold: 5,
+  successThreshold: 2,
+  timeout: 60000,
+  monitoringPeriod: 120000,
+  volumeThreshold: 10
+});
 
 // Track connection attempts
 let connectionAttempts = 0;
 
 // Connection pool management
-const getConnectionFromPool = (): RedisClient | null => {
-  if (redisClientsPool.length === 0) {
+const getConnectionFromPool = async (): Promise<PooledRedisClient | null> => {
+  // First try to get a healthy connection from the pool
+  let client: PooledRedisClient | null = null;
+  
+  // Try to find a healthy client in the pool
+  for (let i = redisClientsPool.length - 1; i >= 0; i--) {
+    const pooledClient = redisClientsPool[i];
+    if (pooledClient.isHealthy) {
+      // Remove from pool
+      redisClientsPool.splice(i, 1);
+      client = pooledClient;
+      break;
+    }
+  }
+  
+  if (!client) {
+    connectionMetrics.poolMisses++;
     return null;
   }
-  const client = redisClientsPool.pop()!;
+  
+  connectionMetrics.poolHits++;
+  client.lastUsed = Date.now();
+  client.usageCount++;
+  
+  // Verify connection is still healthy
+  try {
+    await client.ping();
+    client.isHealthy = true;
+  } catch (error) {
+    logger.warn('Pooled Redis connection is no longer healthy:', error);
+    client.isHealthy = false;
+    connectionMetrics.commandErrors++;
+    return null;
+  }
+  
   return client;
 };
 
-const releaseConnectionToPool = (client: RedisClient) => {
+const releaseConnectionToPool = (client: PooledRedisClient) => {
+  if (!client.isOpen) {
+    logger.warn('Attempted to release closed Redis connection');
+    connectionMetrics.activeConnections--;
+    poolStats.totalDestroyed++;
+    return;
+  }
+
+  // Update client metadata
+  client.lastUsed = Date.now();
+  
+  // Check if pool is full
   if (redisClientsPool.length < MAX_POOL_SIZE) {
     redisClientsPool.push(client);
+    poolStats.totalReleased++;
   } else {
+    // Pool is full, close excess connection
     client.quit().catch(err => {
       logger.error('Error closing excess Redis connection:', err);
     });
+    connectionMetrics.activeConnections--;
+    poolStats.totalDestroyed++;
+  }
+  
+  // Process waiting requests if any
+  if (waitingQueue.length > 0 && redisClientsPool.length > 0) {
+    const next = waitingQueue.shift();
+    if (next) next();
   }
 };
+
+// Pre-warm connection pool
+const warmConnectionPool = async (): Promise<void> => {
+  const warmCount = Math.min(MIN_POOL_SIZE, MAX_POOL_SIZE);
+  logger.info(`Warming connection pool with ${warmCount} connections`);
+  
+  for (let i = 0; i < warmCount; i++) {
+    try {
+      const client = createRedisClient() as PooledRedisClient;
+      // Add metadata to the client
+      client.lastUsed = Date.now();
+      client.createdAt = Date.now();
+      client.usageCount = 0;
+      client.isHealthy = true;
+      
+      await client.connect();
+      await client.ping();
+      redisClientsPool.push(client);
+      poolStats.totalCreated++;
+    } catch (error) {
+      logger.error(`Failed to warm connection ${i + 1}:`, error);
+    }
+  }
+  
+  logger.info(`Connection pool warmed: ${redisClientsPool.length} connections`);
+};
+
+// Clean up idle connections
+const cleanupIdleConnections = async (): Promise<void> => {
+  const now = Date.now();
+  
+  // Remove idle connections that exceed the timeout
+  const idleConnections = redisClientsPool.filter(client => 
+    now - client.lastUsed > POOL_IDLE_TIMEOUT
+  );
+  
+  // Keep at least MIN_POOL_SIZE connections
+  const excessCount = Math.max(0, idleConnections.length - (redisClientsPool.length - MIN_POOL_SIZE));
+  
+  if (excessCount > 0) {
+    const toRemove = idleConnections.slice(0, excessCount);
+    
+    for (const client of toRemove) {
+      const index = redisClientsPool.indexOf(client);
+      if (index !== -1) {
+        redisClientsPool.splice(index, 1);
+        await client.quit().catch(err => {
+          logger.error('Error closing idle connection:', err);
+        });
+        connectionMetrics.activeConnections--;
+        poolStats.totalDestroyed++;
+      }
+    }
+    
+    logger.info(`Cleaned up ${toRemove.length} idle connections`);
+  }
+};
+
+// Start periodic cleanup
+setInterval(() => {
+  cleanupIdleConnections().catch(err => {
+    logger.error('Error during idle connection cleanup:', err);
+  });
+}, 60000); // Check every minute
 
 // Health check function
 const checkRedisHealth = async (client: RedisClient): Promise<boolean> => {
@@ -164,23 +316,51 @@ const createRedisClient = (): RedisClient => {
   return client;
 };
 
-export const connectRedis = async (): Promise<RedisClient> => {
+export const connectRedis = async (): Promise<RedisClient | null> => {
+  // Check if Redis is disabled (empty REDIS_URL)
+  if (!REDIS_URL || REDIS_URL === '' || REDIS_URL === 'disabled') {
+    logger.info('Redis is disabled - running in degraded mode');
+    return null;
+  }
+
   // Try to get a connection from the pool first
-  const pooledClient = getConnectionFromPool();
+  const pooledClient = await getConnectionFromPool();
   if (pooledClient) {
-    // Verify the connection is healthy
-    const isHealthy = await checkRedisHealth(pooledClient);
-    if (isHealthy) {
-      return pooledClient;
-    }
+    return pooledClient as unknown as RedisClient;
+  }
+
+  // If pool is empty, check if we can create a new connection
+  if (connectionMetrics.activeConnections >= MAX_POOL_SIZE) {
+    // Pool is at max capacity, wait for a connection to be released
+    return new Promise((resolve, reject) => {
+      let timeout: NodeJS.Timeout;
+      
+      // Set timeout for waiting
+      timeout = setTimeout(() => {
+        const index = waitingQueue.indexOf(() => {});
+        if (index !== -1) waitingQueue.splice(index, 1);
+        reject(new Error('Redis connection pool acquire timeout'));
+      }, POOL_ACQUIRE_TIMEOUT);
+      
+      // Add to waiting queue
+      waitingQueue.push(() => {
+        clearTimeout(timeout);
+        // Try to get connection again
+        connectRedis().then(resolve).catch(reject);
+      });
+      
+      poolStats.waitingRequests = waitingQueue.length;
+    });
   }
 
   if (connectionAttempts >= MAX_RETRIES) {
-    throw new Error(`Max Redis connection attempts (${MAX_RETRIES}) reached`);
+    logger.warn(`Max Redis connection attempts (${MAX_RETRIES}) reached - running without Redis`);
+    return null;
   }
 
   try {
     const newClient = createRedisClient();
+    
     await newClient.connect();
     
     // Verify the connection is working
@@ -192,14 +372,18 @@ export const connectRedis = async (): Promise<RedisClient> => {
     } else {
       // Add to connection pool if we're under the limit
       if (redisClientsPool.length < MAX_POOL_SIZE) {
-        redisClientsPool.push(newClient);
-      } else {
-        // If pool is full, close the connection and return the client
-        // It will be closed when released
-        redisClientsPool.push(newClient);
+        const pooledClient = newClient as PooledRedisClient;
+        // Add metadata to the client
+        pooledClient.lastUsed = Date.now();
+        pooledClient.createdAt = Date.now();
+        pooledClient.usageCount = 0;
+        pooledClient.isHealthy = true;
+        redisClientsPool.push(pooledClient);
+        poolStats.totalCreated++;
       }
     }
     
+    poolStats.totalAcquired++;
     return newClient;
   } catch (error) {
     connectionAttempts++;
@@ -209,7 +393,8 @@ export const connectRedis = async (): Promise<RedisClient> => {
     logger.error(`Redis connection attempt ${connectionAttempts} failed:`, error);
     
     if (connectionAttempts >= MAX_RETRIES) {
-      throw new Error(`Failed to connect to Redis after ${MAX_RETRIES} attempts`);
+      logger.warn(`Failed to connect to Redis after ${MAX_RETRIES} attempts - running without Redis`);
+      return null;
     }
     
     // Wait before retrying with exponential backoff and jitter
@@ -236,9 +421,14 @@ export const disconnectRedis = async (): Promise<void> => {
   }
   logger.info('Redis disconnected successfully');
 };
+
 export const getRedisClient = async (): Promise<RedisClient> => {
   if (!redisClient) {
-    return await connectRedis();
+    const client = await connectRedis();
+    if (!client) {
+      throw new Error('Redis client not available');
+    }
+    return client as RedisClient;
   }
   
   // Verify the connection is still active
@@ -247,18 +437,43 @@ export const getRedisClient = async (): Promise<RedisClient> => {
     return redisClient;
   } catch (error) {
     logger.warn('Redis client connection lost, reconnecting...', error);
-    return await connectRedis();
+    const client = await connectRedis();
+    if (!client) {
+      throw new Error('Redis client not available');
+    }
+    return client as RedisClient;
+  }
+};
+
+// New function that returns null instead of throwing when Redis is not available
+export const getOptionalRedisClient = async (): Promise<RedisClient | null> => {
+  try {
+    return await getRedisClient();
+  } catch (error) {
+    return null;
   }
 };
 
 export const withRedis = async <T>(
   callback: (client: RedisClient) => Promise<T>
 ): Promise<T> => {
-  let client: RedisClient | null = null;
+  // First check if Redis is configured and available
+  const redisAvailable = await getOptionalRedisClient();
+  if (!redisAvailable) {
+    // If Redis is not available, throw an error that can be caught by the caller
+    throw new Error('Redis is not available');
+  }
+  
+  let client: PooledRedisClient | null = null;
   
   try {
     // Try to get a connection from the pool first
-    client = getConnectionFromPool() || await connectRedis();
+    client = (await getConnectionFromPool()) || (await connectRedis() as unknown as PooledRedisClient);
+    
+    // If we still don't have a client, throw an error
+    if (!client) {
+      throw new Error('Redis client not available');
+    }
     
     try {
       const result = await callback(client);
@@ -268,9 +483,12 @@ export const withRedis = async <T>(
       }
       return result;
     } catch (error) {
-      // On error, don't return the client to the pool
+      // On error, mark client as unhealthy and don't return to pool
       if (client) {
+        client.isHealthy = false;
         await client.quit().catch(() => {});
+        connectionMetrics.activeConnections--;
+        poolStats.totalDestroyed++;
       }
       throw error;
     }
@@ -282,12 +500,21 @@ export const withRedis = async <T>(
 
 export const getRedisMetrics = () => ({
   ...connectionMetrics,
-  poolSize: redisClientsPool.length,
-  maxPoolSize: MAX_POOL_SIZE,
+  pool: {
+    size: redisClientsPool.length,
+    minSize: MIN_POOL_SIZE,
+    maxSize: MAX_POOL_SIZE,
+    hitRate: connectionMetrics.poolHits + connectionMetrics.poolMisses > 0
+      ? (connectionMetrics.poolHits / (connectionMetrics.poolHits + connectionMetrics.poolMisses) * 100).toFixed(2) + '%'
+      : 'N/A',
+    stats: { ...poolStats }
+  },
   connectionString: REDIS_URL.replace(/:([^:]+)@/, ':***@'), // Hide password in logs
   lastConnectionTime: new Date(connectionMetrics.lastConnectionTime).toISOString(),
   uptime: connectionMetrics.lastConnectionTime ? 
     Math.floor((Date.now() - connectionMetrics.lastConnectionTime) / 1000) + 's' : 'N/A',
+  circuitBreaker: redisCircuitBreaker.getMetrics(),
+  cacheMetrics: globalCacheMetrics.getMetrics(),
 });
 
 // Graceful shutdown handler

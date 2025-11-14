@@ -1,4 +1,4 @@
-import { logger } from '@utils/logger';
+import { logger } from '../utils/logger';
 import { databaseSecurityService } from './security/database-security.service';
 import { authorizationService } from './security/authorization.service';
 import { supabaseService, supabase } from './supabase.service';

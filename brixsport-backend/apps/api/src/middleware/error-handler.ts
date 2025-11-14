@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { BaseError } from '../types/errors';
-import { logger } from '@utils/logger';
+import { logger } from '../utils/logger';
 import { auditService } from '../services/security/audit.service';
 
 export const errorHandler = async (

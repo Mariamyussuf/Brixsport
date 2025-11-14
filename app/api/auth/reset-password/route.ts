@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
-import bcrypt from 'bcrypt';
 
+/**
+ * Password Reset API Route
+ * Handles password reset with secure token validation
+ */
 export async function POST(req: NextRequest) {
   try {
     const { token, newPassword } = await req.json();
@@ -14,41 +16,48 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // In a real implementation, you would verify the token here
-    // For now, we'll simulate the reset by finding a user and updating their password
-    // This is a simplified version - in production you would have a proper reset token system
-    
-    // For demonstration, let's assume the token contains the user email (in a real app, this would be a secure token)
-    // This is just for demonstration purposes
-    const email = token; // In reality, you'd decode a proper reset token
-    
-    // Hash the new password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-
-    // Update user's password in Supabase
-    const { data, error } = await supabase
-      .from('User')
-      .update({ 
-        password: hashedPassword,
-        updatedAt: new Date()
-      })
-      .eq('email', email)
-      .select('id, name, email')
-      .single();
-
-    if (error) {
-      console.error('Error updating password:', error);
+    // Validate password strength
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>\/?]).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
       return NextResponse.json(
-        { success: false, error: { message: 'Failed to reset password' } },
-        { status: 500 }
+        { 
+          success: false, 
+          error: { 
+            message: 'Password must be at least 8 characters and include uppercase, lowercase, number, and special character' 
+          } 
+        },
+        { status: 400 }
       );
     }
 
-    if (!data) {
+    // Get IP address and user agent for security logging
+    const ipAddress = req.headers.get('x-forwarded-for') || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+
+    // Call backend API to reset password
+    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:4000';
+    const response = await fetch(`${backendUrl}/api/v1/auth/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Forwarded-For': ipAddress,
+        'User-Agent': userAgent,
+      },
+      body: JSON.stringify({ token, newPassword }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Backend password reset error:', data);
       return NextResponse.json(
-        { success: false, error: { message: 'User not found' } },
-        { status: 404 }
+        { 
+          success: false, 
+          error: { message: data.error?.message || data.message || 'Failed to reset password' } 
+        },
+        { status: response.status }
       );
     }
 
@@ -56,10 +65,10 @@ export async function POST(req: NextRequest) {
       success: true,
       message: 'Password reset successfully'
     }, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Reset password API error:', error);
     return NextResponse.json(
-      { success: false, error: { message: 'Internal server error' } },
+      { success: false, error: { message: error.message || 'Internal server error' } },
       { status: 500 }
     );
   }

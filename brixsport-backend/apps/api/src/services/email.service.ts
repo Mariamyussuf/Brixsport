@@ -1,5 +1,7 @@
 import sgMail from '@sendgrid/mail';
 import { logger } from '../utils/logger';
+import fs from 'fs';
+import path from 'path';
 
 // Initialize SendGrid
 sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
@@ -73,25 +75,121 @@ export const emailService = {
     }
   },
   
-  sendPasswordResetEmail: async (email: string, resetToken: string) => {
+  sendPasswordResetEmail: async (email: string, resetToken: string, userName: string = 'User', ipAddress: string = 'Unknown') => {
     try {
-      const resetUrl = `${process.env.APP_URL}/reset-password?token=${resetToken}`;
+      const resetUrl = `${process.env.APP_URL}/auth/reset-password?token=${resetToken}`;
+      const appUrl = process.env.APP_URL || 'https://brixsport.com';
+      const timestamp = new Date().toLocaleString('en-US', { 
+        dateStyle: 'full', 
+        timeStyle: 'long',
+        timeZone: 'UTC' 
+      });
+      
+      // Load HTML template
+      const templatePath = path.join(__dirname, '../templates/email/password-reset.html');
+      let htmlTemplate = '';
+      
+      try {
+        htmlTemplate = fs.readFileSync(templatePath, 'utf8');
+      } catch (err) {
+        logger.warn('Failed to load email template, using fallback', { error: err });
+        // Fallback HTML if template file doesn't exist
+        htmlTemplate = `
+          <!DOCTYPE html>
+          <html>
+          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2>Password Reset Request</h2>
+            <p>Hello {{userName}},</p>
+            <p>We received a request to reset your password.</p>
+            <p><a href="{{resetUrl}}" style="display: inline-block; padding: 12px 24px; background-color: #667eea; color: white; text-decoration: none; border-radius: 5px;">Reset Your Password</a></p>
+            <p>This link expires in 1 hour.</p>
+            <p>If you didn't request this, please ignore this email.</p>
+            <p style="font-size: 12px; color: #666;">Request from IP: {{ipAddress}} at {{timestamp}}</p>
+          </body>
+          </html>
+        `;
+      }
+      
+      // Replace placeholders
+      const html = htmlTemplate
+        .replace(/{{userName}}/g, userName)
+        .replace(/{{userEmail}}/g, email)
+        .replace(/{{resetUrl}}/g, resetUrl)
+        .replace(/{{appUrl}}/g, appUrl)
+        .replace(/{{timestamp}}/g, timestamp)
+        .replace(/{{ipAddress}}/g, ipAddress)
+        .replace(/{{currentYear}}/g, new Date().getFullYear().toString());
       
       const result = await emailService.sendEmail({
         to: email,
-        subject: 'Password Reset Request',
-        html: `
-          <h2>Password Reset Request</h2>
-          <p>You have requested to reset your password. Click the link below to proceed:</p>
-          <p><a href="${resetUrl}">Reset Password</a></p>
-          <p>This link will expire in 1 hour.</p>
-          <p>If you didn't request this, please ignore this email.</p>
-        `
+        subject: 'Password Reset Request - Brixsport',
+        html
       });
       
+      logger.info('Password reset email sent', { email, ipAddress });
       return result;
     } catch (error: any) {
       logger.error('Failed to send password reset email', { error: error.message, email });
+      throw error;
+    }
+  },
+  
+  sendPasswordResetSuccessEmail: async (email: string, userName: string = 'User', ipAddress: string = 'Unknown') => {
+    try {
+      const loginUrl = `${process.env.APP_URL}/auth/login`;
+      const appUrl = process.env.APP_URL || 'https://brixsport.com';
+      const supportEmail = process.env.SUPPORT_EMAIL || 'support@brixsport.com';
+      const timestamp = new Date().toLocaleString('en-US', { 
+        dateStyle: 'full', 
+        timeStyle: 'long',
+        timeZone: 'UTC' 
+      });
+      
+      // Load HTML template
+      const templatePath = path.join(__dirname, '../templates/email/password-reset-success.html');
+      let htmlTemplate = '';
+      
+      try {
+        htmlTemplate = fs.readFileSync(templatePath, 'utf8');
+      } catch (err) {
+        logger.warn('Failed to load success email template, using fallback', { error: err });
+        // Fallback HTML
+        htmlTemplate = `
+          <!DOCTYPE html>
+          <html>
+          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2>Password Successfully Reset</h2>
+            <p>Hello {{userName}},</p>
+            <p>Your password has been successfully changed.</p>
+            <p><a href="{{loginUrl}}" style="display: inline-block; padding: 12px 24px; background-color: #667eea; color: white; text-decoration: none; border-radius: 5px;">Log In Now</a></p>
+            <p style="color: #dc2626;">If you didn't make this change, contact support immediately at {{supportEmail}}</p>
+            <p style="font-size: 12px; color: #666;">Changed from IP: {{ipAddress}} at {{timestamp}}</p>
+          </body>
+          </html>
+        `;
+      }
+      
+      // Replace placeholders
+      const html = htmlTemplate
+        .replace(/{{userName}}/g, userName)
+        .replace(/{{userEmail}}/g, email)
+        .replace(/{{loginUrl}}/g, loginUrl)
+        .replace(/{{appUrl}}/g, appUrl)
+        .replace(/{{supportEmail}}/g, supportEmail)
+        .replace(/{{timestamp}}/g, timestamp)
+        .replace(/{{ipAddress}}/g, ipAddress)
+        .replace(/{{currentYear}}/g, new Date().getFullYear().toString());
+      
+      const result = await emailService.sendEmail({
+        to: email,
+        subject: 'Password Successfully Changed - Brixsport',
+        html
+      });
+      
+      logger.info('Password reset success email sent', { email });
+      return result;
+    } catch (error: any) {
+      logger.error('Failed to send password reset success email', { error: error.message, email });
       throw error;
     }
   },

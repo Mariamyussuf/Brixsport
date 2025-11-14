@@ -1,4 +1,4 @@
-import { getRedisClient } from '../config/redis';
+import { getOptionalRedisClient } from '../config/redis';
 import { logger } from '../utils/logger';
 
 export interface RedisService {
@@ -45,9 +45,10 @@ export const redisService: RedisService = {
   // String operations
   set: async (key: string, value: string, expireInSeconds?: number): Promise<void> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping SET operation', { key });
+        return;
       }
       
       if (expireInSeconds) {
@@ -59,15 +60,15 @@ export const redisService: RedisService = {
       logger.debug('Redis SET operation completed', { key, expireInSeconds });
     } catch (error: any) {
       logger.error('Redis SET operation failed', { key, error: error.message });
-      throw error;
     }
   },
   
   get: async (key: string): Promise<string | null> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping GET operation', { key });
+        return null;
       }
       
       const value = await client.get(key);
@@ -75,15 +76,16 @@ export const redisService: RedisService = {
       return value || null;
     } catch (error: any) {
       logger.error('Redis GET operation failed', { key, error: error.message });
-      throw error;
+      return null;
     }
   },
   
   del: async (key: string): Promise<number> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping DEL operation', { key });
+        return 0;
       }
       
       const result = await client.del(key);
@@ -91,16 +93,17 @@ export const redisService: RedisService = {
       return result;
     } catch (error: any) {
       logger.error('Redis DEL operation failed', { key, error: error.message });
-      throw error;
+      return 0;
     }
   },
   
   // Add incr method implementation
   incr: async (key: string): Promise<number> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping INCR operation', { key });
+        return 0;
       }
       
       const result = await client.incr(key);
@@ -108,16 +111,17 @@ export const redisService: RedisService = {
       return result;
     } catch (error: any) {
       logger.error('Redis INCR operation failed', { key, error: error.message });
-      throw error;
+      return 0;
     }
   },
   
   // Hash operations
   hset: async (key: string, field: string, value: string): Promise<number> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping HSET operation', { key, field });
+        return 0;
       }
       
       const result = await client.hSet(key, field, value);
@@ -125,15 +129,16 @@ export const redisService: RedisService = {
       return result;
     } catch (error: any) {
       logger.error('Redis HSET operation failed', { key, field, error: error.message });
-      throw error;
+      return 0;
     }
   },
   
   hget: async (key: string, field: string): Promise<string | null> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping HGET operation', { key, field });
+        return null;
       }
       
       const value = await client.hGet(key, field);
@@ -141,15 +146,16 @@ export const redisService: RedisService = {
       return value || null;
     } catch (error: any) {
       logger.error('Redis HGET operation failed', { key, field, error: error.message });
-      throw error;
+      return null;
     }
   },
   
   hgetall: async (key: string): Promise<Record<string, string>> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping HGETALL operation', { key });
+        return {};
       }
       
       const value = await client.hGetAll(key);
@@ -157,15 +163,16 @@ export const redisService: RedisService = {
       return value;
     } catch (error: any) {
       logger.error('Redis HGETALL operation failed', { key, error: error.message });
-      throw error;
+      return {};
     }
   },
   
   hdel: async (key: string, ...fields: string[]): Promise<number> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping HDEL operation', { key, fields });
+        return 0;
       }
       
       const result = await client.hDel(key, fields);
@@ -173,16 +180,17 @@ export const redisService: RedisService = {
       return result;
     } catch (error: any) {
       logger.error('Redis HDEL operation failed', { key, fields, error: error.message });
-      throw error;
+      return 0;
     }
   },
   
   // Set operations
   sadd: async (key: string, ...members: string[]): Promise<number> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping SADD operation', { key, members });
+        return 0;
       }
       
       const result = await client.sAdd(key, members);
@@ -190,15 +198,16 @@ export const redisService: RedisService = {
       return result;
     } catch (error: any) {
       logger.error('Redis SADD operation failed', { key, members, error: error.message });
-      throw error;
+      return 0;
     }
   },
   
   srem: async (key: string, ...members: string[]): Promise<number> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping SREM operation', { key, members });
+        return 0;
       }
       
       const result = await client.sRem(key, members);
@@ -206,31 +215,33 @@ export const redisService: RedisService = {
       return result;
     } catch (error: any) {
       logger.error('Redis SREM operation failed', { key, members, error: error.message });
-      throw error;
+      return 0;
     }
   },
   
   smembers: async (key: string): Promise<string[]> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping SMEMBERS operation', { key });
+        return [];
       }
       
-      const members = await client.sMembers(key);
-      logger.debug('Redis SMEMBERS operation completed', { key, memberCount: members.length });
-      return members;
+      const result = await client.sMembers(key);
+      logger.debug('Redis SMEMBERS operation completed', { key, memberCount: result.length });
+      return result;
     } catch (error: any) {
       logger.error('Redis SMEMBERS operation failed', { key, error: error.message });
-      throw error;
+      return [];
     }
   },
   
   sismember: async (key: string, member: string): Promise<number> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping SISMEMBER operation', { key, member });
+        return 0;
       }
       
       const result = await client.sIsMember(key, member);
@@ -238,29 +249,17 @@ export const redisService: RedisService = {
       return result ? 1 : 0;
     } catch (error: any) {
       logger.error('Redis SISMEMBER operation failed', { key, member, error: error.message });
-      throw error;
+      return 0;
     }
   },
   
   // List operations
-  getList: async (key: string): Promise<string[]> => {
-    try {
-      const client = await getRedisClient();
-      if (!client) {
-        throw new Error('Redis client not initialized');
-      }
-      return client.lRange(key, 0, -1);
-    } catch (error) {
-      logger.error('Redis getList error:', error);
-      return [];
-    }
-  },
-
   lpush: async (key: string, ...values: string[]): Promise<number> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping LPUSH operation', { key, values });
+        return 0;
       }
       
       const result = await client.lPush(key, values);
@@ -268,15 +267,16 @@ export const redisService: RedisService = {
       return result;
     } catch (error: any) {
       logger.error('Redis LPUSH operation failed', { key, values, error: error.message });
-      throw error;
+      return 0;
     }
   },
   
   rpush: async (key: string, ...values: string[]): Promise<number> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping RPUSH operation', { key, values });
+        return 0;
       }
       
       const result = await client.rPush(key, values);
@@ -284,31 +284,33 @@ export const redisService: RedisService = {
       return result;
     } catch (error: any) {
       logger.error('Redis RPUSH operation failed', { key, values, error: error.message });
-      throw error;
+      return 0;
     }
   },
   
   lrange: async (key: string, start: number, stop: number): Promise<string[]> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping LRANGE operation', { key, start, stop });
+        return [];
       }
       
-      const values = await client.lRange(key, start, stop);
-      logger.debug('Redis LRANGE operation completed', { key, start, stop, valueCount: values.length });
-      return values;
+      const result = await client.lRange(key, start, stop);
+      logger.debug('Redis LRANGE operation completed', { key, start, stop, resultCount: result.length });
+      return result;
     } catch (error: any) {
       logger.error('Redis LRANGE operation failed', { key, start, stop, error: error.message });
-      throw error;
+      return [];
     }
   },
   
   lrem: async (key: string, count: number, value: string): Promise<number> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping LREM operation', { key, count, value });
+        return 0;
       }
       
       const result = await client.lRem(key, count, value);
@@ -316,48 +318,51 @@ export const redisService: RedisService = {
       return result;
     } catch (error: any) {
       logger.error('Redis LREM operation failed', { key, count, value, error: error.message });
-      throw error;
+      return 0;
     }
   },
   
   ltrim: async (key: string, start: number, stop: number): Promise<number> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping LTRIM operation', { key, start, stop });
+        return 0;
       }
       
       await client.lTrim(key, start, stop);
       logger.debug('Redis LTRIM operation completed', { key, start, stop });
-      return 1;
+      return 1; // Return 1 to indicate success
     } catch (error: any) {
       logger.error('Redis LTRIM operation failed', { key, start, stop, error: error.message });
-      throw error;
+      return 0;
     }
   },
   
   // Expiration
   expire: async (key: string, seconds: number): Promise<number> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping EXPIRE operation', { key, seconds });
+        return 0;
       }
       
       const result = await client.expire(key, seconds);
       logger.debug('Redis EXPIRE operation completed', { key, seconds, result });
-      return result ? 1 : 0;
+      return result ? 1 : 0; // Convert boolean to number
     } catch (error: any) {
       logger.error('Redis EXPIRE operation failed', { key, seconds, error: error.message });
-      throw error;
+      return 0;
     }
   },
   
   ttl: async (key: string): Promise<number> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping TTL operation', { key });
+        return -2; // Key doesn't exist
       }
       
       const result = await client.ttl(key);
@@ -365,16 +370,17 @@ export const redisService: RedisService = {
       return result;
     } catch (error: any) {
       logger.error('Redis TTL operation failed', { key, error: error.message });
-      throw error;
+      return -2; // Key doesn't exist
     }
   },
   
   // Key existence
   exists: async (key: string): Promise<number> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping EXISTS operation', { key });
+        return 0;
       }
       
       const result = await client.exists(key);
@@ -382,39 +388,57 @@ export const redisService: RedisService = {
       return result;
     } catch (error: any) {
       logger.error('Redis EXISTS operation failed', { key, error: error.message });
-      throw error;
+      return 0;
     }
   },
   
   // Pattern operations
   keys: async (pattern: string): Promise<string[]> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping KEYS operation', { pattern });
+        return [];
       }
       
-      const keys = await client.keys(pattern);
-      logger.debug('Redis KEYS operation completed', { pattern, keyCount: keys.length });
-      return keys;
+      const result = await client.keys(pattern);
+      logger.debug('Redis KEYS operation completed', { pattern, resultCount: result.length });
+      return result;
     } catch (error: any) {
       logger.error('Redis KEYS operation failed', { pattern, error: error.message });
-      throw error;
+      return [];
     }
   },
   
   flushdb: async (): Promise<void> => {
     try {
-      const client = await getRedisClient();
+      const client = await getOptionalRedisClient();
       if (!client) {
-        throw new Error('Redis client not initialized');
+        logger.debug('Redis not available, skipping FLUSHDB operation');
+        return;
       }
       
       await client.flushDb();
-      logger.info('Redis FLUSHDB operation completed');
+      logger.debug('Redis FLUSHDB operation completed');
     } catch (error: any) {
       logger.error('Redis FLUSHDB operation failed', { error: error.message });
-      throw error;
+    }
+  },
+  
+  getList: async (key: string): Promise<string[]> => {
+    try {
+      const client = await getOptionalRedisClient();
+      if (!client) {
+        logger.debug('Redis not available, skipping getList operation', { key });
+        return [];
+      }
+      
+      const result = await client.lRange(key, 0, -1);
+      logger.debug('Redis getList operation completed', { key, resultCount: result.length });
+      return result;
+    } catch (error: any) {
+      logger.error('Redis getList operation failed', { key, error: error.message });
+      return [];
     }
   }
 };

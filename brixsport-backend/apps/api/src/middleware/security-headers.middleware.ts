@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
-import { logger } from '@utils/logger';
+import { logger } from '../utils/logger';
 
 export interface CSPConfig {
   directives: {

@@ -1,4 +1,4 @@
-import { logger } from '@utils/logger';
+import { logger } from '../../utils/logger';
 import { z, ZodSchema } from 'zod';
 import sanitizeHtml from 'sanitize-html';
 import validator from 'validator';

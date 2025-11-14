@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import { logger } from '@utils/logger';
+import { logger } from '../utils/logger';
 
 // Extend the Express Request interface locally
 interface CustomRequest extends Request {
