@@ -74,7 +74,21 @@ const fetchAPI = async (endpoint: string, options: RequestInit = {}, request?: R
     });
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status} - ${response.statusText}`);
+      // Try to parse the error response
+      let errorMessage = `API Error: ${response.status} - ${response.statusText}`;
+      
+      try {
+        const errorData = await response.json();
+        if (errorData.error?.message) {
+          errorMessage = errorData.error.message;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } catch (parseError) {
+        // If we can't parse the error, use the default message
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
@@ -104,6 +118,20 @@ export const signup = async (userData: { name: string; email: string; password: 
     return response;
   } catch (error) {
     console.error('Failed to sign up:', error);
+    
+    // Provide more specific error messages to the user
+    if (error instanceof Error) {
+      if (error.message.includes('USER_EXISTS')) {
+        throw new Error('An account with this email already exists. Please use a different email or try logging in.');
+      } else if (error.message.includes('VALIDATION_ERROR')) {
+        throw new Error('Please provide all required information (name, email, and password).');
+      } else if (error.message.includes('DATABASE_ERROR') || error.message.includes('connection')) {
+        throw new Error('Unable to connect to our services. Please try again later.');
+      } else if (error.message.includes('timeout')) {
+        throw new Error('Request timed out. Please try again later.');
+      }
+    }
+    
     throw error;
   }
 };

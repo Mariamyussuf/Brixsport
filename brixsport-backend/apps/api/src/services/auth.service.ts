@@ -126,6 +126,18 @@ export const authService = {
         stack: error.stack,
         email: userData.email
       });
+      
+      // Provide more user-friendly error messages
+      if (error.message.includes('already exists')) {
+        throw new Error('An account with this email already exists. Please use a different email or try logging in.');
+      } else if (error.message.includes('environment variables')) {
+        throw new Error('Server configuration error. Please contact support.');
+      } else if (error.message.includes('Name, email, and password are required')) {
+        throw new Error('Please provide your name, email, and password to register.');
+      } else if (error.message.includes('Network Error') || error.message.includes('connection')) {
+        throw new Error('Unable to connect to the database. Please try again later.');
+      }
+      
       throw error;
     }
   },

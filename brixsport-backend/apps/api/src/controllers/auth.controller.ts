@@ -59,6 +59,33 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       return;
     }
     
+    // Handle user-friendly error messages
+    if (error.message.includes('already exists')) {
+      res.status(409).json({
+        success: false,
+        error: 'User already exists',
+        message: error.message,
+        code: 'USER_EXISTS'
+      });
+      return;
+    } else if (error.message.includes('Please provide your name, email, and password')) {
+      res.status(400).json({
+        success: false,
+        error: 'Validation error',
+        message: error.message,
+        code: 'VALIDATION_ERROR'
+      });
+      return;
+    } else if (error.message.includes('Unable to connect to the database')) {
+      res.status(503).json({
+        success: false,
+        error: 'Service unavailable',
+        message: error.message,
+        code: 'DATABASE_ERROR'
+      });
+      return;
+    }
+    
     const errorResponse = errorHandlerService.createErrorResponse(error);
     res.status(errorResponse.statusCode || 500).json(errorResponse);
   }

@@ -710,7 +710,17 @@ export const supabaseService = {
           hint: error.hint,
           email: userData.email
         });
-        throw new Error(`Supabase error: ${error.message}`);
+        
+        // Create a more detailed error message
+        let detailedMessage = error.message;
+        if (error.details) {
+          detailedMessage += ` Details: ${error.details}`;
+        }
+        if (error.hint) {
+          detailedMessage += ` Hint: ${error.hint}`;
+        }
+        
+        throw new Error(detailedMessage);
       }
       
       logger.info('User created successfully in Supabase', { 

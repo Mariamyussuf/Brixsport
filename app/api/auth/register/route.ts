@@ -71,12 +71,28 @@ export async function POST(req: NextRequest) {
 
     if (insertError) {
       console.error('Error creating user:', insertError);
+      
+      // Provide more specific error messages based on the error type
+      let errorMessage = 'Failed to create user account. Please try again later.';
+      let errorCode = 'CREATE_USER_ERROR';
+      
+      if (insertError.code === '23505') { // Unique violation
+        errorMessage = 'An account with this email already exists. Please use a different email or try logging in.';
+        errorCode = 'USER_EXISTS';
+      } else if (insertError.message?.includes('constraint')) {
+        errorMessage = 'Invalid data provided. Please check your input and try again.';
+        errorCode = 'VALIDATION_ERROR';
+      } else if (insertError.message?.includes('connection')) {
+        errorMessage = 'Database connection error. Please try again later.';
+        errorCode = 'DATABASE_CONNECTION_ERROR';
+      }
+      
       return NextResponse.json(
         { 
           success: false, 
           error: { 
-            message: 'Failed to create user account. Please try again later.',
-            code: 'CREATE_USER_ERROR'
+            message: errorMessage,
+            code: errorCode
           }
         },
         { status: 500 }
