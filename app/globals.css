@@ -4,22 +4,22 @@
 
 @layer base {
   :root {
-    @apply bg-white text-neutral-900 dark:bg-black dark:text-neutral-100 antialiased;
+    @apply bg-white text-neutral-900 dark:bg-gray-900 dark:text-neutral-100 antialiased;
   }
 }
 
 /* Glassmorphism utilities */
 @layer utilities {
   .glassmorphic-header {
-    @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border border-white/30 dark:border-gray-700/50 rounded-2xl shadow-lg;
+    @apply bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border border-white/30 dark:border-gray-700/50 rounded-2xl shadow-lg;
   }
   
   .glassmorphic-nav {
-    @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border border-white/30 dark:border-gray-700/50 rounded-2xl shadow-lg mx-2 mb-2;
+    @apply bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border border-white/30 dark:border-gray-700/50 rounded-2xl shadow-lg mx-2 mb-2;
   }
   
   .glassmorphic-card {
-    @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border border-white/30 dark:border-gray-700/50 shadow-lg;
+    @apply bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border border-white/30 dark:border-gray-700/50 shadow-lg;
   }
   
   .glow-blue {
