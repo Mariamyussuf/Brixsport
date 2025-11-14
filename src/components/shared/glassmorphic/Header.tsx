@@ -3,14 +3,17 @@
 import React from 'react';
 import { Search, Bell, Radio } from 'lucide-react';
 import Link from 'next/link';
+import { useTheme } from '@/components/shared/ThemeProvider';
 
 interface HeaderProps {
   variant?: 'auth' | 'main';
 }
 
 const Header: React.FC<HeaderProps> = ({ variant = 'main' }) => {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 glassmorphic-header">
+    <header className={`${isDark ? 'dark' : ''} fixed top-0 left-0 right-0 z-50 glassmorphic-header`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {variant === 'auth' ? (
