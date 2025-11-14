@@ -985,10 +985,48 @@ export class DatabaseService {
         throw new DatabaseError('Supabase client is not initialized', 'INIT_ERROR', 500);
       }
       
+      // First, get all competition IDs for the specified sport
+      const { data: competitions, error: competitionError } = await supabase
+        .from('Competition')
+        .select('id')
+        .eq('sportType', sport);
+      
+      if (competitionError) {
+        throw new DatabaseError(`Failed to fetch competitions: ${competitionError.message}`, 'FETCH_ERROR', 500);
+      }
+      
+      if (!competitions || competitions.length === 0) {
+        logOperation('GET_MATCHES_BY_SPORT_SUCCESS', { sport, count: 0 });
+        return [];
+      }
+      
+      // Extract competition IDs
+      const competitionIds = competitions.map(c => c.id);
+      
+      // Query matches by joining with Competition table to filter by sportType
+      // Also join with Team tables to get team names and logos
       const { data, error } = await supabase
         .from('Match')
-        .select('*')
-        .eq('sport', sport);
+        .select(`
+          *,
+          competition:Competition(
+            id,
+            name,
+            sportType
+          ),
+          homeTeam:Team(
+            id,
+            name,
+            logo_url
+          ),
+          awayTeam:Team(
+            id,
+            name,
+            logo_url
+          )
+        `)
+        .in('competition_id', competitionIds)
+        .order('scheduled_at', { ascending: true, nullsFirst: false });
       
       if (error) {
         // Log more detailed error information
@@ -1041,8 +1079,30 @@ export class DatabaseService {
         throw new DatabaseError(`Failed to fetch matches: ${error.message}`, 'FETCH_ERROR', 500);
       }
       
-      logOperation('GET_MATCHES_BY_SPORT_SUCCESS', { sport, count: data?.length || 0 });
-      return data || [];
+      // Transform the nested data structure to match the Match interface
+      const transformedMatches: Match[] = (data || []).map((match: any) => ({
+        id: match.id,
+        competition_id: match.competition_id || match.competitionId || (match.competition?.id ? parseInt(match.competition.id) : 0),
+        home_team_id: match.home_team_id || match.homeTeamId || (match.homeTeam?.id ? parseInt(match.homeTeam.id) : 0),
+        away_team_id: match.away_team_id || match.awayTeamId || (match.awayTeam?.id ? parseInt(match.awayTeam.id) : 0),
+        match_date: match.match_date || match.scheduled_at || match.startTime || '',
+        venue: match.venue || null,
+        status: match.status || 'scheduled',
+        home_score: match.home_score || match.homeScore || 0,
+        away_score: match.away_score || match.awayScore || 0,
+        current_minute: match.current_minute || match.currentMinute || 0,
+        period: match.period || null,
+        home_team_name: match.home_team_name || match.homeTeam?.name || `Team ${match.home_team_id || match.homeTeamId}`,
+        home_team_logo: match.home_team_logo || match.homeTeam?.logo_url || match.homeTeam?.logo || '',
+        away_team_name: match.away_team_name || match.awayTeam?.name || `Team ${match.away_team_id || match.awayTeamId}`,
+        away_team_logo: match.away_team_logo || match.awayTeam?.logo_url || match.awayTeam?.logo || '',
+        competition_name: match.competition_name || match.competition?.name || 'Competition',
+        created_at: match.created_at || match.createdAt || '',
+        sport: match.sport || match.competition?.sportType || sport
+      }));
+      
+      logOperation('GET_MATCHES_BY_SPORT_SUCCESS', { sport, count: transformedMatches.length });
+      return transformedMatches;
     } catch (error) {
       if (error instanceof ValidationError) {
         logOperation('GET_MATCHES_BY_SPORT_VALIDATION_ERROR', { sport, error: error.message });
