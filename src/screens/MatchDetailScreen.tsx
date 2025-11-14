@@ -20,7 +20,7 @@ interface MatchEventDisplay {
   team_name?: string;
 }
 
-const MatchDetailScreen: React.FC<{ matchId: number }> = ({ matchId }) => {
+const MatchDetailScreen: React.FC<{ matchId: string }> = ({ matchId }) => {
   const router = useRouter();
   const { user } = useAuth();
   const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);

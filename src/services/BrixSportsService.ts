@@ -81,13 +81,13 @@ class BrixSportsService {
   }
 
   async getMatchById(
-    id: number,
+    id: string,
     options?: { signal?: AbortSignal; authToken?: string }
   ): Promise<APIResponse<MatchWithEvents>> {
     try {
       // Since there's no getMatchById in databaseService, we'll fetch all matches and filter
       const allMatches = await databaseService.getMatches();
-      const match = allMatches.find(m => m.id === id);
+      const match = allMatches.find(m => (m.id?.toString() === id));
       
       if (!match) {
         return {
