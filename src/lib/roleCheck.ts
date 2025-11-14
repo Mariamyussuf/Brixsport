@@ -10,11 +10,15 @@ export type AccessLevel = UserRole | 'all';
 type EndpointAccess = {
   path: string;
   method: string;
-  roles: UserRole[];
+  roles: AccessLevel[];
 };
 
 // API endpoint access mapping
 export const API_ACCESS_MAP: EndpointAccess[] = [
+  // Auth endpoints (public - no authentication required)
+  { path: '/auth/register', method: 'POST', roles: ['all'] },
+  { path: '/auth/login', method: 'POST', roles: ['all'] },
+  
   // Competitions
   { path: '/competitions', method: 'GET', roles: ['user', 'logger', 'admin', 'super-admin'] },
   { path: '/competitions/:id', method: 'GET', roles: ['user', 'logger', 'admin', 'super-admin'] },
@@ -113,12 +117,19 @@ export async function getUserRole(request: NextRequest): Promise<UserRole | null
 }
 
 // Check access for specific API endpoint
-export function checkEndpointAccess(path: string, method: string, role: UserRole): boolean {
+export function checkEndpointAccess(path: string, method: string, role: UserRole | null): boolean {
   const endpoint = API_ACCESS_MAP.find(e => 
     matchPath(e.path, path) && e.method === method
   );
 
   if (!endpoint) return false;
+  
+  // If endpoint allows 'all', it's public and doesn't require authentication
+  if (endpoint.roles.includes('all')) return true;
+  
+  // If no role provided but endpoint requires authentication, deny access
+  if (!role) return false;
+  
   return isAllowed(role, endpoint.roles);
 }
 
@@ -140,13 +151,28 @@ export function withRoleCheck(allowedRoles: AccessLevel[]) {
 
 // API-specific role check middleware
 export async function withApiRoleCheck(request: NextRequest) {
+  const path = request.nextUrl.pathname.replace('/api', '');
+  const method = request.method;
+
+  // Check if endpoint exists in the map
+  const endpoint = API_ACCESS_MAP.find(e => 
+    matchPath(e.path, path) && e.method === method
+  );
+
+  if (!endpoint) {
+    return NextResponse.json({ error: 'Endpoint not found' }, { status: 404 });
+  }
+
+  // If endpoint allows 'all', it's public and doesn't require authentication
+  if (endpoint.roles.includes('all')) {
+    return NextResponse.next();
+  }
+
+  // For protected endpoints, require authentication
   const userRole = await getUserRole(request);
   if (!userRole) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  const path = request.nextUrl.pathname.replace('/api', '');
-  const method = request.method;
 
   if (!checkEndpointAccess(path, method, userRole)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
