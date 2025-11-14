@@ -3,6 +3,7 @@ import { ArrowLeft, Star, Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '@/config/api';
+import SmartImage from '@/components/shared/SmartImage';
 
 interface Team {
   id: string;
@@ -33,10 +34,19 @@ interface IntelligentMatchHeaderProps {
   onToggleFavorite: () => void;
 }
 
-const TeamFlag: React.FC<{ flagColors: { top: string; bottom: string } }> = ({ flagColors }) => (
-  <div className="w-12 h-12 rounded-full overflow-hidden flex flex-col">
-    <div className={`${flagColors.top} h-1/2 w-full`}></div>
-    <div className={`${flagColors.bottom} h-1/2 w-full`}></div>
+const TeamBadge: React.FC<{ team: Team; flagColors: { top: string; bottom: string } }> = ({ team, flagColors }) => (
+  <div className="flex flex-col items-center">
+    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+      {team.logo ? (
+        <SmartImage src={team.logo} alt={team.name} className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full flex flex-col">
+          <div className={`${flagColors.top} h-1/2 w-full`}></div>
+          <div className={`${flagColors.bottom} h-1/2 w-full`}></div>
+        </div>
+      )}
+    </div>
+    <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100 mt-2 truncate max-w-[120px]">{team.name}</span>
   </div>
 );
 
@@ -87,7 +97,7 @@ const IntelligentMatchHeader: React.FC<IntelligentMatchHeaderProps> = ({
   }, [match.id, match.status]);
 
   return (
-    <div className={`bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-white/10 w-full px-0 sm:px-6 transition-all duration-300 ease-in-out ${
+    <div className={`bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-white/10 w-full px-3 sm:px-6 transition-all duration-300 ease-in-out ${
       isScrolled 
         ? 'py-2 sticky top-0 z-50 shadow-md' 
         : 'py-4'
@@ -124,24 +134,16 @@ const IntelligentMatchHeader: React.FC<IntelligentMatchHeaderProps> = ({
         isScrolled ? 'header-collapse' : 'header-expand py-4 border-b border-gray-200 dark:border-white/10'
       }`}>
         <div className="flex items-center justify-between">
-          <div className="flex flex-col items-center">
-            <TeamFlag flagColors={liveMatch.homeFlagColors} />
-            <span className="text-lg font-medium text-gray-900 dark:text-gray-100 mt-2">{liveMatch.homeTeam.name}</span>
-          </div>
-
+          <TeamBadge team={liveMatch.homeTeam} flagColors={liveMatch.homeFlagColors} />
           <div className="text-center">
-            <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+            <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
               {liveMatch.homeScore !== undefined && liveMatch.awayScore !== undefined 
                 ? `${liveMatch.homeScore} - ${liveMatch.awayScore}` 
                 : 'vs'}
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">{liveMatch.time}</div>
+            <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{liveMatch.time}</div>
           </div>
-
-          <div className="flex flex-col items-center">
-            <TeamFlag flagColors={liveMatch.awayFlagColors} />
-            <span className="text-lg font-medium text-gray-900 dark:text-gray-100 mt-2">{liveMatch.awayTeam.name}</span>
-          </div>
+          <TeamBadge team={liveMatch.awayTeam} flagColors={liveMatch.awayFlagColors} />
         </div>
         
         <div className="text-center mt-3">
@@ -156,12 +158,21 @@ const IntelligentMatchHeader: React.FC<IntelligentMatchHeaderProps> = ({
       }`}>
         <div className="flex items-center space-x-2">
           <div className="flex items-center">
-            <TeamFlag flagColors={liveMatch.homeFlagColors} />
-            <span className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[80px]">{liveMatch.homeTeam.name}</span>
+            <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+              {liveMatch.homeTeam.logo ? (
+                <SmartImage src={liveMatch.homeTeam.logo} alt={liveMatch.homeTeam.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex flex-col">
+                  <div className={`${liveMatch.homeFlagColors.top} h-1/2 w-full`}></div>
+                  <div className={`${liveMatch.homeFlagColors.bottom} h-1/2 w-full`}></div>
+                </div>
+              )}
+            </div>
+            <span className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[100px]">{liveMatch.homeTeam.name}</span>
           </div>
           
           <div className="text-center mx-2">
-            <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+            <div className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">
               {liveMatch.homeScore !== undefined && liveMatch.awayScore !== undefined 
                 ? `${liveMatch.homeScore} - ${liveMatch.awayScore}` 
                 : 'vs'}
@@ -169,12 +180,21 @@ const IntelligentMatchHeader: React.FC<IntelligentMatchHeaderProps> = ({
           </div>
           
           <div className="flex items-center">
-            <span className="mr-2 text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[80px]">{liveMatch.awayTeam.name}</span>
-            <TeamFlag flagColors={liveMatch.awayFlagColors} />
+            <span className="mr-2 text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[100px]">{liveMatch.awayTeam.name}</span>
+            <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+              {liveMatch.awayTeam.logo ? (
+                <SmartImage src={liveMatch.awayTeam.logo} alt={liveMatch.awayTeam.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex flex-col">
+                  <div className={`${liveMatch.awayFlagColors.top} h-1/2 w-full`}></div>
+                  <div className={`${liveMatch.awayFlagColors.bottom} h-1/2 w-full`}></div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         
-        <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
           {liveMatch.time}
         </div>
       </div>
