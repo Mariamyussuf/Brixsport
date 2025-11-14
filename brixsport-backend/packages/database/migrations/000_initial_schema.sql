@@ -452,6 +452,14 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+-- Function to execute arbitrary SQL (for migration runner)
+CREATE OR REPLACE FUNCTION execute_sql(sql TEXT)
+RETURNS VOID AS $$
+BEGIN
+    EXECUTE sql;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Create triggers for updated_at columns
 CREATE TRIGGER update_user_updated_at BEFORE UPDATE ON "User" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_season_updated_at BEFORE UPDATE ON "Season" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
