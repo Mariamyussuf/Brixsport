@@ -1005,21 +1005,22 @@ export class DatabaseService {
       
       // Query matches by joining with Competition table to filter by sportType
       // Also join with Team tables to get team names and logos
+      // Explicitly specify foreign key relationships to avoid ambiguity
       const { data, error } = await supabase
         .from('Match')
         .select(`
           *,
-          competition:Competition(
+          competition:Competition!competitionId(
             id,
             name,
             sportType
           ),
-          homeTeam:Team(
+          homeTeam:Team!homeTeamId(
             id,
             name,
             logo_url
           ),
-          awayTeam:Team(
+          awayTeam:Team!awayTeamId(
             id,
             name,
             logo_url
