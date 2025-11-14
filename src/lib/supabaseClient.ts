@@ -58,11 +58,16 @@ if (typeof window === 'undefined') {
   // Server-side logging
   const urlObj = new URL(supabaseUrl);
   console.log(`[Supabase] Initializing client with URL: https://${urlObj.hostname}`);
+  console.log(`[Supabase] URL is set: ${!!rawSupabaseUrl}, Anon key is set: ${!!supabaseAnonKey}`);
 } else {
-  // Client-side: only log in development
-  if (process.env.NODE_ENV === 'development') {
-    const urlObj = new URL(supabaseUrl);
-    console.log(`[Supabase] Client initialized with hostname: ${urlObj.hostname}`);
+  // Client-side: log in both development and production for debugging
+  const urlObj = new URL(supabaseUrl);
+  console.log(`[Supabase] Client initialized with hostname: ${urlObj.hostname}`);
+  console.log(`[Supabase] Environment check - URL set: ${!!rawSupabaseUrl}, Anon key set: ${!!supabaseAnonKey}`);
+  
+  // In production, also log a warning if variables seem missing
+  if (process.env.NODE_ENV === 'production' && (!rawSupabaseUrl || !supabaseAnonKey)) {
+    console.error('[Supabase] ⚠️ WARNING: Supabase environment variables may not be set correctly in production!');
   }
 }
 

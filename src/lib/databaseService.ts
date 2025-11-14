@@ -1005,8 +1005,34 @@ export class DatabaseService {
             errorMessage.includes('ERR_NAME_NOT_RESOLVED') ||
             errorMessage.includes('network') ||
             error.code === 'PGRST301') {
+          // Get Supabase URL for diagnostics (safely)
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'NOT SET';
+          const urlHostname = supabaseUrl && supabaseUrl !== 'NOT SET' 
+            ? (() => {
+                try {
+                  return new URL(supabaseUrl.startsWith('http') ? supabaseUrl : `https://${supabaseUrl}`).hostname;
+                } catch {
+                  return 'INVALID_URL';
+                }
+              })()
+            : 'UNKNOWN';
+          
+          console.error('[DatabaseService] Supabase network error:', {
+            error: error.message,
+            errorCode: error.code,
+            supabaseUrlConfigured: supabaseUrl !== 'NOT SET',
+            supabaseHostname: urlHostname,
+            sport
+          });
+          
           throw new DatabaseError(
-            'Network error: Unable to connect to the database. Please check your internet connection and ensure the Supabase URL is correctly configured.',
+            `Network error: Unable to connect to Supabase database (${urlHostname}). ` +
+            `Possible causes:\n` +
+            `1. Missing NEXT_PUBLIC_SUPABASE_URL in Vercel environment variables\n` +
+            `2. Supabase project may be paused (check Supabase dashboard)\n` +
+            `3. Incorrect Supabase URL format\n` +
+            `4. Network connectivity issues\n` +
+            `Check browser console for detailed error information.`,
             'NETWORK_ERROR',
             503
           );
@@ -1026,17 +1052,31 @@ export class DatabaseService {
       
       // Check for network/fetch errors
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        // Get Supabase URL for diagnostics (safely)
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'NOT SET';
+        const urlHostname = supabaseUrl && supabaseUrl !== 'NOT SET' 
+          ? new URL(supabaseUrl.startsWith('http') ? supabaseUrl : `https://${supabaseUrl}`).hostname 
+          : 'UNKNOWN';
+        
+        console.error('[DatabaseService] Network error details:', {
+          error: error.message,
+          supabaseUrlConfigured: supabaseUrl !== 'NOT SET',
+          supabaseHostname: urlHostname,
+          sport
+        });
+        
         const networkError = new DatabaseError(
-          'Network error: Unable to connect to the database server. This could be due to:\n' +
-          '1. Internet connectivity issues\n' +
-          '2. Incorrect Supabase URL configuration\n' +
-          '3. Supabase project may be paused or unavailable\n' +
-          'Please check your environment variables and network connection.',
+          `Network error: Unable to connect to Supabase database (${urlHostname}). ` +
+          `This could be due to:\n` +
+          `1. Missing or incorrect NEXT_PUBLIC_SUPABASE_URL environment variable\n` +
+          `2. Supabase project may be paused (check Supabase dashboard)\n` +
+          `3. Internet connectivity issues\n` +
+          `4. CORS configuration issues\n` +
+          `Please verify your Supabase environment variables are set correctly in Vercel.`,
           'NETWORK_ERROR',
           503
         );
-        logOperation('GET_MATCHES_BY_SPORT_NETWORK_ERROR', { sport, error: networkError.message });
-        console.error('Network error in getMatchesBySport:', error);
+        logOperation('GET_MATCHES_BY_SPORT_NETWORK_ERROR', { sport, error: networkError.message, hostname: urlHostname });
         throw networkError;
       }
       
