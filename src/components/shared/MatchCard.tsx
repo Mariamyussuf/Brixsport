@@ -138,12 +138,11 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
     return (
       <div className={`${baseClasses} ${bgColor}`}>
         {logoUrl || resolveAssetLogo(team) ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={logoUrl || resolveAssetLogo(team)} alt={team} className="w-5 h-5 rounded-sm object-contain bg-white dark:bg-gray-800" onError={(e) => {
+          <img src={logoUrl || resolveAssetLogo(team)} alt={team} className="w-5 h-5 rounded-sm object-contain" onError={(e) => {
             (e.currentTarget as HTMLImageElement).style.display = 'none';
           }} />
         ) : (
-          <div className="w-5 h-5 bg-white dark:bg-gray-800 rounded-sm opacity-80"></div>
+          <div className="w-5 h-5 rounded-sm"></div>
         )}
       </div>
     );
