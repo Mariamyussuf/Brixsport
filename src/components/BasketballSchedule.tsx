@@ -216,9 +216,9 @@ const BasketballSchedule: React.FC<BasketballScheduleProps> = ({ rounds: initial
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center min-w-0">
-                                        {match.home_team_logo && (
+                                        {(match.home_team_logo || resolveAssetLogo(match.home_team_name)) && (
                                           <img
-                                            src={match.home_team_logo}
+                                            src={match.home_team_logo || resolveAssetLogo(match.home_team_name) as string}
                                             alt={match.home_team_name}
                                             className="w-6 h-6 rounded-full mr-2"
                                             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -230,9 +230,9 @@ const BasketballSchedule: React.FC<BasketballScheduleProps> = ({ rounds: initial
                                       </div>
                                       <div className="text-gray-500 dark:text-gray-400 mx-2">vs</div>
                                       <div className="flex items-center min-w-0">
-                                        {match.away_team_logo && (
+                                        {(match.away_team_logo || resolveAssetLogo(match.away_team_name)) && (
                                           <img
-                                            src={match.away_team_logo}
+                                            src={match.away_team_logo || resolveAssetLogo(match.away_team_name) as string}
                                             alt={match.away_team_name}
                                             className="w-6 h-6 rounded-full mr-2"
                                             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -284,3 +284,39 @@ const BasketballSchedule: React.FC<BasketballScheduleProps> = ({ rounds: initial
 };
 
 export default BasketballSchedule;
+  const normalizeName = (name?: string) => (name || '')
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/fc$/i, ' fc')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const TEAM_ASSET_LOGOS: Record<string, string> = {
+    'pirates fc': require('@/assets/football/pirates-fc.jpg').default?.src || require('@/assets/football/pirates-fc.jpg').src,
+    'kings fc': require('@/assets/football/kings-fc.jpg').default?.src || require('@/assets/football/kings-fc.jpg').src,
+    'wolves fc': require('@/assets/football/wolves-fc.png').default?.src || require('@/assets/football/wolves-fc.png').src,
+    'agenda fc': require('@/assets/football/agenda-fc.jpg').default?.src || require('@/assets/football/agenda-fc.jpg').src,
+    'allianz fc': require('@/assets/football/allianz-fc.jpg').default?.src || require('@/assets/football/allianz-fc.jpg').src,
+    'blaze fc': require('@/assets/football/blaze-fc.jpg').default?.src || require('@/assets/football/blaze-fc.jpg').src,
+    'cruise fc': require('@/assets/football/cruise-fc.jpg').default?.src || require('@/assets/football/cruise-fc.jpg').src,
+    'hammers fc': require('@/assets/football/hammers-fc.jpg').default?.src || require('@/assets/football/hammers-fc.jpg').src,
+    'joga bonito fc': require('@/assets/football/joga bonito-fc.jpg').default?.src || require('@/assets/football/joga bonito-fc.jpg').src,
+    'la fabrica': require('@/assets/football/la-fabrica.jpg').default?.src || require('@/assets/football/la-fabrica.jpg').src,
+    'legacy fc': require('@/assets/football/legacy-fc.jpg').default?.src || require('@/assets/football/legacy-fc.jpg').src,
+    'prime fc': require('@/assets/football/prime-fc.jpg').default?.src || require('@/assets/football/prime-fc.jpg').src,
+    'quantum fc': require('@/assets/football/quantum-fc.jpg').default?.src || require('@/assets/football/quantum-fc.jpg').src,
+    'santos fc': require('@/assets/football/santos-fc.jpg').default?.src || require('@/assets/football/santos-fc.jpg').src,
+    'underrated fc': require('@/assets/football/underrated-fc.jpg').default?.src || require('@/assets/football/underrated-fc.jpg').src,
+    'westbridge fc': require('@/assets/Westbridge-fc.jpg').default?.src || require('@/assets/Westbridge-fc.jpg').src,
+    'vikings': require('@/assets/vikings.jpg').default?.src || require('@/assets/vikings.jpg').src,
+    'titans': require('@/assets/titans.jpg').default?.src || require('@/assets/titans.jpg').src,
+    'the storm': require('@/assets/the storm.jpg').default?.src || require('@/assets/the storm.jpg').src,
+    'tbk': require('@/assets/tbk.jpg').default?.src || require('@/assets/tbk.jpg').src,
+    'siberia': require('@/assets/siberia.jpg').default?.src || require('@/assets/siberia.jpg').src,
+    'rim reapears': require('@/assets/rim reapears.jpg').default?.src || require('@/assets/rim reapears.jpg').src,
+  } as any;
+
+  const resolveAssetLogo = (teamName?: string): string | undefined => {
+    const key = normalizeName(teamName);
+    return TEAM_ASSET_LOGOS[key];
+  };

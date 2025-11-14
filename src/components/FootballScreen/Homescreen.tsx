@@ -42,6 +42,8 @@ interface UI_Match {
   score2?: number;
   team1Color?: string;
   team2Color?: string;
+  team1Logo?: string;
+  team2Logo?: string;
   sportType?: SportType;
   competition_id?: string;
   competition_name?: string;
@@ -159,6 +161,8 @@ const Homescreen: React.FC = () => {
                 match.status === 'completed' ? match.away_score : undefined,
         team1Color: match.home_team_logo ? '' : `bg-blue-600`,
         team2Color: match.away_team_logo ? '' : `bg-red-600`,
+        team1Logo: match.home_team_logo || '',
+        team2Logo: match.away_team_logo || '',
         sportType: 'football', // Default to football for now
         competition_id: match.competition_id,
         competition_name: match.competition_name
@@ -223,6 +227,8 @@ const Homescreen: React.FC = () => {
       time: timeDisplay,
       team1: team1.name,
       team2: team2.name,
+      team1Logo: team1.logo_url || team1.logo || '',
+      team2Logo: team2.logo_url || team2.logo || '',
       score1: match.status === 'live' || match.status === 'Live' ? team1Score : undefined,
       score2: match.status === 'live' || match.status === 'Live' ? team2Score : undefined,
       team1Color: `bg-blue-600`,
@@ -287,12 +293,18 @@ const Homescreen: React.FC = () => {
     
     // Get all matches from API
     if (sportType === 'football' && (homeData?.liveFootball || homeData?.upcomingFootball)) {
+      const day = selectedDate;
+      const live = (homeData?.liveFootball || []).filter(m => (m.match_date || '').split('T')[0] === day);
+      const upcoming = (homeData?.upcomingFootball || []).filter(m => (m.match_date || '').split('T')[0] === day);
       matches = [
-        ...(homeData?.liveFootball?.map(convertMatchToUI) || []),
-        ...(homeData?.upcomingFootball?.map(convertMatchToUI) || [])
+        ...live.map(convertMatchToUI),
+        ...upcoming.map(convertMatchToUI)
       ];
     } else if (sportType === 'basketball' && sportMatches?.length) {
-      matches = sportMatches.map(convertMatchToUI);
+      const day = selectedDate;
+      matches = sportMatches
+        .filter(m => (m.match_date || '').split('T')[0] === day)
+        .map(convertMatchToUI);
     } else if (sportType === 'track_events' && sportTrackEvents?.length) {
       // Track events are handled separately
       return [];
@@ -492,6 +504,14 @@ const Homescreen: React.FC = () => {
                   {getSportDisplayName(sport)}
                 </button>
               ))}
+            </div>
+            <div className="mt-3 flex items-center justify-end">
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
+              />
             </div>
           </div>
         )}

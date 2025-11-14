@@ -1,4 +1,26 @@
 import React, { useState, useEffect } from 'react';
+import piratesFC from '@/assets/football/pirates-fc.jpg';
+import kingsFC from '@/assets/football/kings-fc.jpg';
+import wolvesFC from '@/assets/football/wolves-fc.png';
+import agendaFC from '@/assets/football/agenda-fc.jpg';
+import allianzFC from '@/assets/football/allianz-fc.jpg';
+import blazeFC from '@/assets/football/blaze-fc.jpg';
+import cruiseFC from '@/assets/football/cruise-fc.jpg';
+import hammersFC from '@/assets/football/hammers-fc.jpg';
+import jogaBonitoFC from '@/assets/football/joga bonito-fc.jpg';
+import laFabrica from '@/assets/football/la-fabrica.jpg';
+import legacyFC from '@/assets/football/legacy-fc.jpg';
+import primeFC from '@/assets/football/prime-fc.jpg';
+import quantumFC from '@/assets/football/quantum-fc.jpg';
+import santosFC from '@/assets/football/santos-fc.jpg';
+import underratedFC from '@/assets/football/underrated-fc.jpg';
+import westbridgeFC from '@/assets/Westbridge-fc.jpg';
+import vikings from '@/assets/vikings.jpg';
+import titans from '@/assets/titans.jpg';
+import theStorm from '@/assets/the storm.jpg';
+import tbk from '@/assets/tbk.jpg';
+import siberia from '@/assets/siberia.jpg';
+import rimReapears from '@/assets/rim reapears.jpg';
 import { useRouter } from 'next/navigation';
 import { useI18n } from './I18nProvider';
 import { io } from 'socket.io-client';
@@ -115,9 +137,9 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
 
     return (
       <div className={`${baseClasses} ${bgColor}`}>
-        {logoUrl ? (
+        {logoUrl || resolveAssetLogo(team) ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={logoUrl} alt={team} className="w-5 h-5 rounded-sm object-contain bg-white dark:bg-gray-800" onError={(e) => {
+          <img src={logoUrl || resolveAssetLogo(team)} alt={team} className="w-5 h-5 rounded-sm object-contain bg-white dark:bg-gray-800" onError={(e) => {
             (e.currentTarget as HTMLImageElement).style.display = 'none';
           }} />
         ) : (
@@ -243,3 +265,40 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
 };
 
 export default MatchCard;
+  const normalizeName = (name?: string) => (name || '')
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/fc$/i, ' fc')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const TEAM_ASSET_LOGOS: Record<string, any> = {
+    'pirates fc': piratesFC,
+    'kings fc': kingsFC,
+    'wolves fc': wolvesFC,
+    'agenda fc': agendaFC,
+    'allianz fc': allianzFC,
+    'blaze fc': blazeFC,
+    'cruise fc': cruiseFC,
+    'hammers fc': hammersFC,
+    'joga bonito fc': jogaBonitoFC,
+    'la fabrica': laFabrica,
+    'legacy fc': legacyFC,
+    'prime fc': primeFC,
+    'quantum fc': quantumFC,
+    'santos fc': santosFC,
+    'underrated fc': underratedFC,
+    'westbridge fc': westbridgeFC,
+    'vikings': vikings,
+    'titans': titans,
+    'the storm': theStorm,
+    'tbk': tbk,
+    'siberia': siberia,
+    'rim reapears': rimReapears
+  };
+
+  const resolveAssetLogo = (teamName?: string): string | undefined => {
+    const key = normalizeName(teamName);
+    const asset = TEAM_ASSET_LOGOS[key];
+    return asset ? (asset.src || asset) : undefined;
+  };
