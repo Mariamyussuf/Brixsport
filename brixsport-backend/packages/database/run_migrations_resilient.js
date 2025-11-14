@@ -79,7 +79,20 @@ async function runMigrations() {
       '014_add_competition_logo.sql',
       '015_add_competition_fields.sql',
       '016_create_track_events.sql',
-      '017_notification_preferences.sql'
+      '017_notification_preferences.sql',
+      '018_add_event_results.sql',
+      '019_add_event_standings.sql',
+      '020_add_event_aggregates.sql',
+      '021_add_event_participation.sql',
+      '022_add_event_registration.sql',
+      '023_add_event_cancelation.sql',
+      '024_add_event_postponement.sql',
+      '025_add_event_completion.sql',
+      '026_add_event_rewards.sql',
+      '027_add_event_leaderboard.sql',
+      '0071_featured_content.sql'
+      
+
     ];
 
     console.log('Starting migration process (skipping already applied migrations)...');
