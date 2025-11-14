@@ -10,6 +10,8 @@ interface ScheduleMatch {
   scheduled_at: string;
   venue: string;
   status: string;
+  home_team_logo?: string | null;
+  away_team_logo?: string | null;
 }
 
 interface ScheduleRound {
@@ -203,12 +205,32 @@ const LoggerBasketballSchedule: React.FC = () => {
                                 <div className="flex items-center justify-between">
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between">
-                                      <div className="font-medium text-gray-900 dark:text-white truncate">
-                                        {match.home_team_name}
+                                      <div className="flex items-center min-w-0">
+                                        {match.home_team_logo && (
+                                          <img
+                                            src={match.home_team_logo}
+                                            alt={match.home_team_name}
+                                            className="w-6 h-6 rounded-full mr-2"
+                                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                          />
+                                        )}
+                                        <div className="font-medium text-gray-900 dark:text-white truncate">
+                                          {match.home_team_name}
+                                        </div>
                                       </div>
                                       <div className="text-gray-500 dark:text-gray-400 mx-2">vs</div>
-                                      <div className="font-medium text-gray-900 dark:text-white truncate">
-                                        {match.away_team_name}
+                                      <div className="flex items-center min-w-0">
+                                        {match.away_team_logo && (
+                                          <img
+                                            src={match.away_team_logo}
+                                            alt={match.away_team_name}
+                                            className="w-6 h-6 rounded-full mr-2"
+                                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                          />
+                                        )}
+                                        <div className="font-medium text-gray-900 dark:text-white truncate">
+                                          {match.away_team_name}
+                                        </div>
                                       </div>
                                     </div>
                                     

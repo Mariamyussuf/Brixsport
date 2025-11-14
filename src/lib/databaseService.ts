@@ -862,7 +862,12 @@ export class DatabaseService {
       
       const { data, error } = await supabase
         .from('Match')
-        .select('*');
+        .select(`
+          *,
+          homeTeam:Team!Match_homeTeamId_fkey(name, logo),
+          awayTeam:Team!Match_awayTeamId_fkey(name, logo),
+          competition:Competition!Match_competitionId_fkey(name, sportType)
+        `);
       
       if (error) {
         // Log more detailed error information
@@ -875,8 +880,28 @@ export class DatabaseService {
         throw new DatabaseError(`Failed to fetch matches: ${error.message}`, 'FETCH_ERROR', 500);
       }
       
-      logOperation('GET_MATCHES_SUCCESS', { count: data?.length || 0 });
-      return data || [];
+      const transformed: Match[] = (data || []).map((match: any) => ({
+        id: match.id,
+        competition_id: match.competitionId || match.competition_id,
+        home_team_id: match.homeTeamId || match.home_team_id,
+        away_team_id: match.awayTeamId || match.away_team_id,
+        match_date: match.startTime || match.scheduled_at,
+        venue: match.venue || null,
+        status: match.status,
+        home_score: match.homeScore || match.home_score || 0,
+        away_score: match.awayScore || match.away_score || 0,
+        current_minute: match.currentMinute || match.current_minute || 0,
+        period: match.period || null,
+        home_team_name: match.homeTeam?.name,
+        home_team_logo: match.homeTeam?.logo || null,
+        away_team_name: match.awayTeam?.name,
+        away_team_logo: match.awayTeam?.logo || null,
+        competition_name: match.competition?.name,
+        sport: match.competition?.sportType
+      }));
+
+      logOperation('GET_MATCHES_SUCCESS', { count: transformed.length });
+      return transformed;
     } catch (error) {
       logOperation('GET_MATCHES_ERROR', { error: error instanceof Error ? error.message : 'Unknown error' });
       console.error('Error in getMatches:', error);

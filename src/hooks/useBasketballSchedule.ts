@@ -8,6 +8,8 @@ export interface ScheduleMatch {
   scheduled_at: string;
   venue: string;
   status: string;
+  home_team_logo?: string | null;
+  away_team_logo?: string | null;
 }
 
 export interface ScheduleRound {
@@ -52,8 +54,8 @@ export const useBasketballSchedule = () => {
           startTime,
           venue,
           status,
-          homeTeam:Team!Match_homeTeamId_fkey(name),
-          awayTeam:Team!Match_awayTeamId_fkey(name)
+          homeTeam:Team!Match_homeTeamId_fkey(name, logo),
+          awayTeam:Team!Match_awayTeamId_fkey(name, logo)
         `)
         .eq('competitionId', competition.id)
         .order('startTime', { ascending: true });
@@ -88,7 +90,9 @@ export const useBasketballSchedule = () => {
         away_team_name: match.awayTeam?.name || 'TBD',
         scheduled_at: match.startTime,
         venue: match.venue,
-        status: match.status
+        status: match.status,
+        home_team_logo: match.homeTeam?.logo || null,
+        away_team_logo: match.awayTeam?.logo || null
       });
     });
 

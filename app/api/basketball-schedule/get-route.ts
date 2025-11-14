@@ -8,8 +8,12 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 // Create Supabase client
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const url = new URL(request.url);
+    const dateParam = url.searchParams.get('date');
+    const dateFromParam = url.searchParams.get('dateFrom');
+    const dateToParam = url.searchParams.get('dateTo');
     // Get basketball competition
     const { data: competition, error: competitionError } = await supabase
       .from('Competition')
@@ -33,7 +37,7 @@ export async function GET() {
     }
 
     // Get all matches for this competition
-    const { data: matches, error: matchesError } = await supabase
+    let query = supabase
       .from('Match')
       .select(`
         id,
@@ -42,11 +46,28 @@ export async function GET() {
         startTime,
         venue,
         status,
-        homeTeam:Team!Match_homeTeamId_fkey(name),
-        awayTeam:Team!Match_awayTeamId_fkey(name)
+        homeTeam:Team!Match_homeTeamId_fkey(name, logo),
+        awayTeam:Team!Match_awayTeamId_fkey(name, logo)
       `)
       .eq('competitionId', competition.id)
       .order('startTime', { ascending: true });
+
+    if (dateParam) {
+      const dayStart = new Date(dateParam);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dateParam);
+      dayEnd.setHours(23, 59, 59, 999);
+      query = query.gte('startTime', dayStart.toISOString()).lte('startTime', dayEnd.toISOString());
+    } else {
+      if (dateFromParam) {
+        query = query.gte('startTime', new Date(dateFromParam).toISOString());
+      }
+      if (dateToParam) {
+        query = query.lte('startTime', new Date(dateToParam).toISOString());
+      }
+    }
+
+    const { data: matches, error: matchesError } = await query;
 
     if (matchesError) {
       return NextResponse.json(
@@ -85,7 +106,9 @@ const transformMatchesToRounds = (matches: any[]) => {
       away_team_name: match.awayTeam?.name || 'TBD',
       scheduled_at: match.startTime,
       venue: match.venue,
-      status: match.status
+      status: match.status,
+      home_team_logo: match.homeTeam?.logo || null,
+      away_team_logo: match.awayTeam?.logo || null
     });
   });
 
