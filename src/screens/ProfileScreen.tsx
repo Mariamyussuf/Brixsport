@@ -193,10 +193,7 @@ const ProfileScreen = () => {
 
       <div className="py-4 max-w-full">
         {/* Header */}
-        <header className="flex items-center justify-between py-3 px-4 sm:px-6">
-          <div className="flex items-center space-x-2">
-            <h1 className="text-2xl sm:text-3xl font-bold">Profile</h1>
-          </div>
+        <header className="flex items-center justify-end py-3 px-4 sm:px-6">
           <SettingsLauncher />
         </header>
 
