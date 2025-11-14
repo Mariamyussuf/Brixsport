@@ -28,7 +28,8 @@
     "setup": "bash scripts/dev-setup.sh",
     "deploy": "bash scripts/deploy.sh",
     "migrate": "bash scripts/migrate.sh",
-    "start:api": "cd apps/api && npm run start"
+    "start:api": "cd apps/api && npm run start",
+    "db:add-basketball": "node packages/database/run_add_basketball_teams.js"
   },
   "keywords": [
     "brixsport",
@@ -43,6 +44,7 @@
     "@types/supertest": "^6.0.3",
     "@types/uuid": "^10.0.0",
     "concurrently": "^9.2.1",
+    "critters": "^0.0.23",
     "supertest": "^7.1.4",
     "tsc-alias": "^1.8.16",
     "typescript": "^5.2.2"
