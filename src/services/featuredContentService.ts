@@ -17,8 +17,18 @@ class FeaturedContentService {
         .order('priority', { ascending: false });
 
       if (error) {
-        // Check for network-related errors
+        // Check for table not found errors (table might not exist yet)
         const errorMessage = error.message || '';
+        if (errorMessage.includes('Could not find the table') || 
+            errorMessage.includes('relation') && errorMessage.includes('does not exist') ||
+            error.code === 'PGRST116' || 
+            error.code === '42P01') {
+          console.warn('Featured content table does not exist yet. Run migration 007_featured_content.sql to create it.');
+          // Return empty array instead of throwing to allow app to continue
+          return [];
+        }
+        
+        // Check for network-related errors
         if (errorMessage.includes('Failed to fetch') || 
             errorMessage.includes('ERR_NAME_NOT_RESOLVED') ||
             errorMessage.includes('network') ||
@@ -30,7 +40,14 @@ class FeaturedContentService {
           // Return empty array instead of throwing to allow app to continue
           return [];
         }
-        throw new Error(`Failed to fetch featured content: ${error.message}`);
+        
+        // For other errors, log but don't crash the app
+        console.error('Error fetching featured content:', {
+          message: error.message,
+          code: error.code,
+          details: error.details
+        });
+        return [];
       }
 
       return data || [];

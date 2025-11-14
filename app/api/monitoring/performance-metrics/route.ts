@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,25 +14,15 @@ export async function POST(req: NextRequest) {
     });
     
     // Return success response
-    return new Response(JSON.stringify({ 
+    return NextResponse.json({ 
       success: true, 
       message: 'Performance metrics recorded' 
-    }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    }, { status: 200 });
   } catch (error) {
     console.error('Error processing performance metrics:', error);
-    return new Response(JSON.stringify({ 
+    return NextResponse.json({ 
       success: false, 
       error: 'Failed to process performance metrics' 
-    }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    }, { status: 500 });
   }
 }

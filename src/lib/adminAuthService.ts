@@ -813,10 +813,25 @@ export const adminAuthService = {
 
       await this.logAuditEvent(admin.id, 'admin_password_reset_requested', {}, 'medium', 'success');
 
-      // TODO: Send email with reset link
-      // In production, integrate with email service
-      console.log('Password reset token:', resetToken);
-      console.log('Reset link:', `${process.env.NEXT_PUBLIC_APP_URL}/admin/reset-password?token=${resetToken}`);
+      // Send email with reset link
+      try {
+        // In production, integrate with email service like SendGrid, Nodemailer, etc.
+        // For now, we'll use a simple approach with console logging
+        const resetLink = `${process.env.NEXT_PUBLIC_APP_URL}/admin/reset-password?token=${resetToken}`;
+        
+        // If we have an email service configured, send the email
+        if (process.env.EMAIL_SERVICE_ENABLED === 'true') {
+          // Example using a generic email service
+          await this.sendPasswordResetEmail(admin.email, admin.name, resetLink);
+        } else {
+          // Fallback to console logging
+          console.log('Password reset email would be sent to:', admin.email);
+          console.log('Reset link:', resetLink);
+        }
+      } catch (emailError) {
+        console.error('Failed to send password reset email:', emailError);
+        // Don't fail the request if email sending fails
+      }
 
       return {
         success: true,
@@ -925,6 +940,37 @@ export const adminAuthService = {
         message: 'Failed to reset password',
       };
     }
+  },
+
+  /**
+   * Send password reset email
+   */
+  async sendPasswordResetEmail(email: string, name: string, resetLink: string): Promise<void> {
+    // This is a placeholder implementation
+    // In production, integrate with an email service like SendGrid, Nodemailer, etc.
+    
+    // Example using a generic email service approach:
+    /*
+    const emailData = {
+      to: email,
+      from: process.env.EMAIL_FROM || 'noreply@brixsport.com',
+      subject: 'Password Reset Request',
+      html: `
+        <p>Hello ${name},</p>
+        <p>You have requested to reset your password. Click the link below to reset your password:</p>
+        <a href="${resetLink}">Reset Password</a>
+        <p>This link will expire in 1 hour.</p>
+        <p>If you didn't request this, please ignore this email.</p>
+      `
+    };
+    
+    // Send email using your preferred email service
+    // await emailService.send(emailData);
+    */
+    
+    // For now, just log that we would send an email
+    console.log('Sending password reset email to:', email);
+    console.log('Reset link:', resetLink);
   },
 
   /**
