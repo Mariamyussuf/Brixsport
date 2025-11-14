@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,25 +16,15 @@ export async function POST(req: NextRequest) {
     });
     
     // Return success response
-    return new Response(JSON.stringify({ 
+    return NextResponse.json({ 
       success: true, 
       message: 'Web vitals metric recorded' 
-    }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    }, { status: 200 });
   } catch (error) {
     console.error('Error processing web vitals:', error);
-    return new Response(JSON.stringify({ 
+    return NextResponse.json({ 
       success: false, 
       error: 'Failed to process web vitals metric' 
-    }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    }, { status: 500 });
   }
 }

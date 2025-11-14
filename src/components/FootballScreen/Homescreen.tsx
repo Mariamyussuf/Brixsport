@@ -166,14 +166,36 @@ const Homescreen: React.FC = () => {
     }
     
     // Handle fallback data structure from File A
+    // Check if teams array exists and has elements
+    if (!match.teams || !Array.isArray(match.teams) || match.teams.length < 2) {
+      // If teams data is missing, return a basic match structure
+      return {
+        id: match.id?.toString() || 'unknown',
+        status: match.status === 'live' || match.status === 'Live' ? 'Live' : 'Upcoming',
+        time: match.startTime ? new Date(match.startTime).toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit',
+          hour12: false 
+        }) : '',
+        team1: 'Team 1',
+        team2: 'Team 2',
+        sportType: match.sportType || 'football',
+        competition_id: match.competition_id,
+        competition_name: match.competition_name
+      };
+    }
+    
     const team1 = match.teams[0];
     const team2 = match.teams[1];
     
-    const team1Score = match.events
+    // Check if events array exists before filtering
+    const events = Array.isArray(match.events) ? match.events : [];
+    
+    const team1Score = events
       .filter((e: any) => e.teamId === team1.id && ['goal', 'field_goal', 'three_pointer'].includes(e.eventType))
       .reduce((sum: number, e: any) => sum + (typeof e.value === 'number' ? e.value : 1), 0);
     
-    const team2Score = match.events
+    const team2Score = events
       .filter((e: any) => e.teamId === team2.id && ['goal', 'field_goal', 'three_pointer'].includes(e.eventType))
       .reduce((sum: number, e: any) => sum + (typeof e.value === 'number' ? e.value : 1), 0);
 
