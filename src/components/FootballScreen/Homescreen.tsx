@@ -18,6 +18,7 @@ import { useHomeData, useSportMatches } from '@/hooks/useHomeData';
 import CompetitionScreen from './CompetitionScreen';
 import BrixSportLogo from '@/assets/BRIX-SPORT-LOGO.png';
 import FeaturedContentDisplay from '@/components/FeaturedContentDisplay';
+import DateSwitcher from '../shared/DateSwitcher';
 
 import { 
   Match, 
@@ -517,31 +518,12 @@ const Homescreen: React.FC = () => {
                 </button>
               ))}
             </div>
-            <div className="mt-3 flex items-center justify-end gap-2">
-              {(() => {
-                const toISODate = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-                const todayIso = toISODate(new Date());
-                const tomorrowIso = toISODate(new Date(Date.now() + 24 * 60 * 60 * 1000));
-                const chipBase = 'px-3 py-1 rounded-full text-sm transition-colors';
-                const activeCls = 'bg-blue-600 text-white';
-                const inactiveCls = 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700';
-                return (
-                  <>
-                    <button
-                      onClick={() => setSelectedDate(todayIso)}
-                      className={`${chipBase} ${selectedDate === todayIso ? activeCls : inactiveCls}`}
-                    >
-                      Today
-                    </button>
-                    <button
-                      onClick={() => setSelectedDate(tomorrowIso)}
-                      className={`${chipBase} ${selectedDate === tomorrowIso ? activeCls : inactiveCls}`}
-                    >
-                      Tomorrow
-                    </button>
-                  </>
-                );
-              })()}
+            <div className="mt-3 flex items-center justify-center">
+              <DateSwitcher 
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+                className="mx-auto"
+              />
             </div>
           </div>
         )}
