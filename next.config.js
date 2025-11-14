@@ -14,7 +14,12 @@ const nextConfig = {
       config.resolve.fallback = { fs: false, path: false };
     }
     return config;
-  }
+  },
+  // Add experimental features for better compatibility
+  experimental: {
+    // Enable CSS support for better Tailwind integration
+    optimizeCss: true,
+  },
 };
 
 module.exports = nextConfig;
