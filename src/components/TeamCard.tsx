@@ -80,7 +80,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, showDetails = true }) 
             <img
               src={displayLogo}
               alt={team.name}
-              className="w-20 h-20 rounded-full object-contain border-2 border-gray-200 dark:border-gray-700"
+              className="w-20 h-20 object-contain"
               onError={(e) => {
                 const target = e.currentTarget as HTMLImageElement;
                 if (/^https?:\/\//.test(displayLogo) && assetLogo && target.src !== assetLogo) {
