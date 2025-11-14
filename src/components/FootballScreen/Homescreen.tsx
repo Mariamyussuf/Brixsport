@@ -570,9 +570,6 @@ const Homescreen: React.FC = () => {
             {/* Upcoming Matches Section */}
             {getFilteredMatches(activeSport).some(m => m.status === 'Upcoming') && (
               <>
-                <h2 id="upcoming-matches" className="text-lg font-bold text-gray-800 dark:text-gray-100 mt-6 mb-3">
-                  Upcoming Matches
-                </h2>
                 
                 {/* Group upcoming matches by league */}
                 {groupMatchesByLeague(
