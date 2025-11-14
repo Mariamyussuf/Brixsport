@@ -282,63 +282,72 @@ const MatchDetailScreen: React.FC<{ matchId: string }> = ({ matchId }) => {
           onToggleFavorite={toggleFavorite}
         />
 
+        {/* Tabs Section - Always visible */}
+        <div className="px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex space-x-6 overflow-x-auto">
+            <button className="py-2 border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap">
+              Events
+            </button>
+            <button className="py-2 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
+              Lineups
+            </button>
+            <button className="py-2 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
+              Statistics
+            </button>
+            <button className="py-2 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
+              H2H
+            </button>
+          </div>
+        </div>
+
         {/* Events Section */}
-        {(match.status !== 'scheduled') && (
-          <div className="px-4 py-6 bg-gray-50 dark:bg-gray-900">
-            <div className="max-w-4xl mx-auto">
-              <h2 className="text-xl font-bold mb-4">{((match as any)?.sport === 'basketball') ? 'Game Events' : 'Match Events'}</h2>
-              
-              {sortedEvents.length > 0 ? (
-                <div className="space-y-4">
-                  {sortedEvents.map((event) => {
-                    const eventDisplay = getEventDisplay(event);
-                    
-                    return (
-                      <div key={event.id} className="flex items-center bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
-                        <div className="flex-shrink-0 w-12 text-center">
-                          <div className="text-sm font-bold text-gray-500 dark:text-gray-400">
-                            {event.minute}'
-                          </div>
+        <div className="px-4 py-6 bg-gray-50 dark:bg-gray-900">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-xl font-bold mb-4">{((match as any)?.sport === 'basketball') ? 'Game Events' : 'Match Events'}</h2>
+            
+            {sortedEvents.length > 0 ? (
+              <div className="space-y-4">
+                {sortedEvents.map((event) => {
+                  const eventDisplay = getEventDisplay(event);
+                  
+                  return (
+                    <div key={event.id} className="flex items-center bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
+                      <div className="flex-shrink-0 w-12 text-center">
+                        <div className="text-sm font-bold text-gray-500 dark:text-gray-400">
+                          {event.minute}'
                         </div>
-                        
-                        <div className={`w-3 h-3 rounded-full ${eventDisplay.color} mr-3 mt-1`}></div>
-                        
-                        <div className="flex-1">
-                          <div className="flex items-center">
-                            <span className="text-2xl mr-2">
-                              {eventDisplay.icon}
-                            </span>
-                            <div>
-                              <p className="font-bold">
-                                {eventDisplay.text}
+                      </div>
+                      
+                      <div className={`w-3 h-3 rounded-full ${eventDisplay.color} mr-3 mt-1`}></div>
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center">
+                          <span className="text-2xl mr-2">
+                            {eventDisplay.icon}
+                          </span>
+                          <div>
+                            <p className="font-bold">
+                              {eventDisplay.text}
+                            </p>
+                            {event.description && (
+                              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                {event.description}
                               </p>
-                              {event.description && (
-                                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                  {event.description}
-                                </p>
-                              )}
-                            </div>
+                            )}
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <p>{((match as any)?.sport === 'basketball') ? 'No plays recorded' : 'No events recorded for this match'}</p>
-                </div>
-              )}
-            </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <p>{((match as any)?.sport === 'basketball') ? 'No plays recorded' : 'No events recorded for this match'}</p>
+              </div>
+            )}
           </div>
-        )}
-        {match.status === 'scheduled' && (
-          <div className="px-4 py-6 bg-gray-50 dark:bg-gray-900">
-            <div className="max-w-4xl mx-auto text-center text-gray-600 dark:text-gray-300">
-              {formatMatchStartMessage(match.match_date)}
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </>
   );

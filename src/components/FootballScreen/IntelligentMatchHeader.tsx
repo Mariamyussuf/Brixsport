@@ -36,9 +36,28 @@ interface IntelligentMatchHeaderProps {
 
 const TeamBadge: React.FC<{ team: Team; flagColors: { top: string; bottom: string } }> = ({ team, flagColors }) => (
   <div className="flex flex-col items-center">
-    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+    <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
       {team.logo ? (
-        <SmartImage src={team.logo} alt={team.name} className="w-full h-full object-cover" />
+        <SmartImage 
+          src={team.logo} 
+          alt={team.name} 
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            // Fallback to flag colors if image fails to load
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            const parent = target.parentElement;
+            if (parent) {
+              const fallback = document.createElement('div');
+              fallback.className = 'w-full h-full flex flex-col';
+              fallback.innerHTML = `
+                <div class="${flagColors.top} h-1/2 w-full"></div>
+                <div class="${flagColors.bottom} h-1/2 w-full"></div>
+              `;
+              parent.appendChild(fallback);
+            }
+          }}
+        />
       ) : (
         <div className="w-full h-full flex flex-col">
           <div className={`${flagColors.top} h-1/2 w-full`}></div>
@@ -46,7 +65,7 @@ const TeamBadge: React.FC<{ team: Team; flagColors: { top: string; bottom: strin
         </div>
       )}
     </div>
-    <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100 mt-2 truncate max-w-[120px]">{team.name}</span>
+    <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100 mt-2 text-center max-w-[120px] truncate">{team.name}</span>
   </div>
 );
 
@@ -192,7 +211,26 @@ const IntelligentMatchHeader: React.FC<IntelligentMatchHeaderProps> = ({
           <div className="flex items-center">
             <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
               {liveMatch.homeTeam.logo ? (
-                <SmartImage src={liveMatch.homeTeam.logo} alt={liveMatch.homeTeam.name} className="w-full h-full object-cover" />
+                <SmartImage 
+                  src={liveMatch.homeTeam.logo} 
+                  alt={liveMatch.homeTeam.name} 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to flag colors if image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent) {
+                      const fallback = document.createElement('div');
+                      fallback.className = 'w-full h-full flex flex-col';
+                      fallback.innerHTML = `
+                        <div class="${liveMatch.homeFlagColors.top} h-1/2 w-full"></div>
+                        <div class="${liveMatch.homeFlagColors.bottom} h-1/2 w-full"></div>
+                      `;
+                      parent.appendChild(fallback);
+                    }
+                  }}
+                />
               ) : (
                 <div className="w-full h-full flex flex-col">
                   <div className={`${liveMatch.homeFlagColors.top} h-1/2 w-full`}></div>
@@ -215,7 +253,26 @@ const IntelligentMatchHeader: React.FC<IntelligentMatchHeaderProps> = ({
             <span className="mr-2 text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[100px]">{liveMatch.awayTeam.name}</span>
             <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
               {liveMatch.awayTeam.logo ? (
-                <SmartImage src={liveMatch.awayTeam.logo} alt={liveMatch.awayTeam.name} className="w-full h-full object-cover" />
+                <SmartImage 
+                  src={liveMatch.awayTeam.logo} 
+                  alt={liveMatch.awayTeam.name} 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to flag colors if image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent) {
+                      const fallback = document.createElement('div');
+                      fallback.className = 'w-full h-full flex flex-col';
+                      fallback.innerHTML = `
+                        <div class="${liveMatch.awayFlagColors.top} h-1/2 w-full"></div>
+                        <div class="${liveMatch.awayFlagColors.bottom} h-1/2 w-full"></div>
+                      `;
+                      parent.appendChild(fallback);
+                    }
+                  }}
+                />
               ) : (
                 <div className="w-full h-full flex flex-col">
                   <div className={`${liveMatch.awayFlagColors.top} h-1/2 w-full`}></div>
