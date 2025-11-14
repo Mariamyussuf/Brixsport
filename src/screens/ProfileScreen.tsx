@@ -190,18 +190,17 @@ const ProfileScreen = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-slate-900 dark:text-white">
-
       <div className="py-2 max-w-full">
         {/* Header */}
-        <header className="flex items-center justify-end py-2 px-4 sm:px-6">
+        <header className="flex items-center justify-end py-2 px-4">
           <SettingsLauncher />
         </header>
 
-        {/* Main Content - Responsive Grid for Desktop */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 px-2 sm:px-4">
-          {/* User Profile Section - Full width on mobile, 2/3 on desktop */}
-          <div className="lg:col-span-2">
-            <div className="flex flex-col items-center text-center mb-4 bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+        {/* Main Content - Mobile-first responsive grid */}
+        <div className="grid grid-cols-1 gap-4 px-4">
+          {/* User Profile Section */}
+          <div className="w-full">
+            <div className="flex flex-col items-center text-center mb-4 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
               {loading ? (
                 <p>Loading...</p>
               ) : error ? (
@@ -213,8 +212,8 @@ const ProfileScreen = () => {
                     playerName={user?.name || 'Guest'}
                     onLogout={handleLogout}
                   />
-                  <h2 className="text-xl sm:text-2xl font-semibold mt-4">{user?.name || 'Guest User'}</h2>
-                  <p className="text-slate-600 dark:text-gray-400 mt-1">{user?.email}</p>
+                  <h2 className="text-xl font-semibold mt-4">{user?.name || 'Guest User'}</h2>
+                  <p className="text-slate-600 dark:text-gray-400 mt-1 text-sm">{user?.email}</p>
                   {user?.role && (
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-3">
                       {user.role}
@@ -223,14 +222,14 @@ const ProfileScreen = () => {
                 </>
               ) : (
                 <>
-                  <div className="w-20 h-20 sm:w-28 sm:h-28 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
-                    <div className="w-14 h-14 sm:w-20 sm:h-20 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                      <div className="w-7 h-7 sm:w-10 sm:h-10 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                  <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
+                    <div className="w-14 h-14 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                      <div className="w-7 h-7 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
                     </div>
                   </div>
-                  <h2 className="text-lg sm:text-2xl font-medium mb-2 text-center">Your home for sports insights</h2>
-                  <p className="text-slate-600 dark:text-gray-400 mb-5 max-w-xs sm:max-w-md text-center text-sm sm:text-base">Sign up or log in to access your favorites, track events, and more.</p>
-                  <div className="flex flex-col gap-3 w-full max-w-xs sm:max-w-md">
+                  <h2 className="text-lg font-medium mb-2 text-center">Your home for sports insights</h2>
+                  <p className="text-slate-600 dark:text-gray-400 mb-5 max-w-xs text-center text-sm">Sign up or log in to access your favorites, track events, and more.</p>
+                  <div className="flex flex-col gap-3 w-full max-w-xs">
                     <Button 
                       onClick={() => router.push('/auth/signup')}
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg"
@@ -251,8 +250,8 @@ const ProfileScreen = () => {
 
             {/* Features List */}
             <div className="bg-white dark:bg-gray-800 rounded-xl p-5 mb-4 shadow-sm border border-gray-100 dark:border-gray-700">
-              <h3 className="text-lg sm:text-xl font-semibold mb-4">Features</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <h3 className="text-lg font-semibold mb-4">Features</h3>
+              <div className="grid grid-cols-1 gap-4">
                 {features.map((feature, index) => (
                   <div key={index} className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
@@ -265,19 +264,19 @@ const ProfileScreen = () => {
             </div>
           </div>
 
-          {/* Quick Links Section - Full width on mobile, 1/3 on desktop */}
-          <div className="lg:col-span-1">
+          {/* Quick Links Section */}
+          <div className="w-full">
             <div className="bg-white dark:bg-gray-800 rounded-xl p-5 mb-4 shadow-sm border border-gray-100 dark:border-gray-700">
-              <h3 className="text-lg sm:text-xl font-semibold mb-4">Quick Links</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
+              <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
+              <div className="grid grid-cols-2 gap-3">
                 {quickLinks.map((link, index) => (
                   <button
                     key={index}
                     onClick={link.onClick}
-                    className="flex flex-col items-center justify-center py-3 px-2 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95 border border-gray-100 dark:border-gray-700"
+                    className="flex flex-col items-center justify-center py-4 px-2 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl shadow-sm hover:shadow-md transition-all touch-manipulation active:scale-95 border border-gray-100 dark:border-gray-700"
                     aria-label={link.text}
                   >
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-2 text-blue-600 dark:text-blue-400">
+                    <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-2 text-blue-600 dark:text-blue-400">
                       {link.icon}
                     </div>
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center">{link.text}</span>
@@ -288,7 +287,7 @@ const ProfileScreen = () => {
             
             {/* Additional Menu Items */}
             <div className="bg-white dark:bg-gray-800 rounded-xl p-5 mb-4 shadow-sm border border-gray-100 dark:border-gray-700">
-              <h3 className="text-lg sm:text-xl font-semibold mb-4">More</h3>
+              <h3 className="text-lg font-semibold mb-4">More</h3>
               <div className="space-y-2">
                 <MenuItem 
                   icon={<Users className="h-5 w-5" />} 
@@ -331,7 +330,7 @@ const ProfileScreen = () => {
               {user && (
                 <Button
                   onClick={handleShare}
-                  className="bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-6 rounded-xl w-full flex items-center justify-center space-x-3 shadow-sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-xl w-full flex items-center justify-center space-x-3 shadow-sm"
                 >
                   <Share2 className="h-5 w-5" />
                   <span className="font-medium">{shareSuccess ? "SHARED!" : "SHARE BRIXSPORTS"}</span>
@@ -343,7 +342,7 @@ const ProfileScreen = () => {
                 <Button
                   onClick={handleLogout}
                   variant="outline"
-                  className="mt-3 py-2.5 px-6 rounded-xl w-full flex items-center justify-center space-x-3 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  className="mt-3 py-3 px-6 rounded-xl w-full flex items-center justify-center space-x-3 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
                   <LogOut className="h-5 w-5" />
                   <span className="font-medium">Logout</span>
@@ -351,16 +350,16 @@ const ProfileScreen = () => {
               )}
               
               {/* Legal Links */}
-              <div className="flex justify-center space-x-4 pt-4">
+              <div className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-4 pt-4">
                 <Link 
                   href="/terms" 
-                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline"
+                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline text-center"
                 >
                   Terms of Service
                 </Link>
                 <Link 
                   href="/privacy" 
-                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline"
+                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline text-center"
                 >
                   Privacy Policy
                 </Link>
@@ -371,18 +370,18 @@ const ProfileScreen = () => {
 
         {/* Share Success Toast */}
         {shareSuccess && (
-          <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2 z-50">
+          <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2 z-50 w-11/12 max-w-xs">
             <Check className="h-4 w-4" />
-            <span>Link copied to clipboard!</span>
+            <span className="text-sm">Link copied to clipboard!</span>
           </div>
         )}
       </div>
 
-      {/* Modals - All your original modals preserved */}
+      {/* Modals - Optimized for mobile */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-5 sm:p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="p-5">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {showModal === 'social' && 'Follow Us'}
@@ -398,7 +397,7 @@ const ProfileScreen = () => {
               <div className="space-y-4">
                 {showModal === 'social' && (
                   <>
-                    <p className="text-gray-600 dark:text-gray-400">
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">
                       Stay connected with us on social media for updates, tips, and community discussions!
                     </p>
                     <div className="space-y-3">
@@ -411,7 +410,7 @@ const ProfileScreen = () => {
                 )}
                 
                 {showModal === 'privacy' && (
-                  <div className="text-sm space-y-4 text-gray-600 dark:text-gray-300">
+                  <div className="text-sm space-y-4 text-gray-600 dark:text-gray-300 max-h-[60vh] overflow-y-auto">
                     <p><strong>Last updated:</strong> {new Date().toLocaleDateString()}</p>
                     
                     <div>
@@ -452,7 +451,7 @@ const ProfileScreen = () => {
                 )}
                 
                 {showModal === 'support' && (
-                  <div className="space-y-4 text-gray-600 dark:text-gray-300">
+                  <div className="space-y-4 text-gray-600 dark:text-gray-300 max-h-[60vh] overflow-y-auto">
                     <div>
                       <h4 className="font-semibold mb-2">Getting Started</h4>
                       <ol className="list-decimal pl-5 space-y-1 text-sm">
@@ -482,7 +481,7 @@ const ProfileScreen = () => {
                 )}
                 
                 {showModal === 'about' && (
-                  <div className="space-y-4 text-gray-600 dark:text-gray-300">
+                  <div className="space-y-4 text-gray-600 dark:text-gray-300 max-h-[60vh] overflow-y-auto">
                     <div className="text-center">
                       <p className="text-sm text-gray-500 dark:text-gray-400">Version 1.0.0</p>
                     </div>
@@ -516,25 +515,25 @@ const ProfileScreen = () => {
         </div>
       )}
       
-      {/* Logout Confirmation Dialog */}
+      {/* Logout Confirmation Dialog - Optimized for mobile */}
       {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-sm w-full">
-            <div className="p-5 sm:p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-sm">
+            <div className="p-5">
               <div className="mb-5 text-center">
                 <div className="w-12 h-12 mx-auto mb-4 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
                   <LogOut className="h-6 w-6 text-red-600 dark:text-red-400" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Confirm Logout</h3>
-                <p className="text-gray-600 dark:text-gray-400">Are you sure you want to logout? Any unsynchronized data will be kept locally until you log back in.</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Are you sure you want to logout? Any unsynchronized data will be kept locally until you log back in.</p>
               </div>
-              <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={cancelLogout}>
+              <div className="flex flex-col sm:flex-row justify-end gap-3">
+                <Button variant="outline" onClick={cancelLogout} className="w-full sm:w-auto">
                   Cancel
                 </Button>
                 <Button 
                   onClick={confirmLogout}
-                  className="bg-red-600 hover:bg-red-700 text-white"
+                  className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
                 >
                   Logout
                 </Button>
@@ -579,7 +578,7 @@ interface NavItemProps {
 const NavItem: React.FC<NavItemProps> = ({ icon, text, active, onClick }) => (
   <button 
     onClick={onClick}
-    className={`flex flex-col items-center space-y-1 py-1 px-3 ${active ? 'text-blue-600' : 'text-gray-500 dark:text-gray-400'}`}
+    className={`flex flex-col items-center space-y-1 py-2 px-3 ${active ? 'text-blue-600' : 'text-gray-500 dark:text-gray-400'}`}
   >
     <div className="w-6 h-6">{icon}</div>
     <span className="text-xs font-medium">{text}</span>
