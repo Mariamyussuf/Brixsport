@@ -22,6 +22,21 @@ function validateAndNormalizeSupabaseUrl(url: string | undefined): string {
     }
     normalizedUrl = `https://${normalizedUrl}`;
   }
+  
+  // Check if URL contains 'db.' even after adding https:// - this is still wrong
+  // The 'db.' prefix is for direct database connections, not the REST API
+  if (normalizedUrl.includes('db.') && normalizedUrl.includes('.supabase.co')) {
+    const correctUrl = normalizedUrl.replace('db.', '').replace('https://db.', 'https://');
+    throw new Error(
+      `❌ INVALID SUPABASE URL: The URL contains 'db.' which indicates a database connection string.\n` +
+      `You need to use your PROJECT API URL, not the database URL.\n\n` +
+      `Current (WRONG): ${normalizedUrl}\n` +
+      `Should be: ${correctUrl}\n\n` +
+      `To fix: Go to Vercel → Settings → Environment Variables\n` +
+      `Update NEXT_PUBLIC_SUPABASE_URL to: ${correctUrl}\n` +
+      `Then redeploy your application.`
+    );
+  }
 
   // Validate URL format
   try {
