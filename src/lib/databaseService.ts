@@ -998,6 +998,20 @@ export class DatabaseService {
           details: error.details,
           hint: error.hint
         });
+        
+        // Check for network-related errors
+        const errorMessage = error.message || '';
+        if (errorMessage.includes('Failed to fetch') || 
+            errorMessage.includes('ERR_NAME_NOT_RESOLVED') ||
+            errorMessage.includes('network') ||
+            error.code === 'PGRST301') {
+          throw new DatabaseError(
+            'Network error: Unable to connect to the database. Please check your internet connection and ensure the Supabase URL is correctly configured.',
+            'NETWORK_ERROR',
+            503
+          );
+        }
+        
         throw new DatabaseError(`Failed to fetch matches: ${error.message}`, 'FETCH_ERROR', 500);
       }
       
@@ -1009,6 +1023,23 @@ export class DatabaseService {
         console.error('Validation error in getMatchesBySport:', error.message);
         throw new DatabaseError(`Validation failed: ${error.message}`, 'VALIDATION_ERROR', 400);
       }
+      
+      // Check for network/fetch errors
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        const networkError = new DatabaseError(
+          'Network error: Unable to connect to the database server. This could be due to:\n' +
+          '1. Internet connectivity issues\n' +
+          '2. Incorrect Supabase URL configuration\n' +
+          '3. Supabase project may be paused or unavailable\n' +
+          'Please check your environment variables and network connection.',
+          'NETWORK_ERROR',
+          503
+        );
+        logOperation('GET_MATCHES_BY_SPORT_NETWORK_ERROR', { sport, error: networkError.message });
+        console.error('Network error in getMatchesBySport:', error);
+        throw networkError;
+      }
+      
       logOperation('GET_MATCHES_BY_SPORT_ERROR', { sport, error: error instanceof Error ? error.message : 'Unknown error' });
       console.error('Error in getMatchesBySport:', error);
       if (error instanceof DatabaseError) {

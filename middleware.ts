@@ -32,19 +32,11 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/auth/signup', request.url));
     }
 
-    // Handle profile route - REQUIRE AUTHENTICATION
+    // Handle profile route - ALLOW PUBLIC ACCESS
+    // Profile page shows guest view for unauthenticated users
     if (pathname === '/profile') {
-      // Implement proper server-side authentication check
-      const session = await getAuth(request);
-      
-      if (!session || !session.user) {
-        // Redirect unauthenticated users to login page
-        const loginUrl = new URL('/auth/login', request.url);
-        loginUrl.searchParams.set('redirect', pathname);
-        return NextResponse.redirect(loginUrl);
-      }
-      
-      // User is authenticated, allow access
+      // Allow access to all users (authenticated and unauthenticated)
+      // The ProfileScreen component handles showing appropriate content based on auth status
       return NextResponse.next();
     }
 

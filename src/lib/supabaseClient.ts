@@ -1,13 +1,69 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
+// Helper function to validate and normalize Supabase URL
+function validateAndNormalizeSupabaseUrl(url: string | undefined): string {
+  if (!url) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL is not set');
+  }
+
+  // Remove any whitespace
+  let normalizedUrl = url.trim();
+
+  // Remove trailing slash if present
+  normalizedUrl = normalizedUrl.replace(/\/$/, '');
+
+  // Ensure URL starts with https://
+  if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+    // If it starts with db., that's incorrect - it should be the project URL
+    if (normalizedUrl.startsWith('db.')) {
+      throw new Error(
+        `Invalid Supabase URL format. The URL should be your project URL (e.g., https://your-project.supabase.co), not a database connection string. Got: ${normalizedUrl.substring(0, 30)}...`
+      );
+    }
+    normalizedUrl = `https://${normalizedUrl}`;
+  }
+
+  // Validate URL format
+  try {
+    const urlObj = new URL(normalizedUrl);
+    if (!urlObj.hostname.includes('.supabase.co')) {
+      console.warn(
+        `Supabase URL hostname doesn't match expected pattern (.supabase.co): ${urlObj.hostname}`
+      );
+    }
+  } catch (error) {
+    throw new Error(
+      `Invalid Supabase URL format: ${normalizedUrl.substring(0, 50)}. URL must be a valid HTTPS URL.`
+    );
+  }
+
+  return normalizedUrl;
+}
+
 // Supabase configuration using environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const rawSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!rawSupabaseUrl || !supabaseAnonKey) {
   throw new Error(
     'Missing Supabase environment variables. Please check your .env.local file and ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set.'
   );
+}
+
+// Validate and normalize the Supabase URL
+const supabaseUrl = validateAndNormalizeSupabaseUrl(rawSupabaseUrl);
+
+// Log the URL format (without exposing the full URL for security)
+if (typeof window === 'undefined') {
+  // Server-side logging
+  const urlObj = new URL(supabaseUrl);
+  console.log(`[Supabase] Initializing client with URL: https://${urlObj.hostname}`);
+} else {
+  // Client-side: only log in development
+  if (process.env.NODE_ENV === 'development') {
+    const urlObj = new URL(supabaseUrl);
+    console.log(`[Supabase] Client initialized with hostname: ${urlObj.hostname}`);
+  }
 }
 
 // Enhanced Supabase client configuration with better error handling

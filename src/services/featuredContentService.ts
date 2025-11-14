@@ -17,11 +17,30 @@ class FeaturedContentService {
         .order('priority', { ascending: false });
 
       if (error) {
+        // Check for network-related errors
+        const errorMessage = error.message || '';
+        if (errorMessage.includes('Failed to fetch') || 
+            errorMessage.includes('ERR_NAME_NOT_RESOLVED') ||
+            errorMessage.includes('network') ||
+            error.code === 'PGRST301') {
+          console.error('Network error fetching featured content:', {
+            message: error.message,
+            code: error.code
+          });
+          // Return empty array instead of throwing to allow app to continue
+          return [];
+        }
         throw new Error(`Failed to fetch featured content: ${error.message}`);
       }
 
       return data || [];
     } catch (error) {
+      // Handle network/fetch errors gracefully
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.error('Network error: Unable to connect to Supabase for featured content');
+        // Return empty array to allow app to continue functioning
+        return [];
+      }
       console.error('Error fetching featured content:', error);
       throw error;
     }
