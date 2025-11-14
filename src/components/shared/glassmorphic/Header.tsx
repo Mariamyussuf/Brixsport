@@ -47,10 +47,14 @@ const Header: React.FC<HeaderProps> = ({ variant = 'main' }) => {
                   <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
                 </Link>
                 
-                <div className="flex items-center space-x-1 px-2 py-1 bg-green-500/20 rounded-full">
+                <Link
+                  href="/live-matches"
+                  className="flex items-center space-x-1 px-2 py-1 bg-green-500/20 rounded-full hover:bg-green-500/30 active:scale-95 transition-transform"
+                  aria-label="View live matches"
+                >
                   <Radio className="h-4 w-4 text-green-600 dark:text-green-400" />
                   <span className="text-xs font-medium text-green-700 dark:text-green-300">LIVE</span>
-                </div>
+                </Link>
               </div>
             </>
           )}

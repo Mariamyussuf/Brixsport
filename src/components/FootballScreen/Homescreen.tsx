@@ -518,12 +518,14 @@ const Homescreen: React.FC = () => {
                 </button>
               ))}
             </div>
-            <div className="mt-3 flex items-center justify-center">
-              <DateSwitcher 
-                selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
-                className="mx-auto"
-              />
+            <div className="mt-3 sticky top-0 z-20 bg-gray-50 dark:bg-gray-900/95 backdrop-blur supports-[backdrop-filter]:bg-gray-50/80 dark:supports-[backdrop-filter]:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800 py-2">
+              <div className="flex items-center justify-center">
+                <DateSwitcher 
+                  selectedDate={selectedDate}
+                  onDateChange={setSelectedDate}
+                  className="mx-auto"
+                />
+              </div>
             </div>
           </div>
         )}
