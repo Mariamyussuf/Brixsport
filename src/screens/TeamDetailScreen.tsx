@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useApi } from '@/hooks/useApi';
 import { Team, Player } from '@/types/brixsports';
 import { Button } from '@/components/ui/button';
@@ -10,8 +10,9 @@ import { ArrowLeft, Users, MapPin, Calendar } from 'lucide-react';
 export default function TeamDetailScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Handle case where searchParams might be null during SSR
-  const teamId = searchParams ? searchParams.get('id') : null;
+  const params = useParams();
+  const routeId = (params as any)?.id as string | undefined;
+  const teamId = routeId ?? (searchParams ? searchParams.get('id') : null);
   
   const { getTeamById } = useApi();
   const [teamData, setTeamData] = useState<{ team: Team; players: Player[] } | null>(null);

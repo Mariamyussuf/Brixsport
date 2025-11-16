@@ -224,7 +224,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
         onClick={(e) => {
           e.stopPropagation();
           const teamId = (liveMatch as any).home_team_id;
-          if (teamId) router.push(`/teams/test-team-detail?id=${teamId}`);
+          if (teamId) router.push(`/team/${teamId}`);
         }}
         role="button"
         aria-label="Open home team profile"
@@ -265,7 +265,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, isBasketball = false }) =>
         onClick={(e) => {
           e.stopPropagation();
           const teamId = (liveMatch as any).away_team_id;
-          if (teamId) router.push(`/teams/test-team-detail?id=${teamId}`);
+          if (teamId) router.push(`/team/${teamId}`);
         }}
         role="button"
         aria-label="Open away team profile"
