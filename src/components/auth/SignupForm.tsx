@@ -111,7 +111,7 @@ const SignupForm: React.FC = () => {
   const [showPasswordStrength, setShowPasswordStrength] = useState(false);
   
   const router = useRouter();
-  const { login } = useAuth();
+  const { signup } = useAuth();
 
   // Handle input changes with debounced validation
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -200,40 +200,14 @@ const SignupForm: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: form.name,
-          email: form.email,
-          password: form.password,
-        }),
+      // Use the signup function from the useAuth hook
+      await signup({
+        name: form.name,
+        email: form.email,
+        password: form.password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        rateLimiter.recordAttempt();
-        
-        // Provide more specific error messages
-        let errorMessage = 'Signup failed';
-        if (data.error?.message) {
-          errorMessage = data.error.message;
-        } else if (data.message) {
-          errorMessage = data.message;
-        } else if (response.status === 500) {
-          errorMessage = 'Server error. Please try again later.';
-        } else if (response.status === 429) {
-          errorMessage = 'Too many requests. Please try again later.';
-        }
-        
-        throw new Error(errorMessage);
-      }
-
-      // After successful signup, automatically log the user in
-      await login({ email: form.email, password: form.password });
+      // Redirect to onboarding after successful signup
       router.push('/onboarding');
     } catch (error: any) {
       rateLimiter.recordAttempt();

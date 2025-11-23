@@ -49,6 +49,9 @@ pnpm install
 ```
 
 ### Environment Setup
+
+For detailed environment setup instructions, please refer to [SETUP_INSTRUCTIONS.md](SETUP_INSTRUCTIONS.md).
+
 Create a `.env.local` file in the root directory with your Supabase credentials:
 
 ```env

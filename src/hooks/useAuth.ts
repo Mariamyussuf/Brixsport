@@ -31,6 +31,7 @@ export interface AuthContextType {
   loading: LoadingStates;
   error: AuthError | null;
   login: (credentials: LoginCredentials) => Promise<void>;
+  signup: (userData: SignupCredentials) => Promise<void>;
   logout: () => void;
   refreshToken: () => Promise<void>;
   clearError: () => void;
@@ -48,6 +49,7 @@ interface AuthError {
 interface LoadingStates {
   initializing: boolean;
   loggingIn: boolean;
+  signingUp: boolean;
   refreshing: boolean;
 }
 
@@ -57,11 +59,28 @@ interface LoginCredentials {
   password: string;
 }
 
+// Signup credentials interface
+interface SignupCredentials {
+  name: string;
+  email: string;
+  password: string;
+}
+
 // API Response interfaces
 interface LoginResponse {
   token: string;
   refreshToken: string;
   user: User;
+}
+
+interface SignupResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    user: User;
+    token: string;
+    refreshToken: string;
+  };
 }
 
 interface RefreshResponse {
@@ -138,6 +157,47 @@ class AuthService {
     this.resetRateLimit();
 
     return response.json() as Promise<LoginResponse>;
+  }
+
+  static async signup(userData: SignupCredentials): Promise<SignupResponse> {
+    // Check rate limiting before attempting signup
+    if (this.isRateLimited()) {
+      throw new Error('RATE_LIMITED');
+    }
+
+    // Use the backend API instead of the frontend API route
+    const backendApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    const response = await fetch(`${backendApiUrl}/api/v1/auth/signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+
+    // Update rate limiting after attempt
+    this.updateRateLimit(response.status === 409 || response.status === 422);
+
+    if (!response.ok) {
+      if (response.status === 409) {
+        throw new Error('USER_EXISTS');
+      }
+      if (response.status === 422) {
+        throw new Error('VALIDATION');
+      }
+      if (response.status === 429) {
+        throw new Error('RATE_LIMITED');
+      }
+      if (response.status === 500) {
+        throw new Error('SERVER_ERROR');
+      }
+      throw new Error('NETWORK');
+    }
+
+    // Reset rate limiting on successful signup
+    this.resetRateLimit();
+
+    return response.json() as Promise<SignupResponse>;
   }
 
   static async refreshToken(refreshToken: string): Promise<RefreshResponse> {
@@ -298,6 +358,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState<LoadingStates>({
     initializing: true,
     loggingIn: false,
+    signingUp: false,
     refreshing: false,
   });
   const [error, setError] = useState<AuthError | null>(null);
@@ -533,6 +594,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Signup function
+  const signup = async (userData: { name: string; email: string; password: string }): Promise<void> => {
+    updateLoading('signingUp', true);
+    setError(null);
+
+    try {
+      const response = await AuthService.signup(userData);
+
+      if (!response.success) {
+        throw new Error(response.message || 'Signup failed');
+      }
+
+      // After successful signup, automatically log the user in
+      await login({ email: userData.email, password: userData.password });
+    } catch (err) {
+      let errorMessage = 'Failed to sign up.';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
+      // Handle specific error cases
+      if (errorMessage.includes('USER_EXISTS')) {
+        errorMessage = 'An account with this email already exists. Please use a different email or try logging in.';
+        setError(createError('VALIDATION', errorMessage, 'USER_EXISTS'));
+      } else if (errorMessage.includes('VALIDATION')) {
+        errorMessage = 'Please check your input and try again.';
+        setError(createError('VALIDATION', errorMessage, 'VALIDATION_ERROR'));
+      } else if (errorMessage.includes('RATE_LIMITED')) {
+        errorMessage = 'Too many signup attempts. Please try again later.';
+        setError(createError('RATE_LIMITED', errorMessage, 'RATE_LIMITED'));
+      } else if (errorMessage.includes('SERVER_ERROR')) {
+        errorMessage = 'Server error. Please try again later.';
+        setError(createError('NETWORK', errorMessage, 'SERVER_ERROR'));
+      } else {
+        setError(createError('UNKNOWN', errorMessage));
+      }
+      
+      throw new Error(errorMessage);
+    } finally {
+      updateLoading('signingUp', false);
+    }
+  };
+
   // Logout function
   const logout = useCallback(async (): Promise<void> => {
     try {
@@ -567,6 +672,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     error,
     login,
+    signup,
     logout,
     refreshToken,
     clearError,
