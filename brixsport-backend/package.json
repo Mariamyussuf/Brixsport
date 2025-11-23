@@ -28,6 +28,7 @@
     "setup": "bash scripts/dev-setup.sh",
     "deploy": "bash scripts/deploy.sh",
     "migrate": "bash scripts/migrate.sh",
+    "migrate:packages": "powershell -ExecutionPolicy Bypass -File scripts\\run-all-package-migrations.ps1",
     "start:api": "cd apps/api && npm run start",
     "db:add-basketball": "node packages/database/run_add_basketball_teams.js"
   },

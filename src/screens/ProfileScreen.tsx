@@ -7,16 +7,16 @@ import { useTheme } from '@/components/shared/ThemeProvider';
 import SettingsLauncher from '@/components/shared/SettingsLauncher';
 import Link from 'next/link';
 
-import { 
-  Settings, 
-  HelpCircle, 
-  Info, 
-  Shield, 
-  LogOut, 
-  ChevronRight, 
-  Share2, 
-  Users, 
-  FileText, 
+import {
+  Settings,
+  HelpCircle,
+  Info,
+  Shield,
+  LogOut,
+  ChevronRight,
+  Share2,
+  Users,
+  FileText,
   Lightbulb,
   Check,
   Copy,
@@ -39,7 +39,7 @@ const ProfileScreen = () => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { resolvedTheme } = useTheme();
-  
+
   useEffect(() => {
     if (!authLoading.initializing) {
       setLoading(false);
@@ -91,30 +91,30 @@ const ProfileScreen = () => {
   const cancelLogout = () => {
     setShowLogoutConfirm(false);
   };
-  
+
   // Define quickLinks array
   const quickLinks = [
-    { 
-      icon: <Bell className="h-6 w-6" />, 
-      text: 'Notifications', 
-      onClick: () => router.push('/notifications') 
+    {
+      icon: <Bell className="h-6 w-6" />,
+      text: 'Notifications',
+      onClick: () => router.push('/notifications')
     },
-    { 
-      icon: <Calendar className="h-6 w-6" />, 
-      text: 'Events', 
-      onClick: () => router.push('/events') 
+    {
+      icon: <Calendar className="h-6 w-6" />,
+      text: 'Events',
+      onClick: () => router.push('/events')
     },
-    { 
-      icon: <Users className="h-6 w-6" />, 
-      text: 'Teams', 
-      onClick: () => router.push('/teams') 
+    {
+      icon: <Users className="h-6 w-6" />,
+      text: 'Teams',
+      onClick: () => router.push('/teams')
     },
-    { 
-      icon: <HelpCircle className="h-6 w-6" />, 
-      text: 'Support', 
-      onClick: handleTipsAndSupport 
+    {
+      icon: <HelpCircle className="h-6 w-6" />,
+      text: 'Support',
+      onClick: handleTipsAndSupport
     }
-    
+
   ];
 
   const handleShare = async () => {
@@ -191,12 +191,6 @@ const ProfileScreen = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-slate-900 dark:text-white">
       <div className="py-2 max-w-full">
-        {/* Header - Fixed dark mode colors */}
-        <header className="flex items-center justify-between py-2 px-4 bg-white dark:bg-gray-800">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Profile</h1>
-          {/* Settings button in the user profile section */}
-        </header>
-
         {/* Main Content - Mobile-first responsive grid */}
         <div className="grid grid-cols-1 gap-4 px-4">
           {/* User Profile Section */}
@@ -232,13 +226,13 @@ const ProfileScreen = () => {
                   <h2 className="text-lg font-medium mb-2 text-center">Your home for sports insights</h2>
                   <p className="text-slate-600 dark:text-gray-400 mb-5 max-w-xs text-center text-sm">Sign up or log in to access your favorites, track events, and more.</p>
                   <div className="flex flex-col gap-3 w-full max-w-xs">
-                    <Button 
+                    <Button
                       onClick={() => router.push('/auth/signup')}
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg"
                     >
                       Sign Up
                     </Button>
-                    <Button 
+                    <Button
                       onClick={() => router.push('/auth/login')}
                       variant="outline"
                       className="w-full py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600"
@@ -286,46 +280,46 @@ const ProfileScreen = () => {
                 ))}
               </div>
             </div>
-            
+
             {/* Additional Menu Items */}
             <div className="bg-white dark:bg-gray-800 rounded-xl p-5 mb-4 shadow-sm border border-gray-100 dark:border-gray-700">
               <h3 className="text-lg font-semibold mb-4">More</h3>
               <div className="space-y-2">
-                <MenuItem 
-                  icon={<Users className="h-5 w-5" />} 
-                  text="Follow Us" 
-                  onClick={handleFollowUs} 
+                <MenuItem
+                  icon={<Users className="h-5 w-5" />}
+                  text="Follow Us"
+                  onClick={handleFollowUs}
                 />
-                <MenuItem 
-                  icon={<Shield className="h-5 w-5" />} 
-                  text="Privacy Policy" 
-                  onClick={handlePrivacyPolicy} 
+                <MenuItem
+                  icon={<Shield className="h-5 w-5" />}
+                  text="Privacy Policy"
+                  onClick={handlePrivacyPolicy}
                 />
                 {/* FAQ as a link instead of section */}
-                <MenuItem 
-                  icon={<MessageCircle className="h-5 w-5" />} 
-                  text="FAQ" 
-                  onClick={() => router.push('/faq')} 
+                <MenuItem
+                  icon={<MessageCircle className="h-5 w-5" />}
+                  text="FAQ"
+                  onClick={() => router.push('/faq')}
                 />
                 {/* Blog as a link instead of section */}
-                <MenuItem 
-                  icon={<BookOpen className="h-5 w-5" />} 
-                  text="Blog" 
-                  onClick={() => router.push('/blog')} 
+                <MenuItem
+                  icon={<BookOpen className="h-5 w-5" />}
+                  text="Blog"
+                  onClick={() => router.push('/blog')}
                 />
-                <MenuItem 
-                  icon={<HelpCircle className="h-5 w-5" />} 
-                  text="Help & Support" 
-                  onClick={handleTipsAndSupport} 
+                <MenuItem
+                  icon={<HelpCircle className="h-5 w-5" />}
+                  text="Help & Support"
+                  onClick={handleTipsAndSupport}
                 />
-                <MenuItem 
-                  icon={<Info className="h-5 w-5" />} 
-                  text="About Brixsports" 
-                  onClick={handleAbout} 
+                <MenuItem
+                  icon={<Info className="h-5 w-5" />}
+                  text="About Brixsports"
+                  onClick={handleAbout}
                 />
               </div>
             </div>
-            
+
             {/* Share and Logout Buttons */}
             <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
               {/* Share Button */}
@@ -338,7 +332,7 @@ const ProfileScreen = () => {
                   <span className="font-medium">{shareSuccess ? "SHARED!" : "SHARE BRIXSPORTS"}</span>
                 </Button>
               )}
-              
+
               {/* Logout Button */}
               {user && (
                 <Button
@@ -350,17 +344,17 @@ const ProfileScreen = () => {
                   <span className="font-medium">Logout</span>
                 </Button>
               )}
-              
+
               {/* Legal Links */}
               <div className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-4 pt-4">
-                <Link 
-                  href="/terms" 
+                <Link
+                  href="/terms"
                   className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline text-center"
                 >
                   Terms of Service
                 </Link>
-                <Link 
-                  href="/privacy" 
+                <Link
+                  href="/privacy"
                   className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline text-center"
                 >
                   Privacy Policy
@@ -395,7 +389,7 @@ const ProfileScreen = () => {
                   <X className="h-5 w-5" />
                 </Button>
               </div>
-              
+
               <div className="space-y-4">
                 {showModal === 'social' && (
                   <>
@@ -410,11 +404,11 @@ const ProfileScreen = () => {
                     </div>
                   </>
                 )}
-                
+
                 {showModal === 'privacy' && (
                   <div className="text-sm space-y-4 text-gray-600 dark:text-gray-300 max-h-[60vh] overflow-y-auto">
                     <p><strong>Last updated:</strong> {new Date().toLocaleDateString()}</p>
-                    
+
                     <div>
                       <h4 className="font-semibold mb-2">1. Information We Collect</h4>
                       <ul className="list-disc pl-5 space-y-1">
@@ -423,7 +417,7 @@ const ProfileScreen = () => {
                         <li>Device information for analytics</li>
                       </ul>
                     </div>
-                    
+
                     <div>
                       <h4 className="font-semibold mb-2">2. How We Use Your Information</h4>
                       <ul className="list-disc pl-5 space-y-1">
@@ -433,7 +427,7 @@ const ProfileScreen = () => {
                         <li>To gather analysis or valuable information</li>
                       </ul>
                     </div>
-                    
+
                     <div>
                       <h4 className="font-semibold mb-2">3. Data Security</h4>
                       <ul className="list-disc pl-5 space-y-1">
@@ -441,7 +435,7 @@ const ProfileScreen = () => {
                         <li>All data is encrypted in transit and at rest</li>
                       </ul>
                     </div>
-                    
+
                     <div>
                       <h4 className="font-semibold mb-2">4. Your Rights</h4>
                       <ul className="list-disc pl-5 space-y-1">
@@ -451,7 +445,7 @@ const ProfileScreen = () => {
                     </div>
                   </div>
                 )}
-                
+
                 {showModal === 'support' && (
                   <div className="space-y-4 text-gray-600 dark:text-gray-300 max-h-[60vh] overflow-y-auto">
                     <div>
@@ -462,7 +456,7 @@ const ProfileScreen = () => {
                         <li>Enable notifications to stay updated</li>
                       </ol>
                     </div>
-                    
+
                     <div>
                       <h4 className="font-semibold mb-2">Tips</h4>
                       <ul className="list-disc pl-5 space-y-1 text-sm">
@@ -471,7 +465,7 @@ const ProfileScreen = () => {
                         <li>View statistics to analyze team performance</li>
                       </ul>
                     </div>
-                    
+
                     <div>
                       <h4 className="font-semibold mb-2">Contact Support</h4>
                       <div className="space-y-2 text-sm">
@@ -481,18 +475,18 @@ const ProfileScreen = () => {
                     </div>
                   </div>
                 )}
-                
+
                 {showModal === 'about' && (
                   <div className="space-y-4 text-gray-600 dark:text-gray-300 max-h-[60vh] overflow-y-auto">
                     <div className="text-center">
                       <p className="text-sm text-gray-500 dark:text-gray-400">Version 1.0.0</p>
                     </div>
-                    
+
                     <p className="text-sm">
-                      Brixsports is a campus sports tracking application designed to help coaches, 
+                      Brixsports is a campus sports tracking application designed to help coaches,
                       analysts, and sports teams log, visualize, and analyze player and team performance.
                     </p>
-                    
+
                     <div>
                       <h4 className="font-semibold mb-2">Features</h4>
                       <ul className="list-disc pl-5 space-y-1 text-sm">
@@ -506,7 +500,7 @@ const ProfileScreen = () => {
                   </div>
                 )}
               </div>
-              
+
               <div className="mt-6 flex justify-end">
                 <Button onClick={closeModal} variant="outline">
                   Close
@@ -516,7 +510,7 @@ const ProfileScreen = () => {
           </div>
         </div>
       )}
-      
+
       {/* Logout Confirmation Dialog - Optimized for mobile */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -533,7 +527,7 @@ const ProfileScreen = () => {
                 <Button variant="outline" onClick={cancelLogout} className="w-full sm:w-auto">
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   onClick={confirmLogout}
                   className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
                 >
@@ -558,11 +552,10 @@ interface MenuItemProps {
 const MenuItem: React.FC<MenuItemProps> = ({ icon, text, onClick, isDestructive }) => (
   <button
     onClick={onClick}
-    className={`w-full flex items-center text-left p-3 rounded-md transition-colors ${
-      isDestructive
+    className={`w-full flex items-center text-left p-3 rounded-md transition-colors ${isDestructive
         ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
         : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
-    }`}
+      }`}
   >
     <div className="mr-4 text-gray-600 dark:text-gray-300">{icon}</div>
     <span className="flex-grow font-medium">{text}</span>
@@ -578,7 +571,7 @@ interface NavItemProps {
 }
 
 const NavItem: React.FC<NavItemProps> = ({ icon, text, active, onClick }) => (
-  <button 
+  <button
     onClick={onClick}
     className={`flex flex-col items-center space-y-1 py-2 px-3 ${active ? 'text-blue-600' : 'text-gray-500 dark:text-gray-400'}`}
   >
