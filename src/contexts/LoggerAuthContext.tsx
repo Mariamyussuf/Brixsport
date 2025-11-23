@@ -34,7 +34,11 @@ class LoggerAuthService {
   private static readonly API_BASE: string = '/api/logger/auth';
 
   static async validateToken(token: string): Promise<LoggerUser> {
-    const response = await fetch(`${this.API_BASE}`, {
+    // Get the backend API URL from environment variables
+    const backendApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    
+    // Forward the request to the backend API
+    const response = await fetch(`${backendApiUrl}/api/v1/auth/sessions`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -48,12 +52,36 @@ class LoggerAuthService {
       throw new Error('NETWORK');
     }
 
-    const data = await response.json();
-    return data.data.user;
+    // If we get a successful response, the token is valid
+    // We'll decode the token to get user information
+    return this.getUserFromToken(token);
+  }
+
+  static async getUserFromToken(token: string): Promise<LoggerUser> {
+    // Decode the JWT token to get user information
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return {
+        id: payload.userId || payload.id,
+        name: payload.name,
+        email: payload.email,
+        role: payload.role || 'logger',
+        assignedCompetitions: payload.assignedCompetitions,
+        permissions: payload.permissions,
+        lastLogin: payload.lastLogin,
+        sessionTimeout: payload.sessionTimeout
+      };
+    } catch (error) {
+      throw new Error('Invalid token');
+    }
   }
 
   static async login(credentials: LoginCredentials): Promise<{ accessToken: string; refreshToken: string; user: LoggerUser; accessTokenExpiry: string; refreshTokenExpiry: string }> {
-    const response = await fetch(`${this.API_BASE}`, {
+    // Get the backend API URL from environment variables
+    const backendApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    
+    // Forward the request to the backend API
+    const response = await fetch(`${backendApiUrl}/api/v1/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -69,17 +97,29 @@ class LoggerAuthService {
     }
 
     const data = await response.json();
+    
+    // Calculate expiry times (1 hour for access token, 7 days for refresh token)
+    const accessTokenExpiry = new Date();
+    accessTokenExpiry.setHours(accessTokenExpiry.getHours() + 1);
+    
+    const refreshTokenExpiry = new Date();
+    refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7);
+    
     return {
-      accessToken: data.data.accessToken,
+      accessToken: data.data.token,
       refreshToken: data.data.refreshToken,
       user: data.data.user,
-      accessTokenExpiry: data.data.accessTokenExpiry,
-      refreshTokenExpiry: data.data.refreshTokenExpiry
+      accessTokenExpiry: accessTokenExpiry.toISOString(),
+      refreshTokenExpiry: refreshTokenExpiry.toISOString()
     };
   }
 
   static async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string; accessTokenExpiry: string; refreshTokenExpiry: string }> {
-    const response = await fetch(`${this.API_BASE}/refresh`, {
+    // Get the backend API URL from environment variables
+    const backendApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    
+    // Forward the request to the backend API
+    const response = await fetch(`${backendApiUrl}/api/v1/auth/refresh-tokens`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -92,11 +132,19 @@ class LoggerAuthService {
     }
 
     const data = await response.json();
+    
+    // Calculate expiry times (1 hour for access token, 7 days for refresh token)
+    const accessTokenExpiry = new Date();
+    accessTokenExpiry.setHours(accessTokenExpiry.getHours() + 1);
+    
+    const refreshTokenExpiry = new Date();
+    refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7);
+    
     return {
-      accessToken: data.data.accessToken,
+      accessToken: data.data.token,
       refreshToken: data.data.refreshToken,
-      accessTokenExpiry: data.data.accessTokenExpiry,
-      refreshTokenExpiry: data.data.refreshTokenExpiry
+      accessTokenExpiry: accessTokenExpiry.toISOString(),
+      refreshTokenExpiry: refreshTokenExpiry.toISOString()
     };
   }
 

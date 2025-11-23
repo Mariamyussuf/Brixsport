@@ -1,73 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { supabase } from '@/lib/supabaseClient';
-import { generateUnifiedToken } from '@/lib/authService';
-import bcrypt from 'bcryptjs';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
-
-    // Validate required fields
-    if (!email || !password) {
-      return NextResponse.json(
-        { success: false, error: { message: 'Email and password are required' } },
-        { status: 400 }
-      );
-    }
-
-    // Find user in Supabase
-    const { data: user, error } = await supabase
-      .from('User')
-      .select('*')
-      .eq('email', email)
-      .single();
-
-    if (error || !user) {
-      return NextResponse.json(
-        { success: false, error: { message: 'Invalid email or password' } },
-        { status: 401 }
-      );
-    }
-
-    // Verify password
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) {
-      return NextResponse.json(
-        { success: false, error: { message: 'Invalid email or password' } },
-        { status: 401 }
-      );
-    }
-
-    // Remove sensitive information
-    const { password: _, ...publicUser } = user;
-
-    // Generate authentication token
-    const token = await generateUnifiedToken({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role as any
+    // Get the backend API URL from environment variables
+    const backendApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    
+    // Forward the request to the backend API
+    const backendResponse = await fetch(`${backendApiUrl}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: await req.text(),
     });
 
-    // Return success response with token
-    const response = NextResponse.json({
-      success: true,
-      data: {
-        user: publicUser,
-        token
-      }
-    }, { status: 200 });
+    // Get the response data
+    const data = await backendResponse.json();
 
-    // Set auth cookie
-    response.cookies.set('auth-token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60, // 1 hour
-      path: '/',
-    });
-
-    return response;
+    // Return the backend response
+    return NextResponse.json(data, { status: backendResponse.status });
   } catch (error) {
     console.error('Login API error:', error);
     return NextResponse.json(
