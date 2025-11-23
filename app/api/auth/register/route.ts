@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 import { generateUnifiedToken } from '@/lib/authService';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 export async function POST(req: NextRequest) {
   try {
@@ -62,8 +62,8 @@ export async function POST(req: NextRequest) {
           email,
           password: hashedPassword,
           role: 'user', // Default role for new users
-          createdAt: new Date(),
-          updatedAt: new Date()
+          created_at: new Date(),
+          updated_at: new Date()
         }
       ])
       .select()
