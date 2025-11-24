@@ -7,9 +7,21 @@ export async function POST(req: NextRequest) {
     
     console.log('Attempting to connect to backend:', `${backendApiUrl}/api/v1/auth/signup`);
     
-    // Log the request body for debugging
-    const requestBody = await req.text();
+    // Parse the request body as JSON
+    const requestBody = await req.json();
     console.log('Request body:', requestBody);
+    
+    // Validate that we have the required fields
+    if (!requestBody.name || !requestBody.email || !requestBody.password) {
+      console.error('Missing required fields in request body');
+      return NextResponse.json({
+        success: false,
+        error: {
+          message: 'Name, email, and password are required',
+          code: 'VALIDATION_ERROR'
+        }
+      }, { status: 400 });
+    }
     
     // Forward the request to the backend API
     const backendResponse = await fetch(`${backendApiUrl}/api/v1/auth/signup`, {
@@ -17,7 +29,7 @@ export async function POST(req: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: requestBody,
+      body: JSON.stringify(requestBody),
     }).catch(error => {
       console.error('Network error when connecting to backend:', error);
       throw new Error(`Failed to connect to authentication service: ${error.message}`);
@@ -45,6 +57,12 @@ export async function POST(req: NextRequest) {
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
       errorMessage = 'Unable to connect to authentication service. Please check your network connection and try again.';
       errorCode = 'NETWORK_ERROR';
+    }
+    
+    // Handle JSON parsing errors
+    if (error.name === 'SyntaxError') {
+      errorMessage = 'Invalid request format. Please check your input and try again.';
+      errorCode = 'INVALID_FORMAT';
     }
     
     return NextResponse.json(
