@@ -46,9 +46,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
     if (!form.email.trim()) errs.email = 'Email is required.';
     else if (!validateEmail(form.email)) errs.email = 'Enter a valid email address.';
     if (!form.password) errs.password = 'Password is required.';
-    else if (tab === 'signup' && !validatePasswordStrength(form.password)) {
-      errs.password = 'Password must be at least 8 characters, include uppercase, lowercase, number, and special character.';
-    } else if (form.password.length < 6) {
+    else if (form.password.length < 6) {
       errs.password = 'Password must be at least 6 characters.';
     }
     if (tab === 'signup') {

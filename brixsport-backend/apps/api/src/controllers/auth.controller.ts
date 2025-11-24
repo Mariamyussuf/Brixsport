@@ -20,17 +20,52 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     }
     
     // Validate request body
-    if (!req.body || !req.body.name || !req.body.email || !req.body.password) {
-      logger.warn('Signup failed: Missing required fields', { 
-        ip, 
-        hasName: !!req.body?.name,
-        hasEmail: !!req.body?.email,
-        hasPassword: !!req.body?.password
-      });
+    if (!req.body) {
+      logger.warn('Signup failed: No request body', { ip });
       res.status(400).json({
         success: false,
         error: 'Validation error',
-        message: 'Name, email, and password are required'
+        message: 'Request body is required'
+      });
+      return;
+    }
+    
+    if (!req.body.name) {
+      logger.warn('Signup failed: Name is required', { ip });
+      res.status(400).json({
+        success: false,
+        error: 'Validation error',
+        message: 'Name is required'
+      });
+      return;
+    }
+    
+    if (!req.body.email) {
+      logger.warn('Signup failed: Email is required', { ip });
+      res.status(400).json({
+        success: false,
+        error: 'Validation error',
+        message: 'Email is required'
+      });
+      return;
+    }
+    
+    if (!req.body.password) {
+      logger.warn('Signup failed: Password is required', { ip });
+      res.status(400).json({
+        success: false,
+        error: 'Validation error',
+        message: 'Password is required'
+      });
+      return;
+    }
+    
+    if (req.body.password.length < 6) {
+      logger.warn('Signup failed: Password too short', { ip });
+      res.status(400).json({
+        success: false,
+        error: 'Validation error',
+        message: 'Password must be at least 6 characters long'
       });
       return;
     }
