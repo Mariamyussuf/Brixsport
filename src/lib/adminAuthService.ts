@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { supabase } from './supabaseClient';
 import type { AdminUser, AdminAuthResponse, AdminMfaSetup, AdminPasswordReset } from '@/types/admin';
 import { authenticator } from 'otplib';

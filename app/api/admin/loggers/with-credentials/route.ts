@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminToken, hasAdminPermission, canManageLogger } from '@/lib/adminAuth';
 import { cookies } from 'next/headers';
 import { dbService } from '@/lib/databaseService';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 // Import the email service
 import { emailService } from '../../../../../brixsport-backend/apps/api/src/services/email.service';
 

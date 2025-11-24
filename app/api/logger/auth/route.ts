@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateLoggerToken, getLoggerAuth, LoggerAuthRoles } from '@/lib/loggerAuthService';
 import { dbService } from '@/lib/databaseService';
 import { LoggerUser } from '@/lib/loggerAuth';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { nanoid } from 'nanoid';
 import { Logger } from '@/lib/databaseService';
 import { supabase } from '@/lib/supabaseClient';

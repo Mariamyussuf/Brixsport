@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { supabase } from '../src/lib/supabaseClient';
 
 async function createTestLogger() {
