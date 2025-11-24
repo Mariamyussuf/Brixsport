@@ -77,6 +77,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
           email: form.email,
           password: form.password,
         }),
+      }).catch(error => {
+        console.error('Network error when connecting to registration API:', error);
+        throw new Error(`Network error: ${error.message}`);
       });
 
       const data = await response.json();
@@ -89,7 +92,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ initialTab = 'signup' })
       await login({ email: form.email, password: form.password });
       router.push('/onboarding');
     } catch (err: any) {
-      setSubmitError(err.message || 'Failed to sign up. Please try again.');
+      console.error('Signup error:', err);
+      
+      // Provide more specific error messages
+      if (err.message.includes('network') || err.message.includes('fetch')) {
+        setSubmitError('Unable to connect to the server. Please check your internet connection and try again.');
+      } else if (err.message.includes('timeout')) {
+        setSubmitError('Request timed out. Please try again.');
+      } else {
+        setSubmitError(err.message || 'Failed to sign up. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
