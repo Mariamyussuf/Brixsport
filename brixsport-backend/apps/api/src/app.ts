@@ -13,11 +13,15 @@ import { getSecurityMetrics } from './services/security/monitoring.service';
 
 const app = express();
 
+// Trust proxy for Railway deployment
+// This is required for express-rate-limit to work correctly with X-Forwarded-For headers
+app.set('trust proxy', 1);
+
 // Enhanced security middleware
 app.use(enhancedSecurityHeaders);
 
 // CORS configuration for Vercel frontend
-const allowedOriginsForCORS = process.env.ALLOWED_ORIGINS 
+const allowedOriginsForCORS = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
   : ['http://localhost:3000', 'http://localhost:5173']; // Fallback for development
 
@@ -25,7 +29,7 @@ const corsOptions = {
   origin: function (origin: string | undefined, callback: (err: Error | null, origin?: boolean) => void) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-    
+
     // Check if origin matches any allowed pattern
     const isAllowed = allowedOriginsForCORS.some(allowed => {
       if (allowed.includes('*')) {
@@ -35,7 +39,7 @@ const corsOptions = {
       }
       return allowed === origin;
     });
-    
+
     if (isAllowed) {
       callback(null, true);
     } else {
@@ -80,8 +84,8 @@ app.use('/api', routes);
 
 // Root endpoint for basic health check
 app.get('/', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
+  res.status(200).json({
+    status: 'OK',
     message: 'Brixsport API is running',
     timestamp: new Date().toISOString()
   });
@@ -89,8 +93,8 @@ app.get('/', (req, res) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
+  res.status(200).json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
     metrics: getSecurityMetrics()
   });
@@ -98,7 +102,7 @@ app.get('/health', (req, res) => {
 
 // 404 handler
 app.use('*', (req, res) => {
-  res.status(404).json({ 
+  res.status(404).json({
     success: false,
     error: 'Route not found',
     message: 'The requested route does not exist'
@@ -112,7 +116,7 @@ app.use(errorHandler);
 const server = createServer(app);
 
 // Create Socket.IO instance with proper CORS for Vercel
-const allowedOriginsForSocket = process.env.ALLOWED_ORIGINS 
+const allowedOriginsForSocket = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
   : ['http://localhost:3000'];
 
@@ -121,7 +125,7 @@ const io = new Server(server, {
     origin: function (origin: string | undefined, callback: (err: Error | null, origin?: boolean) => void) {
       // Allow requests with no origin (mobile apps, etc.)
       if (!origin) return callback(null, true);
-      
+
       // Check if origin matches any allowed pattern
       const isAllowed = allowedOriginsForSocket.some(allowed => {
         if (allowed.includes('*')) {
@@ -131,7 +135,7 @@ const io = new Server(server, {
         }
         return allowed === origin;
       });
-      
+
       if (isAllowed) {
         callback(null, true);
       } else {
