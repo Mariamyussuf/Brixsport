@@ -206,7 +206,6 @@ const ProfileScreen = () => {
                   <UserProfile
                     playerImage={user?.image || ''}
                     playerName={user?.name || 'Guest'}
-                    onLogout={handleLogout}
                   />
                   <h2 className="text-xl font-semibold mt-4">{user?.name || 'Guest User'}</h2>
                   <p className="text-slate-600 dark:text-gray-400 mt-1 text-sm">{user?.email}</p>
@@ -553,8 +552,8 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, text, onClick, isDestructive 
   <button
     onClick={onClick}
     className={`w-full flex items-center text-left p-3 rounded-md transition-colors ${isDestructive
-        ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
-        : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+      ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
+      : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
       }`}
   >
     <div className="mr-4 text-gray-600 dark:text-gray-300">{icon}</div>
