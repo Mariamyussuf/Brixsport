@@ -65,26 +65,8 @@ export const credentialRateLimiter = rateLimit({
   }
 });
 
-// Rate limiter for account creation
-export const accountCreationRateLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5, // limit each IP to 5 account creations per hour
-  message: {
-    success: false,
-    error: 'Too many requests',
-    message: 'Too many account creation attempts, please try again later'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res, next, options) => {
-    logger.warn('Account creation rate limit exceeded', {
-      ip: req.ip,
-      url: req.url,
-      method: req.method
-    });
-    res.status(options.statusCode).send(options.message);
-  }
-});
+// Note: Account creation rate limiter removed to support mass student registrations
+// from shared school networks (3000+ students). Email uniqueness is enforced at database level.
 
 // Rate limiter for MFA operations
 export const mfaRateLimiter = rateLimit({

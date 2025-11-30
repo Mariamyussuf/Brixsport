@@ -1,21 +1,21 @@
 import { Router } from 'express';
-import { 
-  signup, 
-  login, 
-  refreshTokens, 
-  logout, 
-  logoutAllSessions, 
-  verifyEmail, 
-  resendVerification, 
-  forgotPassword, 
-  resetPassword, 
-  changePassword, 
-  enableMFA, 
-  disableMFA, 
-  listSessions, 
-  revokeSession 
+import {
+  signup,
+  login,
+  refreshTokens,
+  logout,
+  logoutAllSessions,
+  verifyEmail,
+  resendVerification,
+  forgotPassword,
+  resetPassword,
+  changePassword,
+  enableMFA,
+  disableMFA,
+  listSessions,
+  revokeSession
 } from '../../controllers/auth.controller';
-import { 
+import {
   signupSchema,
   loginSchema,
   refreshTokenSchema,
@@ -24,13 +24,15 @@ import {
   changePasswordSchema,
   validate
 } from '../../validation/user.validation';
-import { authRateLimiter, passwordResetRateLimiter, credentialRateLimiter, accountCreationRateLimiter, mfaRateLimiter } from '../../middleware/rateLimit.middleware';
+import { authRateLimiter, passwordResetRateLimiter, credentialRateLimiter, mfaRateLimiter } from '../../middleware/rateLimit.middleware';
 import { authenticate } from '../../middleware/auth.middleware';
 
 const router = Router();
 
 // Public routes with rate limiting
-router.post('/signup', accountCreationRateLimiter, validate(signupSchema), signup);
+// Note: No rate limiter on signup to support mass student registrations from shared school networks
+// Email uniqueness is enforced at the database level to prevent duplicate accounts
+router.post('/signup', validate(signupSchema), signup);
 router.post('/login', authRateLimiter, validate(loginSchema), login);
 router.post('/refresh', validate(refreshTokenSchema), refreshTokens);
 router.post('/verify-email', verifyEmail);

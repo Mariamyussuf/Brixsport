@@ -6,6 +6,7 @@ import { SportType } from '../../types/campus';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/components/shared/I18nProvider';
 import { useFavoritesNew } from '@/hooks/useFavoritesNew';
+import { useAuth } from '@/hooks/useAuth';
 import { Team as ApiTeam, Player as ApiPlayer } from '@/types/favorites';
 import { Competition } from '@/lib/competitionService';
 
@@ -42,15 +43,15 @@ interface FavouritesscreenProps {
 const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
   const router = useRouter();
   const { t } = useI18n();
-  const isAuthed = typeof window !== 'undefined' && !!localStorage.getItem('token');
-  
+  const { isAuthenticated } = useAuth();
+
   // Use the new useFavoritesNew hook
   const { favorites, loading, error, refreshFavorites, addFavorite, removeFavorite } = useFavoritesNew();
-  
-  const [toast, setToast] = useState<{type: 'success' | 'info' | 'error', message: string} | null>(null);
-  
+
+  const [toast, setToast] = useState<{ type: 'success' | 'info' | 'error', message: string } | null>(null);
+
   const requireAuth = (next: string = '/?tab=Favourites'): boolean => {
-    if (!isAuthed) {
+    if (!isAuthenticated) {
       router.push(`/auth/login?next=${encodeURIComponent(next)}`);
       return true;
     }
@@ -59,7 +60,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
 
   const handleAddTeam = async (teamId: string): Promise<void> => {
     if (requireAuth()) return;
-    
+
     try {
       const response = await addFavorite('team', parseInt(teamId, 10));
       showToast(response.success ? 'success' : 'info', response.message);
@@ -70,7 +71,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
 
   const handleRemoveTeam = async (teamId: string): Promise<void> => {
     if (requireAuth()) return;
-    
+
     try {
       const response = await removeFavorite('team', parseInt(teamId, 10));
       showToast(response.success ? 'success' : 'info', response.message);
@@ -81,7 +82,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
 
   const handleAddPlayer = async (playerId: string): Promise<void> => {
     if (requireAuth()) return;
-    
+
     try {
       const response = await addFavorite('player', parseInt(playerId, 10));
       showToast(response.success ? 'success' : 'info', response.message);
@@ -92,7 +93,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
 
   const handleRemovePlayer = async (playerId: string): Promise<void> => {
     if (requireAuth()) return;
-    
+
     try {
       const response = await removeFavorite('player', parseInt(playerId, 10));
       showToast(response.success ? 'success' : 'info', response.message);
@@ -103,7 +104,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
 
   const handleAddCompetition = async (competitionId: number): Promise<void> => {
     if (requireAuth()) return;
-    
+
     try {
       const response = await addFavorite('competition', competitionId);
       showToast(response.success ? 'success' : 'info', response.message);
@@ -114,7 +115,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
 
   const handleRemoveCompetition = async (competitionId: number): Promise<void> => {
     if (requireAuth()) return;
-    
+
     try {
       const response = await removeFavorite('competition', competitionId);
       showToast(response.success ? 'success' : 'info', response.message);
@@ -131,7 +132,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
   const getColorClass = (color: string): string => {
     const colorMap: { [key: string]: string } = {
       '#1e3a8a': 'bg-blue-800',
-      '#dc2626': 'bg-red-600', 
+      '#dc2626': 'bg-red-600',
       '#2563eb': 'bg-blue-600',
       '#f59e0b': 'bg-amber-500'
     };
@@ -141,7 +142,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
   const getTextColorClass = (color: string): string => {
     const colorMap: { [key: string]: string } = {
       '#1e3a8a': 'text-blue-800',
-      '#dc2626': 'text-red-600', 
+      '#dc2626': 'text-red-600',
       '#2563eb': 'text-blue-600',
       '#f59e0b': 'text-amber-500'
     };
@@ -205,22 +206,21 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
   })) || [];
 
   // Filter competitions by sport if needed
-  const filteredCompetitions = activeSport === 'all' 
-    ? favouriteCompetitions 
+  const filteredCompetitions = activeSport === 'all'
+    ? favouriteCompetitions
     : favouriteCompetitions.filter(comp => comp.sportType === activeSport);
 
   return (
     <div className="space-y-6 text-neutral-900 dark:text-neutral-100">
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md shadow-lg text-white ${
-          toast.type === 'success' ? 'bg-green-500' : 
-          toast.type === 'info' ? 'bg-blue-500' : 'bg-red-500'
-        }`}>
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md shadow-lg text-white ${toast.type === 'success' ? 'bg-green-500' :
+            toast.type === 'info' ? 'bg-blue-500' : 'bg-red-500'
+          }`}>
           {toast.message}
         </div>
       )}
-      
+
       {/* Your Teams Section */}
       <section>
         <div className="flex items-center justify-between mb-4">
@@ -238,7 +238,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
             <Plus className="w-4 h-4" />
           </button>
         </div>
-        
+
         {favouriteTeams.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-gray-400 mb-4">
@@ -295,7 +295,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
             <Plus className="w-4 h-4" />
           </button>
         </div>
-        
+
         {favouritePlayers.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-gray-400 mb-4">
@@ -355,7 +355,7 @@ const Favouritesscreen: React.FC<FavouritesscreenProps> = ({ activeSport }) => {
             <Plus className="w-4 h-4" />
           </button>
         </div>
-        
+
         {filteredCompetitions.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-gray-400 mb-4">

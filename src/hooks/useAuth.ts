@@ -336,32 +336,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (token && storedUser) {
           // Check if token is expired
           if (AuthService.isTokenExpired(token)) {
-            // Try to refresh
+            // Try to refresh the token
             try {
               await refreshToken();
-            } catch {
+            } catch (refreshError) {
+              // If refresh fails, clear tokens and log out
               TokenManager.clearTokens();
+              if (isMounted) {
+                setUser(null);
+                setError(createError('TOKEN_EXPIRED', 'Session expired. Please log in again.'));
+              }
             }
           } else {
-            // Validate token with backend
-            try {
-              const userData = await AuthService.validateToken(token);
-              if (isMounted) {
-                setUser(userData);
-                TokenManager.setTokens(token, TokenManager.getRefreshToken()!, userData);
-              }
-            } catch {
-              if (isMounted) {
-                TokenManager.clearTokens();
-              }
+            // Token is valid, restore the user session
+            if (isMounted) {
+              setUser(storedUser);
             }
           }
         }
       } catch (err) {
+        // Handle any unexpected errors
+        TokenManager.clearTokens();
         if (isMounted) {
-          TokenManager.clearTokens();
+          setUser(null);
           if (err instanceof Error) {
-            setError(createError('UNAUTHORIZED', 'Session expired. Please log in again.'));
+            setError(createError('UNKNOWN', 'Failed to initialize authentication.'));
           }
         }
       } finally {
