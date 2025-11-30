@@ -1,16 +1,13 @@
 "use client";
 
-import React, { 
-  createContext, 
-  useState, 
-  useContext, 
-  ReactNode, 
-  useEffect, 
-  useCallback 
+import React, {
+  createContext,
+  useState,
+  useContext,
+  ReactNode,
+  useEffect,
+  useCallback
 } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
-
 
 export interface User {
   id: string;
@@ -18,14 +15,12 @@ export interface User {
   email: string;
   role: 'user' | 'logger' | 'senior-logger' | 'logger-admin' | 'admin' | 'super-admin';
   image?: string;
-  assignedCompetitions?: string[]; // Logger-specific field
-  permissions?: string[]; // Logger-specific field
-  // Admin-specific fields
-  managedLoggers?: string[]; // Admin can manage these loggers
-  adminLevel?: 'basic' | 'super'; // Admin level for permission granularity
+  assignedCompetitions?: string[];
+  permissions?: string[];
+  managedLoggers?: string[];
+  adminLevel?: 'basic' | 'super';
 }
 
-// Define the AuthContextType interface
 export interface AuthContextType {
   user: User | null;
   loading: LoadingStates;
@@ -38,14 +33,12 @@ export interface AuthContextType {
   isAuthenticated: boolean;
 }
 
-// Define error types for better error handling
 interface AuthError {
   type: 'NETWORK' | 'UNAUTHORIZED' | 'VALIDATION' | 'TOKEN_EXPIRED' | 'RATE_LIMITED' | 'UNKNOWN';
   message: string;
   code?: string;
 }
 
-// Define loading states for different operations
 interface LoadingStates {
   initializing: boolean;
   loggingIn: boolean;
@@ -53,20 +46,17 @@ interface LoadingStates {
   refreshing: boolean;
 }
 
-// Login credentials interface
 interface LoginCredentials {
   email: string;
   password: string;
 }
 
-// Signup credentials interface
 interface SignupCredentials {
   name: string;
   email: string;
   password: string;
 }
 
-// API Response interfaces
 interface LoginResponse {
   token: string;
   refreshToken: string;
@@ -88,25 +78,12 @@ interface RefreshResponse {
   refreshToken: string;
 }
 
-// Rate limiting interface
-interface RateLimitState {
-  attempts: number;
-  lastAttempt: number;
-  isLocked: boolean;
-  lockUntil: number;
-}
-
 // Auth Service for API calls
 class AuthService {
-  private static readonly API_BASE: string = '/api/auth';
-  private static readonly MAX_ATTEMPTS: number = 5;
-  private static readonly LOCKOUT_DURATION: number = 15 * 60 * 1000; // 15 minutes
-
-  // Rate limiting storage key
-  private static readonly RATE_LIMIT_KEY: string = 'auth_rate_limit';
+  private static readonly API_BASE: string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
   static async validateToken(token: string): Promise<User> {
-    const response = await fetch(`${this.API_BASE}/me`, {
+    const response = await fetch(`${this.API_BASE}/api/v1/auth/me`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -120,16 +97,12 @@ class AuthService {
       throw new Error('NETWORK');
     }
 
-    return response.json() as Promise<User>;
+    const data = await response.json();
+    return data.data.user;
   }
 
   static async login(credentials: LoginCredentials): Promise<LoginResponse> {
-    // Check rate limiting before attempting login
-    if (this.isRateLimited()) {
-      throw new Error('RATE_LIMITED');
-    }
-
-    const response = await fetch(`${this.API_BASE}/login`, {
+    const response = await fetch(`${this.API_BASE}/api/v1/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -137,10 +110,8 @@ class AuthService {
       body: JSON.stringify(credentials),
     });
 
-    // Update rate limiting after attempt
-    this.updateRateLimit(response.status === 401 || response.status === 422);
-
     if (!response.ok) {
+      const errorData = await response.json();
       if (response.status === 401) {
         throw new Error('UNAUTHORIZED');
       }
@@ -150,24 +121,19 @@ class AuthService {
       if (response.status === 429) {
         throw new Error('RATE_LIMITED');
       }
-      throw new Error('NETWORK');
+      throw new Error(errorData.error?.message || 'NETWORK');
     }
 
-    // Reset rate limiting on successful login
-    this.resetRateLimit();
-
-    return response.json() as Promise<LoginResponse>;
+    const data = await response.json();
+    return {
+      token: data.data.token,
+      refreshToken: data.data.refreshToken,
+      user: data.data.user
+    };
   }
 
   static async signup(userData: SignupCredentials): Promise<SignupResponse> {
-    // Check rate limiting before attempting signup
-    if (this.isRateLimited()) {
-      throw new Error('RATE_LIMITED');
-    }
-
-    // Use the backend API instead of the frontend API route
-    const backendApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-    const response = await fetch(`${backendApiUrl}/api/v1/auth/signup`, {
+    const response = await fetch(`${this.API_BASE}/api/v1/auth/signup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -175,10 +141,8 @@ class AuthService {
       body: JSON.stringify(userData),
     });
 
-    // Update rate limiting after attempt
-    this.updateRateLimit(response.status === 409 || response.status === 422);
-
     if (!response.ok) {
+      const errorData = await response.json();
       if (response.status === 409) {
         throw new Error('USER_EXISTS');
       }
@@ -191,17 +155,14 @@ class AuthService {
       if (response.status === 500) {
         throw new Error('SERVER_ERROR');
       }
-      throw new Error('NETWORK');
+      throw new Error(errorData.error?.message || 'NETWORK');
     }
 
-    // Reset rate limiting on successful signup
-    this.resetRateLimit();
-
-    return response.json() as Promise<SignupResponse>;
+    return response.json();
   }
 
   static async refreshToken(refreshToken: string): Promise<RefreshResponse> {
-    const response = await fetch(`${this.API_BASE}/refresh`, {
+    const response = await fetch(`${this.API_BASE}/api/v1/auth/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -213,7 +174,22 @@ class AuthService {
       throw new Error('UNAUTHORIZED');
     }
 
-    return response.json() as Promise<RefreshResponse>;
+    const data = await response.json();
+    return {
+      token: data.data.token,
+      refreshToken: data.data.refreshToken
+    };
+  }
+
+  static async logout(token: string, refreshToken: string): Promise<void> {
+    await fetch(`${this.API_BASE}/api/v1/auth/logout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
   }
 
   static isTokenExpired(token: string): boolean {
@@ -224,69 +200,6 @@ class AuthService {
       return true;
     }
   }
-
-  // Rate limiting methods
-  private static getRateLimitState(): RateLimitState {
-    if (typeof window === 'undefined') return { attempts: 0, lastAttempt: 0, isLocked: false, lockUntil: 0 };
-    
-    const stored = localStorage.getItem(this.RATE_LIMIT_KEY);
-    if (stored) {
-      const state = JSON.parse(stored) as RateLimitState;
-      // Check if lockout has expired
-      if (state.isLocked && Date.now() > state.lockUntil) {
-        this.resetRateLimit();
-        return { attempts: 0, lastAttempt: 0, isLocked: false, lockUntil: 0 };
-      }
-      return state;
-    }
-    return { attempts: 0, lastAttempt: 0, isLocked: false, lockUntil: 0 };
-  }
-
-  private static saveRateLimitState(state: RateLimitState): void {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(this.RATE_LIMIT_KEY, JSON.stringify(state));
-  }
-
-  private static isRateLimited(): boolean {
-    const state = this.getRateLimitState();
-    return state.isLocked;
-  }
-
-  private static updateRateLimit(failedAttempt: boolean): void {
-    const state = this.getRateLimitState();
-    
-    if (failedAttempt) {
-      const now = Date.now();
-      state.attempts += 1;
-      state.lastAttempt = now;
-      
-      if (state.attempts >= this.MAX_ATTEMPTS) {
-        state.isLocked = true;
-        state.lockUntil = now + this.LOCKOUT_DURATION;
-      }
-    }
-    
-    this.saveRateLimitState(state);
-  }
-
-  private static resetRateLimit(): void {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem(this.RATE_LIMIT_KEY);
-  }
-
-  // Get remaining lockout time in minutes
-  static getLockoutTime(): number {
-    const state = this.getRateLimitState();
-    if (!state.isLocked) return 0;
-    return Math.ceil((state.lockUntil - Date.now()) / 60000);
-  }
-
-  // Get remaining attempts
-  static getRemainingAttempts(): number {
-    const state = this.getRateLimitState();
-    if (state.isLocked) return 0;
-    return Math.max(0, this.MAX_ATTEMPTS - state.attempts);
-  }
 }
 
 // Token management utilities
@@ -294,6 +207,7 @@ export class TokenManager {
   private static readonly TOKEN_KEY: string = 'authToken';
   private static readonly REFRESH_TOKEN_KEY: string = 'refreshToken';
   private static readonly TOKEN_EXPIRY_KEY: string = 'tokenExpiry';
+  private static readonly USER_KEY: string = 'authUser';
 
   static getToken(): string | null {
     if (typeof window === 'undefined') return null;
@@ -305,20 +219,29 @@ export class TokenManager {
     return localStorage.getItem(this.REFRESH_TOKEN_KEY);
   }
 
-  static setTokens(token: string, refreshToken: string): void {
+  static getUser(): User | null {
+    if (typeof window === 'undefined') return null;
+    const userStr = localStorage.getItem(this.USER_KEY);
+    if (!userStr) return null;
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      return null;
+    }
+  }
+
+  static setTokens(token: string, refreshToken: string, user: User): void {
     if (typeof window === 'undefined') return;
-    
-    // Store tokens
+
     localStorage.setItem(this.TOKEN_KEY, token);
     localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
-    
-    // Store token expiry time
+    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const expiry = payload.exp * 1000;
       localStorage.setItem(this.TOKEN_EXPIRY_KEY, expiry.toString());
     } catch {
-      // If we can't parse the token, remove the expiry time
       localStorage.removeItem(this.TOKEN_EXPIRY_KEY);
     }
   }
@@ -328,31 +251,28 @@ export class TokenManager {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.TOKEN_EXPIRY_KEY);
+    localStorage.removeItem(this.USER_KEY);
   }
 
   static isTokenExpiringSoon(): boolean {
     if (typeof window === 'undefined') return false;
-    
+
     const expiryStr = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
-    if (!expiryStr) return true; // If we don't have expiry info, assume it's expiring
-    
+    if (!expiryStr) return true;
+
     const expiry = parseInt(expiryStr, 10);
     const now = Date.now();
-    
-    // Consider token expiring soon if it expires in less than 10 minutes
+
     return (expiry - now) < 10 * 60 * 1000;
   }
 }
 
-// Create the context with a default undefined value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// AuthProvider Props interface
 interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Create the AuthProvider component
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<LoadingStates>({
@@ -363,10 +283,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   });
   const [error, setError] = useState<AuthError | null>(null);
 
-  // Helper function to create error objects
   const createError = useCallback((
-    type: AuthError['type'], 
-    message: string, 
+    type: AuthError['type'],
+    message: string,
     code?: string
   ): AuthError => ({
     type,
@@ -374,17 +293,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     code,
   }), []);
 
-  // Helper function to update loading states
   const updateLoading = useCallback((key: keyof LoadingStates, value: boolean) => {
     setLoading(prev => ({ ...prev, [key]: value }));
   }, []);
 
-  // Clear error function
   const clearError = useCallback((): void => {
     setError(null);
   }, []);
 
-  // Refresh token function
   const refreshToken = useCallback(async (): Promise<void> => {
     const refreshTokenValue = TokenManager.getRefreshToken();
     if (!refreshTokenValue) {
@@ -394,14 +310,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     updateLoading('refreshing', true);
     try {
       const { token: newToken, refreshToken: newRefreshToken } = await AuthService.refreshToken(refreshTokenValue);
-      TokenManager.setTokens(newToken, newRefreshToken);
-      
-      // Fetch updated user data
+
       const userData = await AuthService.validateToken(newToken);
+      TokenManager.setTokens(newToken, newRefreshToken, userData);
       setUser(userData);
       setError(null);
     } catch (err) {
-      // If refresh fails, logout the user
       TokenManager.clearTokens();
       setUser(null);
       throw err;
@@ -416,31 +330,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const initializeAuth = async (): Promise<void> => {
       try {
-        // Get current Supabase session
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error getting session:', error);
-          return;
-        }
+        const token = TokenManager.getToken();
+        const storedUser = TokenManager.getUser();
 
-        if (session?.user) {
-          // Transform Supabase user to our User type
-          const transformedUser: User = {
-            id: session.user.id,
-            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-            email: session.user.email || '',
-            role: session.user.user_metadata?.role || 'user',
-            image: session.user.user_metadata?.avatar_url,
-            assignedCompetitions: session.user.user_metadata?.assignedCompetitions,
-            permissions: session.user.user_metadata?.permissions,
-            managedLoggers: session.user.user_metadata?.managedLoggers,
-            adminLevel: session.user.user_metadata?.adminLevel,
-          };
-
-          if (isMounted) {
-            setUser(transformedUser);
-            TokenManager.setTokens(session.access_token, session.refresh_token);
+        if (token && storedUser) {
+          // Check if token is expired
+          if (AuthService.isTokenExpired(token)) {
+            // Try to refresh
+            try {
+              await refreshToken();
+            } catch {
+              TokenManager.clearTokens();
+            }
+          } else {
+            // Validate token with backend
+            try {
+              const userData = await AuthService.validateToken(token);
+              if (isMounted) {
+                setUser(userData);
+                TokenManager.setTokens(token, TokenManager.getRefreshToken()!, userData);
+              }
+            } catch {
+              if (isMounted) {
+                TokenManager.clearTokens();
+              }
+            }
           }
         }
       } catch (err) {
@@ -459,36 +373,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     initializeAuth();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          const transformedUser: User = {
-            id: session.user.id,
-            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-            email: session.user.email || '',
-            role: session.user.user_metadata?.role || 'user',
-            image: session.user.user_metadata?.avatar_url,
-            assignedCompetitions: session.user.user_metadata?.assignedCompetitions,
-            permissions: session.user.user_metadata?.permissions,
-            managedLoggers: session.user.user_metadata?.managedLoggers,
-            adminLevel: session.user.user_metadata?.adminLevel,
-          };
-          setUser(transformedUser);
-          TokenManager.setTokens(session.access_token, session.refresh_token);
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          TokenManager.clearTokens();
-        }
-      }
-    );
-
-    // Cleanup function
     return (): void => {
       isMounted = false;
-      subscription.unsubscribe();
     };
-  }, [createError, updateLoading]);
+  }, [createError, updateLoading, refreshToken]);
 
   // Auto-refresh token before expiration
   useEffect(() => {
@@ -505,16 +393,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const expirationTime: number = payload.exp * 1000;
         const currentTime: number = Date.now();
         const timeUntilExpiration: number = expirationTime - currentTime;
-        
-        // Refresh 5 minutes before expiration or immediately if expiring soon
-        const refreshTime: number = TokenManager.isTokenExpiringSoon() 
-          ? 0 
+
+        const refreshTime: number = TokenManager.isTokenExpiringSoon()
+          ? 0
           : Math.max(timeUntilExpiration - 5 * 60 * 1000, 0);
 
         timeoutId = setTimeout(async () => {
           try {
             await refreshToken();
-            scheduleRefresh(); // Schedule next refresh
+            scheduleRefresh();
           } catch {
             // If refresh fails, user will be logged out
           }
@@ -533,58 +420,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, [user, refreshToken]);
 
-  // Login function
-  const login = async (credentials: { email: string; password: string }): Promise<void> => {
+  const login = async (credentials: LoginCredentials): Promise<void> => {
     updateLoading('loggingIn', true);
     setError(null);
 
     try {
-      // Use the real login API
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
+      const { token, refreshToken, user: userData } = await AuthService.login(credentials);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error?.message || 'Login failed');
-      }
-
-      // Sign in with Supabase using the token from our backend
-      const { data: supabaseData, error: supabaseError } = await supabase.auth.setSession({
-        access_token: data.data.token,
-        refresh_token: data.data.refreshToken,
-      });
-
-      if (supabaseError) {
-        throw new Error(supabaseError.message);
-      }
-
-      if (supabaseData.session?.user) {
-        // Transform Supabase user to our User type
-        const transformedUser: User = {
-          id: supabaseData.session.user.id,
-          name: supabaseData.session.user.user_metadata?.name || supabaseData.session.user.email?.split('@')[0] || 'User',
-          email: supabaseData.session.user.email || '',
-          role: supabaseData.session.user.user_metadata?.role || 'user',
-          image: supabaseData.session.user.user_metadata?.avatar_url,
-          assignedCompetitions: supabaseData.session.user.user_metadata?.assignedCompetitions,
-          permissions: supabaseData.session.user.user_metadata?.permissions,
-          managedLoggers: supabaseData.session.user.user_metadata?.managedLoggers,
-          adminLevel: supabaseData.session.user.user_metadata?.adminLevel,
-        };
-        setUser(transformedUser);
-        TokenManager.setTokens(data.data.token, data.data.refreshToken);
-      }
+      TokenManager.setTokens(token, refreshToken, userData);
+      setUser(userData);
     } catch (err) {
       let errorMessage = 'Failed to log in.';
-      
+
       if (err instanceof Error) {
-        errorMessage = err.message;
+        if (err.message === 'UNAUTHORIZED') {
+          errorMessage = 'Invalid email or password.';
+        } else if (err.message === 'RATE_LIMITED') {
+          errorMessage = 'Too many login attempts. Please try again later.';
+        } else {
+          errorMessage = err.message;
+        }
       }
 
       setError(createError('UNKNOWN', errorMessage));
@@ -594,8 +449,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Signup function
-  const signup = async (userData: { name: string; email: string; password: string }): Promise<void> => {
+  const signup = async (userData: SignupCredentials): Promise<void> => {
     updateLoading('signingUp', true);
     setError(null);
 
@@ -610,51 +464,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await login({ email: userData.email, password: userData.password });
     } catch (err) {
       let errorMessage = 'Failed to sign up.';
-      
+
       if (err instanceof Error) {
-        errorMessage = err.message;
+        if (err.message.includes('USER_EXISTS')) {
+          errorMessage = 'An account with this email already exists.';
+          setError(createError('VALIDATION', errorMessage, 'USER_EXISTS'));
+        } else if (err.message.includes('VALIDATION')) {
+          errorMessage = 'Please check your input and try again.';
+          setError(createError('VALIDATION', errorMessage, 'VALIDATION_ERROR'));
+        } else if (err.message.includes('RATE_LIMITED')) {
+          errorMessage = 'Too many signup attempts. Please try again later.';
+          setError(createError('RATE_LIMITED', errorMessage, 'RATE_LIMITED'));
+        } else {
+          errorMessage = err.message;
+          setError(createError('UNKNOWN', errorMessage));
+        }
       }
 
-      // Handle specific error cases
-      if (errorMessage.includes('USER_EXISTS')) {
-        errorMessage = 'An account with this email already exists. Please use a different email or try logging in.';
-        setError(createError('VALIDATION', errorMessage, 'USER_EXISTS'));
-      } else if (errorMessage.includes('VALIDATION')) {
-        errorMessage = 'Please check your input and try again.';
-        setError(createError('VALIDATION', errorMessage, 'VALIDATION_ERROR'));
-      } else if (errorMessage.includes('RATE_LIMITED')) {
-        errorMessage = 'Too many signup attempts. Please try again later.';
-        setError(createError('RATE_LIMITED', errorMessage, 'RATE_LIMITED'));
-      } else if (errorMessage.includes('SERVER_ERROR')) {
-        errorMessage = 'Server error. Please try again later.';
-        setError(createError('NETWORK', errorMessage, 'SERVER_ERROR'));
-      } else {
-        setError(createError('UNKNOWN', errorMessage));
-      }
-      
       throw new Error(errorMessage);
     } finally {
       updateLoading('signingUp', false);
     }
   };
 
-  // Logout function
   const logout = useCallback(async (): Promise<void> => {
     try {
-      // Call backend logout endpoint
+      const token = TokenManager.getToken();
       const refreshToken = TokenManager.getRefreshToken();
-      if (refreshToken) {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${TokenManager.getToken()}`
-          },
-          body: JSON.stringify({ refreshToken }),
-        });
+
+      if (token && refreshToken) {
+        await AuthService.logout(token, refreshToken);
       }
-      
-      await supabase.auth.signOut();
     } catch (error) {
       console.error('Error signing out:', error);
     } finally {
@@ -664,7 +504,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Computed property for authentication status
   const isAuthenticated: boolean = user !== null;
 
   const value: AuthContextType = {
@@ -686,7 +525,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 };
 
-// Create the useAuth hook for easy consumption
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -695,7 +533,6 @@ export const useAuth = (): AuthContextType => {
   return context;
 };
 
-// Additional utility hooks for specific use cases
 export const useAuthUser = (): User | null => {
   const { user } = useAuth();
   return user;
@@ -711,82 +548,49 @@ export const useAuthError = (): { error: AuthError | null; clearError: () => voi
   return { error, clearError };
 };
 
-// Protected route helper
-export const useRequireAuth = (): { 
-  user: User | null; 
-  isAuthenticated: boolean; 
-  isLoading: boolean 
+export const useRequireAuth = (): {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean
 } => {
   const { user, loading } = useAuth();
-  
+
   useEffect(() => {
     if (!loading.initializing && !user) {
-      // Redirect to login page or show login modal
       if (typeof window !== 'undefined') {
         window.location.href = '/auth/login';
       }
     }
   }, [user, loading.initializing]);
 
-  return { 
-    user, 
-    isAuthenticated: user !== null, 
-    isLoading: loading.initializing 
+  return {
+    user,
+    isAuthenticated: user !== null,
+    isLoading: loading.initializing
   };
 };
 
-// Hook to check if user needs onboarding
-export const useRequireOnboarding = (): { 
-  user: User | null; 
-  isAuthenticated: boolean; 
-  hasCompletedOnboarding: boolean;
-  isLoading: boolean 
-} => {
-  const { user, loading, isAuthenticated } = useAuth();
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const completed = localStorage.getItem('hasCompletedOnboarding') === 'true';
-      setHasCompletedOnboarding(completed);
-      setIsLoading(false);
-    } else {
-      setIsLoading(false);
-    }
-  }, []);
-  
-  return { 
-    user, 
-    isAuthenticated, 
-    hasCompletedOnboarding,
-    isLoading: loading.initializing || isLoading
-  };
-};
-
-// Logger-specific authentication hook
-export const useLoggerAuth = (): { 
-  user: User | null; 
-  isAuthenticated: boolean; 
+export const useLoggerAuth = (): {
+  user: User | null;
+  isAuthenticated: boolean;
   isLogger: boolean;
   isLoading: boolean;
   hasLoggerPermissions: boolean;
 } => {
   const { user, loading } = useAuth();
-  
-  // Check if user has logger permissions
+
   const isLogger = user?.role?.startsWith('logger') || false;
   const hasLoggerPermissions = user !== null && (
-    user.role.startsWith('logger') || 
+    user.role.startsWith('logger') ||
     user.role === 'admin' ||
     user.role === 'super-admin'
   );
-  
-  return { 
-    user, 
-    isAuthenticated: user !== null, 
+
+  return {
+    user,
+    isAuthenticated: user !== null,
     isLogger,
     hasLoggerPermissions,
-    isLoading: loading.initializing 
+    isLoading: loading.initializing
   };
 };

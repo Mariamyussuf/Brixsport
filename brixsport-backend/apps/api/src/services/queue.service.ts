@@ -2,26 +2,105 @@ import { Queue, Worker, Job } from 'bullmq';
 import { logger } from '../utils/logger';
 import { notificationService } from './notification.service';
 
-// Redis connection options for BullMQ
-const redisOptions = {
-  connection: {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD || undefined,
-    db: parseInt(process.env.REDIS_DB || '0'),
+// Parse Redis URL into connection options
+const parseRedisUrl = (url: string) => {
+  try {
+    const urlObj = new URL(url);
+    const config: any = {
+      host: urlObj.hostname,
+      port: parseInt(urlObj.port || '6379'),
+    };
+
+    // Extract password from URL if present
+    if (urlObj.password) {
+      config.password = urlObj.password;
+    }
+
+    // Extract database number from pathname if present
+    const dbMatch = urlObj.pathname.match(/\/(\d+)/);
+    if (dbMatch) {
+      config.db = parseInt(dbMatch[1]);
+    }
+
+    return config;
+  } catch (error) {
+    logger.error('Failed to parse Redis URL', error);
+    return null;
   }
 };
 
+// Build Redis connection configuration
+const buildRedisConnection = () => {
+  // Priority 1: Use REDIS_PRIVATE_URL if available (Railway internal network)
+  if (process.env.REDIS_PRIVATE_URL) {
+    logger.info('BullMQ using REDIS_PRIVATE_URL');
+    return parseRedisUrl(process.env.REDIS_PRIVATE_URL);
+  }
+
+  // Priority 2: Use REDIS_URL if available
+  if (process.env.REDIS_URL) {
+    logger.info('BullMQ using REDIS_URL');
+    return parseRedisUrl(process.env.REDIS_URL);
+  }
+
+  // Priority 3: Build from individual components
+  const host = process.env.REDIS_HOST || process.env.REDISHOST;
+  const port = process.env.REDIS_PORT || process.env.REDISPORT;
+  const password = process.env.REDIS_PASSWORD || process.env.REDISPASSWORD;
+
+  // Only use component-based config if host is explicitly set (not defaulting to localhost)
+  if (host && host !== 'localhost') {
+    logger.info('BullMQ using Redis components', { host, port: port || '6379' });
+    return {
+      host,
+      port: parseInt(port || '6379'),
+      password: password || undefined,
+      db: parseInt(process.env.REDIS_DB || '0'),
+    };
+  }
+
+  // No Redis configuration found
+  logger.warn('No Redis configuration found for BullMQ');
+  return null;
+};
+
+const redisConnection = buildRedisConnection();
+const isRedisConfigured = redisConnection !== null;
+
+const redisOptions = isRedisConfigured ? {
+  connection: redisConnection
+} : undefined;
+
 // Create queues
-const notificationQueue = new Queue('notifications', redisOptions);
-const scheduledNotificationQueue = new Queue('scheduled-notifications', redisOptions);
+let notificationQueue: Queue | null = null;
+let scheduledNotificationQueue: Queue | null = null;
+
+if (isRedisConfigured && redisOptions) {
+  try {
+    notificationQueue = new Queue('notifications', redisOptions);
+    scheduledNotificationQueue = new Queue('scheduled-notifications', redisOptions);
+    logger.info('BullMQ queues initialized');
+  } catch (error) {
+    logger.error('Failed to initialize BullMQ queues', error);
+  }
+} else {
+  logger.warn('Redis not configured, BullMQ queues disabled');
+}
 
 export const queueService = {
   // Add job to notification queue
   addNotificationJob: async (jobType: string, jobData: any, priority: number = 0) => {
     try {
       logger.info('Adding notification job to queue', { jobType, priority });
-      
+
+      if (!notificationQueue) {
+        logger.warn('Notification queue not initialized, skipping job', { jobType });
+        return {
+          success: true,
+          data: { id: 'skipped', name: jobType, data: jobData }
+        };
+      }
+
       const job = await notificationQueue.add(jobType, jobData, {
         priority,
         attempts: 3,
@@ -30,7 +109,7 @@ export const queueService = {
           delay: 1000
         }
       });
-      
+
       return {
         success: true,
         data: {
@@ -44,12 +123,20 @@ export const queueService = {
       throw error;
     }
   },
-  
+
   // Add job to scheduled notification queue
   addScheduledNotificationJob: async (jobData: any, delay: number) => {
     try {
       logger.info('Adding scheduled notification job to queue', { delay });
-      
+
+      if (!scheduledNotificationQueue) {
+        logger.warn('Scheduled notification queue not initialized, skipping job');
+        return {
+          success: true,
+          data: { id: 'skipped', name: 'scheduled_notification', data: jobData }
+        };
+      }
+
       const job = await scheduledNotificationQueue.add('scheduled_notification', jobData, {
         delay,
         attempts: 3,
@@ -58,7 +145,7 @@ export const queueService = {
           delay: 1000
         }
       });
-      
+
       return {
         success: true,
         data: {
@@ -72,17 +159,22 @@ export const queueService = {
       throw error;
     }
   },
-  
+
   // Process notification jobs
   processNotificationJobs: () => {
     try {
       logger.info('Starting notification job processor');
-      
+
+      if (!isRedisConfigured || !redisOptions) {
+        logger.warn('Redis not configured, skipping worker initialization');
+        return { success: true, message: 'Worker initialization skipped (Redis disabled)' };
+      }
+
       // Create worker for notification jobs
-      const notificationWorker = new Worker('notifications', 
+      const notificationWorker = new Worker('notifications',
         async (job: Job) => {
           logger.info('Processing notification job', { jobId: job.id, jobType: job.name });
-          
+
           try {
             switch (job.name) {
               case 'send_notification':
@@ -95,79 +187,79 @@ export const queueService = {
                 return { success: false, error: 'Unknown job type' };
             }
           } catch (error: any) {
-            logger.error('Error processing notification job', { 
-              jobId: job.id, 
-              jobType: job.name, 
-              error: error.message 
+            logger.error('Error processing notification job', {
+              jobId: job.id,
+              jobType: job.name,
+              error: error.message
             });
             throw error;
           }
         },
         redisOptions
       );
-      
+
       // Create worker for scheduled notification jobs
       const scheduledNotificationWorker = new Worker('scheduled-notifications',
         async (job: Job) => {
           logger.info('Processing scheduled notification job', { jobId: job.id });
-          
+
           try {
             // Process scheduled notification
             // This would typically create actual notifications and add them to the notification queue
-            logger.info('Scheduled notification processed', { 
-              scheduledNotificationId: job.data.scheduledNotificationId 
+            logger.info('Scheduled notification processed', {
+              scheduledNotificationId: job.data.scheduledNotificationId
             });
-            
-            return { 
-              success: true, 
+
+            return {
+              success: true,
               message: 'Scheduled notification processed',
               data: job.data
             };
           } catch (error: any) {
-            logger.error('Error processing scheduled notification job', { 
-              jobId: job.id, 
-              error: error.message 
+            logger.error('Error processing scheduled notification job', {
+              jobId: job.id,
+              error: error.message
             });
             throw error;
           }
         },
         redisOptions
       );
-      
+
       // Handle worker errors
-      notificationWorker.on('error', (error) => {
+      notificationWorker.on('error', (error: any) => {
         logger.error('Notification worker error', error);
       });
-      
-      scheduledNotificationWorker.on('error', (error) => {
+
+      scheduledNotificationWorker.on('error', (error: any) => {
         logger.error('Scheduled notification worker error', error);
       });
-      
+
       // Handle job completion
-      notificationWorker.on('completed', (job) => {
+      notificationWorker.on('completed', (job: any) => {
         logger.info('Notification job completed', { jobId: job.id, jobType: job.name });
       });
-      
-      scheduledNotificationWorker.on('completed', (job) => {
+
+      scheduledNotificationWorker.on('completed', (job: any) => {
         logger.info('Scheduled notification job completed', { jobId: job.id });
       });
-      
+
       // Handle job failure
-      notificationWorker.on('failed', (job, error) => {
-        logger.error('Notification job failed', { 
-          jobId: job?.id, 
-          jobType: job?.name, 
-          error: error.message 
+      notificationWorker.on('failed', (job: any, error: any) => {
+        logger.error('Notification job failed', {
+          jobId: job?.id,
+          jobType: job?.name,
+          error: error.message
         });
       });
-      
-      scheduledNotificationWorker.on('failed', (job, error) => {
-        logger.error('Scheduled notification job failed', { 
-          jobId: job?.id, 
-          error: error.message 
+
+      scheduledNotificationWorker.on('failed', (job: any, error: any) => {
+        logger.error('Scheduled notification job failed', {
+          jobId: job?.id,
+          error: error.message
         });
       });
-      
+
       return {
         success: true,
         message: 'Notification job processors started'
@@ -177,13 +269,13 @@ export const queueService = {
       throw error;
     }
   },
-  
+
   // Get job status
   getJobStatus: async (queueName: string, jobId: string) => {
     try {
       logger.info('Getting job status', { queueName, jobId });
-      
-      let queue: Queue;
+
+      let queue: Queue | null = null;
       switch (queueName) {
         case 'notifications':
           queue = notificationQueue;
@@ -194,12 +286,16 @@ export const queueService = {
         default:
           throw new Error('Unknown queue name');
       }
-      
+
+      if (!queue) {
+        throw new Error('Queue not initialized');
+      }
+
       const job = await queue.getJob(jobId);
       if (!job) {
         throw new Error('Job not found');
       }
-      
+
       return {
         success: true,
         data: {
@@ -216,13 +312,13 @@ export const queueService = {
       throw error;
     }
   },
-  
+
   // Cancel job
   cancelJob: async (queueName: string, jobId: string) => {
     try {
       logger.info('Cancelling job', { queueName, jobId });
-      
-      let queue: Queue;
+
+      let queue: Queue | null = null;
       switch (queueName) {
         case 'notifications':
           queue = notificationQueue;
@@ -233,14 +329,18 @@ export const queueService = {
         default:
           throw new Error('Unknown queue name');
       }
-      
+
+      if (!queue) {
+        throw new Error('Queue not initialized');
+      }
+
       const job = await queue.getJob(jobId);
       if (!job) {
         throw new Error('Job not found');
       }
-      
+
       await job.remove();
-      
+
       return {
         success: true,
         message: 'Job cancelled successfully'
@@ -250,15 +350,25 @@ export const queueService = {
       throw error;
     }
   },
-  
+
   // Get queue metrics
   getQueueMetrics: async () => {
     try {
       logger.info('Getting queue metrics');
-      
+
+      if (!notificationQueue || !scheduledNotificationQueue) {
+        return {
+          success: true,
+          data: {
+            notifications: { active: 0, completed: 0, failed: 0, delayed: 0, waiting: 0 },
+            scheduledNotifications: { active: 0, completed: 0, failed: 0, delayed: 0, waiting: 0 }
+          }
+        };
+      }
+
       const notificationQueueMetrics = await notificationQueue.getJobCounts();
       const scheduledNotificationQueueMetrics = await scheduledNotificationQueue.getJobCounts();
-      
+
       return {
         success: true,
         data: {

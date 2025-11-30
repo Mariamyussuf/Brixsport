@@ -13,7 +13,12 @@ const REDIS_PASSWORD = process.env.REDIS_PASSWORD || process.env.REDISPASSWORD |
 const REDIS_USER = process.env.REDIS_USER || process.env.REDISUSER || 'default';
 
 // Build the Redis URL from components (prefer internal Railway network)
-const buildRedisUrl = (): string => {
+const buildRedisUrl = (): string | null => {
+  // If explicitly disabled
+  if (process.env.REDIS_DISABLED === 'true') {
+    return null;
+  }
+
   // If REDIS_PRIVATE_URL is provided by Railway, use it (internal network - faster)
   if (process.env.REDIS_PRIVATE_URL) {
     return process.env.REDIS_PRIVATE_URL;
@@ -22,6 +27,15 @@ const buildRedisUrl = (): string => {
   // If REDIS_URL is provided, use it as fallback
   if (process.env.REDIS_URL && process.env.REDIS_URL !== '') {
     return process.env.REDIS_URL;
+  }
+
+  // Only build URL from components if at least one Redis env var is set
+  // This prevents defaulting to localhost when Redis is not configured
+  if (!REDIS_HOST || REDIS_HOST === 'localhost') {
+    if (!process.env.REDIS_HOST && !process.env.REDISHOST) {
+      // No Redis configuration found, return null to disable
+      return null;
+    }
   }
 
   // Build URL from individual components
@@ -83,6 +97,7 @@ const poolStats = {
   totalCreated: 0,
   totalDestroyed: 0,
   waitingRequests: 0,
+  maxWaitingTime: 0,
   activeConnections: 0,
   failedConnections: 0,
   lastError: null as Error | null,
@@ -271,7 +286,7 @@ const createRedisClient = (): RedisClient => {
   const socketConfig = buildSocketOptions();
 
   const clientConfig: RedisClientOptions = {
-    url: REDIS_URL,
+    url: REDIS_URL!,
     database: REDIS_DB,
     password: REDIS_PASSWORD,
     socket: socketConfig,
@@ -366,9 +381,12 @@ export const connectRedis = async (): Promise<RedisClient | null> => {
     // Pool is at max capacity, wait for a connection to be released
     return new Promise((resolve, reject) => {
       let timeout: NodeJS.Timeout;
+      const startWaitTime = Date.now();
 
       // Set timeout for waiting
       timeout = setTimeout(() => {
+        const waitTime = Date.now() - startWaitTime;
+        poolStats.maxWaitingTime = Math.max(poolStats.maxWaitingTime, waitTime);
         const index = waitingQueue.indexOf(() => { });
         if (index !== -1) waitingQueue.splice(index, 1);
         reject(new Error('Redis connection pool acquire timeout'));
@@ -376,6 +394,8 @@ export const connectRedis = async (): Promise<RedisClient | null> => {
 
       // Add to waiting queue
       waitingQueue.push(() => {
+        const waitTime = Date.now() - startWaitTime;
+        poolStats.maxWaitingTime = Math.max(poolStats.maxWaitingTime, waitTime);
         clearTimeout(timeout);
         // Try to get connection again
         connectRedis().then(resolve).catch(reject);
@@ -541,7 +561,7 @@ export const getRedisMetrics = () => ({
       : 'N/A',
     stats: { ...poolStats }
   },
-  connectionString: REDIS_URL.replace(/:([^:]+)@/, ':***@'), // Hide password in logs
+  connectionString: REDIS_URL ? REDIS_URL.replace(/:([^:]+)@/, ':***@') : 'disabled', // Hide password in logs
   lastConnectionTime: new Date(connectionMetrics.lastConnectionTime).toISOString(),
   uptime: connectionMetrics.lastConnectionTime ?
     Math.floor((Date.now() - connectionMetrics.lastConnectionTime) / 1000) + 's' : 'N/A',
