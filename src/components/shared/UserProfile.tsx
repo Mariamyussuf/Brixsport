@@ -11,7 +11,6 @@ interface UserProfileProps {
   email?: string;
   onImageChange?: (file: File) => Promise<void>;
   onSave?: (data: { name: string; email: string }) => Promise<void>;
-  onLogout?: () => void;
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({
@@ -19,8 +18,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
   playerName,
   email = '',
   onImageChange,
-  onSave,
-  onLogout
+  onSave
 }) => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,17 +63,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Profile</h3>
         <div className="flex space-x-2">
           <SettingsLauncher />
-          {onLogout && (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={onLogout}
-              className="border-gray-200 dark:border-gray-700"
-              aria-label="Logout"
-            >
-              <LogOut className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-            </Button>
-          )}
         </div>
       </div>
 
