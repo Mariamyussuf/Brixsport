@@ -1,15 +1,79 @@
 "use client";
 
-import React, { 
-  createContext, 
-  useState, 
-  useContext, 
-  ReactNode, 
-  useEffect, 
-  useCallback 
+import React, {
+  createContext,
+  useState,
+  useContext,
+  ReactNode,
+  useEffect,
+  useCallback
 } from 'react';
 import { LoggerUser } from '@/lib/loggerAuth';
-import { TokenManager } from '@/hooks/useAuth';
+
+// Logger-specific Token Manager (separate from main auth)
+class LoggerTokenManager {
+  private static readonly TOKEN_KEY: string = 'loggerAuthToken';
+  private static readonly REFRESH_TOKEN_KEY: string = 'loggerRefreshToken';
+  private static readonly TOKEN_EXPIRY_KEY: string = 'loggerTokenExpiry';
+  private static readonly USER_KEY: string = 'loggerAuthUser';
+
+  static getToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(this.TOKEN_KEY);
+  }
+
+  static getRefreshToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
+  }
+
+  static getUser(): LoggerUser | null {
+    if (typeof window === 'undefined') return null;
+    const userStr = localStorage.getItem(this.USER_KEY);
+    if (!userStr) return null;
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      return null;
+    }
+  }
+
+  static setTokens(token: string, refreshToken: string, user: LoggerUser): void {
+    if (typeof window === 'undefined') return;
+
+    localStorage.setItem(this.TOKEN_KEY, token);
+    localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
+    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const expiry = payload.exp * 1000;
+      localStorage.setItem(this.TOKEN_EXPIRY_KEY, expiry.toString());
+    } catch {
+      localStorage.removeItem(this.TOKEN_EXPIRY_KEY);
+    }
+  }
+
+  static clearTokens(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+    localStorage.removeItem(this.TOKEN_EXPIRY_KEY);
+    localStorage.removeItem(this.USER_KEY);
+  }
+
+  static isTokenExpiringSoon(): boolean {
+    if (typeof window === 'undefined') return false;
+
+    const expiryStr = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
+    if (!expiryStr) return true;
+
+    const expiry = parseInt(expiryStr, 10);
+    const now = Date.now();
+
+    return (expiry - now) < 10 * 60 * 1000;
+  }
+}
 
 // Define the LoggerAuthContextType interface
 export interface LoggerAuthContextType {
@@ -31,14 +95,10 @@ interface LoginCredentials {
 
 // Logger Auth Service for API calls
 class LoggerAuthService {
-  private static readonly API_BASE: string = '/api/logger/auth';
+  private static readonly API_BASE: string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
   static async validateToken(token: string): Promise<LoggerUser> {
-    // Get the backend API URL from environment variables
-    const backendApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-    
-    // Forward the request to the backend API
-    const response = await fetch(`${backendApiUrl}/api/v1/auth/sessions`, {
+    const response = await fetch(`${this.API_BASE}/api/v1/auth/sessions`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -52,13 +112,10 @@ class LoggerAuthService {
       throw new Error('NETWORK');
     }
 
-    // If we get a successful response, the token is valid
-    // We'll decode the token to get user information
     return this.getUserFromToken(token);
   }
 
   static async getUserFromToken(token: string): Promise<LoggerUser> {
-    // Decode the JWT token to get user information
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       return {
@@ -76,12 +133,12 @@ class LoggerAuthService {
     }
   }
 
-  static async login(credentials: LoginCredentials): Promise<{ accessToken: string; refreshToken: string; user: LoggerUser; accessTokenExpiry: string; refreshTokenExpiry: string }> {
-    // Get the backend API URL from environment variables
-    const backendApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-    
-    // Forward the request to the backend API
-    const response = await fetch(`${backendApiUrl}/api/v1/auth/login`, {
+  static async login(credentials: LoginCredentials): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    user: LoggerUser;
+  }> {
+    const response = await fetch(`${this.API_BASE}/api/v1/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -97,29 +154,19 @@ class LoggerAuthService {
     }
 
     const data = await response.json();
-    
-    // Calculate expiry times (1 hour for access token, 7 days for refresh token)
-    const accessTokenExpiry = new Date();
-    accessTokenExpiry.setHours(accessTokenExpiry.getHours() + 1);
-    
-    const refreshTokenExpiry = new Date();
-    refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7);
-    
+
     return {
       accessToken: data.data.token,
       refreshToken: data.data.refreshToken,
       user: data.data.user,
-      accessTokenExpiry: accessTokenExpiry.toISOString(),
-      refreshTokenExpiry: refreshTokenExpiry.toISOString()
     };
   }
 
-  static async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string; accessTokenExpiry: string; refreshTokenExpiry: string }> {
-    // Get the backend API URL from environment variables
-    const backendApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-    
-    // Forward the request to the backend API
-    const response = await fetch(`${backendApiUrl}/api/v1/auth/refresh-tokens`, {
+  static async refreshToken(refreshToken: string): Promise<{
+    accessToken: string;
+    refreshToken: string;
+  }> {
+    const response = await fetch(`${this.API_BASE}/api/v1/auth/refresh-tokens`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -132,20 +179,22 @@ class LoggerAuthService {
     }
 
     const data = await response.json();
-    
-    // Calculate expiry times (1 hour for access token, 7 days for refresh token)
-    const accessTokenExpiry = new Date();
-    accessTokenExpiry.setHours(accessTokenExpiry.getHours() + 1);
-    
-    const refreshTokenExpiry = new Date();
-    refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7);
-    
+
     return {
       accessToken: data.data.token,
       refreshToken: data.data.refreshToken,
-      accessTokenExpiry: accessTokenExpiry.toISOString(),
-      refreshTokenExpiry: refreshTokenExpiry.toISOString()
     };
+  }
+
+  static async logout(token: string, refreshToken: string): Promise<void> {
+    await fetch(`${this.API_BASE}/api/v1/auth/logout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
   }
 
   static isTokenExpired(token: string): boolean {
@@ -180,19 +229,21 @@ export const LoggerAuthProvider: React.FC<LoggerAuthProviderProps> = ({ children
   // Refresh token function
   const refreshToken = useCallback(async (): Promise<void> => {
     try {
-      const refreshTokenValue = TokenManager.getRefreshToken();
+      const refreshTokenValue = LoggerTokenManager.getRefreshToken();
       if (!refreshTokenValue) {
         throw new Error('No refresh token available for refresh');
       }
 
       const { accessToken, refreshToken: newRefreshToken } = await LoggerAuthService.refreshToken(refreshTokenValue);
-      TokenManager.setTokens(accessToken, newRefreshToken);
-      
-      // Fetch updated user data
-      const userData = await LoggerAuthService.validateToken(accessToken);
+
+      // Get user data from the new access token
+      const userData = await LoggerAuthService.getUserFromToken(accessToken);
+
+      // Store tokens with user data
+      LoggerTokenManager.setTokens(accessToken, newRefreshToken, userData);
       setUser(userData);
     } catch (error) {
-      TokenManager.clearTokens();
+      LoggerTokenManager.clearTokens();
       setUser(null);
       throw error;
     }
@@ -204,27 +255,44 @@ export const LoggerAuthProvider: React.FC<LoggerAuthProviderProps> = ({ children
 
     const initializeAuth = async (): Promise<void> => {
       try {
-        const token = TokenManager.getToken();
-        if (token && !LoggerAuthService.isTokenExpired(token)) {
-          const userData = await LoggerAuthService.validateToken(token);
-          if (isMounted) {
-            setUser(userData);
-          }
-        } else if (token) {
-          // Token is expired, try to refresh
-          try {
-            await refreshToken();
-          } catch (refreshError) {
-            // If refresh fails, clear tokens and show error
-            TokenManager.clearTokens();
-            if (isMounted && refreshError instanceof Error) {
-              setError('Session expired. Please log in again.');
+        const token = LoggerTokenManager.getToken();
+        const storedUser = LoggerTokenManager.getUser();
+
+        if (token && storedUser) {
+          if (LoggerAuthService.isTokenExpired(token)) {
+            // Token is expired, try to refresh
+            try {
+              await refreshToken();
+            } catch (refreshError) {
+              // If refresh fails, clear tokens
+              LoggerTokenManager.clearTokens();
+              if (isMounted) {
+                setError('Session expired. Please log in again.');
+              }
+            }
+          } else {
+            // Validate token with backend
+            try {
+              const userData = await LoggerAuthService.validateToken(token);
+              if (isMounted) {
+                setUser(userData);
+                // Update stored user data
+                LoggerTokenManager.setTokens(
+                  token,
+                  LoggerTokenManager.getRefreshToken()!,
+                  userData
+                );
+              }
+            } catch {
+              if (isMounted) {
+                LoggerTokenManager.clearTokens();
+              }
             }
           }
         }
       } catch (err) {
         if (isMounted) {
-          TokenManager.clearTokens();
+          LoggerTokenManager.clearTokens();
           if (err instanceof Error) {
             setError('Session expired. Please log in again.');
           }
@@ -243,18 +311,62 @@ export const LoggerAuthProvider: React.FC<LoggerAuthProviderProps> = ({ children
     };
   }, [refreshToken]);
 
+  // Auto-refresh token before expiration
+  useEffect(() => {
+    if (!user) return;
+
+    const token = LoggerTokenManager.getToken();
+    if (!token) return;
+
+    let timeoutId: NodeJS.Timeout;
+
+    const scheduleRefresh = (): void => {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const expirationTime: number = payload.exp * 1000;
+        const currentTime: number = Date.now();
+        const timeUntilExpiration: number = expirationTime - currentTime;
+
+        const refreshTime: number = LoggerTokenManager.isTokenExpiringSoon()
+          ? 0
+          : Math.max(timeUntilExpiration - 5 * 60 * 1000, 0);
+
+        timeoutId = setTimeout(async () => {
+          try {
+            await refreshToken();
+            scheduleRefresh();
+          } catch {
+            // If refresh fails, user will be logged out
+          }
+        }, refreshTime);
+      } catch {
+        // Invalid token format
+      }
+    };
+
+    scheduleRefresh();
+
+    return (): void => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [user, refreshToken]);
+
   // Login function
   const login = async (credentials: LoginCredentials): Promise<void> => {
     setLoading(true);
     setError(null);
 
     try {
-      const { accessToken, refreshToken, user } = await LoggerAuthService.login(credentials);
-      TokenManager.setTokens(accessToken, refreshToken);
-      setUser(user);
+      const { accessToken, refreshToken, user: userData } = await LoggerAuthService.login(credentials);
+
+      // Store tokens with user data - FIXED: Now passing all 3 arguments
+      LoggerTokenManager.setTokens(accessToken, refreshToken, userData);
+      setUser(userData);
     } catch (err) {
       let errorMessage = 'Failed to log in.';
-      
+
       if (err instanceof Error) {
         errorMessage = err.message;
       }
@@ -269,27 +381,19 @@ export const LoggerAuthProvider: React.FC<LoggerAuthProviderProps> = ({ children
   // Logout function
   const logout = useCallback(async (): Promise<void> => {
     try {
-      // Call backend logout endpoint to invalidate refresh token
-      const refreshToken = TokenManager.getRefreshToken();
-      if (refreshToken) {
-        await fetch(`/api/logger/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ refreshToken }),
-        });
+      const token = LoggerTokenManager.getToken();
+      const refreshToken = LoggerTokenManager.getRefreshToken();
+
+      if (token && refreshToken) {
+        await LoggerAuthService.logout(token, refreshToken);
       }
-      
-      // Clear tokens
-      TokenManager.clearTokens();
-      setUser(null);
-      setError(null);
     } catch (error) {
       console.error('Error logging out:', error);
-      // Still clear tokens locally even if backend call fails
-      TokenManager.clearTokens();
+    } finally {
+      // Always clear tokens locally
+      LoggerTokenManager.clearTokens();
       setUser(null);
+      setError(null);
     }
   }, []);
 
